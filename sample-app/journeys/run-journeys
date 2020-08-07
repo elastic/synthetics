@@ -1,3 +1,3 @@
-#!bin/sh
-
-/usr/bin/env node ../../poc-v2/built/index.js built
+#!/bin/sh
+/usr/bin/env npm run-script build
+/usr/bin/env node ./built

@@ -5,16 +5,20 @@ const monitor = {
 }
 
 export const f = journey({name: 'Login'}, (page) => {
-    step('Go to login page', async () => {
-        await page.goto('https://cloud.elastic.co/login')
+    step('Go to home page', async (params) => {
+        await page.goto(params.homepage)
+    })
+
+    step('Go to login page', async (params) => {
+        await page.click('a')
     })
 
     step('Enter username and password', async () => {
-        await page.fill('input[data-test-id=login-username]', 'hamid')
-        await page.fill('input[data-test-id=login-password]', 'test-pass')
+        await page.fill('input[name=username]', 'hamid')
+        await page.fill('input[name=password]', 'test-pass')
     })
 
-    step('Click login', async () => {
-        await page.click('button[data-test-id=login-button]')
+    step('submit form', async () => {
+        await (await page.$('form')).evaluate(form => form.submit())
     })
 })

@@ -1,13 +1,40 @@
 import { Page, BrowserContext, Browser } from 'playwright';
 
-export const state = {
+type State = {
+    journeys: Journey[]
+    currentJourney: Journey
+}
+
+type JourneyOptions = {
+    name: string,
+    id?: string
+}
+
+type Journey = {
+    options: JourneyOptions,
+    callback: JourneyCallback,
+    steps: Step[],
+}
+
+type Step = {
+    name: string,
+    callback: StepCallback
+}
+
+type StepCallback = (params: any) => void;
+
+type JourneyCallback = (page: Page, browserContext: BrowserContext, browser: Browser) => void;
+
+export const state: State = {
     journeys: [],
     currentJourney: null
 }
 
-type JourneyCallback = (page: Page, browserContext: BrowserContext, browser: Browser) => void;
 
-export const journey = (options: {name: string}, callback: JourneyCallback) => {
+export const journey = (options: JourneyOptions | string, callback: JourneyCallback) => {
+    if (typeof options === 'string') {
+        options = {name: options, id: options}
+    }
     state.journeys.push({
         options,
         callback,
@@ -15,6 +42,6 @@ export const journey = (options: {name: string}, callback: JourneyCallback) => {
     })
 }
 
-export const step = (name: string, callback: () => void) => {
+export const step = (name: string, callback: StepCallback) => {
     state.currentJourney.steps.push({ name, callback })
 }
