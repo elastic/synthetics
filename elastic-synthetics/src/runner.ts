@@ -22,8 +22,10 @@ export const run = async (aroundHook: (runSteps: (suiteParams: any) => void, env
                 // Clear existing journeys since we'll go from scratch
                 state.journeys = [];
                 const script = readFileSync(file, {encoding: 'utf8'});
-                const scriptFn = new Function('journey', 'step', 'suiteParams', 'console', script);
-                scriptFn.apply(null, [journey, step, argSuiteParams, console])
+                const scriptFn = new Function('page', 'step', 'suiteParams', 'console', script);
+                journey('inline', async (page) => {
+                    scriptFn.apply(null, [page, step, argSuiteParams, console])
+                })
             }
 
             console.log("Running...", file)
