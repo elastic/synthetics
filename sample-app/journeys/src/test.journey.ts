@@ -1,8 +1,10 @@
+import { journey, step } from 'elastic-synthetics';
+
 const monitor = {
     name: 'elastic-cloud'
 }
 
-journey(monitor, (page) => {
+export const f = journey({name: 'Login'}, (page) => {
     step('Go to login page', async () => {
         await page.goto('https://cloud.elastic.co/login')
     })
