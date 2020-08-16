@@ -9,8 +9,9 @@ export const run = async (aroundHook: (runSteps: (suiteParams: any) => void, env
     let argSuiteParams = {};
     program
         .command("run [file]")
-        .option('-s, --suite-params <params>')
-        .option('-e, --environment <params>', 'e.g. production', 'development')
+        .option('-s, --suite-params <jsonstring>')
+        .option('-e, --environment <envname>', 'e.g. production', 'development')
+        .option('-j, --json', 'output newline delimited JSON')
         .description("Run the tests")
         .action(async (file, options) => {
             if (options.suiteParams) {
