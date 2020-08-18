@@ -1,24 +1,20 @@
 import { journey, step } from 'elastic-synthetics';
 
-const monitor = {
-    name: 'elastic-cloud'
-}
-
-export const f = journey({name: 'Login'}, (page) => {
-    step('Go to home page', async (params) => {
+journey({name: 'Old Login'}, () => {
+    step('Go to home page', async (page, params) => {
         await page.goto(params.homepage)
     })
 
-    step('Go to login page', async (params) => {
+    step('Go to login page', async (page, params) => {
         await page.click('a')
     })
 
-    step('Enter username and password', async () => {
+    step('Enter username and password', async (page) => {
         await page.fill('input[name=username]', 'hamid')
         await page.fill('input[name=password]', 'test-pass')
     })
 
-    step('submit form', async () => {
+    step('submit form', async (page) => {
         await (await page.$('form')).evaluate(form => form.submit())
     })
 })
