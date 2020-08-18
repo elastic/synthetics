@@ -1,12 +1,12 @@
 {
-    "compilerOptions": {
-        "outDir": "dist",
-        "allowJs": true,
-        "target": "es2018",
-        "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true,
-        "module": "CommonJS"
-    },
-    "include": ["./src/**/*"]
+  "compilerOptions": {
+    "outDir": "dist",
+    "allowJs": true,
+    "target": "es2018",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "module": "CommonJS"
+  },
+  "include": ["./src/**/*"]
 }

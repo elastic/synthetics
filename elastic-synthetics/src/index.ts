@@ -1,9 +1,10 @@
-import 'source-map-support/register';
-import { run } from './runner';
+require('source-map-support').install();
 
 export * from './dsl';
 export * from './runner';
 
-if (require.main === module) {
-    run();
+import { run } from './runner' ;
+
+if (require.main === module)  {
+    run()
 }
