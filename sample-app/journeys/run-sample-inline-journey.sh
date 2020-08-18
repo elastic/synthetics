@@ -1,2 +1,2 @@
-#!/bin/sh 
-node built run sample-inline-journey.js
+#!/bin/sh
+node dist run sample-inline-journey.js

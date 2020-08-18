@@ -1,12 +1,13 @@
 {
-  "compilerOptions": {
-    "outDir": "./built",
-    "allowJs": true,
-    "target": "es2018",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "module": "CommonJS"
-  },
-  "include": ["./src/**/*"]
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "allowJs": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "outDir": "dist",
+        "target": "es2018",
+        "module": "commonjs"
+    },
+    "include": ["./src/**/*"]
 }

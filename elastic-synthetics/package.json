@@ -2,20 +2,20 @@
   "name": "elastic-synthetics",
   "version": "0.0.1",
   "description": "",
-  "prepublish": "tsc",
-  "main": "built/index.js",
-  "types": "built/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "root": "built",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "elastic-synthetics": "built/run.js"
+    "elastic-synthetics": "dist/index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^4.1.0",
     "commander": "^6.0.0",
     "playwright": "^1.2.1",
     "source-map-support": "^0.5.19"
