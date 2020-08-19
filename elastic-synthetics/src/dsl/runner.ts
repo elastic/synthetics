@@ -2,13 +2,12 @@ import * as playwright from 'playwright';
 import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
-import BaseReporter from '../reporters/base';
-import { report } from 'process';
+import { reporters } from '../reporters';
 
 type RunOptions = {
     params: { [key: string]: any };
     environment: string;
-    reporter?: typeof BaseReporter;
+    reporter?: 'default' | 'json';
     browserType?: string;
 };
 
@@ -31,12 +30,13 @@ export default class Runner extends EventEmitter {
         const {
             browserType = 'chromium',
             params,
-            reporter = BaseReporter
+            reporter = 'default'
         } = options;
         /**
          * Set up the corresponding reporter
          */
-        new reporter(this);
+        const Reporter = reporters[reporter];
+        new Reporter(this);
 
         this.emit('start', this.journeys.length);
         for (const journey of this.journeys) {

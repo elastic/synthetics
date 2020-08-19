@@ -1,37 +1,45 @@
 import BaseReporter from './base';
-import { Journey } from '../dsl/journey';
+import { Journey, JourneyOptions } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import Runner from '../dsl/runner';
 
 export default class JSONReporter extends BaseReporter {
     _registerListeners() {
-        this.runner.on('journey', (journey: Journey, params: {[key: string]: any} ) => {
-            this.write({
-              journey: {
-                name: journey.options.name,
-                id: journey.options.id,
-                steps_count: journey.steps.length
-              },
-              meta: params
-            })
-        });
+        const journeyMap = new Map();
+        this.runner.on(
+            'journey',
+            (journey: Journey, params: { [key: string]: any }) => {
+                const { id, name } = journey.options;
+                if (!journeyMap.has(name)) {
+                    journeyMap.set(name, {
+                        id,
+                        name,
+                        meta: params,
+                        steps: []
+                    });
+                }
+            }
+        );
 
         this.runner.on('step', (journey: Journey, step: Step) => {
-            this.write({
-                step: {
+            const journeyOutput = journeyMap.get(journey.options.name);
+            journeyOutput &&
+                journeyOutput.steps.push({
                     name: step.name,
-                    source: step.callback.toString(),
-                    journey: {
-                        name: journey.options.name,
-                        id: journey.options.id
-                    }
-                }
-            })
+                    source: step.callback.toString()
+                });
+        });
+
+        this.runner.on('end', () => {
+            this.write(this._getOutput(journeyMap));
         });
     }
 
-    write(message) {
-      this.stream.write(JSON.stringify(message) + '\n')
+    _getOutput(journeyMap) {
+        const output = { journeys: [] };
+        for (const journey of journeyMap.values()) {
+            output.journeys.push(journey);
+        }
+        return output;
     }
-
 }
