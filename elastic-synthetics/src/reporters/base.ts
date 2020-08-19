@@ -42,11 +42,11 @@ export default class BaseReporter {
             this.write(`Step '${step.name}' starting...`)
         });
 
-        this.runner.on('stepEnd', ({step, elapsed, error}) => {
+        this.runner.on('stepEnd', ({step, elapsedMs, error}) => {
             if (error) {
-                this.write(`Step '${step.name}' failed in ${elapsed} with error: ${error}`)
+                this.write(`Step '${step.name}' failed in ${elapsedMs} with error: ${error}`)
             } else {
-                this.write(`Step '${step.name}' succeeded in ${elapsed}ms`)
+                this.write(`Step '${step.name}' succeeded in ${elapsedMs}ms`)
             }
         });
 

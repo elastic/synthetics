@@ -14,9 +14,9 @@ type RunOptions = {
 interface Events {
     start: {numJourneys: number}
     journeyStart: {journey: Journey, params: {[key: string]: any}}
-    journeyEnd: {journey: Journey, params: {[key: string]: any}, elapsed: number, error: Error}
+    journeyEnd: {journey: Journey, params: {[key: string]: any}, elapsedMs: number, error: Error}
     stepStart: {journey: Journey, step: Step}
-    stepEnd: {journey: Journey, step: Step, elapsed: number, error: Error}
+    stepEnd: {journey: Journey, step: Step, elapsedMs: number, error: Error}
     end: {};
 }
 
@@ -78,15 +78,15 @@ export default class Runner {
                     break; // Don't run anymore steps if we catch an error
                 } finally {
                     const ended = new Date().getTime();
-                    const elapsed = ended-started;
-                    this.emit('stepEnd', {journey, step, elapsed, error})
+                    const elapsedMs = ended-started;
+                    this.emit('stepEnd', {journey, step, elapsedMs, error})
                 }
             }
             await browser.close();
 
             const journeyEnded = new Date().getTime();
-            const elapsed = journeyEnded-journeyStarted;
-            this.emit('journeyEnd', {journey, params, elapsed, error})
+            const elapsedMs = journeyEnded-journeyStarted;
+            this.emit('journeyEnd', {journey, params, elapsedMs, error})
         }
         this.emit('end', {});
         this.reset();

@@ -4,11 +4,11 @@ interface JourneyResults {
     id: string,
     name: string,
     meta: {[key: string]: any},
-    elapsed: number,
+    elapsedMs: number,
     steps: Array<{
         name: string,
         source: string,
-        elapsed: number,
+        elapsedMs: number,
         error: Error,
     }>
 }
@@ -19,13 +19,12 @@ export default class JSONReporter extends BaseReporter {
         this.runner.on(
             'journeyStart',
             ({journey, params}) => {
-            console.log("GOT JOURNEY START")
                 const { id, name } = journey.options;
                 if (!journeyMap.has(name)) {
                     journeyMap.set(name, {
                         id,
                         name,
-                        elapsed: -1,
+                        elapsedMs: -1, // gets set at the end
                         meta: params,
                         steps: []
                     });
@@ -33,14 +32,17 @@ export default class JSONReporter extends BaseReporter {
             }
         );
 
-        this.runner.on('stepEnd', ({journey, step, elapsed, error}) => {
-            console.log("GOT STEP END")
+        this.runner.on('journeyEnd', ({journey, elapsedMs }) => {
+            journeyMap.get(journey.options.name).elapsedMs = elapsedMs;
+        })
+
+        this.runner.on('stepEnd', ({journey, step, elapsedMs, error}) => {
             const journeyOutput = journeyMap.get(journey.options.name);
             journeyOutput &&
                 journeyOutput.steps.push({
                     name: step.name,
                     source: step.callback.toString(),
-                    elapsed,
+                    elapsedMs,
                     error,
                 });
         });
