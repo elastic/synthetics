@@ -3,7 +3,6 @@ import Runner from '../dsl/runner';
 import { Writable } from 'stream';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
-import { debug } from '../helpers'
 
 type ReporterOptions = {
     fd?: Writable;
@@ -19,10 +18,12 @@ export default class BaseReporter {
         this.runner = runner;
         this.stream = new SonicBoom({ fd: options.fd || process.stdout.fd });
         /**
-         * Destroy stream once data is written
+         * Destroy stream once data is written and run
+         * it as the last listener giving enough room for
+         * other reporters to write to stream
          */
         this.runner.on('end', () => {
-            this.stream.end()
+            process.nextTick(() => this.stream.end())
         });
 
         this._registerListeners();
@@ -30,20 +31,23 @@ export default class BaseReporter {
 
     _registerListeners() {
         this.runner.on('start', length => {
-            debug(`Found ${length} journeys`)
+            this.write(`Found ${length} journeys`)
         });
 
         this.runner.on('journey', (journey: Journey, params: {[key: string]: any} ) => {
-            debug(`Journey: ${journey.options.name}`)
+            this.write(`Journey: ${journey.options.name}`)
         });
 
         this.runner.on('step', (journey: Journey, step: Step) => {
-            debug(`Step: ${step.name}`)
+            this.write(`Step: ${step.name}`)
         });
 
         this.runner.on('end', () => {
-            debug('Run completed')
+            this.write('Run completed')
         })
     }
 
+    write(message) {
+        this.stream.write(JSON.stringify(message) + '\n');
+    }
 }

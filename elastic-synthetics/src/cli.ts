@@ -23,10 +23,9 @@ const readStdin = async () => {
 const loadInlineScript = (source, suiteParams) => {
     const scriptFn = new Function('step', 'suiteParams', 'console', source);
     journey('inline', async () => {
-        debug('MAKING STEPS');
+        debug('Creating steps for inline journey');
         scriptFn.apply(null, [step, suiteParams, console]);
     });
-    debug('r STEPS');
 };
 
 program
@@ -48,7 +47,7 @@ const singleMode = program.stdin || filePath;
 /**
  * use JSON reporter if json flag is enabled
  */
-const reporter = program.json ? reporters.json : reporters.default
+const reporter = program.json ? 'json' : 'default'
 /**
  * Set debug based on flag
  */
