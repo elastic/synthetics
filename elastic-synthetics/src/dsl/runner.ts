@@ -16,7 +16,7 @@ interface Events {
     journeyStart: {journey: Journey, params: {[key: string]: any}}
     journeyEnd: {journey: Journey, params: {[key: string]: any}, elapsedMs: number, error: Error}
     stepStart: {journey: Journey, step: Step}
-    stepEnd: {journey: Journey, step: Step, elapsedMs: number, error: Error}
+    stepEnd: {journey: Journey, step: Step, elapsedMs: number, error: Error, screenshot: string}
     end: {};
 }
 
@@ -71,15 +71,18 @@ export default class Runner {
                 this.emit('stepStart', {journey, step});
 
                 const started = new Date().getTime();
+                let screenshot: string;
                 try {
                     await step.callback(page, params, { context, browser });
+                    await page.waitForLoadState('load');
+                    screenshot = (await page.screenshot()).toString('base64');
                 } catch(e) {
                     error = e;;
                     break; // Don't run anymore steps if we catch an error
                 } finally {
                     const ended = new Date().getTime();
                     const elapsedMs = ended-started;
-                    this.emit('stepEnd', {journey, step, elapsedMs, error})
+                    this.emit('stepEnd', {journey, step, elapsedMs, error, screenshot})
                 }
             }
             await browser.close();

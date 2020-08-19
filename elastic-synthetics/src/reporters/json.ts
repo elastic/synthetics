@@ -10,6 +10,7 @@ interface JourneyResults {
         source: string,
         elapsed_ms: number,
         error: Error,
+        screenshot: string,
     }>
 }
 
@@ -36,7 +37,7 @@ export default class JSONReporter extends BaseReporter {
             journeyMap.get(journey.options.name).elapsed_ms = elapsedMs;
         })
 
-        this.runner.on('stepEnd', ({journey, step, elapsedMs, error}) => {
+        this.runner.on('stepEnd', ({journey, step, elapsedMs, error, screenshot}) => {
             const journeyOutput = journeyMap.get(journey.options.name);
             journeyOutput &&
                 journeyOutput.steps.push({
@@ -44,6 +45,7 @@ export default class JSONReporter extends BaseReporter {
                     source: step.callback.toString(),
                     elapsed_ms: elapsedMs,
                     error,
+                    screenshot
                 });
         });
 
