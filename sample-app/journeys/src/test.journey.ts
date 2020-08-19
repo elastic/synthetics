@@ -18,3 +18,13 @@ journey({name: 'Old Login'}, () => {
         await (await page.$('form')).evaluate(form => form.submit())
     })
 })
+
+journey({name: 'New Login'}, () => {
+    step('Go to home page', async (page, params) => {
+        await page.goto(params.homepage)
+    })
+
+    step('Go to login page', async (page) => {
+        await page.click('a')
+    })
+})

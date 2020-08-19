@@ -1,4 +1,4 @@
-import { run } from  'elastic-synthetics';
+import { runner } from  'elastic-synthetics';
 import { spawn } from 'child_process';
 import {default as axios} from 'axios';
 import { exit } from 'process';
@@ -53,10 +53,11 @@ async function waitForApp(suiteParams: any) {
 // simply edit 'start_service.sh' to start your service(s)
 // This will run that, and send a SIGTERM after the
 // suite is over
-async function aroundSuite(runSuite: (suiteParams: any) => void, env: string, argSuiteParams: any) {
-    const suiteParams = {...defaultSuiteParams[env], ...argSuiteParams};
+async function runSuites() {
+    const environment = process.env.NODE_ENV || 'development'
+    const suiteParams = {...defaultSuiteParams[environment]}
     // By default we run the script start_service.sh
-    const process = spawn('./start_service.sh');
+    const childProcess = spawn('./start_service.sh');
 
     // Wait for the service to start successfully (you can change the logic here)
     try {
@@ -67,16 +68,15 @@ async function aroundSuite(runSuite: (suiteParams: any) => void, env: string, ar
         exit(123);
     }
 
-
     // Run the actual test suite
-    await runSuite(suiteParams);
+    await runner.run({ params: suiteParams , environment});
 
     // Clean up the script started with start_service.sh
-    process.kill("SIGTERM");
+    childProcess.kill("SIGTERM");
 }
 
 
 // Do not remove below this line!
-(async function r() {
-    await run(aroundSuite);
+(async () => {
+    await runSuites();
 })()
