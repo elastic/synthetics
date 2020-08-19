@@ -1,8 +1,12 @@
 import { EventEmitter } from 'events';
 import { Writable } from 'stream';
+import SonicBoom from 'sonic-boom';
+import { Journey } from '../dsl/journey';
+import { Step } from '../dsl/step';
+import { debug } from '../helpers'
 
 type ReporterOptions = {
-    stream?: Writable;
+    fd?: Writable;
     colors?: boolean;
 };
 
@@ -13,32 +17,49 @@ export default class JSONReporter {
         public options: ReporterOptions = {}
     ) {
         this.runner = runner;
-        this.stream = options.stream || process.stdout;
+        this.stream = new SonicBoom({ fd: options.fd || process.stdout.fd });
         this._registerListeners();
     }
 
     _registerListeners() {
-        const output = {
-            meta: {},
-            journey: []
-        };
-        this.runner.on('start', params => {
-            output.meta.params = params;
-            console.debug('Running with suite params', params);
+        this.runner.on('start', length => {
+            debug(`Found ${length} journeys`)
         });
 
-        this.runner.on('journey', journey => {
-            console.log(`Journey: ${journey.options.name}`);
+        this.runner.on('journey', (journey: Journey, params: {[key: string]: any} ) => {
+            debug(`Journey: ${journey.options.name}`)
+            this.write({
+              journey: {
+                name: journey.options.name,
+                id: journey.options.id,
+                steps_count: journey.steps.length
+              },
+              meta: params
+            })
         });
 
-        this.runner.on('step', (journeyName, step) => {
-            console.log(`Step: ${step.name}`);
+        this.runner.on('step', (journey: Journey, step: Step) => {
+            debug(`Step: ${step.name}`)
+            this.write({
+                step: {
+                    name: step.name,
+                    source: step.callback.toString(),
+                    journey: {
+                        name: journey.options.name,
+                        id: journey.options.id
+                    }
+                }
+            })
         });
 
         this.runner.on('end', () => {
-            console.log('Its done');
+            debug('Run completed')
+            this.stream.end()
         });
     }
 
-    getOutput() {}
+    write(message) {
+      this.stream.write(JSON.stringify(message) + '\n')
+    }
+
 }

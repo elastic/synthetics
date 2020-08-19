@@ -9,25 +9,23 @@ import JSONReporter from './reporters/json';
 const browserType = 'chromium';
 /**
  * TODO Make runner extend Eventemitter and emit all
- * events as we perform actions to use it both
- * in logger and reporter
+ * events as we perform actions and use it in reporters
  */
 const runner = new EventEmitter();
 
 export const runJourneys = async (suiteParams: any) => {
     const reporter = new JSONReporter(runner);
-    runner.emit('start', suiteParams);
     const browser = await playwright[browserType].launch({ headless: false });
     const context = await browser.newContext();
     const page = await context.newPage();
-    console.log(`Found ${state.journeys.length} journeys`);
+    runner.emit('start', state.journeys.length);
 
     for (let i = 0; i < state.journeys.length; i++) {
         const journey = (state.currentJourney = state.journeys[i]);
-        runner.emit('journey', journey);
+        runner.emit('journey', journey, suiteParams);
         for (let j = 0; j < journey.steps.length; j++) {
             const step = journey.steps[j];
-            runner.emit('step', journey.options.name, step);
+            runner.emit('step', journey, step);
             await step.callback(page, suiteParams, { context, browser });
         }
     }
