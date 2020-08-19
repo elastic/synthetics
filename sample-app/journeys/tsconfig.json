@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./built",
+    "outDir": "dist",
     "allowJs": true,
     "target": "es2018",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "module": "CommonJS",
+    "module": "CommonJS"
   },
   "include": ["./src/**/*"]
 }
