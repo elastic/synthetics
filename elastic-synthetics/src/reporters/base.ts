@@ -30,16 +30,24 @@ export default class BaseReporter {
     }
 
     _registerListeners() {
-        this.runner.on('start', length => {
-            this.write(`Found ${length} journeys`)
+        this.runner.on('start', ({numJourneys}) => {
+            this.write(`Found ${numJourneys} journeys`)
         });
 
-        this.runner.on('journey', (journey: Journey, params: {[key: string]: any} ) => {
+        this.runner.on('journeyStart', ({journey, params}) => {
             this.write(`Journey: ${journey.options.name}`)
         });
 
-        this.runner.on('step', (journey: Journey, step: Step) => {
-            this.write(`Step: ${step.name}`)
+        this.runner.on('stepStart', ({journey, step}) => {
+            this.write(`Step '${step.name}' starting...`)
+        });
+
+        this.runner.on('stepEnd', ({step, elapsed, error}) => {
+            if (error) {
+                this.write(`Step '${step.name}' failed in ${elapsed} with error: ${error}`)
+            } else {
+                this.write(`Step '${step.name}' succeeded in ${elapsed}ms`)
+            }
         });
 
         this.runner.on('end', () => {

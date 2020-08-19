@@ -1,19 +1,31 @@
 import BaseReporter from './base';
-import { Journey, JourneyOptions } from '../dsl/journey';
-import { Step } from '../dsl/step';
-import Runner from '../dsl/runner';
+
+interface JourneyResults {
+    id: string,
+    name: string,
+    meta: {[key: string]: any},
+    elapsed: number,
+    steps: Array<{
+        name: string,
+        source: string,
+        elapsed: number,
+        error: Error,
+    }>
+}
 
 export default class JSONReporter extends BaseReporter {
     _registerListeners() {
-        const journeyMap = new Map();
+        const journeyMap = new Map<String, JourneyResults>();
         this.runner.on(
-            'journey',
-            (journey: Journey, params: { [key: string]: any }) => {
+            'journeyStart',
+            ({journey, params}) => {
+            console.log("GOT JOURNEY START")
                 const { id, name } = journey.options;
                 if (!journeyMap.has(name)) {
                     journeyMap.set(name, {
                         id,
                         name,
+                        elapsed: -1,
                         meta: params,
                         steps: []
                     });
@@ -21,12 +33,15 @@ export default class JSONReporter extends BaseReporter {
             }
         );
 
-        this.runner.on('step', (journey: Journey, step: Step) => {
+        this.runner.on('stepEnd', ({journey, step, elapsed, error}) => {
+            console.log("GOT STEP END")
             const journeyOutput = journeyMap.get(journey.options.name);
             journeyOutput &&
                 journeyOutput.steps.push({
                     name: step.name,
-                    source: step.callback.toString()
+                    source: step.callback.toString(),
+                    elapsed,
+                    error,
                 });
         });
 

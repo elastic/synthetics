@@ -11,7 +11,17 @@ type RunOptions = {
     browserType?: string;
 };
 
-export default class Runner extends EventEmitter {
+interface Events {
+    start: {numJourneys: number}
+    journeyStart: {journey: Journey, params: {[key: string]: any}}
+    journeyEnd: {journey: Journey, params: {[key: string]: any}, elapsed: number, error: Error}
+    stepStart: {journey: Journey, step: Step}
+    stepEnd: {journey: Journey, step: Step, elapsed: number, error: Error}
+    end: {};
+}
+
+export default class Runner {
+    eventEmitter = new EventEmitter;
     currentJourney?: Journey = null;
     journeys: Journey[] = [];
 
@@ -26,6 +36,14 @@ export default class Runner extends EventEmitter {
         }
     }
 
+    emit<K extends keyof Events>(e: K, v: Events[K]) {
+        this.eventEmitter.emit(e, v);
+    }
+
+    on<K extends keyof Events>(e: K, cb: (v: Events[K]) => void) {
+        this.eventEmitter.on(e, cb);
+    }
+
     async run(options: RunOptions) {
         const {
             browserType = 'chromium',
@@ -38,22 +56,39 @@ export default class Runner extends EventEmitter {
         const Reporter = reporters[reporter];
         new Reporter(this);
 
-        this.emit('start', this.journeys.length);
+        this.emit('start', {numJourneys: this.journeys.length});
         for (const journey of this.journeys) {
+            let error: Error = undefined
+            const journeyStarted = new Date().getTime();
             const browser = await playwright[browserType].launch({
                 headless: false
             });
             const context = await browser.newContext();
             const page = await context.newPage();
             this.currentJourney = journey;
-            this.emit('journey', journey, params);
+            this.emit('journeyStart', {journey, params});
             for (const step of journey.steps) {
-                this.emit('step', journey, step);
-                await step.callback(page, params, { context, browser });
+                this.emit('stepStart', {journey, step});
+
+                const started = new Date().getTime();
+                try {
+                    await step.callback(page, params, { context, browser });
+                } catch(e) {
+                    error = e;;
+                    break; // Don't run anymore steps if we catch an error
+                } finally {
+                    const ended = new Date().getTime();
+                    const elapsed = ended-started;
+                    this.emit('stepEnd', {journey, step, elapsed, error})
+                }
             }
             await browser.close();
+
+            const journeyEnded = new Date().getTime();
+            const elapsed = journeyEnded-journeyStarted;
+            this.emit('journeyEnd', {journey, params, elapsed, error})
         }
-        this.emit('end');
+        this.emit('end', {});
         this.reset();
     }
 
