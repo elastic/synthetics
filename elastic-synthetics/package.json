@@ -12,11 +12,15 @@
   "bin": {
     "elastic-synthetics": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chalk": "^4.1.0",
     "commander": "^6.0.0",
+    "kleur": "^4.1.1",
     "playwright": "^1.2.1",
     "sonic-boom": "^1.1.0",
     "source-map-support": "^0.5.19"
