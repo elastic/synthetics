@@ -15,9 +15,11 @@ export const journey = (
   runner.addJourney(j);
   // load steps
   j.callback();
+  return j;
 };
 
 export const step = (name: string, callback: StepCallback) => {
   const step = new Step(name, callback);
   runner.addStep(step);
+  return step;
 };
