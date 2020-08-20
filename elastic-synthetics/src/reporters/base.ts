@@ -22,7 +22,7 @@ function renderError(error) {
             output += inner + '  ' + line + '\n';
         }
     }
-    output += outer + '...\n';
+    output += indent(outer + '...\n');
     return output;
 }
 
