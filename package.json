@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "coverage": "jest --coverage"
   },
   "bin": {
     "elastic-synthetics": "dist/cli.js"
@@ -37,6 +38,7 @@
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.10",
     "@types/node": "^14.0.27",
     "@types/yargs": "^15.0.5",
     "@typescript-eslint/eslint-plugin": "^3.9.1",
@@ -45,9 +47,11 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
     "husky": "^4.2.5",
+    "jest": "^26.4.1",
     "lint-staged": "^10.2.11",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
+    "ts-jest": "^26.2.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
   }
