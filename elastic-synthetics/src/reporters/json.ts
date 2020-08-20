@@ -1,19 +1,31 @@
 import BaseReporter from './base';
-import { Journey, JourneyOptions } from '../dsl/journey';
-import { Step } from '../dsl/step';
-import Runner from '../dsl/runner';
+
+interface JourneyResults {
+    id: string,
+    name: string,
+    meta: {[key: string]: any},
+    elapsed_ms: number,
+    steps: Array<{
+        name: string,
+        source: string,
+        elapsed_ms: number,
+        error: Error,
+        screenshot: string,
+    }>
+}
 
 export default class JSONReporter extends BaseReporter {
     _registerListeners() {
-        const journeyMap = new Map();
+        const journeyMap = new Map<String, JourneyResults>();
         this.runner.on(
-            'journey',
-            (journey: Journey, params: { [key: string]: any }) => {
+            'journeyStart',
+            ({journey, params}) => {
                 const { id, name } = journey.options;
                 if (!journeyMap.has(name)) {
                     journeyMap.set(name, {
                         id,
                         name,
+                        elapsed_ms: -1, // gets set at the end
                         meta: params,
                         steps: []
                     });
@@ -21,12 +33,19 @@ export default class JSONReporter extends BaseReporter {
             }
         );
 
-        this.runner.on('step', (journey: Journey, step: Step) => {
+        this.runner.on('journeyEnd', ({journey, elapsedMs }) => {
+            journeyMap.get(journey.options.name).elapsed_ms = elapsedMs;
+        })
+
+        this.runner.on('stepEnd', ({journey, step, elapsedMs, error, screenshot}) => {
             const journeyOutput = journeyMap.get(journey.options.name);
             journeyOutput &&
                 journeyOutput.steps.push({
                     name: step.name,
-                    source: step.callback.toString()
+                    source: step.callback.toString(),
+                    elapsed_ms: elapsedMs,
+                    error,
+                    screenshot
                 });
         });
 

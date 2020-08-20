@@ -40,8 +40,8 @@ async function waitForApp(suiteParams: any) {
         } catch (e) {
             lastError = e;
         } finally {
-            const elapsed = (new Date()).getTime() - started;
-            timeout -= elapsed;
+            const elapsedMs = (new Date()).getTime() - started;
+            timeout -= elapsedMs;
         }
     }
 
