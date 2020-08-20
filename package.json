@@ -31,9 +31,7 @@
   "license": "ISC",
   "dependencies": {
     "commander": "^6.0.0",
-    "husky": "^4.2.5",
     "kleur": "^4.1.1",
-    "lint-staged": "^10.2.11",
     "playwright": "^1.2.1",
     "sonic-boom": "^1.1.0",
     "source-map-support": "^0.5.19"
@@ -46,6 +44,8 @@
     "eslint": "^7.7.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.11",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
     "ts-node": "^8.10.2",
