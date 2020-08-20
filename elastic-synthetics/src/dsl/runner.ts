@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
+import { getMilliSecs } from '../helpers';
 
 type RunOptions = {
     params: { [key: string]: any };
@@ -12,16 +13,27 @@ type RunOptions = {
 };
 
 interface Events {
-    start: {numJourneys: number}
-    journeyStart: {journey: Journey, params: {[key: string]: any}}
-    journeyEnd: {journey: Journey, params: {[key: string]: any}, elapsedMs: number, error: Error}
-    stepStart: {journey: Journey, step: Step}
-    stepEnd: {journey: Journey, step: Step, elapsedMs: number, error: Error, screenshot: string}
+    start: { numJourneys: number };
+    'journey:start': { journey: Journey; params: { [key: string]: any } };
+    'journey:end': {
+        journey: Journey;
+        params: { [key: string]: any };
+        elapsedMs: number;
+        error: Error;
+    };
+    'step:start': { journey: Journey; step: Step };
+    'step:end': {
+        journey: Journey;
+        step: Step;
+        elapsedMs: number;
+        error: Error;
+        screenshot: string;
+    };
     end: {};
 }
 
 export default class Runner {
-    eventEmitter = new EventEmitter;
+    eventEmitter = new EventEmitter();
     currentJourney?: Journey = null;
     journeys: Journey[] = [];
 
@@ -56,40 +68,43 @@ export default class Runner {
         const Reporter = reporters[reporter];
         new Reporter(this);
 
-        this.emit('start', {numJourneys: this.journeys.length});
+        this.emit('start', { numJourneys: this.journeys.length });
         for (const journey of this.journeys) {
-            let error: Error = undefined
-            const journeyStarted = new Date().getTime();
+            let error: Error = undefined;
+            const journeyStart = process.hrtime();
             const browser = await playwright[browserType].launch({
                 headless: false
             });
             const context = await browser.newContext();
             const page = await context.newPage();
             this.currentJourney = journey;
-            this.emit('journeyStart', {journey, params});
+            this.emit('journey:start', { journey, params });
             for (const step of journey.steps) {
-                this.emit('stepStart', {journey, step});
+                this.emit('step:start', { journey, step });
 
-                const started = new Date().getTime();
+                const stepStart = process.hrtime();
                 let screenshot: string;
                 try {
                     await step.callback(page, params, { context, browser });
                     await page.waitForLoadState('load');
                     screenshot = (await page.screenshot()).toString('base64');
-                } catch(e) {
-                    error = e;;
+                } catch (e) {
+                    error = e;
                     break; // Don't run anymore steps if we catch an error
                 } finally {
-                    const ended = new Date().getTime();
-                    const elapsedMs = ended-started;
-                    this.emit('stepEnd', {journey, step, elapsedMs, error, screenshot})
+                    const elapsedMs = getMilliSecs(stepStart);
+                    this.emit('step:end', {
+                        journey,
+                        step,
+                        elapsedMs,
+                        error,
+                        screenshot
+                    });
                 }
             }
+            const elapsedMs = getMilliSecs(journeyStart);
+            this.emit('journey:end', { journey, params, elapsedMs, error });
             await browser.close();
-
-            const journeyEnded = new Date().getTime();
-            const elapsedMs = journeyEnded-journeyStarted;
-            this.emit('journeyEnd', {journey, params, elapsedMs, error})
         }
         this.emit('end', {});
         this.reset();
