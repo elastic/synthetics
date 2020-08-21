@@ -10,6 +10,7 @@ interface JourneyResults {
   elapsed_ms: number;
   url?: string; // URL at end of first step
   error?: Error,
+  status: 'up' | 'down';
   steps: Array<{
     name: string;
     source: string;
@@ -31,6 +32,7 @@ export default class JSONReporter extends BaseReporter {
           meta: params,
           steps: [],
           elapsed_ms: 0,
+          status: 'up',
         });
       }
     });
@@ -44,12 +46,16 @@ export default class JSONReporter extends BaseReporter {
       ({ journey, step, elapsedMs, error, screenshot, url }) => {
         const journeyOutput = journeyMap.get(journey.options.name);
 
+        // The URL of the journey is the first URL we see
         if (!journeyOutput.url) {
           journeyOutput.url = url
         }
 
+        // If there's an error we hoist it up to the journey for convenience
+        // and set the status to down
         if (error) {
-          journeyOutput.error = error
+          journeyOutput.error = error;
+          journeyOutput.status = 'down';
         }
 
         journeyOutput &&
