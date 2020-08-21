@@ -10,6 +10,8 @@ type RunOptions = {
   environment: string;
   reporter?: 'default' | 'json';
   browserType?: string;
+  headless?: boolean;
+  screenshots?: boolean;
 };
 
 interface Events {
@@ -28,6 +30,7 @@ interface Events {
     elapsedMs: number;
     error: Error;
     screenshot: string;
+    url: string;
   };
   end: unknown;
 }
@@ -68,8 +71,8 @@ export default class Runner {
     for (const journey of this.journeys) {
       let error: Error = undefined;
       const journeyStart = process.hrtime();
-      const browser = await playwright[browserType].launch({
-        headless: false
+      const browser: playwright.Browser = await playwright[browserType].launch({
+        headless: options.headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
@@ -80,10 +83,14 @@ export default class Runner {
 
         const stepStart = process.hrtime();
         let screenshot: string;
+        let url:string;
         try {
           await step.callback(page, params, { context, browser });
           await page.waitForLoadState('load');
-          screenshot = (await page.screenshot()).toString('base64');
+          if (options.screenshots) {
+            screenshot = (await page.screenshot()).toString('base64');
+          }
+          url = page.url()
         } catch (e) {
           error = e;
           break; // Don't run anymore steps if we catch an error
@@ -94,7 +101,8 @@ export default class Runner {
             step,
             elapsedMs,
             error,
-            screenshot
+            screenshot,
+            url,
           });
         }
       }

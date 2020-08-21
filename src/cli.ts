@@ -37,6 +37,8 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
+  .option('--headless', "run browser in headless mode")
+  .option('--screenshots', "take screenshots between steps (only shown in some reporters)")
   .description('Run Synthetic tests');
 
 program.parse(process.argv);
@@ -67,7 +69,9 @@ process.env.DEBUG = program.debug || '';
     await runner.run({
       params: suiteParams,
       environment: program.environment,
-      reporter
+      reporter,
+      headless: program.headless,
+      screenshots: program.screenshots,
     });
   } catch (e) {
     console.error('Failed to run the test', e);
