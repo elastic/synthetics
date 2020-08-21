@@ -1,10 +1,15 @@
 import BaseReporter from './base';
 
+// Semver version for the JSON emitted from this package.
+const jsonFormatVersion = "1.0.0";
+
 interface JourneyResults {
   id: string;
   name: string;
   meta: { [key: string]: any };
   elapsed_ms: number;
+  url?: string; // URL at end of first step
+  error?: Error,
   steps: Array<{
     name: string;
     source: string;
@@ -23,9 +28,9 @@ export default class JSONReporter extends BaseReporter {
         journeyMap.set(name, {
           id,
           name,
-          elapsed_ms: -1, // gets set at the end
           meta: params,
-          steps: []
+          steps: [],
+          elapsed_ms: 0,
         });
       }
     });
@@ -36,8 +41,17 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({ journey, step, elapsedMs, error, screenshot }) => {
+      ({ journey, step, elapsedMs, error, screenshot, url }) => {
         const journeyOutput = journeyMap.get(journey.options.name);
+
+        if (!journeyOutput.url) {
+          journeyOutput.url = url
+        }
+
+        if (error) {
+          journeyOutput.error = error
+        }
+
         journeyOutput &&
           journeyOutput.steps.push({
             name: step.name,
@@ -55,7 +69,11 @@ export default class JSONReporter extends BaseReporter {
   }
 
   _getOutput(journeyMap) {
-    const output = { journeys: [] };
+    const output = { 
+      "__type__": "synthetics-summary-results",
+      format_version: jsonFormatVersion,
+      journeys: []
+    };
     for (const journey of journeyMap.values()) {
       output.journeys.push(journey);
     }
