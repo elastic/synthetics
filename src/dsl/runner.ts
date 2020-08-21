@@ -60,7 +60,13 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
-    const { browserType = 'chromium', params, reporter = 'default' } = options;
+    const {
+      browserType = 'chromium',
+      params,
+      reporter = 'default',
+      headless,
+      screenshots
+    } = options;
     /**
      * Set up the corresponding reporter
      */
@@ -69,28 +75,29 @@ export default class Runner {
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
-      let error: Error = undefined;
+      this.currentJourney = journey;
+
+      let error: Error;
       const journeyStart = process.hrtime();
       const browser: playwright.Browser = await playwright[browserType].launch({
-        headless: options.headless
+        headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
-      this.currentJourney = journey;
+
       this.emit('journey:start', { journey, params });
       for (const step of journey.steps) {
         this.emit('step:start', { journey, step });
 
         const stepStart = process.hrtime();
-        let screenshot: string;
-        let url:string;
+        let screenshot: string, url: string;
         try {
           await step.callback(page, params, { context, browser });
           await page.waitForLoadState('load');
-          if (options.screenshots) {
+          if (screenshots) {
             screenshot = (await page.screenshot()).toString('base64');
           }
-          url = page.url()
+          url = page.url();
         } catch (e) {
           error = e;
           break; // Don't run anymore steps if we catch an error
@@ -102,7 +109,7 @@ export default class Runner {
             elapsedMs,
             error,
             screenshot,
-            url,
+            url
           });
         }
       }

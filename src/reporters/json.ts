@@ -1,7 +1,8 @@
 import BaseReporter from './base';
+import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
-const jsonFormatVersion = "1.0.0";
+const jsonFormatVersion = '1.0.0';
 
 interface JourneyResults {
   id: string;
@@ -9,7 +10,7 @@ interface JourneyResults {
   meta: { [key: string]: any };
   elapsed_ms: number;
   url?: string; // URL at end of first step
-  error?: Error,
+  error?: Error;
   status: 'up' | 'down';
   steps: Array<{
     name: string;
@@ -32,13 +33,18 @@ export default class JSONReporter extends BaseReporter {
           meta: params,
           steps: [],
           elapsed_ms: 0,
-          status: 'up',
+          status: 'up'
         });
       }
     });
 
-    this.runner.on('journey:end', ({ journey, elapsedMs }) => {
-      journeyMap.get(journey.options.name).elapsed_ms = elapsedMs;
+    this.runner.on('journey:end', ({ journey, elapsedMs, error }) => {
+      const journeyOutput = journeyMap.get(journey.options.name);
+      journeyOutput.elapsed_ms = elapsedMs;
+      if (error) {
+        journeyOutput.error = formatError(error);
+        journeyOutput.status = 'down';
+      }
     });
 
     this.runner.on(
@@ -48,14 +54,7 @@ export default class JSONReporter extends BaseReporter {
 
         // The URL of the journey is the first URL we see
         if (!journeyOutput.url) {
-          journeyOutput.url = url
-        }
-
-        // If there's an error we hoist it up to the journey for convenience
-        // and set the status to down
-        if (error) {
-          journeyOutput.error = error;
-          journeyOutput.status = 'down';
+          journeyOutput.url = url;
         }
 
         journeyOutput &&
@@ -63,7 +62,7 @@ export default class JSONReporter extends BaseReporter {
             name: step.name,
             source: step.callback.toString(),
             elapsed_ms: elapsedMs,
-            error,
+            error: formatError(error),
             screenshot
           });
       }
@@ -75,8 +74,8 @@ export default class JSONReporter extends BaseReporter {
   }
 
   _getOutput(journeyMap) {
-    const output = { 
-      "__type__": "synthetics-summary-results",
+    const output = {
+      __type__: 'synthetics-summary-results',
       format_version: jsonFormatVersion,
       journeys: []
     };

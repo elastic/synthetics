@@ -21,3 +21,11 @@ export function getMilliSecs(startTime: [number, number]) {
   const hrTime = process.hrtime(startTime);
   return Math.trunc(hrTime && hrTime[0] * 1e3 + hrTime[1] / 1e6);
 }
+
+export function formatError(error: Error) {
+  if (!(error instanceof Error)) {
+    return;
+  }
+  const { name, message, stack } = error;
+  return { name, message, stack };
+}
