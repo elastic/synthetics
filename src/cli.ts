@@ -38,7 +38,7 @@ program
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
   .option('--headless', "run browser in headless mode")
-  .option('--screenshot', "take screenshots between steps (only shown in some reporters)")
+  .option('--screenshots', "take screenshots between steps (only shown in some reporters)")
   .description('Run Synthetic tests');
 
 program.parse(process.argv);
