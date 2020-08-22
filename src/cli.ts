@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
 import { runner, journey, step } from './dsl';
 import { debug } from './helpers';
+import { RunOptions } from './dsl/runner';
 
 const readStdin = async () => {
   let source = '';
@@ -56,7 +57,7 @@ const reporter = program.json ? 'json' : 'default';
  */
 process.env.DEBUG = program.debug || '';
 
-(async () => {
+export const run = async (options: RunOptions) => {
   if (singleMode) {
     const source = program.stdin
       ? await readStdin()
@@ -67,8 +68,8 @@ process.env.DEBUG = program.debug || '';
 
   try {
     await runner.run({
-      params: suiteParams,
-      environment: program.environment,
+      params: {...options.params, ...suiteParams},
+      environment: program.environment || options.environment,
       reporter,
       headless: program.headless,
       screenshots: program.screenshots,
@@ -77,4 +78,10 @@ process.env.DEBUG = program.debug || '';
     console.error('Failed to run the test', e);
     process.exit(1);
   }
-})();
+};
+
+// Check if we're being called via npx or node this_script, if so run the CLI opts
+// If being used as a library do nothing
+if (require.main === module) {
+  run({params: {}, environment: "development"})
+}

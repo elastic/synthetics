@@ -5,7 +5,7 @@ import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
 
-type RunOptions = {
+export type RunOptions = {
   params: { [key: string]: any };
   environment: string;
   reporter?: 'default' | 'json';

@@ -1,4 +1,4 @@
-import { runner } from 'elastic-synthetics';
+import { run } from 'elastic-synthetics';
 import { spawn } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
@@ -56,7 +56,18 @@ async function runSuites() {
   const environment = process.env.NODE_ENV || 'development';
   const suiteParams = { ...defaultSuiteParams[environment] };
   // By default we run the script start_service.sh
+  console.log("Starting service from `./start_service.sh`")
   const childProcess = spawn('./start_service.sh');
+  childProcess.stdout.on('data', (chunk) => {
+    console.log(chunk);
+  });
+  childProcess.stderr.on('data', (chunk) => {
+    console.warn(chunk);
+  });
+  childProcess.on('close', (code) => {
+    console.debug(`child process for service exited with ${code}`)
+  });
+  
 
   // Wait for the service to start successfully (you can change the logic here)
   try {
@@ -70,9 +81,10 @@ async function runSuites() {
   }
 
   // Run the actual test suite
-  await runner.run({ params: suiteParams, environment });
+  await run({ params: suiteParams, environment });
 
   // Clean up the script started with start_service.sh
+  console.log("Terminating service with SIGTERM")
   childProcess.kill('SIGTERM');
 }
 

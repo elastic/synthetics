@@ -70,6 +70,7 @@ export default class JSONReporter extends BaseReporter {
     );
 
     this.runner.on('end', () => {
+      this.write("\n"); // Ensure that we're writing this on its own line
       this.write(this._getOutput(journeyMap));
     });
   }

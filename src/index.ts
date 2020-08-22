@@ -2,3 +2,4 @@
 require('source-map-support').install();
 
 export * from './dsl';
+export { run } from './cli';
