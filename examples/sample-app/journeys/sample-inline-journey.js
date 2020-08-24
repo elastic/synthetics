@@ -1,5 +1,5 @@
 step('Go to home page', async (page, params) => {
-  await page.goto(params.homepage);
+  await page.goto("https://www.elastic.co");
 });
 
 step('Go to login page', async (page, params) => {
