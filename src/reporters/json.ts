@@ -1,5 +1,6 @@
 import BaseReporter from './base';
 import { StatusValue } from '../common_types';
+import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
 const jsonFormatVersion = "1.0.0";
@@ -39,8 +40,13 @@ export default class JSONReporter extends BaseReporter {
       }
     });
 
-    this.runner.on('journey:end', ({ journey, durationMs }) => {
-      journeyMap.get(journey.options.name).duration_ms = durationMs;
+    this.runner.on('journey:end', ({ journey, durationMs, error }) => {
+      const journeyOutput = journeyMap.get(journey.options.name);
+      journeyOutput.duration_ms = durationMs;
+      if (error) {
+        journeyOutput.error = formatError(error);
+        journeyOutput.status = 'failed';
+      }
     });
 
     this.runner.on(
@@ -50,7 +56,7 @@ export default class JSONReporter extends BaseReporter {
 
         // The URL of the journey is the first URL we see
         if (!journeyOutput.url) {
-          journeyOutput.url = url
+          journeyOutput.url = url;
         }
 
         // If there's an error we hoist it up to the journey for convenience
@@ -65,7 +71,7 @@ export default class JSONReporter extends BaseReporter {
             name: step.name,
             source: step.callback.toString(),
             duration_ms: durationMs,
-            error,
+            error: formatError(error),
             screenshot,
             status,
           });
@@ -79,8 +85,8 @@ export default class JSONReporter extends BaseReporter {
   }
 
   _getOutput(journeyMap) {
-    const output = { 
-      "__type__": "synthetics-summary-results",
+    const output = {
+      __type__: 'synthetics-summary-results',
       format_version: jsonFormatVersion,
       journeys: []
     };

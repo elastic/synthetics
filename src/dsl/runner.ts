@@ -64,7 +64,13 @@ export default class Runner {
   }
 
   async run(runOptions: RunOptions) {
-    const { browserType = 'chromium', params, reporter = 'default' } = runOptions;
+    const {
+      browserType = 'chromium',
+      params,
+      reporter = 'default',
+      headless,
+      screenshots
+    } = runOptions;
     /**
      * Set up the corresponding reporter
      */
@@ -73,26 +79,26 @@ export default class Runner {
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
-      // Skip journey if user is filtering only for a single one
+    // Skip journey if user is filtering only for a single one
       if (runOptions.journeyName && journey.options.name != runOptions.journeyName) {
         continue;
       }
+      this.currentJourney = journey;
 
-      let error: Error = undefined;
+      let error: Error;
       const journeyStart = process.hrtime();
       const browser: playwright.Browser = await playwright[browserType].launch({
-        headless: runOptions.headless
+        headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
-      this.currentJourney = journey;
+
       this.emit('journey:start', { journey, params });
       for (const step of journey.steps) {
         this.emit('step:start', { journey, step });
 
         const stepStart = process.hrtime();
-        let screenshot: string;
-        let url: string;
+        let screenshot: string, url: string;
         let status: StatusValue;
         try {
           // We hit an error in a previous test, but still want to emit the steps as skipped
