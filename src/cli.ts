@@ -37,8 +37,11 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', "run browser in headless mode")
-  .option('--screenshots', "take screenshots between steps (only shown in some reporters)")
+  .option('--headless', 'run browser in headless mode')
+  .option(
+    '--screenshots',
+    'take screenshots between steps (only shown in some reporters)'
+  )
   .description('Run Synthetic tests');
 
 program.parse(process.argv);
@@ -54,7 +57,7 @@ const reporter = program.json ? 'json' : 'default';
 /**
  * Set debug based on flag
  */
-process.env.DEBUG = program.debug || '';
+const debugFlag = (process.env.DEBUG = program.debug || '');
 
 (async () => {
   if (singleMode) {
@@ -70,8 +73,9 @@ process.env.DEBUG = program.debug || '';
       params: suiteParams,
       environment: program.environment,
       reporter,
+      debug: debugFlag,
       headless: program.headless,
-      screenshots: program.screenshots,
+      screenshots: program.screenshots
     });
   } catch (e) {
     console.error('Failed to run the test', e);

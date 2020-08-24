@@ -4,6 +4,7 @@ import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
+import patchConsole from '../patch/console';
 
 type RunOptions = {
   params: { [key: string]: any };
@@ -12,6 +13,7 @@ type RunOptions = {
   browserType?: string;
   headless?: boolean;
   screenshots?: boolean;
+  debug?: boolean;
 };
 
 interface Events {
@@ -59,6 +61,10 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
+  init(options: RunOptions) {
+    patchConsole(options.debug);
+  }
+
   async run(options: RunOptions) {
     const {
       browserType = 'chromium',
@@ -72,6 +78,10 @@ export default class Runner {
      */
     const Reporter = reporters[reporter];
     new Reporter(this);
+    /**
+     * Initialize the runner with required settings
+     */
+    this.init(options);
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
