@@ -6,7 +6,6 @@ import { createInterface as createReadlineInterface } from 'readline';
 import { runner, journey, step } from './dsl';
 import { debug } from './helpers';
 import { RunOptions } from './dsl/runner';
-import commander from 'commander';
 
 const readStdin = async () => {
   let source = '';
@@ -39,10 +38,16 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', "run browser in headless mode")
-  .option('--screenshots', "take screenshots between steps (only shown in some reporters)")
-  .option('--dry-run', "don't actually execute anything, report as if each step was skipped")
-  .option('--journey-name <name>', "only run the journey with the given name")
+  .option('--headless', 'run browser in headless mode')
+  .option(
+    '--screenshots',
+    'take screenshots between steps (only shown in some reporters)'
+  )
+  .option(
+    '--dry-run',
+    "don't actually execute anything, report as if each step was skipped"
+  )
+  .option('--journey-name <name>', 'only run the journey with the given name')
   .description('Run Synthetic tests');
 
 program.parse(process.argv);
@@ -73,7 +78,7 @@ export const run = async (options: RunOptions) => {
 
   try {
     await runner.run({
-      params: {...options.params, ...suiteParams},
+      params: { ...options.params, ...suiteParams },
       environment: program.environment || options.environment,
       reporter,
       headless: program.headless,
@@ -90,5 +95,5 @@ export const run = async (options: RunOptions) => {
 // Check if we're being called via npx or node this_script, if so run the CLI opts
 // If being used as a library do nothing
 if (require.main === module) {
-  run({params: {}, environment: "development"})
+  run({ params: {}, environment: 'development' });
 }

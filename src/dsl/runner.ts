@@ -4,7 +4,7 @@ import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
-import { StatusValue as StatusValue } from '../common_types';
+import { StatusValue } from '../common_types';
 
 export type RunOptions = {
   params: { [key: string]: any };
@@ -68,8 +68,7 @@ export default class Runner {
       browserType = 'chromium',
       params,
       reporter = 'default',
-      headless,
-      screenshots
+      headless
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -79,8 +78,11 @@ export default class Runner {
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
-    // Skip journey if user is filtering only for a single one
-      if (runOptions.journeyName && journey.options.name != runOptions.journeyName) {
+      // Skip journey if user is filtering only for a single one
+      if (
+        runOptions.journeyName &&
+        journey.options.name != runOptions.journeyName
+      ) {
         continue;
       }
       this.currentJourney = journey;
@@ -102,7 +104,7 @@ export default class Runner {
         let status: StatusValue;
         try {
           // We hit an error in a previous test, but still want to emit the steps as skipped
-          if (error) { 
+          if (error) {
             status = 'skipped';
           } else {
             if (!runOptions.dryRun) {
@@ -111,7 +113,7 @@ export default class Runner {
               if (runOptions.screenshots) {
                 screenshot = (await page.screenshot()).toString('base64');
               }
-              url = page.url()
+              url = page.url();
               status = 'succeeded';
             } else {
               status = 'skipped';
@@ -129,7 +131,7 @@ export default class Runner {
             error,
             screenshot,
             url,
-            status,
+            status
           });
         }
       }

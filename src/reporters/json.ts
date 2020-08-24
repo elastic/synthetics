@@ -3,7 +3,7 @@ import { StatusValue } from '../common_types';
 import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
-const jsonFormatVersion = "1.0.0";
+const jsonFormatVersion = '1.0.0';
 
 interface JourneyResults {
   id: string;
@@ -11,8 +11,8 @@ interface JourneyResults {
   meta: { [key: string]: any };
   duration_ms: number;
   url?: string; // URL at end of first step
-  error?: Error,
-  status: StatusValue,
+  error?: Error;
+  status: StatusValue;
   steps: Array<{
     name: string;
     source: string;
@@ -35,7 +35,7 @@ export default class JSONReporter extends BaseReporter {
           meta: params,
           steps: [],
           duration_ms: 0,
-          status: 'succeeded',
+          status: 'succeeded'
         });
       }
     });
@@ -73,13 +73,13 @@ export default class JSONReporter extends BaseReporter {
             duration_ms: durationMs,
             error: formatError(error),
             screenshot,
-            status,
+            status
           });
       }
     );
 
     this.runner.on('end', () => {
-      this.write("\n"); // Ensure that we're writing this on its own line
+      this.write('\n'); // Ensure that we're writing this on its own line
       this.write(this._getOutput(journeyMap));
     });
   }
