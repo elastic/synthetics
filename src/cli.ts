@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
 import { runner, journey, step } from './dsl';
 import { debug } from './helpers';
+import { RunOptions } from './dsl/runner';
 
 const readStdin = async () => {
   let source = '';
@@ -37,8 +38,16 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', "run browser in headless mode")
-  .option('--screenshots', "take screenshots between steps (only shown in some reporters)")
+  .option('--headless', 'run browser in headless mode')
+  .option(
+    '--screenshots',
+    'take screenshots between steps (only shown in some reporters)'
+  )
+  .option(
+    '--dry-run',
+    "don't actually execute anything, report as if each step was skipped"
+  )
+  .option('--journey-name <name>', 'only run the journey with the given name')
   .description('Run Synthetic tests');
 
 program.parse(process.argv);
@@ -56,7 +65,9 @@ const reporter = program.json ? 'json' : 'default';
  */
 process.env.DEBUG = program.debug || '';
 
-(async () => {
+export { program } from 'commander';
+
+export const run = async (options: RunOptions) => {
   if (singleMode) {
     const source = program.stdin
       ? await readStdin()
@@ -67,14 +78,22 @@ process.env.DEBUG = program.debug || '';
 
   try {
     await runner.run({
-      params: suiteParams,
-      environment: program.environment,
+      params: { ...options.params, ...suiteParams },
+      environment: program.environment || options.environment,
       reporter,
       headless: program.headless,
       screenshots: program.screenshots,
+      dryRun: program.dryRun,
+      journeyName: program.journeyName
     });
   } catch (e) {
     console.error('Failed to run the test', e);
     process.exit(1);
   }
-})();
+};
+
+// Check if we're being called via npx or node this_script, if so run the CLI opts
+// If being used as a library do nothing
+if (require.main === module) {
+  run({ params: {}, environment: 'development' });
+}

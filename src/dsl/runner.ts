@@ -4,14 +4,17 @@ import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
+import { StatusValue } from '../common_types';
 
-type RunOptions = {
+export type RunOptions = {
   params: { [key: string]: any };
   environment: string;
   reporter?: 'default' | 'json';
   browserType?: string;
   headless?: boolean;
   screenshots?: boolean;
+  dryRun?: boolean;
+  journeyName?: string;
 };
 
 interface Events {
@@ -20,17 +23,18 @@ interface Events {
   'journey:end': {
     journey: Journey;
     params: { [key: string]: any };
-    elapsedMs: number;
+    durationMs: number;
     error: Error;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
     journey: Journey;
     step: Step;
-    elapsedMs: number;
+    durationMs: number;
     error: Error;
     screenshot: string;
     url: string;
+    status: StatusValue;
   };
   end: unknown;
 }
@@ -59,14 +63,13 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
-  async run(options: RunOptions) {
+  async run(runOptions: RunOptions) {
     const {
       browserType = 'chromium',
       params,
       reporter = 'default',
-      headless,
-      screenshots
-    } = options;
+      headless
+    } = runOptions;
     /**
      * Set up the corresponding reporter
      */
@@ -75,6 +78,13 @@ export default class Runner {
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
+      // Skip journey if user is filtering only for a single one
+      if (
+        runOptions.journeyName &&
+        journey.options.name != runOptions.journeyName
+      ) {
+        continue;
+      }
       this.currentJourney = journey;
 
       let error: Error;
@@ -91,30 +101,42 @@ export default class Runner {
 
         const stepStart = process.hrtime();
         let screenshot: string, url: string;
+        let status: StatusValue;
         try {
-          await step.callback(page, params, { context, browser });
-          await page.waitForLoadState('load');
-          if (screenshots) {
-            screenshot = (await page.screenshot()).toString('base64');
+          // We hit an error in a previous test, but still want to emit the steps as skipped
+          if (error) {
+            status = 'skipped';
+          } else {
+            if (!runOptions.dryRun) {
+              await step.callback(page, params, { context, browser });
+              await page.waitForLoadState('load');
+              if (runOptions.screenshots) {
+                screenshot = (await page.screenshot()).toString('base64');
+              }
+              url = page.url();
+              status = 'succeeded';
+            } else {
+              status = 'skipped';
+            }
           }
-          url = page.url();
         } catch (e) {
           error = e;
-          break; // Don't run anymore steps if we catch an error
+          status = 'failed';
         } finally {
-          const elapsedMs = getMilliSecs(stepStart);
+          const durationMs = getMilliSecs(stepStart);
           this.emit('step:end', {
             journey,
             step,
-            elapsedMs,
+            durationMs,
             error,
             screenshot,
-            url
+            url,
+            status
           });
         }
       }
-      const elapsedMs = getMilliSecs(journeyStart);
-      this.emit('journey:end', { journey, params, elapsedMs, error });
+      const durationMs = getMilliSecs(journeyStart);
+      this.emit('journey:end', { journey, params, durationMs, error });
       await browser.close();
     }
     this.emit('end', {});

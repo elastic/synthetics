@@ -15,5 +15,8 @@
     "elastic-synthetics": "file:../../../",
     "playwright": "^1.3.0",
     "typescript": "^3.9.7"
+  },
+  "devDependencies": {
+    "ts-loader": "^8.0.2"
   }
 }

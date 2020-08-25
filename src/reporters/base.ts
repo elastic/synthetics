@@ -58,16 +58,16 @@ export default class BaseReporter {
       this.write(`\nJourney: ${journey.options.name}`);
     });
 
-    this.runner.on('step:end', ({ step, elapsedMs, error }) => {
+    this.runner.on('step:end', ({ step, durationMs, error }) => {
       let message = '';
       if (error) {
         message += indent(
-          `${symbols.fail} Step: '${step.name}' failed (${elapsedMs} ms) \n`
+          `${symbols.fail} Step: '${step.name}' failed (${durationMs} ms) \n`
         );
         message += renderError(error);
       } else {
         message += indent(
-          `${symbols.pass} Step: '${step.name}' succeeded (${elapsedMs} ms)`
+          `${symbols.pass} Step: '${step.name}' succeeded (${durationMs} ms)`
         );
       }
       this.write(message);

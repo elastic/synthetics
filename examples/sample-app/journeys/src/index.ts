@@ -1,5 +1,5 @@
-import { runner } from 'elastic-synthetics';
-import { spawn } from 'child_process';
+import { run, program } from 'elastic-synthetics';
+import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
 
@@ -39,8 +39,8 @@ async function waitForApp(suiteParams: any) {
     } catch (e) {
       lastError = e;
     } finally {
-      const elapsedMs = new Date().getTime() - started;
-      timeout -= elapsedMs;
+      const durationMs = new Date().getTime() - started;
+      timeout -= durationMs;
     }
   }
 
@@ -53,27 +53,45 @@ async function waitForApp(suiteParams: any) {
 // This will run that, and send a SIGTERM after the
 // suite is over
 async function runSuites() {
-  const environment = process.env.NODE_ENV || 'development';
+  console.log(`Test suite env: ${program.environment}`)
+  const environment = program.environment || 'development';
   const suiteParams = { ...defaultSuiteParams[environment] };
   // By default we run the script start_service.sh
-  const childProcess = spawn('./start_service.sh');
 
-  // Wait for the service to start successfully (you can change the logic here)
-  try {
-    await waitForApp(suiteParams);
-  } catch (e) {
-    console.error(
-      'Service did not start successfully in time, failed waiting for initial service health check'
-    );
-    console.error(e);
-    exit(123);
+  let childProcess: ChildProcess;
+  if (environment === "development") {
+    console.log("Starting service from `./start_service.sh`")
+    const childProcess = spawn('./start_service.sh');
+    childProcess.stdout.on('data', (chunk) => {
+      console.log(chunk);
+    });
+    childProcess.stderr.on('data', (chunk) => {
+      console.warn(chunk);
+    });
+    childProcess.on('close', (code) => {
+      console.debug(`child process for service exited with ${code}`)
+    });
+
+    // Wait for the service to start successfully (you can change the logic here)
+    try {
+      await waitForApp(suiteParams);
+    } catch (e) {
+      console.error(
+        'Service did not start successfully in time, failed waiting for initial service health check'
+      );
+      console.error(e);
+      exit(123);
+    }
   }
 
   // Run the actual test suite
-  await runner.run({ params: suiteParams, environment });
+  await run({ params: suiteParams, environment });
 
   // Clean up the script started with start_service.sh
-  childProcess.kill('SIGTERM');
+  if (childProcess) {
+    console.log("Terminating service with SIGTERM")
+    childProcess.kill('SIGTERM');
+  }
 }
 
 // Do not remove below this line!
