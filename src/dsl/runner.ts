@@ -1,10 +1,11 @@
-import * as playwright from 'playwright';
+import playwright, { ChromiumBrowser } from 'playwright';
 import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
-import { StatusValue } from '../common_types';
+import { StatusValue, FilmStrips } from '../common_types';
+import { Tracing, filterFilmstrips } from '../plugins/Tracing';
 
 export type RunOptions = {
   params: { [key: string]: any };
@@ -24,6 +25,7 @@ interface Events {
     journey: Journey;
     params: { [key: string]: any };
     durationMs: number;
+    filmstrips: FilmStrips;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
@@ -42,6 +44,7 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  _tracing = new Tracing();
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -67,7 +70,10 @@ export default class Runner {
       browserType = 'chromium',
       params,
       reporter = 'default',
-      headless
+      headless,
+      dryRun,
+      screenshots,
+      journeyName
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -78,27 +84,28 @@ export default class Runner {
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
       // Skip journey if user is filtering only for a single one
-      if (
-        runOptions.journeyName &&
-        journey.options.name != runOptions.journeyName
-      ) {
+      if (journeyName && journey.options.name != journeyName) {
         continue;
       }
       this.currentJourney = journey;
       const journeyStart = process.hrtime();
 
-      const browser: playwright.Browser = await playwright[browserType].launch({
+      this.emit('journey:start', { journey, params });
+
+      const browser: ChromiumBrowser = await playwright[browserType].launch({
         headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
       let shouldSkip = false;
+      const client = await context.newCDPSession(page);
 
-      this.emit('journey:start', { journey, params });
+      await this._tracing.start(client);
+
       for (const step of journey.steps) {
+        const stepStart = process.hrtime();
         this.emit('step:start', { journey, step });
 
-        const stepStart = process.hrtime();
         let screenshot: string, url: string;
         let status: StatusValue;
         let error: Error;
@@ -108,7 +115,7 @@ export default class Runner {
           } else {
             await step.callback(page, params, { context, browser });
             await page.waitForLoadState('load');
-            if (runOptions.screenshots) {
+            if (screenshots) {
               screenshot = (await page.screenshot()).toString('base64');
             }
             url = page.url();
@@ -131,8 +138,17 @@ export default class Runner {
           });
         }
       }
+
+      const data = await this._tracing.stop(client);
+      const filmstrips = filterFilmstrips(data);
+
       const durationMs = getMilliSecs(journeyStart);
-      this.emit('journey:end', { journey, params, durationMs });
+      this.emit('journey:end', {
+        journey,
+        params,
+        durationMs,
+        filmstrips
+      });
       await browser.close();
     }
     this.emit('end', {});

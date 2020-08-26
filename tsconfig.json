@@ -3,6 +3,7 @@
     "esModuleInterop": true,
     "allowJs": true,
     "declaration": true,
+    "incremental": true,
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",

@@ -2,7 +2,7 @@ step('Go to home page', async (page, params) => {
   await page.goto(params.homepage);
 });
 
-step('Go to login page', async (page, params) => {
+step('Go to login page', async page => {
   await page.click('a');
 });
 
