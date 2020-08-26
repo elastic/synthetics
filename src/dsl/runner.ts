@@ -1,4 +1,4 @@
-import playwright, { ChromiumBrowser } from 'playwright';
+import playwright, { ChromiumBrowserContext, Browser } from 'playwright';
 import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
@@ -92,15 +92,17 @@ export default class Runner {
 
       this.emit('journey:start', { journey, params });
 
-      const browser: ChromiumBrowser = await playwright[browserType].launch({
+      const browser: Browser = await playwright[browserType].launch({
         headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
       let shouldSkip = false;
-      const client = await context.newCDPSession(page);
-
-      await this._tracing.start(client);
+      let client;
+      if (screenshots && browserType === 'chromium') {
+        client = await (context as ChromiumBrowserContext).newCDPSession(page);
+        await this._tracing.start(client);
+      }
 
       for (const step of journey.steps) {
         const stepStart = process.hrtime();
@@ -139,8 +141,11 @@ export default class Runner {
         }
       }
 
-      const data = await this._tracing.stop(client);
-      const filmstrips = filterFilmstrips(data);
+      let filmstrips = [];
+      if (client && screenshots) {
+        const data = await this._tracing.stop(client);
+        filmstrips = filterFilmstrips(data);
+      }
 
       const durationMs = getMilliSecs(journeyStart);
       this.emit('journey:end', {
