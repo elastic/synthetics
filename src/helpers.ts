@@ -1,4 +1,4 @@
-import { red, green, yellow, grey } from 'kleur';
+import { red, green, yellow, grey, cyan } from 'kleur';
 
 export function debug(message: string) {
   if (process.env.DEBUG) {
@@ -12,8 +12,9 @@ export function indent(lines: string, tab = '   ') {
 
 export const symbols = {
   warning: yellow('⚠'),
-  pass: green('✓'),
-  fail: red('✖')
+  skipped: cyan('-'),
+  succeeded: green('✓'),
+  failed: red('✖')
 };
 
 export function getMilliSecs(startTime: [number, number]) {

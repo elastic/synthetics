@@ -24,7 +24,6 @@ interface Events {
     journey: Journey;
     params: { [key: string]: any };
     durationMs: number;
-    error: Error;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
@@ -86,14 +85,14 @@ export default class Runner {
         continue;
       }
       this.currentJourney = journey;
-
-      let error: Error;
       const journeyStart = process.hrtime();
+
       const browser: playwright.Browser = await playwright[browserType].launch({
         headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
+      let shouldSkip = false;
 
       this.emit('journey:start', { journey, params });
       for (const step of journey.steps) {
@@ -102,26 +101,23 @@ export default class Runner {
         const stepStart = process.hrtime();
         let screenshot: string, url: string;
         let status: StatusValue;
+        let error: Error;
         try {
-          // We hit an error in a previous test, but still want to emit the steps as skipped
-          if (error) {
+          if (runOptions.dryRun || shouldSkip) {
             status = 'skipped';
           } else {
-            if (!runOptions.dryRun) {
-              await step.callback(page, params, { context, browser });
-              await page.waitForLoadState('load');
-              if (runOptions.screenshots) {
-                screenshot = (await page.screenshot()).toString('base64');
-              }
-              url = page.url();
-              status = 'succeeded';
-            } else {
-              status = 'skipped';
+            await step.callback(page, params, { context, browser });
+            await page.waitForLoadState('load');
+            if (runOptions.screenshots) {
+              screenshot = (await page.screenshot()).toString('base64');
             }
+            url = page.url();
+            status = 'succeeded';
           }
         } catch (e) {
           error = e;
           status = 'failed';
+          shouldSkip = true;
         } finally {
           const durationMs = getMilliSecs(stepStart);
           this.emit('step:end', {
@@ -136,7 +132,7 @@ export default class Runner {
         }
       }
       const durationMs = getMilliSecs(journeyStart);
-      this.emit('journey:end', { journey, params, durationMs, error });
+      this.emit('journey:end', { journey, params, durationMs });
       await browser.close();
     }
     this.emit('end', {});
