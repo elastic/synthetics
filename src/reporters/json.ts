@@ -1,5 +1,5 @@
 import BaseReporter from './base';
-import { StatusValue, FilmStrips } from '../common_types';
+import { StatusValue, FilmStrip } from '../common_types';
 import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
@@ -13,7 +13,7 @@ interface JourneyResults {
   url?: string; // URL at end of first step
   error?: Error;
   status: StatusValue;
-  filmstrips: FilmStrips;
+  filmstrips: Array<FilmStrip>;
   steps: Array<{
     name: string;
     source: string;

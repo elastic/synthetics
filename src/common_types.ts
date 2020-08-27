@@ -1,7 +1,7 @@
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 
-export type FilmStrips = Array<{
+export type FilmStrip = {
   snapshot: string;
   name: string;
   ts: number;
-}>;
+};

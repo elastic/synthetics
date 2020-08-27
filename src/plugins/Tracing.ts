@@ -1,5 +1,5 @@
 import { CDPSession } from 'playwright';
-import { FilmStrips } from '../common_types';
+import { FilmStrip } from '../common_types';
 
 type TraceEvents = {
   cat: string;
@@ -29,7 +29,7 @@ export async function readProtocolStream(
   return Buffer.concat(chunks);
 }
 
-export function filterFilmstrips(buffer: Buffer): FilmStrips {
+export function filterFilmstrips(buffer: Buffer): Array<FilmStrip> {
   const data = JSON.parse(buffer.toString('utf-8'));
   const events = (data.traceEvents as TraceEvents[]).filter(
     ({ args, cat, name }) => {
