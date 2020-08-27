@@ -40,13 +40,9 @@ export default class JSONReporter extends BaseReporter {
       }
     });
 
-    this.runner.on('journey:end', ({ journey, durationMs, error }) => {
+    this.runner.on('journey:end', ({ journey, durationMs }) => {
       const journeyOutput = journeyMap.get(journey.options.name);
       journeyOutput.duration_ms = durationMs;
-      if (error) {
-        journeyOutput.error = formatError(error);
-        journeyOutput.status = 'failed';
-      }
     });
 
     this.runner.on(
@@ -62,7 +58,7 @@ export default class JSONReporter extends BaseReporter {
         // If there's an error we hoist it up to the journey for convenience
         // and set the status to down
         if (error) {
-          journeyOutput.error = error;
+          journeyOutput.error = formatError(error);
           journeyOutput.status = 'failed';
         }
 
@@ -79,7 +75,6 @@ export default class JSONReporter extends BaseReporter {
     );
 
     this.runner.on('end', () => {
-      this.write('\n'); // Ensure that we're writing this on its own line
       this.write(this._getOutput(journeyMap));
     });
   }

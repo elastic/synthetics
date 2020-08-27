@@ -1,7 +1,7 @@
 import SonicBoom from 'sonic-boom';
 import Runner from '../dsl/runner';
 import { Writable } from 'stream';
-import { green, red } from 'kleur';
+import { green, red, cyan } from 'kleur';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
 type ReporterOptions = {
@@ -22,7 +22,7 @@ function renderError(error) {
       output += inner + '  ' + line + '\n';
     }
   }
-  output += indent(outer + '...\n');
+  output += indent(outer + '---\n');
   return output;
 }
 
@@ -45,12 +45,12 @@ export default class BaseReporter {
 
   _registerListeners() {
     const result = {
-      total: 0,
-      passed: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: 0,
       start: process.hrtime()
     };
-    this.runner.on('start', ({ numJourneys }) => {
-      result.total = numJourneys;
+    this.runner.on('start', () => {
       result.start = process.hrtime();
     });
 
@@ -58,40 +58,27 @@ export default class BaseReporter {
       this.write(`\nJourney: ${journey.options.name}`);
     });
 
-    this.runner.on('step:end', ({ step, durationMs, error }) => {
-      let message = '';
-      if (error) {
-        message += indent(
-          `${symbols.fail} Step: '${step.name}' failed (${durationMs} ms) \n`
-        );
-        message += renderError(error);
-      } else {
-        message += indent(
-          `${symbols.pass} Step: '${step.name}' succeeded (${durationMs} ms)`
-        );
-      }
-      this.write(message);
-    });
-
-    this.runner.on('journey:end', ({ error }) => {
-      if (!error) {
-        result.passed++;
-      }
+    this.runner.on('step:end', ({ step, durationMs, error, status }) => {
+      const message = `${symbols[status]}  Step: '${step.name}' ${status} (${durationMs} ms)`;
+      this.write(indent(message));
+      error && this.write(renderError(error));
+      result[status]++;
     });
 
     this.runner.on('end', () => {
-      const { passed, total, start } = result;
-      const failedCount = total - passed;
-      const failed = failedCount > 0 ? red(` ${failedCount} failed`) : '';
-      this.write(
-        `\n${green(passed + ' passed')}${failed} (${getMilliSecs(start)} ms)\n`
-      );
+      const { failed, succeeded, start, skipped } = result;
+      let message = '\n';
+      message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
+      message += failed > 0 ? red(` ${failed} failed`) : '';
+      message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
+      message += ` (${getMilliSecs(start)} ms) \n`;
+      this.write(message);
     });
   }
 
   write(message) {
     if (typeof message == 'object') {
-      message = JSON.stringify(message);
+      message = '\n' + JSON.stringify(message);
     }
     this.stream.write(message + '\n');
   }
