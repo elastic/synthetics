@@ -1,5 +1,5 @@
 import BaseReporter from './base';
-import { StatusValue } from '../common_types';
+import { StatusValue, FilmStrip } from '../common_types';
 import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
@@ -13,6 +13,7 @@ interface JourneyResults {
   url?: string; // URL at end of first step
   error?: Error;
   status: StatusValue;
+  filmstrips: Array<FilmStrip>;
   steps: Array<{
     name: string;
     source: string;
@@ -34,15 +35,17 @@ export default class JSONReporter extends BaseReporter {
           name,
           meta: params,
           steps: [],
+          filmstrips: [],
           duration_ms: 0,
           status: 'succeeded'
         });
       }
     });
 
-    this.runner.on('journey:end', ({ journey, durationMs }) => {
+    this.runner.on('journey:end', ({ journey, durationMs, filmstrips }) => {
       const journeyOutput = journeyMap.get(journey.options.name);
       journeyOutput.duration_ms = durationMs;
+      journeyOutput.filmstrips = filmstrips;
     });
 
     this.runner.on(
