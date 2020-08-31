@@ -4,7 +4,8 @@ import { default as axios } from 'axios';
 import { exit } from 'process';
 
 // Import your test files here
-import './test.journey';
+import './basic.journey';
+import './cloud_docs';
 
 // Default parameters for running the suite. These can be overriden with the '--suite-params' option'
 // customize these as you like!
@@ -56,8 +57,17 @@ async function runSuites() {
   console.log(`Test suite env: ${program.environment}`)
   const environment = program.environment || 'development';
   const suiteParams = { ...defaultSuiteParams[environment] };
-  // By default we run the script start_service.sh
 
+  // By default we run the script start_service.sh
+  //const proc = await startService(environment, suiteParams)
+
+  // Run the actual test suite
+  await run({ params: suiteParams, environment });
+
+  //stopService(proc);
+}
+
+async function startService(environment: string, suiteParams: any): Promise<ChildProcess> {
   let childProcess: ChildProcess;
   if (environment === "development") {
     console.log("Starting service from `./start_service.sh`")
@@ -84,9 +94,10 @@ async function runSuites() {
     }
   }
 
-  // Run the actual test suite
-  await run({ params: suiteParams, environment });
+  return childProcess;
+}
 
+async function stopService(childProcess: ChildProcess) {
   // Clean up the script started with start_service.sh
   if (childProcess) {
     console.log("Terminating service with SIGTERM")

@@ -15,6 +15,7 @@ export type RunOptions = {
   screenshots?: boolean;
   dryRun?: boolean;
   journeyName?: string;
+  pauseOnError?: boolean;
 };
 
 interface Events {
@@ -68,7 +69,8 @@ export default class Runner {
       browserType = 'chromium',
       params,
       reporter = 'default',
-      headless
+      headless,
+      pauseOnError
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -133,6 +135,9 @@ export default class Runner {
             url,
             status
           });
+          if (runOptions.pauseOnError && error) {
+            await new Promise(r => process.stdin.on('data', r));
+          }
         }
       }
       const durationMs = getMilliSecs(journeyStart);

@@ -7,7 +7,7 @@ export type StepCallback = (
     context: BrowserContext;
     browser: Browser;
   }
-) => void;
+) => Promise<void>;
 
 export class Step {
   name: string;
