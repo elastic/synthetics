@@ -43,6 +43,7 @@ program
     '--screenshots',
     'take screenshots between steps (only shown in some reporters)'
   )
+  .option('--network', 'capture all network information for all steps')
   .option(
     '--dry-run',
     "don't actually execute anything, report as if each step was skipped"
@@ -80,6 +81,7 @@ process.env.DEBUG = program.debug || '';
     headless: program.headless,
     screenshots: program.screenshots,
     dryRun: program.dryRun,
-    journeyName: program.journeyName
+    journeyName: program.journeyName,
+    network: program.network
   });
 })();
