@@ -4,8 +4,9 @@ import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
-import { StatusValue, FilmStrip } from '../common_types';
-import { Tracing, filterFilmstrips } from '../plugins/Tracing';
+import { Tracing, filterFilmstrips } from '../plugins/tracing';
+import { NetworkManager } from '../plugins/network';
+import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 
 export type RunOptions = {
   params: { [key: string]: any };
@@ -15,6 +16,7 @@ export type RunOptions = {
   screenshots?: boolean;
   dryRun?: boolean;
   journeyName?: string;
+  network?: boolean;
 };
 
 interface Events {
@@ -24,7 +26,8 @@ interface Events {
     journey: Journey;
     params: { [key: string]: any };
     durationMs: number;
-    filmstrips: Array<FilmStrip>;
+    filmstrips?: Array<FilmStrip>;
+    networkinfo?: Array<NetworkInfo>;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
@@ -44,6 +47,7 @@ export default class Runner {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   _tracing = new Tracing();
+  _network = new NetworkManager();
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -71,7 +75,8 @@ export default class Runner {
       headless,
       dryRun,
       screenshots,
-      journeyName
+      journeyName,
+      network
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -91,16 +96,18 @@ export default class Runner {
 
       let client: CDPSession,
         filmstrips: Array<FilmStrip>,
+        networkinfo: Array<NetworkInfo>,
         shouldSkip = false;
       const browser = await chromium.launch({
         headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
-
-      if (screenshots) {
+      const enableCDP = screenshots || network;
+      if (enableCDP) {
         client = await context.newCDPSession(page);
-        await this._tracing.start(client);
+        screenshots && (await this._tracing.start(client));
+        network && (await this._network.start(client));
       }
 
       for (const step of journey.steps) {
@@ -109,7 +116,7 @@ export default class Runner {
 
         let screenshot: string, url: string, status: StatusValue, error: Error;
         try {
-          if (runOptions.dryRun || shouldSkip) {
+          if (dryRun || shouldSkip) {
             status = 'skipped';
           } else {
             await step.callback(page, params, { context, browser });
@@ -138,9 +145,12 @@ export default class Runner {
         }
       }
 
-      if (screenshots && client) {
+      if (screenshots) {
         const data = await this._tracing.stop(client);
         filmstrips = filterFilmstrips(data);
+      }
+      if (network) {
+        networkinfo = this._network.stop();
       }
 
       const durationMs = getMilliSecs(journeyStart);
@@ -148,7 +158,8 @@ export default class Runner {
         journey,
         params,
         durationMs,
-        filmstrips
+        filmstrips,
+        networkinfo
       });
       await browser.close();
     }
