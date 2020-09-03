@@ -39,7 +39,10 @@ program
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
   .option('--headless', 'run browser in headless mode', false)
-  .option('--pause-on-error', "pause on error until a keypress is made in the console. Useful during development")
+  .option(
+    '--pause-on-error',
+    'pause on error until a keypress is made in the console. Useful during development'
+  )
   .option(
     '--screenshots',
     'take screenshots between steps (only shown in some reporters)'
@@ -84,6 +87,6 @@ process.env.DEBUG = program.debug || '';
     dryRun: program.dryRun,
     journeyName: program.journeyName,
     network: program.network,
-    pauseOnError: program.pauseOnError,
+    pauseOnError: program.pauseOnError
   });
 })();

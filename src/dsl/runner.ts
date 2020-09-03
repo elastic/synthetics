@@ -74,7 +74,6 @@ export default class Runner {
       params,
       reporter = 'default',
       headless,
-      pauseOnError,
       dryRun,
       screenshots,
       journeyName,
