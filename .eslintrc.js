@@ -15,7 +15,6 @@ module.exports = {
     'plugin:prettier/recommended'
   ],
   rules: {
-    'no-unused-vars': 'error',
     'prettier/prettier': [
       'error',
       {
@@ -27,6 +26,7 @@ module.exports = {
         arrowParens: 'avoid'
       }
     ],
+    '@typescript-eslint/no-unused-vars': 2,
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/no-empty-function': 0,
     '@typescript-eslint/explicit-module-boundary-types': 0,

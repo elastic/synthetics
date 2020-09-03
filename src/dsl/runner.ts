@@ -1,21 +1,23 @@
-import * as playwright from 'playwright';
+import { chromium, CDPSession } from 'playwright';
 import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
-import { StatusValue } from '../common_types';
+import { Tracing, filterFilmstrips } from '../plugins/tracing';
+import { NetworkManager } from '../plugins/network';
+import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 
 export type RunOptions = {
   params: { [key: string]: any };
   environment: string;
   reporter?: 'default' | 'json';
-  browserType?: string;
   headless?: boolean;
   screenshots?: boolean;
   dryRun?: boolean;
   journeyName?: string;
   pauseOnError?: boolean;
+  network?: boolean;
 };
 
 interface Events {
@@ -25,7 +27,8 @@ interface Events {
     journey: Journey;
     params: { [key: string]: any };
     durationMs: number;
-    error: Error;
+    filmstrips?: Array<FilmStrip>;
+    networkinfo?: Array<NetworkInfo>;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
@@ -44,6 +47,8 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  _tracing = new Tracing();
+  _network = new NetworkManager();
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -66,11 +71,14 @@ export default class Runner {
 
   async run(runOptions: RunOptions) {
     const {
-      browserType = 'chromium',
       params,
       reporter = 'default',
       headless,
-      pauseOnError
+      pauseOnError,
+      dryRun,
+      screenshots,
+      journeyName,
+      network
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -81,49 +89,50 @@ export default class Runner {
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
       // Skip journey if user is filtering only for a single one
-      if (
-        runOptions.journeyName &&
-        journey.options.name != runOptions.journeyName
-      ) {
+      if (journeyName && journey.options.name != journeyName) {
         continue;
       }
       this.currentJourney = journey;
-
-      let error: Error;
       const journeyStart = process.hrtime();
-      const browser: playwright.Browser = await playwright[browserType].launch({
+      this.emit('journey:start', { journey, params });
+
+      let client: CDPSession,
+        filmstrips: Array<FilmStrip>,
+        networkinfo: Array<NetworkInfo>,
+        shouldSkip = false;
+      const browser = await chromium.launch({
         headless: headless
       });
       const context = await browser.newContext();
       const page = await context.newPage();
+      const enableCDP = screenshots || network;
+      if (enableCDP) {
+        client = await context.newCDPSession(page);
+        screenshots && (await this._tracing.start(client));
+        network && (await this._network.start(client));
+      }
 
-      this.emit('journey:start', { journey, params });
       for (const step of journey.steps) {
+        const stepStart = process.hrtime();
         this.emit('step:start', { journey, step });
 
-        const stepStart = process.hrtime();
-        let screenshot: string, url: string;
-        let status: StatusValue;
+        let screenshot: string, url: string, status: StatusValue, error: Error;
         try {
-          // We hit an error in a previous test, but still want to emit the steps as skipped
-          if (error) {
+          if (dryRun || shouldSkip) {
             status = 'skipped';
           } else {
-            if (!runOptions.dryRun) {
-              await step.callback(page, params, { context, browser });
-              await page.waitForLoadState('load');
-              if (runOptions.screenshots) {
-                screenshot = (await page.screenshot()).toString('base64');
-              }
-              url = page.url();
-              status = 'succeeded';
-            } else {
-              status = 'skipped';
+            await step.callback(page, params, { context, browser });
+            await page.waitForLoadState('load');
+            if (screenshots) {
+              screenshot = (await page.screenshot()).toString('base64');
             }
+            url = page.url();
+            status = 'succeeded';
           }
         } catch (e) {
           error = e;
           status = 'failed';
+          shouldSkip = true;
         } finally {
           const durationMs = getMilliSecs(stepStart);
           this.emit('step:end', {
@@ -140,8 +149,23 @@ export default class Runner {
           }
         }
       }
+
+      if (screenshots) {
+        const data = await this._tracing.stop(client);
+        filmstrips = filterFilmstrips(data);
+      }
+      if (network) {
+        networkinfo = this._network.stop();
+      }
+
       const durationMs = getMilliSecs(journeyStart);
-      this.emit('journey:end', { journey, params, durationMs, error });
+      this.emit('journey:end', {
+        journey,
+        params,
+        durationMs,
+        filmstrips,
+        networkinfo
+      });
       await browser.close();
     }
     this.emit('end', {});

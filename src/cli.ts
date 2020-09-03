@@ -3,9 +3,9 @@
 import program from 'commander';
 import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
-import { runner, journey, step } from './dsl';
+import { journey, step } from './dsl';
 import { debug } from './helpers';
-import { RunOptions } from './dsl/runner';
+import { run } from './';
 
 const readStdin = async () => {
   let source = '';
@@ -44,6 +44,7 @@ program
     '--screenshots',
     'take screenshots between steps (only shown in some reporters)'
   )
+  .option('--network', 'capture all network information for all steps')
   .option(
     '--dry-run',
     "don't actually execute anything, report as if each step was skipped"
@@ -56,7 +57,6 @@ program.parse(process.argv);
 const suiteParams = JSON.parse(program.suiteParams);
 const filePath = program.args[0];
 const singleMode = program.stdin || filePath;
-
 /**
  * use JSON reporter if json flag is enabled
  */
@@ -66,9 +66,7 @@ const reporter = program.json ? 'json' : 'default';
  */
 process.env.DEBUG = program.debug || '';
 
-export { program } from 'commander';
-
-export const run = async (options: RunOptions) => {
+(async () => {
   if (singleMode) {
     const source = program.stdin
       ? await readStdin()
@@ -77,25 +75,15 @@ export const run = async (options: RunOptions) => {
     loadInlineScript(source, suiteParams);
   }
 
-  try {
-    await runner.run({
-      params: { ...options.params, ...suiteParams },
-      environment: program.environment || options.environment,
-      reporter,
-      headless: program.headless,
-      screenshots: program.screenshots,
-      dryRun: program.dryRun,
-      journeyName: program.journeyName,
-      pauseOnError: program.pauseOnError
-    });
-  } catch (e) {
-    console.error('Failed to run the test', e);
-    process.exit(1);
-  }
-};
-
-// Check if we're being called via npx or node this_script, if so run the CLI opts
-// If being used as a library do nothing
-if (require.main === module) {
-  run({ params: {}, environment: 'development' });
-}
+  await run({
+    params: suiteParams,
+    environment: program.environment,
+    reporter,
+    headless: program.headless,
+    screenshots: program.screenshots,
+    dryRun: program.dryRun,
+    journeyName: program.journeyName,
+    network: program.network,
+    pauseOnError: program.pauseOnError,
+  });
+})();

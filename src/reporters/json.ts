@@ -1,5 +1,5 @@
 import BaseReporter from './base';
-import { StatusValue } from '../common_types';
+import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { formatError } from '../helpers';
 
 // Semver version for the JSON emitted from this package.
@@ -13,6 +13,8 @@ interface JourneyResults {
   url?: string; // URL at end of first step
   error?: Error;
   status: StatusValue;
+  filmstrips?: Array<FilmStrip>;
+  networkinfo?: Array<NetworkInfo>;
   steps: Array<{
     name: string;
     source: string;
@@ -34,20 +36,24 @@ export default class JSONReporter extends BaseReporter {
           name,
           meta: params,
           steps: [],
+          filmstrips: [],
           duration_ms: 0,
           status: 'succeeded'
         });
       }
     });
 
-    this.runner.on('journey:end', ({ journey, durationMs, error }) => {
-      const journeyOutput = journeyMap.get(journey.options.name);
-      journeyOutput.duration_ms = durationMs;
-      if (error) {
-        journeyOutput.error = formatError(error);
-        journeyOutput.status = 'failed';
+    this.runner.on(
+      'journey:end',
+      ({ journey, durationMs, filmstrips, networkinfo }) => {
+        const journeyOutput = journeyMap.get(journey.options.name);
+        Object.assign(journeyOutput, {
+          duration_ms: durationMs,
+          filmstrips,
+          networkinfo
+        });
       }
-    });
+    );
 
     this.runner.on(
       'step:end',
@@ -62,7 +68,7 @@ export default class JSONReporter extends BaseReporter {
         // If there's an error we hoist it up to the journey for convenience
         // and set the status to down
         if (error) {
-          journeyOutput.error = error;
+          journeyOutput.error = formatError(error);
           journeyOutput.status = 'failed';
         }
 
@@ -79,7 +85,6 @@ export default class JSONReporter extends BaseReporter {
     );
 
     this.runner.on('end', () => {
-      this.write('\n'); // Ensure that we're writing this on its own line
       this.write(this._getOutput(journeyMap));
     });
   }
