@@ -38,7 +38,11 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', 'run browser in headless mode')
+  .option('--headless', 'run browser in headless mode', false)
+  .option(
+    '--pause-on-error',
+    'pause on error until a keypress is made in the console. Useful during development'
+  )
   .option(
     '--screenshots',
     'take screenshots between steps (only shown in some reporters)'
@@ -82,6 +86,7 @@ process.env.DEBUG = program.debug || '';
     screenshots: program.screenshots,
     dryRun: program.dryRun,
     journeyName: program.journeyName,
-    network: program.network
+    network: program.network,
+    pauseOnError: program.pauseOnError
   });
 })();
