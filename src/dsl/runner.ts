@@ -99,9 +99,8 @@ export default class Runner {
         filmstrips: Array<FilmStrip>,
         networkinfo: Array<NetworkInfo>,
         shouldSkip = false;
-      const browser = await chromium.launch({
-        headless: headless
-      });
+      // We must coerce headless into a boolean, undefined does not behave the same as false
+      const browser = await chromium.launch({headless: !!headless});
       const context = await browser.newContext();
       const page = await context.newPage();
       const enableCDP = screenshots || network;

@@ -1,4 +1,4 @@
-import { run, program } from 'elastic-synthetics';
+import { run } from 'elastic-synthetics';
 import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
@@ -54,8 +54,7 @@ async function waitForApp(suiteParams: any) {
 // This will run that, and send a SIGTERM after the
 // suite is over
 async function runSuites() {
-  console.log(`Test suite env: ${program.environment}`)
-  const environment = program.environment || 'development';
+  const environment = process.env['NODE_ENV'] || 'development';
   const suiteParams = { ...defaultSuiteParams[environment] };
 
   // By default we run the script start_service.sh
@@ -67,19 +66,22 @@ async function runSuites() {
   //stopService(proc);
 }
 
-async function startService(environment: string, suiteParams: any): Promise<ChildProcess> {
+async function startService(
+  environment: string,
+  suiteParams: any
+): Promise<ChildProcess> {
   let childProcess: ChildProcess;
-  if (environment === "development") {
-    console.log("Starting service from `./start_service.sh`")
+  if (environment === 'development') {
+    console.log('Starting service from `./start_service.sh`');
     const childProcess = spawn('./hooks/start_service.sh');
-    childProcess.stdout.on('data', (chunk) => {
+    childProcess.stdout.on('data', chunk => {
       console.log(chunk);
     });
-    childProcess.stderr.on('data', (chunk) => {
+    childProcess.stderr.on('data', chunk => {
       console.warn(chunk);
     });
-    childProcess.on('close', (code) => {
-      console.debug(`child process for service exited with ${code}`)
+    childProcess.on('close', code => {
+      console.debug(`child process for service exited with ${code}`);
     });
 
     // Wait for the service to start successfully (you can change the logic here)
@@ -100,7 +102,7 @@ async function startService(environment: string, suiteParams: any): Promise<Chil
 async function stopService(childProcess: ChildProcess) {
   // Clean up the script started with start_service.sh
   if (childProcess) {
-    console.log("Terminating service with SIGTERM")
+    console.log('Terminating service with SIGTERM');
     childProcess.kill('SIGTERM');
   }
 }
