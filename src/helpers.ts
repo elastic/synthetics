@@ -1,4 +1,5 @@
 import { red, green, yellow, grey, cyan } from 'kleur';
+import { hrtime } from 'process';
 
 export function debug(message: string) {
   if (process.env.DEBUG) {
@@ -29,4 +30,13 @@ export function formatError(error: Error) {
   }
   const { name, message, stack } = error;
   return { name, message, stack };
+}
+
+/**
+ * As per the timings used in the Network Events from
+ * Chrome devtools protocol
+ */
+export function getMonotonicTime() {
+  const hrTime = process.hrtime();
+  return hrTime[0] * 1 + hrTime[1] / 1e9;
 }
