@@ -2,7 +2,7 @@ import { run } from '../index';
 import { runner } from '../dsl';
 import * as ParseArgs from '../parse_args';
 
-describe('top-level function', () => {
+describe('run', () => {
   let runnerSpy: jest.SpyInstance;
 
   beforeEach(() => {
