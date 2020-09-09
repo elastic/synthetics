@@ -10,6 +10,7 @@
     "watch": "tsc -w",
     "lint": "eslint .",
     "test": "jest",
+    "updateSnapshot": "jest --updateSnapshot",
     "coverage": "jest --coverage"
   },
   "bin": {

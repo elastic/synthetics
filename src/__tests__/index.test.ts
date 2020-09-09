@@ -13,14 +13,8 @@ describe('run', () => {
     run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
       Object {
-        "dryRun": undefined,
         "environment": "debug",
-        "headless": false,
-        "journeyName": undefined,
-        "network": undefined,
         "params": Object {},
-        "pauseOnError": undefined,
-        "screenshots": undefined,
       }
     `);
   });
@@ -34,7 +28,7 @@ describe('run', () => {
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,
-      pauseOnError: true
+      pauseOnError: true,
     });
     expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
       Object {
@@ -59,19 +53,13 @@ describe('run', () => {
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,
-      pauseOnError: true
+      pauseOnError: true,
     };
     run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
       Object {
-        "dryRun": true,
         "environment": "debug",
-        "headless": true,
-        "journeyName": "There and Back Again",
-        "network": true,
         "params": Object {},
-        "pauseOnError": true,
-        "screenshots": true,
       }
     `);
   });
