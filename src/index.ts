@@ -1,5 +1,6 @@
 import { runner } from './dsl';
 import { RunOptions } from './dsl/runner';
+import { cliArgs } from './parse_args';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('source-map-support').install();
@@ -12,7 +13,15 @@ export async function run(options: RunOptions) {
   options.environment = options.environment || process.env['NODE_ENV'];
 
   try {
-    await runner.run(options);
+    await runner.run({
+      ...options,
+      headless: options.headless ?? cliArgs.headless,
+      screenshots: options.screenshots ?? cliArgs.screenshots,
+      dryRun: options.dryRun ?? cliArgs.dryRun,
+      journeyName: options.journeyName ?? cliArgs.journeyName,
+      network: options.network ?? cliArgs.network,
+      pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError
+    });
   } catch (e) {
     console.error('Failed to run the test', e);
     process.exit(1);
