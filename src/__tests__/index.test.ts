@@ -11,21 +11,17 @@ describe('top-level function', () => {
 
   it('uses undefined options when none specified', () => {
     run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls).toMatchInlineSnapshot(`
-      Array [
-        Array [
-          Object {
-            "dryRun": undefined,
-            "environment": "debug",
-            "headless": false,
-            "journeyName": undefined,
-            "network": undefined,
-            "params": Object {},
-            "pauseOnError": undefined,
-            "screenshots": undefined,
-          },
-        ],
-      ]
+    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
+      Object {
+        "dryRun": undefined,
+        "environment": "debug",
+        "headless": false,
+        "journeyName": undefined,
+        "network": undefined,
+        "params": Object {},
+        "pauseOnError": undefined,
+        "screenshots": undefined,
+      }
     `);
   });
 
@@ -40,21 +36,17 @@ describe('top-level function', () => {
       network: true,
       pauseOnError: true
     });
-    expect(runnerSpy.mock.calls).toMatchInlineSnapshot(`
-      Array [
-        Array [
-          Object {
-            "dryRun": true,
-            "environment": "debug",
-            "headless": true,
-            "journeyName": "There and Back Again",
-            "network": true,
-            "params": Object {},
-            "pauseOnError": true,
-            "screenshots": true,
-          },
-        ],
-      ]
+    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
+      Object {
+        "dryRun": true,
+        "environment": "debug",
+        "headless": true,
+        "journeyName": "There and Back Again",
+        "network": true,
+        "params": Object {},
+        "pauseOnError": true,
+        "screenshots": true,
+      }
     `);
   });
 
@@ -70,21 +62,17 @@ describe('top-level function', () => {
       pauseOnError: true
     };
     run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls).toMatchInlineSnapshot(`
-      Array [
-        Array [
-          Object {
-            "dryRun": true,
-            "environment": "debug",
-            "headless": true,
-            "journeyName": "There and Back Again",
-            "network": true,
-            "params": Object {},
-            "pauseOnError": true,
-            "screenshots": true,
-          },
-        ],
-      ]
+    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
+      Object {
+        "dryRun": true,
+        "environment": "debug",
+        "headless": true,
+        "journeyName": "There and Back Again",
+        "network": true,
+        "params": Object {},
+        "pauseOnError": true,
+        "screenshots": true,
+      }
     `);
   });
 });
