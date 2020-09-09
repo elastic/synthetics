@@ -2,7 +2,7 @@ import Runner from '../../src/dsl/runner';
 import { Journey } from '../../src/dsl/journey';
 import { Step } from '../../src/dsl/step';
 
-const noop = () => {};
+const noop = async () => {};
 let runner: Runner;
 beforeEach(() => {
   runner = new Runner();

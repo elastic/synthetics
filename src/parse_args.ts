@@ -26,6 +26,10 @@ program
   .option('--journey-name <name>', 'only run the journey with the given name')
   .description('Run Synthetic tests');
 
-program.parse(process.argv);
+// only exported for testing
+export const _program = program;
 
-export const cliArgs = program;
+export const parseArgs = () => {
+  program.parse(process.argv);
+  return program;
+};

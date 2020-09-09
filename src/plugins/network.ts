@@ -33,7 +33,7 @@ export class NetworkManager {
       isNavigationRequest,
       status: 0,
       end: 0,
-      response: null
+      response: null,
     });
   }
 
@@ -45,7 +45,7 @@ export class NetworkManager {
     }
     Object.assign(record, {
       status: response.status,
-      response
+      response,
     });
     /**
      * Enhance request headers with additional information
@@ -53,7 +53,7 @@ export class NetworkManager {
     if (response.requestHeaders) {
       record.request.headers = {
         ...record.request.headers,
-        ...response.requestHeaders
+        ...response.requestHeaders,
       };
     }
   }

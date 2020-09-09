@@ -5,7 +5,7 @@ import { createInterface as createReadlineInterface } from 'readline';
 import { journey, step } from './dsl';
 import { debug } from './helpers';
 import { run } from './';
-import { cliArgs as program } from './parse_args';
+import { parseArgs } from './parse_args';
 
 const readStdin = async () => {
   let source = '';
@@ -20,6 +20,8 @@ const readStdin = async () => {
     });
   });
 };
+
+const program = parseArgs();
 
 const loadInlineScript = (source, suiteParams) => {
   const scriptFn = new Function('step', 'suiteParams', 'console', source);
@@ -59,6 +61,6 @@ process.env.DEBUG = program.debug || '';
     dryRun: program.dryRun,
     journeyName: program.journeyName,
     network: program.network,
-    pauseOnError: program.pauseOnError
+    pauseOnError: program.pauseOnError,
   });
 })();

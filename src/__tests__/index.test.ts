@@ -6,27 +6,28 @@ describe('run', () => {
   let runnerSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    jest.spyOn(ParseArgs, 'parseArgs').mockImplementation(() => {
+      return ParseArgs._program;
+    });
     runnerSpy = jest.spyOn(runner, 'run');
   });
 
-  it('uses undefined options when none specified', () => {
-    run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
-      Object {
-        "dryRun": undefined,
-        "environment": "debug",
-        "headless": false,
-        "journeyName": undefined,
-        "network": undefined,
-        "params": Object {},
-        "pauseOnError": undefined,
-        "screenshots": undefined,
-      }
-    `);
+  it('uses undefined options when none specified', async () => {
+    await run({ params: {}, environment: 'debug' });
+    expect(runnerSpy.mock.calls[0][0]).toEqual({
+      dryRun: undefined,
+      environment: 'debug',
+      headless: false,
+      journeyName: undefined,
+      network: undefined,
+      params: {},
+      pauseOnError: undefined,
+      screenshots: undefined,
+    });
   });
 
-  it('uses specified option values', () => {
-    run({
+  it('uses specified option values', async () => {
+    const runParams = {
       params: {},
       environment: 'debug',
       headless: true,
@@ -34,23 +35,13 @@ describe('run', () => {
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,
-      pauseOnError: true
-    });
-    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
-      Object {
-        "dryRun": true,
-        "environment": "debug",
-        "headless": true,
-        "journeyName": "There and Back Again",
-        "network": true,
-        "params": Object {},
-        "pauseOnError": true,
-        "screenshots": true,
-      }
-    `);
+      pauseOnError: true,
+    };
+    await run(runParams);
+    expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
   });
 
-  it('uses cli args if no option specified', () => {
+  it('uses cli args if no option specified', async () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore reassigning a readonly field, but for testing purposes
     ParseArgs.cliArgs = {
@@ -59,20 +50,19 @@ describe('run', () => {
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,
-      pauseOnError: true
+      pauseOnError: true,
     };
-    run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls[0][0]).toMatchInlineSnapshot(`
-      Object {
-        "dryRun": true,
-        "environment": "debug",
-        "headless": true,
-        "journeyName": "There and Back Again",
-        "network": true,
-        "params": Object {},
-        "pauseOnError": true,
-        "screenshots": true,
-      }
-    `);
+    const runParams = { params: {}, environment: 'debug' };
+    await run(runParams);
+    expect(runnerSpy.mock.calls[0][0]).toEqual({
+      dryRun: undefined,
+      environment: 'debug',
+      headless: false,
+      journeyName: undefined,
+      network: undefined,
+      params: {},
+      pauseOnError: undefined,
+      screenshots: undefined,
+    });
   });
 });

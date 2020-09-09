@@ -1,5 +1,4 @@
 import { red, green, yellow, grey, cyan } from 'kleur';
-import { hrtime } from 'process';
 
 export function debug(message: string) {
   if (process.env.DEBUG) {
@@ -15,7 +14,7 @@ export const symbols = {
   warning: yellow('⚠'),
   skipped: cyan('-'),
   succeeded: green('✓'),
-  failed: red('✖')
+  failed: red('✖'),
 };
 
 export function getMilliSecs(startTime: [number, number]) {

@@ -16,8 +16,8 @@ it('add steps to journeys', () => {
   let s1,
     s2 = null;
   const j = journey(name, () => {
-    s1 = step('step1', () => {});
-    s2 = step('step2', () => {});
+    s1 = step('step1', async () => {});
+    s2 = step('step2', async () => {});
   });
 
   expect(runner.currentJourney).toEqual(j);
