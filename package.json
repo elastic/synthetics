@@ -1,5 +1,5 @@
 {
-  "name": "elastic-synthetics",
+  "name": "@elastic/synthetics",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -13,7 +13,7 @@
     "coverage": "jest --coverage"
   },
   "bin": {
-    "elastic-synthetics": "dist/cli.js"
+    "@elastic/synthetics": "dist/cli.js"
   },
   "files": [
     "dist",
