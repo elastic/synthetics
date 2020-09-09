@@ -15,14 +15,14 @@ describe('run', () => {
   it('uses undefined options when none specified', async () => {
     await run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toEqual({
-      "dryRun": undefined,
-      environment: "debug",
-      "headless": false,
+      dryRun: undefined,
+      environment: 'debug',
+      headless: false,
       journeyName: undefined,
       network: undefined,
       params: {},
       pauseOnError: undefined,
-      screenshots: undefined
+      screenshots: undefined,
     });
   });
 
