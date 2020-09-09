@@ -52,7 +52,7 @@ describe('top-level function', () => {
 
   it('uses cli args if no option specified', () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
+    // @ts-ignore reassigning a readonly field, but for testing purposes
     ParseArgs.cliArgs = {
       headless: true,
       screenshots: true,
