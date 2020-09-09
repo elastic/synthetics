@@ -1,12 +1,11 @@
-import { chromium, CDPSession } from 'playwright';
+import { chromium } from 'playwright';
 import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
-import { Tracing, filterFilmstrips } from '../plugins/tracing';
-import { NetworkManager } from '../plugins/network';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
+import { PluginManager } from '../plugins';
 
 export type RunOptions = {
   params: { [key: string]: any };
@@ -47,8 +46,7 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
-  _tracing = new Tracing();
-  _network = new NetworkManager();
+  pluginManager: PluginManager;
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -95,20 +93,15 @@ export default class Runner {
       const journeyStart = process.hrtime();
       this.emit('journey:start', { journey, params });
 
-      let client: CDPSession,
-        filmstrips: Array<FilmStrip>,
-        networkinfo: Array<NetworkInfo>,
-        shouldSkip = false;
+      let shouldSkip = false;
       // We must coerce headless into a boolean, undefined does not behave the same as false
-      const browser = await chromium.launch({headless: !!headless});
+      const browser = await chromium.launch({ headless: !!headless });
       const context = await browser.newContext();
       const page = await context.newPage();
-      const enableCDP = screenshots || network;
-      if (enableCDP) {
-        client = await context.newCDPSession(page);
-        screenshots && (await this._tracing.start(client));
-        network && (await this._network.start(client));
-      }
+      const client = await context.newCDPSession(page);
+      this.pluginManager = new PluginManager(client);
+      screenshots && (await this.pluginManager.start('trace'));
+      network && (await this.pluginManager.start('network'));
 
       for (const step of journey.steps) {
         const stepStart = process.hrtime();
@@ -148,14 +141,7 @@ export default class Runner {
         }
       }
 
-      if (screenshots) {
-        const data = await this._tracing.stop(client);
-        filmstrips = filterFilmstrips(data);
-      }
-      if (network) {
-        networkinfo = this._network.stop();
-      }
-
+      const { filmstrips, networkinfo } = await this.pluginManager.output();
       const durationMs = getMilliSecs(journeyStart);
       this.emit('journey:end', {
         journey,
