@@ -45,7 +45,7 @@ export function filterFilmstrips(buffer: Buffer): Array<FilmStrip> {
   return events.map(event => ({
     snapshot: event.args.snapshot,
     name: event.name,
-    ts: event.ts
+    ts: event.ts,
   }));
 }
 
@@ -65,15 +65,15 @@ export class Tracing {
       transferMode: 'ReturnAsStream',
       traceConfig: {
         includedCategories,
-        excludedCategories
-      }
+        excludedCategories,
+      },
     });
   }
 
   async stop(client: CDPSession) {
     const [event] = await Promise.all([
       new Promise(f => client.once('Tracing.tracingComplete', f)),
-      client.send('Tracing.end')
+      client.send('Tracing.end'),
     ]);
     return readProtocolStream(client, (event as any).stream);
   }

@@ -31,7 +31,7 @@ export class PluginManager {
   async output(): Promise<PluginOutput> {
     const data = {
       filmstrips: [],
-      networkinfo: []
+      networkinfo: [],
     };
     for (const plugin of this.plugins) {
       if (plugin instanceof NetworkManager) {

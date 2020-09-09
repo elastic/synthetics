@@ -75,7 +75,7 @@ export default class Runner {
       dryRun,
       screenshots,
       journeyName,
-      network
+      network,
     } = runOptions;
     /**
      * Set up the corresponding reporter
@@ -133,7 +133,7 @@ export default class Runner {
             error,
             screenshot,
             url,
-            status
+            status,
           });
           if (runOptions.pauseOnError && error) {
             await new Promise(r => process.stdin.on('data', r));
@@ -148,7 +148,7 @@ export default class Runner {
         params,
         durationMs,
         filmstrips,
-        networkinfo
+        networkinfo,
       });
       await browser.close();
     }

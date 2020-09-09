@@ -38,7 +38,7 @@ export default class JSONReporter extends BaseReporter {
           steps: [],
           filmstrips: [],
           duration_ms: 0,
-          status: 'succeeded'
+          status: 'succeeded',
         });
       }
     });
@@ -50,7 +50,7 @@ export default class JSONReporter extends BaseReporter {
         Object.assign(journeyOutput, {
           duration_ms: durationMs,
           filmstrips,
-          networkinfo
+          networkinfo,
         });
       }
     );
@@ -79,7 +79,7 @@ export default class JSONReporter extends BaseReporter {
             duration_ms: durationMs,
             error: formatError(error),
             screenshot,
-            status
+            status,
           });
       }
     );
@@ -93,7 +93,7 @@ export default class JSONReporter extends BaseReporter {
     const output = {
       __type__: 'synthetics-summary-results',
       format_version: jsonFormatVersion,
-      journeys: []
+      journeys: [],
     };
     for (const journey of journeyMap.values()) {
       output.journeys.push(journey);

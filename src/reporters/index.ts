@@ -3,5 +3,5 @@ import JSONReporter from './json';
 
 export const reporters = {
   default: BaseReporter,
-  json: JSONReporter
+  json: JSONReporter,
 };

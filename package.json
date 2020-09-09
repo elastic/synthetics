@@ -9,6 +9,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint .",
+    "lint-fix": "eslint . --fix",
     "test": "jest",
     "updateSnapshot": "jest --updateSnapshot",
     "coverage": "jest --coverage"
@@ -40,7 +41,7 @@
     "source-map-support": "^0.5.19"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.10",
+    "@types/jest": "^26.0.13",
     "@types/node": "^14.0.27",
     "@types/yargs": "^15.0.5",
     "@typescript-eslint/eslint-plugin": "^3.9.1",
@@ -53,7 +54,7 @@
     "lint-staged": "^10.2.11",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
-    "ts-jest": "^26.2.0",
+    "ts-jest": "^26.3.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
   }

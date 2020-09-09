@@ -48,7 +48,7 @@ export default class BaseReporter {
       succeeded: 0,
       failed: 0,
       skipped: 0,
-      start: process.hrtime()
+      start: process.hrtime(),
     };
     this.runner.on('start', () => {
       result.start = process.hrtime();
