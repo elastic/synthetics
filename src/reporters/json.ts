@@ -2,6 +2,7 @@ import BaseReporter from './base';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { formatError } from '../helpers';
 import { Journey } from '../dsl/journey';
+import snakeCaseKeys from 'snakecase-keys';
 
 // we need this ugly require to get the program version
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -71,12 +72,19 @@ export default class JSONReporter extends BaseReporter {
         if (networkinfo) {
           // TODO: there can easily be hundreds of network reqs per page
           // Should we keep this in one big event? Could result in large ES doc sizes
-          this.writeJSON('journey:network_info', journey, networkinfo);
+          this.writeJSON(
+            'journey:network_info',
+            journey,
+            snakeCaseKeys(networkinfo)
+          );
         }
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {
-            this.writeJSON('journey:filmstrips', journey, { index, ...strip });
+            this.writeJSON('journey:filmstrips', journey, {
+              index,
+              ...snakeCaseKeys(strip),
+            });
           });
         }
         this.writeJSON('journey:end', journey, {
@@ -91,13 +99,15 @@ export default class JSONReporter extends BaseReporter {
   writeJSON(type: string, journey: Journey, payload: any) {
     this.write({
       __type__: type,
+      // It may seem redundant including this info in each line but it might make debugging individual JSON
+      // fragments easier in the future
       'elastic-synthetics-version': programVersion,
+      format_version: jsonFormatVersion,
       journey: {
         name: journey.options.name,
         id: journey.options.id,
       },
       '@timestamp': new Date(), // TODO: Use monotonic clock?
-      format_version: jsonFormatVersion,
       payload,
     });
   }
