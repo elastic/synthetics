@@ -8,9 +8,6 @@ import snakeCaseKeys from 'snakecase-keys';
 /* eslint-disable @typescript-eslint/no-var-requires */
 const programVersion = require('../../package.json').version;
 
-// Semver version for the JSON emitted from this package.
-const jsonFormatVersion = '1.0.0';
-
 interface JourneyResults {
   id: string;
   name: string;
@@ -37,7 +34,7 @@ export default class JSONReporter extends BaseReporter {
     let journeyError: Error;
 
     this.runner.on('journey:start', ({ journey, params }) => {
-      this.writeJSON('journey:start', journey, {
+      this.writeJSON('journey/start', journey, {
         params,
         source: journey.callback.toString(),
       });
@@ -47,9 +44,9 @@ export default class JSONReporter extends BaseReporter {
       'step:end',
       ({ journey, step, durationMs, error, screenshot, url, status }) => {
         if (screenshot) {
-          this.writeJSON('step:screenshot', journey, { screenshot });
+          this.writeJSON('step/screenshot', journey, { screenshot });
         }
-        this.writeJSON('step:end', journey, {
+        this.writeJSON('step/end', journey, {
           name: step.name,
           index: step.index,
           source: step.callback.toString(),
@@ -73,7 +70,7 @@ export default class JSONReporter extends BaseReporter {
           // TODO: there can easily be hundreds of network reqs per page
           // Should we keep this in one big event? Could result in large ES doc sizes
           this.writeJSON(
-            'journey:network_info',
+            'journey/network_info',
             journey,
             snakeCaseKeys(networkinfo)
           );
@@ -81,13 +78,13 @@ export default class JSONReporter extends BaseReporter {
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {
-            this.writeJSON('journey:filmstrips', journey, {
+            this.writeJSON('journey/filmstrips', journey, {
               index,
               ...snakeCaseKeys(strip),
             });
           });
         }
-        this.writeJSON('journey:end', journey, {
+        this.writeJSON('journey/end', journey, {
           duration_ms: durationMs,
           error: formatError(journeyError),
           status: journeyStatus,
@@ -98,11 +95,8 @@ export default class JSONReporter extends BaseReporter {
 
   writeJSON(type: string, journey: Journey, payload: any) {
     this.write({
-      __type__: type,
-      // It may seem redundant including this info in each line but it might make debugging individual JSON
-      // fragments easier in the future
-      'elastic-synthetics-version': programVersion,
-      format_version: jsonFormatVersion,
+      type: type,
+      package_version: programVersion,
       journey: {
         name: journey.options.name,
         id: journey.options.id,
