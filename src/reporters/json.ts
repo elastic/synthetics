@@ -1,6 +1,11 @@
 import BaseReporter from './base';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { formatError } from '../helpers';
+import { Journey } from '../dsl/journey';
+
+// we need this ugly require to get the program version
+/* eslint-disable @typescript-eslint/no-var-requires */
+const programVersion = require('../../package.json').version;
 
 // Semver version for the JSON emitted from this package.
 const jsonFormatVersion = '1.0.0';
@@ -27,77 +32,73 @@ interface JourneyResults {
 
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
-    const journeyMap = new Map<string, JourneyResults>();
-    this.runner.on('journey:start', ({ journey, params }) => {
-      const { id, name } = journey.options;
-      if (!journeyMap.has(name)) {
-        journeyMap.set(name, {
-          id,
-          name,
-          meta: params,
-          steps: [],
-          filmstrips: [],
-          duration_ms: 0,
-          status: 'succeeded',
-        });
-      }
-    });
+    let journeyStatus: 'succeeded' | 'failed' = 'succeeded';
+    let journeyError: Error;
 
-    this.runner.on(
-      'journey:end',
-      ({ journey, durationMs, filmstrips, networkinfo }) => {
-        const journeyOutput = journeyMap.get(journey.options.name);
-        Object.assign(journeyOutput, {
-          duration_ms: durationMs,
-          filmstrips,
-          networkinfo,
-        });
-      }
-    );
+    this.runner.on('journey:start', ({ journey, params }) => {
+      this.writeJSON('journey:start', journey, {
+        params,
+        source: journey.callback.toString(),
+      });
+    });
 
     this.runner.on(
       'step:end',
       ({ journey, step, durationMs, error, screenshot, url, status }) => {
-        const journeyOutput = journeyMap.get(journey.options.name);
-
-        // The URL of the journey is the first URL we see
-        if (!journeyOutput.url) {
-          journeyOutput.url = url;
+        if (screenshot) {
+          this.writeJSON('step:screenshot', journey, { screenshot });
         }
+        this.writeJSON('step:end', journey, {
+          name: step.name,
+          index: step.index,
+          source: step.callback.toString(),
+          duration_ms: durationMs,
+          error: formatError(error),
+          url,
+          status,
+        });
 
-        // If there's an error we hoist it up to the journey for convenience
-        // and set the status to down
-        if (error) {
-          journeyOutput.error = formatError(error);
-          journeyOutput.status = 'failed';
+        if (status === 'failed') {
+          journeyStatus = 'failed';
+          journeyError = error;
         }
-
-        journeyOutput &&
-          journeyOutput.steps.push({
-            name: step.name,
-            source: step.callback.toString(),
-            duration_ms: durationMs,
-            error: formatError(error),
-            screenshot,
-            status,
-          });
       }
     );
 
-    this.runner.on('end', () => {
-      this.write(this._getOutput(journeyMap));
-    });
+    this.runner.on(
+      'journey:end',
+      ({ journey, durationMs, filmstrips, networkinfo }) => {
+        if (networkinfo) {
+          // TODO: there can easily be hundreds of network reqs per page
+          // Should we keep this in one big event? Could result in large ES doc sizes
+          this.writeJSON('journey:network_info', journey, networkinfo);
+        }
+        if (filmstrips) {
+          // Write each filmstrip separately so that we don't get documents that are too large
+          filmstrips.forEach((strip, index) => {
+            this.writeJSON('journey:filmstrips', journey, { index, ...strip });
+          });
+        }
+        this.writeJSON('journey:end', journey, {
+          duration_ms: durationMs,
+          error: formatError(journeyError),
+          status: journeyStatus,
+        });
+      }
+    );
   }
 
-  _getOutput(journeyMap) {
-    const output = {
-      __type__: 'synthetics-summary-results',
+  writeJSON(type: string, journey: Journey, payload: any) {
+    this.write({
+      __type__: type,
+      'elastic-synthetics-version': programVersion,
+      journey: {
+        name: journey.options.name,
+        id: journey.options.id,
+      },
+      '@timestamp': new Date(), // TODO: Use monotonic clock?
       format_version: jsonFormatVersion,
-      journeys: [],
-    };
-    for (const journey of journeyMap.values()) {
-      output.journeys.push(journey);
-    }
-    return output;
+      payload,
+    });
   }
 }
