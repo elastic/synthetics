@@ -4,11 +4,14 @@ import * as ParseArgs from '../src/parse_args';
 
 describe('run', () => {
   let runnerSpy: jest.SpyInstance;
+  let parseArgsSpy: jest.SpyInstance;
 
   beforeEach(() => {
     runnerSpy = jest
       .spyOn(runner, 'run')
       .mockImplementation(() => Promise.resolve());
+    parseArgsSpy = jest.spyOn(ParseArgs, 'parseArgs');
+    runnerSpy = jest.spyOn(runner, 'run');
   });
 
   it('uses undefined options when none specified', async () => {
@@ -16,7 +19,7 @@ describe('run', () => {
     expect(runnerSpy.mock.calls[0][0]).toEqual({
       dryRun: undefined,
       environment: 'debug',
-      headless: false,
+      headless: undefined,
       journeyName: undefined,
       network: undefined,
       params: {},
@@ -53,6 +56,29 @@ describe('run', () => {
     });
 
     await run({ params: {}, environment: 'debug' });
+    expect(runnerSpy.mock.calls[0][0]).toEqual({
+      headless: true,
+      screenshots: true,
+      dryRun: true,
+      environment: 'debug',
+      journeyName: 'There and Back Again',
+      network: true,
+      pauseOnError: true,
+    });
+  });
+
+  it('uses cli args if no option specified', async () => {
+    parseArgsSpy.mockImplementation(() => ({
+      headless: true,
+      screenshots: true,
+      dryRun: true,
+      environment: 'debug',
+      journeyName: 'There and Back Again',
+      network: true,
+      pauseOnError: true,
+    }));
+    const runParams = { params: {}, environment: 'debug' };
+    await run(runParams);
     expect(runnerSpy.mock.calls[0][0]).toEqual({
       dryRun: true,
       environment: 'debug',
