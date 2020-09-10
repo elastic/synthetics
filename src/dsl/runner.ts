@@ -102,7 +102,7 @@ export default class Runner {
 
       let shouldSkip = false;
       // We must coerce headless into a boolean, undefined does not behave the same as false
-      const browser = await chromium.launch({ headless: !!headless });
+      const browser = await chromium.launch({ headless: headless ?? true });
       const context = await browser.newContext();
       const page = await context.newPage();
       const client = await context.newCDPSession(page);

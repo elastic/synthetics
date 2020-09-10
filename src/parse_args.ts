@@ -1,5 +1,9 @@
 import { program } from 'commander';
 
+export function parseHeadless(value: string) {
+  return value === 'false' ? false : true;
+}
+
 program
   /* eslint-disable @typescript-eslint/no-var-requires */
   .version(require('../package.json').version)
@@ -9,7 +13,7 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', 'run browser in headless mode', false)
+  .option('--headless <type>', 'run browser in headless mode', parseHeadless)
   .option(
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
