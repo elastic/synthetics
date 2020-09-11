@@ -21,14 +21,9 @@
     "dist",
     "src"
   ],
-  "lint-staged": {
-    "*.{js|ts}": [
-      "eslint . --fix"
-    ]
-  },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "eslint . --fix && pretty-quick --staged"
     }
   },
   "author": "",
@@ -49,11 +44,12 @@
     "eslint": "^7.7.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
-    "husky": "^4.2.5",
+    "husky": "^4.3.0",
     "jest": "^26.4.1",
     "lint-staged": "^10.2.11",
     "nodemon": "^2.0.4",
     "prettier": "^2.0.5",
+    "pretty-quick": "^3.0.1",
     "ts-jest": "^26.3.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
