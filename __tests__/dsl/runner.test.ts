@@ -27,8 +27,8 @@ it('add journey', () => {
 });
 
 it('add steps to current journey', () => {
-  const s1 = new Step('step1', noop);
-  const s2 = new Step('step2', noop);
+  const s1 = new Step('step1', 0, noop);
+  const s2 = new Step('step2', 1, noop);
   runner.addStep(s1);
   expect(runner.currentJourney).toBeNull();
 

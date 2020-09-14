@@ -4,7 +4,7 @@ import { Writable } from 'stream';
 import { green, red, cyan } from 'kleur';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
-type ReporterOptions = {
+export type ReporterOptions = {
   fd?: Writable;
   colors?: boolean;
 };
