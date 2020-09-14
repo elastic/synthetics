@@ -16,7 +16,6 @@ it('support emitting/subscribing to events', () => {
 });
 
 it('add journey', () => {
-  const noop = () => {};
   const j1 = new Journey({ name: 'j1' }, noop);
   const j2 = new Journey({ name: 'j2' }, noop);
   expect(runner.currentJourney).toBeNull();
