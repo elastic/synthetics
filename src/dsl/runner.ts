@@ -85,7 +85,7 @@ export default class Runner {
      * Set up the corresponding reporter
      */
     const Reporter = reporters[reporter];
-    const reporterOptions: ReporterOptions = outfd ? {fd: createWriteStream(null, {fd: outfd})} : {};
+    const reporterOptions: ReporterOptions = outfd ? {fd: createWriteStream(null, )} : {};
     new Reporter(this, reporterOptions);
 
     this.emit('start', { numJourneys: this.journeys.length });
