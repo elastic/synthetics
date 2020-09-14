@@ -21,9 +21,15 @@
     "dist",
     "src"
   ],
+  "lint-staged": {
+    "*.{js|ts}": [
+      "eslint . --fix",
+      "prettier --write"
+    ]
+  },
   "husky": {
     "hooks": {
-      "pre-commit": "eslint . --fix && pretty-quick --staged"
+      "pre-commit": "lint-staged"
     }
   },
   "author": "",
