@@ -30,7 +30,7 @@ interface JourneyResults {
 
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
-    let journeyStatus: 'succeeded' | 'failed' = 'succeeded';
+    let journeyStatus: StatusValue = 'succeeded';
     let journeyError: Error;
 
     this.runner.on('journey:start', ({ journey, params }) => {
@@ -67,13 +67,12 @@ export default class JSONReporter extends BaseReporter {
       'journey:end',
       ({ journey, durationMs, filmstrips, networkinfo }) => {
         if (networkinfo) {
-          // TODO: there can easily be hundreds of network reqs per page
-          // Should we keep this in one big event? Could result in large ES doc sizes
-          this.writeJSON(
-            'journey/network_info',
-            journey,
-            snakeCaseKeys(networkinfo)
-          );
+          networkinfo.forEach((ni, index) => {
+            this.writeJSON('journey/network_info', journey, {
+              index,
+              ...snakeCaseKeys(networkinfo)
+            });
+          });
         }
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
