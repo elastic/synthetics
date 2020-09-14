@@ -22,7 +22,7 @@
     "src"
   ],
   "lint-staged": {
-    "*.{js|ts}": [
+    "*.{js,ts}": [
       "eslint . --fix",
       "prettier --write"
     ]
