@@ -1,15 +1,14 @@
-import { run } from '../index';
-import { runner } from '../dsl';
-import * as ParseArgs from '../parse_args';
+import { run } from '../src/index';
+import { runner } from '../src/dsl';
+import * as ParseArgs from '../src/parse_args';
 
 describe('run', () => {
   let runnerSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    jest.spyOn(ParseArgs, 'parseArgs').mockImplementation(() => {
-      return ParseArgs._program;
-    });
-    runnerSpy = jest.spyOn(runner, 'run');
+    runnerSpy = jest
+      .spyOn(runner, 'run')
+      .mockImplementation(() => Promise.resolve());
   });
 
   it('uses undefined options when none specified', async () => {
@@ -41,28 +40,28 @@ describe('run', () => {
     expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
   });
 
-  it('uses cli args if no option specified', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore reassigning a readonly field, but for testing purposes
-    ParseArgs.cliArgs = {
-      headless: true,
-      screenshots: true,
+  it('uses cli args if some options are not specified', async () => {
+    jest.spyOn(ParseArgs, 'parseArgs').mockImplementation(() => {
+      return {
+        headless: true,
+        screenshots: true,
+        dryRun: true,
+        journeyName: 'There and Back Again',
+        network: true,
+        pauseOnError: true,
+      } as any;
+    });
+
+    await run({ params: {}, environment: 'debug' });
+    expect(runnerSpy.mock.calls[0][0]).toEqual({
       dryRun: true,
+      environment: 'debug',
+      headless: true,
       journeyName: 'There and Back Again',
       network: true,
-      pauseOnError: true,
-    };
-    const runParams = { params: {}, environment: 'debug' };
-    await run(runParams);
-    expect(runnerSpy.mock.calls[0][0]).toEqual({
-      dryRun: undefined,
-      environment: 'debug',
-      headless: false,
-      journeyName: undefined,
-      network: undefined,
       params: {},
-      pauseOnError: undefined,
-      screenshots: undefined,
+      pauseOnError: true,
+      screenshots: true,
     });
   });
 });
