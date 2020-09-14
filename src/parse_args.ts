@@ -19,6 +19,7 @@ program
     'take screenshots between steps (only shown in some reporters)'
   )
   .option('--network', 'capture all network information for all steps')
+  .option('--metrics', 'capture performance metrics for each step')
   .option(
     '--dry-run',
     "don't actually execute anything, report as if each step was skipped"
