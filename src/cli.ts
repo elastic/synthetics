@@ -62,5 +62,6 @@ process.env.DEBUG = program.debug || '';
     journeyName: program.journeyName,
     network: program.network,
     pauseOnError: program.pauseOnError,
+    outfd: program.outfd,
   });
 })();

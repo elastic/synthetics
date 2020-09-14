@@ -24,7 +24,11 @@ program
     "don't actually execute anything, report as if each step was skipped"
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
-  .description('Run Synthetic tests');
+  .option(
+    '--outfd',
+    'specify a file descriptor number for output. Default is stdout'
+  )
+  .description('Run synthetic tests');
 
 export const parseArgs = () => {
   program.parse(process.argv);

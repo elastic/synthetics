@@ -70,7 +70,7 @@ export default class JSONReporter extends BaseReporter {
           networkinfo.forEach((ni, index) => {
             this.writeJSON('journey/network_info', journey, {
               index,
-              ...snakeCaseKeys(networkinfo)
+              ...snakeCaseKeys(networkinfo),
             });
           });
         }
