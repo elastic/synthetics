@@ -6,7 +6,7 @@ import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
-import { PerformanceManager } from '../plugins/performance';
+import { PerformanceManager, Metrics } from '../plugins/performance';
 
 export type RunOptions = {
   params?: { [key: string]: any };
@@ -41,6 +41,7 @@ interface Events {
     screenshot: string;
     url: string;
     status: StatusValue;
+    metrics?: Metrics
   };
   end: unknown;
 }
@@ -110,10 +111,7 @@ export default class Runner {
 
       for (const step of journey.steps) {
         const stepStart = process.hrtime();
-        const stepStartEvent = { journey, step, metrics: null }
-        if (metrics) {
-          stepStartEvent.metrics = await pluginManager.get<PerformanceManager>('performance').getMetrics()
-        }
+        const stepStartEvent = { journey, step }
         this.emit('step:start', stepStartEvent);
 
         let screenshot: string, url: string, status: StatusValue, error: Error;

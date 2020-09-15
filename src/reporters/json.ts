@@ -42,7 +42,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({ journey, step, durationMs, error, screenshot, url, status }) => {
+      ({ journey, step, durationMs, error, screenshot, url, status, metrics }) => {
         if (screenshot) {
           this.writeJSON('step/screenshot', journey, { screenshot });
         }
@@ -54,6 +54,7 @@ export default class JSONReporter extends BaseReporter {
           error: formatError(error),
           url,
           status,
+          metrics
         });
 
         if (status === 'failed') {
