@@ -2,7 +2,7 @@ import fs from 'fs';
 import { runner, step, journey } from '../../src/dsl/index';
 import { generateTempPath } from '../../src/helpers';
 import { NetworkManager } from '../../src/plugins/network';
-import { Server } from '../utils/server';
+import { Server } from '../../utils/server';
 
 describe('network', () => {
   const dest = generateTempPath();
@@ -26,7 +26,6 @@ describe('network', () => {
       });
     });
     await runner.run({
-      headless: true,
       outfd: fs.openSync(dest, 'w'),
     });
   });

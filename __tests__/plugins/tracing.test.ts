@@ -2,7 +2,7 @@ import fs from 'fs';
 import { runner, step, journey } from '../../src/dsl/index';
 import { Tracing } from '../../src/plugins/tracing';
 import { generateTempPath } from '../../src/helpers';
-import { Server } from '../utils/server';
+import { Server } from '../../utils/server';
 
 describe('tracing', () => {
   const dest = generateTempPath();
@@ -26,7 +26,6 @@ describe('tracing', () => {
       });
     });
     await runner.run({
-      headless: true,
       outfd: fs.openSync(dest, 'w'),
     });
   });
