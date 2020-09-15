@@ -15,6 +15,7 @@ describe('run', () => {
   });
 
   it('uses undefined options when none specified', async () => {
+    parseArgsSpy.mockImplementation(() => ({}));
     await run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toEqual({
       dryRun: undefined,
@@ -64,6 +65,7 @@ describe('run', () => {
       journeyName: 'There and Back Again',
       network: true,
       pauseOnError: true,
+      params: {},
     });
   });
 
