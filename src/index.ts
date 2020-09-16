@@ -24,11 +24,10 @@ export async function run(options: RunOptions) {
       network: options.network ?? cliArgs.network,
       pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError,
       outfd: options.outfd ?? cliArgs.outfd,
-      reporter: options.reporter ?? cliArgs.json ? 'json' : 'default'
+      reporter: options.reporter ?? cliArgs.json ? 'json' : 'default',
     });
   } catch (e) {
     console.error('Failed to run the test', e);
-    console.log("EXIT ERR")
     process.exit(1);
   }
 }

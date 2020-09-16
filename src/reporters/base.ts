@@ -1,6 +1,5 @@
 import SonicBoom from 'sonic-boom';
 import Runner from '../dsl/runner';
-import { Writable } from 'stream';
 import { green, red, cyan } from 'kleur';
 import { symbols, indent, getMilliSecs } from '../helpers';
 

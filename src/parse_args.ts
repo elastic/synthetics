@@ -27,7 +27,7 @@ program
   .option(
     '--outfd <fd>',
     'specify a file descriptor number for output. Default is stdout',
-    parseInt,
+    parseInt
   )
   .description('Run synthetic tests');
 

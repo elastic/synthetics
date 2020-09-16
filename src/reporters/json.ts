@@ -44,7 +44,7 @@ export default class JSONReporter extends BaseReporter {
       'step:end',
       ({ journey, step, durationMs, error, screenshot, url, status }) => {
         if (screenshot) {
-          this.writeJSON('step/screenshot', journey, {blob: screenshot});
+          this.writeJSON('step/screenshot', journey, { blob: screenshot });
         }
         this.writeJSON('step/end', journey, {
           step,
@@ -56,7 +56,7 @@ export default class JSONReporter extends BaseReporter {
             error: formatError(error),
             url,
             status,
-          }
+          },
         });
 
         if (status === 'failed') {
@@ -70,36 +70,34 @@ export default class JSONReporter extends BaseReporter {
       'journey:end',
       ({ journey, durationMs, filmstrips, networkinfo }) => {
         if (networkinfo) {
-          networkinfo.forEach((ni, index) => {
+          networkinfo.forEach(ni => {
             this.writeJSON('journey/network_info', journey, {
-              payload: snakeCaseKeys(networkinfo),
+              payload: snakeCaseKeys(ni),
             });
           });
         }
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {
-            this.writeJSON(
-              'journey/filmstrips', 
-              journey, 
-              {
-                payload: {
-                  index,
-                  ...{
-                    name: strip.name,
-                    ts: strip.ts
-                  },
+            this.writeJSON('journey/filmstrips', journey, {
+              payload: {
+                index,
+                ...{
+                  name: strip.name,
+                  ts: strip.ts,
                 },
-                blob: strip.snapshot,
-              }
-            );
+              },
+              blob: strip.snapshot,
+            });
           });
         }
-        this.writeJSON('journey/end', journey, {payload: {
-          duration_ms: durationMs,
-          error: formatError(journeyError),
-          status: journeyStatus,
-        }});
+        this.writeJSON('journey/end', journey, {
+          payload: {
+            duration_ms: durationMs,
+            error: formatError(journeyError),
+            status: journeyStatus,
+          },
+        });
       }
     );
   }
@@ -108,26 +106,40 @@ export default class JSONReporter extends BaseReporter {
   // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
   // it before passing it into this function!
   writeJSON(
-    type: string, 
-    journey: Journey, 
-    {step, error, payload, blob, url}: {url?: string, step?: Step, error?: Error, payload?: {[key: string]: any}, blob?: string}
-    ) {
+    type: string,
+    journey: Journey,
+    {
+      step,
+      error,
+      payload,
+      blob,
+      url,
+    }: {
+      url?: string;
+      step?: Step;
+      error?: Error;
+      payload?: { [key: string]: any };
+      blob?: string;
+    }
+  ) {
     this.write({
       type: type,
       package_version: programVersion,
       payload,
       blob,
       error: formatError(error),
-      step: step ? {
-        name: step.name,
-        index: step.index
-      } : null,
+      url,
+      step: step
+        ? {
+            name: step.name,
+            index: step.index,
+          }
+        : null,
       journey: {
         name: journey.options.name,
         id: journey.options.id,
       },
       '@timestamp': new Date(), // TODO: Use monotonic clock?
-      
     });
   }
 }

@@ -7,7 +7,6 @@ import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
 import { ReporterOptions } from '../reporters/base';
-import { createWriteStream } from 'fs';
 
 export type RunOptions = {
   params: { [key: string]: any };
@@ -85,9 +84,7 @@ export default class Runner {
      * Set up the corresponding reporter
      */
     const Reporter = reporters[reporter];
-    const reporterOptions: ReporterOptions = outfd
-      ? { fd: outfd }
-      : {};
+    const reporterOptions: ReporterOptions = outfd ? { fd: outfd } : {};
     new Reporter(this, reporterOptions);
 
     this.emit('start', { numJourneys: this.journeys.length });
