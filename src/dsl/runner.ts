@@ -114,12 +114,15 @@ export default class Runner {
         const stepStartEvent = { journey, step }
         this.emit('step:start', stepStartEvent);
 
-        let screenshot: string, url: string, status: StatusValue, error: Error;
+        let screenshot: string, url: string, status: StatusValue, error: Error, metricsData: Metrics;
         try {
           if (dryRun || shouldSkip) {
             status = 'skipped';
           } else {
             await step.callback({ page, params, context, browser, client });
+            if (metrics) {
+              metricsData = await pluginManager.get<PerformanceManager>('performance').getMetrics()
+            }
             await page.waitForLoadState('load');
             if (screenshots) {
               screenshot = (await page.screenshot()).toString('base64');
@@ -141,10 +144,7 @@ export default class Runner {
             screenshot,
             url,
             status,
-            metrics: null
-          }
-          if (metrics) {
-            stepEndEvent.metrics = await pluginManager.get<PerformanceManager>('performance').getMetrics()
+            metrics: metricsData
           }
           this.emit('step:end', stepEndEvent);
           if (runOptions.pauseOnError && error) {
