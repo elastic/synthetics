@@ -1,4 +1,4 @@
-import { run } from 'elastic-synthetics';
+import { run } from '@elastic/synthetics';
 import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
@@ -60,8 +60,8 @@ async function runSuites() {
 
   let childProcess: ChildProcess;
   if (environment === 'development') {
-    console.log('Starting service from `./start_service.sh`');
-    const childProcess = spawn('./start_service.sh');
+    console.log('Starting service from `./hooks/start_service.sh`');
+    const childProcess = spawn('./hooks/start_service.sh');
     childProcess.stdout.on('data', chunk => {
       console.log(chunk);
     });

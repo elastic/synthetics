@@ -1,4 +1,4 @@
-import { journey, step } from 'elastic-synthetics';
+import { journey, step } from '@elastic/synthetics';
 
 journey({ name: 'Old Login' }, () => {
   step('Go to home page', async (page, params) => {

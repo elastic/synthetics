@@ -1,4 +1,4 @@
-import { run } from 'elastic-synthetics';
+import { run } from '@elastic/synthetics';
 import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';

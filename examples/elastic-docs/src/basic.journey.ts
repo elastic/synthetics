@@ -1,4 +1,4 @@
-import { journey, step } from 'elastic-synthetics';
+import { journey, step } from '@elastic/synthetics';
 import { goToElasticHome, goToDocsHome } from './common';
 import * as expect from 'expect';
 

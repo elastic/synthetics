@@ -5,7 +5,7 @@ import { green, red, cyan } from 'kleur';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
 export type ReporterOptions = {
-  fd?: Writable;
+  fd?: number;
   colors?: boolean;
 };
 
@@ -27,17 +27,12 @@ function renderError(error) {
 }
 
 export default class BaseReporter {
-  stream: Writable;
+  stream: SonicBoom;
   constructor(public runner: Runner, public options: ReporterOptions = {}) {
     this.runner = runner;
     this.stream = new SonicBoom({ fd: options.fd || process.stdout.fd });
-    /**
-     * Destroy stream once data is written and run
-     * it as the last listener giving enough room for
-     * other reporters to write to stream
-     */
     this.runner.on('end', () => {
-      process.nextTick(() => this.stream.end());
+      this.stream.flushSync(); // flush only, do not close, we leave it to the parent process to close FDs
     });
 
     this._registerListeners();
@@ -78,7 +73,7 @@ export default class BaseReporter {
 
   write(message) {
     if (typeof message == 'object') {
-      message = '\n' + JSON.stringify(message);
+      message = JSON.stringify(message);
     }
     this.stream.write(message + '\n');
   }

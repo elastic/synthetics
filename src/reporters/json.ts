@@ -3,6 +3,7 @@ import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { formatError } from '../helpers';
 import { Journey } from '../dsl/journey';
 import snakeCaseKeys from 'snakecase-keys';
+import { Step } from '../dsl/step';
 
 // we need this ugly require to get the program version
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -35,8 +36,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on('journey:start', ({ journey, params }) => {
       this.writeJSON('journey/start', journey, {
-        params,
-        source: journey.callback.toString(),
+        payload: { params, source: journey.callback.toString },
       });
     });
 
@@ -44,16 +44,19 @@ export default class JSONReporter extends BaseReporter {
       'step:end',
       ({ journey, step, durationMs, error, screenshot, url, status }) => {
         if (screenshot) {
-          this.writeJSON('step/screenshot', journey, { screenshot });
+          this.writeJSON('step/screenshot', journey, {blob: screenshot});
         }
         this.writeJSON('step/end', journey, {
-          name: step.name,
-          index: step.index,
-          source: step.callback.toString(),
-          duration_ms: durationMs,
-          error: formatError(error),
+          step,
+          error,
           url,
-          status,
+          payload: {
+            source: step.callback.toString(),
+            duration_ms: durationMs,
+            error: formatError(error),
+            url,
+            status,
+          }
         });
 
         if (status === 'failed') {
@@ -69,39 +72,62 @@ export default class JSONReporter extends BaseReporter {
         if (networkinfo) {
           networkinfo.forEach((ni, index) => {
             this.writeJSON('journey/network_info', journey, {
-              index,
-              ...snakeCaseKeys(networkinfo),
+              payload: snakeCaseKeys(networkinfo),
             });
           });
         }
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {
-            this.writeJSON('journey/filmstrips', journey, {
-              index,
-              ...snakeCaseKeys(strip),
-            });
+            this.writeJSON(
+              'journey/filmstrips', 
+              journey, 
+              {
+                payload: {
+                  index,
+                  ...{
+                    name: strip.name,
+                    ts: strip.ts
+                  },
+                },
+                blob: strip.snapshot,
+              }
+            );
           });
         }
-        this.writeJSON('journey/end', journey, {
+        this.writeJSON('journey/end', journey, {payload: {
           duration_ms: durationMs,
           error: formatError(journeyError),
           status: journeyStatus,
-        });
+        }});
       }
     );
   }
 
-  writeJSON(type: string, journey: Journey, payload: any) {
+  // Writes a structered synthetics event
+  // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
+  // it before passing it into this function!
+  writeJSON(
+    type: string, 
+    journey: Journey, 
+    {step, error, payload, blob, url}: {url?: string, step?: Step, error?: Error, payload?: {[key: string]: any}, blob?: string}
+    ) {
     this.write({
       type: type,
       package_version: programVersion,
+      payload,
+      blob,
+      error: formatError(error),
+      step: step ? {
+        name: step.name,
+        index: step.index
+      } : null,
       journey: {
         name: journey.options.name,
         id: journey.options.id,
       },
       '@timestamp': new Date(), // TODO: Use monotonic clock?
-      payload,
+      
     });
   }
 }

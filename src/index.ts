@@ -13,6 +13,7 @@ export async function run(options: RunOptions) {
   options.environment = options.environment || process.env['NODE_ENV'];
 
   const cliArgs = parseArgs();
+
   try {
     await runner.run({
       ...options,
@@ -22,9 +23,12 @@ export async function run(options: RunOptions) {
       journeyName: options.journeyName ?? cliArgs.journeyName,
       network: options.network ?? cliArgs.network,
       pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError,
+      outfd: options.outfd ?? cliArgs.outfd,
+      reporter: options.reporter ?? cliArgs.json ? 'json' : 'default'
     });
   } catch (e) {
     console.error('Failed to run the test', e);
+    console.log("EXIT ERR")
     process.exit(1);
   }
 }

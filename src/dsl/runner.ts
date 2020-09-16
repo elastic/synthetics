@@ -86,7 +86,7 @@ export default class Runner {
      */
     const Reporter = reporters[reporter];
     const reporterOptions: ReporterOptions = outfd
-      ? { fd: createWriteStream(null) }
+      ? { fd: outfd }
       : {};
     new Reporter(this, reporterOptions);
 
