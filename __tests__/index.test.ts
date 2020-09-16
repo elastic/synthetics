@@ -4,19 +4,22 @@ import * as ParseArgs from '../src/parse_args';
 
 describe('run', () => {
   let runnerSpy: jest.SpyInstance;
+  let parseArgsSpy: jest.SpyInstance;
 
   beforeEach(() => {
     runnerSpy = jest
       .spyOn(runner, 'run')
       .mockImplementation(() => Promise.resolve());
+    parseArgsSpy = jest.spyOn(ParseArgs, 'parseArgs');
   });
 
   it('uses undefined options when none specified', async () => {
+    parseArgsSpy.mockImplementation(() => ({}));
     await run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toEqual({
       dryRun: undefined,
       environment: 'debug',
-      headless: false,
+      headless: undefined,
       journeyName: undefined,
       network: undefined,
       params: {},

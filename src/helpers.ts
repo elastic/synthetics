@@ -1,4 +1,6 @@
 import { red, green, yellow, grey, cyan } from 'kleur';
+import os from 'os';
+import path from 'path';
 
 export function debug(message: string) {
   if (process.env.DEBUG) {
@@ -38,4 +40,8 @@ export function formatError(error: Error) {
 export function getMonotonicTime() {
   const hrTime = process.hrtime();
   return hrTime[0] * 1 + hrTime[1] / 1e9;
+}
+
+export function generateTempPath() {
+  return path.join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
 }

@@ -9,7 +9,7 @@ program
   .option('-j, --json', 'output newline delimited JSON')
   .option('--stdin', 'read script file input from stdin')
   .option('-d, --debug', 'print debug information')
-  .option('--headless', 'run browser in headless mode', false)
+  .option('--no-headless', 'run browser in headful mode')
   .option(
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
