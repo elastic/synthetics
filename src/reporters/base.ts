@@ -38,7 +38,7 @@ export default class BaseReporter {
   close() {
     if (this.fd <= 2) {
       // For stdout/stderr we should close the stream otherwise the process hangs
-      //this.stream.end();
+      this.stream.end();
     } else {
       // If the user has passed a custom FD we don't close the FD, but we do flush it
       // to give them more control. This is important because FDs can/should only be closed
