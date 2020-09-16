@@ -44,7 +44,10 @@ export default class JSONReporter extends BaseReporter {
       'step:end',
       ({ journey, step, durationMs, error, screenshot, url, status }) => {
         if (screenshot) {
-          this.writeJSON('step/screenshot', journey, { blob: screenshot });
+          this.writeJSON('step/screenshot', journey, {
+            step,
+            blob: screenshot,
+          });
         }
         this.writeJSON('step/end', journey, {
           step,
