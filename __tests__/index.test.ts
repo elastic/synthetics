@@ -26,7 +26,7 @@ describe('run', () => {
       pauseOnError: undefined,
       screenshots: undefined,
       outfd: undefined,
-      reporter: 'default',
+      reporter: undefined,
     });
   });
 
@@ -57,7 +57,7 @@ describe('run', () => {
         journeyName: 'There and Back Again',
         network: true,
         pauseOnError: true,
-        reporter: 'default',
+        reporter: undefined,
         outfd: undefined,
       } as any;
     });
@@ -72,7 +72,7 @@ describe('run', () => {
       params: {},
       pauseOnError: true,
       screenshots: true,
-      reporter: 'default',
+      reporter: undefined,
       outfd: undefined,
     });
   });

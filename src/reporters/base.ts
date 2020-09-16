@@ -27,14 +27,25 @@ function renderError(error) {
 
 export default class BaseReporter {
   stream: SonicBoom;
+  fd: number;
   constructor(public runner: Runner, public options: ReporterOptions = {}) {
     this.runner = runner;
-    this.stream = new SonicBoom({ fd: options.fd || process.stdout.fd });
-    this.runner.on('end', () => {
-      this.stream.flushSync(); // flush only, do not close, we leave it to the parent process to close FDs
-    });
-
+    this.fd = options.fd || process.stdout.fd;
+    this.stream = new SonicBoom({ fd: this.fd });
     this._registerListeners();
+  }
+
+  close() {
+    if (this.fd <= 2) {
+      // For stdout/stderr we should close the stream otherwise the process hangs
+      //this.stream.end();
+    } else {
+      // If the user has passed a custom FD we don't close the FD, but we do flush it
+      // to give them more control. This is important because FDs can/should only be closed
+      // once, and the primary use case for custom FDs is being called by heartbeat, which
+      // does the close itself
+      this.stream.flush();
+    }
   }
 
   _registerListeners() {

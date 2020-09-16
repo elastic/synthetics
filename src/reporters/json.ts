@@ -105,6 +105,8 @@ export default class JSONReporter extends BaseReporter {
   // Writes a structered synthetics event
   // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
   // it before passing it into this function!
+  // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured
+  // stuff in there
   writeJSON(
     type: string,
     journey: Journey,
@@ -123,23 +125,23 @@ export default class JSONReporter extends BaseReporter {
     }
   ) {
     this.write({
+      '@timestamp': new Date(), // TODO: Use monotonic clock?
       type: type,
-      package_version: programVersion,
-      payload,
-      blob,
-      error: formatError(error),
-      url,
+      journey: {
+        name: journey.options.name,
+        id: journey.options.id,
+      },
       step: step
         ? {
             name: step.name,
             index: step.index,
           }
-        : null,
-      journey: {
-        name: journey.options.name,
-        id: journey.options.id,
-      },
-      '@timestamp': new Date(), // TODO: Use monotonic clock?
+        : undefined,
+      payload,
+      blob,
+      error: formatError(error),
+      url,
+      package_version: programVersion,
     });
   }
 }
