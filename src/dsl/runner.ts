@@ -84,8 +84,8 @@ export default class Runner {
     /**
      * Set up the corresponding reporter
      */
-    const Reporter = reporters[reporter];
-    this.reporter = new Reporter(this, { fd: outfd });
+    const ReporterClass = reporters[reporter];
+    this.reporter = new ReporterClass(this, { fd: outfd });
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
