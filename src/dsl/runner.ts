@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
-import { getMilliSecs } from '../helpers';
+import { getMilliSecs, getMonotonicTime } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -34,6 +34,7 @@ interface Events {
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
+    timestamp: number;
     journey: Journey;
     step: Step;
     durationMs: number;
@@ -42,6 +43,8 @@ interface Events {
     screenshot?: string;
     error?: Error;
     metrics?: Metrics;
+    start: number;
+    end: number;
   };
   end: unknown;
 }
@@ -97,6 +100,7 @@ export default class Runner {
       }
       this.currentJourney = journey;
       const journeyStart = process.hrtime();
+      const journeyTimestamp = Date.now() * 1000;
       this.emit('journey:start', { journey, params });
 
       let shouldSkip = false;
@@ -111,7 +115,7 @@ export default class Runner {
       metrics && (await pluginManager.start('performance'));
 
       for (const step of journey.steps) {
-        const stepStart = process.hrtime();
+        const stepStart = getMonotonicTime();
         const stepStartEvent = { journey, step };
         this.emit('step:start', stepStartEvent);
 
@@ -142,8 +146,11 @@ export default class Runner {
           status = 'failed';
           shouldSkip = true;
         } finally {
-          const durationMs = getMilliSecs(stepStart);
+          const stepEnd = getMonotonicTime();
+          // TODO: remove duration
+          const durationMs = (stepEnd - stepStart) * 1000;
           const stepEndEvent = {
+            timestamp: journeyTimestamp,
             journey,
             step,
             durationMs,
@@ -152,6 +159,8 @@ export default class Runner {
             url,
             status,
             metrics: metricsData,
+            start: stepStart,
+            end: stepEnd,
           };
           this.emit('step:end', stepEndEvent);
           if (runOptions.pauseOnError && error) {
