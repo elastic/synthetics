@@ -5,7 +5,7 @@ import { green, red, cyan } from 'kleur';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
 export type ReporterOptions = {
-  fd?: Writable;
+  fd?: number;
   colors?: boolean;
 };
 

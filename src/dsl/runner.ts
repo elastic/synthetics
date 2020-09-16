@@ -6,12 +6,10 @@ import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
-import { ReporterOptions } from '../reporters/base';
-import { createWriteStream } from 'fs';
 
 export type RunOptions = {
-  params: { [key: string]: any };
-  environment: string;
+  params?: { [key: string]: any };
+  environment?: string;
   reporter?: 'default' | 'json';
   headless?: boolean;
   screenshots?: boolean;
@@ -72,7 +70,7 @@ export default class Runner {
 
   async run(runOptions: RunOptions) {
     const {
-      params,
+      params = {},
       reporter = 'default',
       headless,
       dryRun,
@@ -85,10 +83,7 @@ export default class Runner {
      * Set up the corresponding reporter
      */
     const Reporter = reporters[reporter];
-    const reporterOptions: ReporterOptions = outfd
-      ? { fd: createWriteStream(null) }
-      : {};
-    new Reporter(this, reporterOptions);
+    new Reporter(this, { fd: outfd });
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
@@ -119,7 +114,7 @@ export default class Runner {
           if (dryRun || shouldSkip) {
             status = 'skipped';
           } else {
-            await step.callback(page, params, { context, browser });
+            await step.callback({ page, params, context, browser, client });
             await page.waitForLoadState('load');
             if (screenshots) {
               screenshot = (await page.screenshot()).toString('base64');
