@@ -25,10 +25,13 @@ describe('run', () => {
       params: {},
       pauseOnError: undefined,
       screenshots: undefined,
+      outfd: undefined,
+      reporter: undefined,
     });
   });
 
   it('uses specified option values', async () => {
+    const reporter: 'default' | 'json' = 'json';
     const runParams = {
       params: {},
       environment: 'debug',
@@ -38,6 +41,8 @@ describe('run', () => {
       journeyName: 'There and Back Again',
       network: true,
       pauseOnError: true,
+      outfd: undefined,
+      reporter,
     };
     await run(runParams);
     expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
@@ -52,6 +57,8 @@ describe('run', () => {
         journeyName: 'There and Back Again',
         network: true,
         pauseOnError: true,
+        reporter: undefined,
+        outfd: undefined,
       } as any;
     });
 
@@ -65,6 +72,8 @@ describe('run', () => {
       params: {},
       pauseOnError: true,
       screenshots: true,
+      reporter: undefined,
+      outfd: undefined,
     });
   });
 });

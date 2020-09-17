@@ -63,6 +63,6 @@ process.env.DEBUG = program.debug || '';
     network: program.network,
     pauseOnError: program.pauseOnError,
     outfd: program.outfd,
-    metrics: program.metrics
+    metrics: program.metrics,
   });
 })();

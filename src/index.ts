@@ -22,6 +22,8 @@ export async function run(options: RunOptions) {
       journeyName: options.journeyName ?? cliArgs.journeyName,
       network: options.network ?? cliArgs.network,
       pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError,
+      outfd: options.outfd ?? cliArgs.outfd,
+      reporter: cliArgs.json && !options.reporter ? 'json' : options.reporter,
     });
   } catch (e) {
     console.error('Failed to run the test', e);

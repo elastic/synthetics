@@ -6,6 +6,7 @@ import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
+import BaseReporter from '../reporters/base';
 import { PerformanceManager, Metrics } from '../plugins/performance';
 
 export type RunOptions = {
@@ -41,7 +42,7 @@ interface Events {
     screenshot: string;
     url: string;
     status: StatusValue;
-    metrics?: Metrics
+    metrics?: Metrics;
   };
   end: unknown;
 }
@@ -50,6 +51,8 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  pluginManager: PluginManager;
+  reporter: BaseReporter;
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -85,8 +88,8 @@ export default class Runner {
     /**
      * Set up the corresponding reporter
      */
-    const Reporter = reporters[reporter];
-    new Reporter(this, { fd: outfd });
+    const ReporterClass = reporters[reporter];
+    this.reporter = new ReporterClass(this, { fd: outfd });
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
@@ -107,21 +110,27 @@ export default class Runner {
       const pluginManager = new PluginManager(client);
       screenshots && (await pluginManager.start('trace'));
       network && (await pluginManager.start('network'));
-      metrics && (await pluginManager.start('performance'))
+      metrics && (await pluginManager.start('performance'));
 
       for (const step of journey.steps) {
         const stepStart = process.hrtime();
-        const stepStartEvent = { journey, step }
+        const stepStartEvent = { journey, step };
         this.emit('step:start', stepStartEvent);
 
-        let screenshot: string, url: string, status: StatusValue, error: Error, metricsData: Metrics;
+        let screenshot: string,
+          url: string,
+          status: StatusValue,
+          error: Error,
+          metricsData: Metrics;
         try {
           if (dryRun || shouldSkip) {
             status = 'skipped';
           } else {
             await step.callback({ page, params, context, browser, client });
             if (metrics) {
-              metricsData = await pluginManager.get<PerformanceManager>('performance').getMetrics()
+              metricsData = await pluginManager
+                .get<PerformanceManager>('performance')
+                .getMetrics();
             }
             await page.waitForLoadState('load');
             if (screenshots) {
@@ -144,8 +153,8 @@ export default class Runner {
             screenshot,
             url,
             status,
-            metrics: metricsData
-          }
+            metrics: metricsData,
+          };
           this.emit('step:end', stepEndEvent);
           if (runOptions.pauseOnError && error) {
             await new Promise(r => process.stdin.on('data', r));
@@ -165,6 +174,7 @@ export default class Runner {
       await browser.close();
     }
     this.emit('end', {});
+    this.reporter.close();
     this.reset();
   }
 

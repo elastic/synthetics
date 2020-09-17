@@ -11,13 +11,12 @@ type PluginOutput = {
   networkinfo?: Array<NetworkInfo>;
 };
 
-type Plugin = NetworkManager | Tracing | PerformanceManager
+type Plugin = NetworkManager | Tracing | PerformanceManager;
 
 export class PluginManager {
-
   protected plugins = new Map<PluginType, Plugin>();
 
-  constructor(private session: CDPSession) { }
+  constructor(private session: CDPSession) {}
 
   async start(type: PluginType) {
     let instance: Plugin;
@@ -31,17 +30,17 @@ export class PluginManager {
         await instance.start(this.session);
         break;
       case 'performance':
-        instance = new PerformanceManager(this.session)
-        instance.start()
+        instance = new PerformanceManager(this.session);
+        instance.start();
         break;
     }
 
     this.plugins.set(type, instance);
-    return instance
+    return instance;
   }
 
   get<T extends Plugin>(type: PluginType): T {
-    return this.plugins.get(type) as T
+    return this.plugins.get(type) as T;
   }
 
   async output(): Promise<PluginOutput> {
@@ -49,7 +48,7 @@ export class PluginManager {
       filmstrips: [],
       networkinfo: [],
     };
-    for (const [type, plugin] of this.plugins) {
+    for (const [, plugin] of this.plugins) {
       if (plugin instanceof NetworkManager) {
         data.networkinfo = plugin.stop();
       } else if (plugin instanceof Tracing) {

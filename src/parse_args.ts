@@ -26,8 +26,9 @@ program
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(
-    '--outfd',
-    'specify a file descriptor number for output. Default is stdout'
+    '--outfd <fd>',
+    'specify a file descriptor number for output. Default is stdout',
+    parseInt
   )
   .description('Run synthetic tests');
 
