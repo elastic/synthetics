@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { runner, step, journey } from '../../src/dsl/index';
-import { Tracing } from '../../src/plugins/tracing';
+import { Tracing, filterFilmstrips } from '../../src/plugins/tracing';
 import { generateTempPath } from '../../src/helpers';
 import { Server } from '../../utils/server';
 
@@ -23,6 +23,12 @@ describe('tracing', () => {
         await page.goto(server.TEST_PAGE);
         const events = await tracer.stop(client);
         expect(events.toString('utf-8')).toContain('screenshot');
+        const filmstrips = filterFilmstrips(events);
+        expect(filmstrips[0]).toMatchObject({
+          snapshot: expect.any(String),
+          name: 'Screenshot',
+          ts: expect.any(Number),
+        });
       });
     });
     await runner.run({

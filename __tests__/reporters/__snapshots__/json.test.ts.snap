@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`json reporter writes each step as NDJSON to the FD 1`] = `
+"{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"journey/start\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"params\\":{}},\\"package_version\\":\\"0.0.1\\"}
+{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"step/screenshot\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":0},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"step/end\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":0},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"duration_ms\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"journey/network_info\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"request\\":{},\\"response\\":{},\\"is_navigation_request\\":true},\\"package_version\\":\\"0.0.1\\"}
+{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"journey/filmstrips\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"index\\":0,\\"name\\":\\"screenshot\\",\\"ts\\":1},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"@timestamp\\":\\"2020-09-17T00:00:00.000Z\\",\\"type\\":\\"journey/end\\",\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"duration_ms\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
+"
+`;

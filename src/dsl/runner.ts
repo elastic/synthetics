@@ -6,7 +6,6 @@ import { reporters } from '../reporters';
 import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
-import BaseReporter from '../reporters/base';
 import { PerformanceManager, Metrics } from '../plugins';
 
 export type RunOptions = {
@@ -38,10 +37,10 @@ interface Events {
     journey: Journey;
     step: Step;
     durationMs: number;
-    error: Error;
-    screenshot: string;
     url: string;
     status: StatusValue;
+    screenshot?: string;
+    error?: Error;
     metrics?: Metrics;
   };
   end: unknown;
@@ -52,7 +51,6 @@ export default class Runner {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   pluginManager: PluginManager;
-  reporter: BaseReporter;
 
   addJourney(journey: Journey) {
     this.journeys.push(journey);
@@ -88,8 +86,8 @@ export default class Runner {
     /**
      * Set up the corresponding reporter
      */
-    const ReporterClass = reporters[reporter];
-    this.reporter = new ReporterClass(this, { fd: outfd });
+    const Reporter = reporters[reporter];
+    new Reporter(this, { fd: outfd });
 
     this.emit('start', { numJourneys: this.journeys.length });
     for (const journey of this.journeys) {
@@ -174,7 +172,6 @@ export default class Runner {
       await browser.close();
     }
     this.emit('end', {});
-    this.reporter.close();
     this.reset();
   }
 
