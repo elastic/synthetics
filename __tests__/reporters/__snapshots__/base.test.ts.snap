@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`base reporter writes each step to the FD 1`] = `
+"
+Journey: j1
+   [31m✖[39m  Step: 's1' failed (10 ms)
+   ---
+      stack: |-
+        Error: step failed
+      ---
+   
+
+[31m 1 failed[39m (0 ms) 
+
+"
+`;

@@ -49,7 +49,7 @@ describe('run', () => {
   });
 
   it('uses cli args if some options are not specified', async () => {
-    jest.spyOn(ParseArgs, 'parseArgs').mockImplementation(() => {
+    parseArgsSpy.mockImplementation(() => {
       return {
         headless: true,
         screenshots: true,
