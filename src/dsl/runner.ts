@@ -7,7 +7,7 @@ import { getMilliSecs } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
 import BaseReporter from '../reporters/base';
-import { PerformanceManager, Metrics } from '../plugins/performance';
+import { PerformanceManager, Metrics } from '../plugins';
 
 export type RunOptions = {
   params?: { [key: string]: any };
@@ -129,7 +129,7 @@ export default class Runner {
             await step.callback({ page, params, context, browser, client });
             if (metrics) {
               metricsData = await pluginManager
-                .get<PerformanceManager>('performance')
+                .get(PerformanceManager)
                 .getMetrics();
             }
             await page.waitForLoadState('load');
