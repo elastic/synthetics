@@ -18,17 +18,21 @@ describe('tracing', () => {
   it('should capture filmstrips', async () => {
     journey('Test', () => {
       step('capture filmstrips', async ({ client, page }) => {
-        const tracer = new Tracing();
-        await tracer.start(client);
-        await page.goto(server.TEST_PAGE);
-        const events = await tracer.stop(client);
-        expect(events.toString('utf-8')).toContain('screenshot');
-        const filmstrips = filterFilmstrips(events);
-        expect(filmstrips[0]).toMatchObject({
-          snapshot: expect.any(String),
-          name: 'Screenshot',
-          ts: expect.any(Number),
-        });
+        try {
+          const tracer = new Tracing();
+          await tracer.start(client);
+          await page.goto(server.TEST_PAGE);
+          const events = await tracer.stop(client);
+          expect(events.toString('utf-8')).toContain('screenshot');
+          const filmstrips = filterFilmstrips(events);
+          expect(filmstrips[0]).toMatchObject({
+            snapshot: expect.any(String),
+            name: 'Screenshot',
+            ts: expect.any(Number),
+          });
+        } catch (e) {
+          fail(e);
+        }
       });
     });
     await runner.run({

@@ -18,11 +18,15 @@ describe('network', () => {
   it('should capture network info', async () => {
     journey('Test', () => {
       step('net info', async ({ client, page }) => {
-        const network = new NetworkManager();
-        await network.start(client);
-        await page.goto(server.TEST_PAGE);
-        const netinfo = await network.stop();
-        expect(netinfo.length).toBeGreaterThan(0);
+        try {
+          const network = new NetworkManager();
+          await network.start(client);
+          await page.goto(server.TEST_PAGE);
+          const netinfo = await network.stop();
+          expect(netinfo.length).toBeGreaterThan(0);
+        } catch (e) {
+          fail(e);
+        }
       });
     });
     await runner.run({
