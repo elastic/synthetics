@@ -24,13 +24,18 @@ export type RunOptions = {
 
 interface Events {
   start: { numJourneys: number };
-  'journey:start': { journey: Journey; params: { [key: string]: any } };
+  'journey:start': {
+    journey: Journey;
+    timestamp: number;
+    params: { [key: string]: any };
+  };
   'journey:end': {
     journey: Journey;
     params: { [key: string]: any };
     durationMs: number;
     filmstrips?: Array<FilmStrip>;
     networkinfo?: Array<NetworkInfo>;
+    timestamp: number;
   };
   'step:start': { journey: Journey; step: Step };
   'step:end': {
@@ -101,7 +106,11 @@ export default class Runner {
       this.currentJourney = journey;
       const journeyStart = process.hrtime();
       const journeyTimestamp = Date.now() * 1000;
-      this.emit('journey:start', { journey, params });
+      this.emit('journey:start', {
+        journey,
+        timestamp: journeyTimestamp,
+        params,
+      });
 
       let shouldSkip = false;
       // We must coerce headless into a boolean, undefined does not behave the same as false
@@ -116,6 +125,7 @@ export default class Runner {
 
       for (const step of journey.steps) {
         const stepStart = getMonotonicTime();
+        const stepTimestamp = Date.now() * 1000;
         const stepStartEvent = { journey, step };
         this.emit('step:start', stepStartEvent);
 
@@ -150,7 +160,7 @@ export default class Runner {
           // TODO: remove duration
           const durationMs = (stepEnd - stepStart) * 1000;
           const stepEndEvent = {
-            timestamp: journeyTimestamp,
+            timestamp: stepTimestamp,
             journey,
             step,
             durationMs,
@@ -172,6 +182,7 @@ export default class Runner {
       const { filmstrips, networkinfo } = await pluginManager.output();
       const durationMs = getMilliSecs(journeyStart);
       this.emit('journey:end', {
+        timestamp: journeyTimestamp,
         journey,
         params,
         durationMs,

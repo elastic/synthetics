@@ -34,8 +34,9 @@ export default class JSONReporter extends BaseReporter {
     let journeyStatus: StatusValue = 'succeeded';
     let journeyError: Error;
 
-    this.runner.on('journey:start', ({ journey, params }) => {
+    this.runner.on('journey:start', ({ journey, timestamp, params }) => {
       this.writeJSON('journey/start', journey, {
+        timestamp,
         payload: { params, source: journey.callback.toString },
       });
     });
@@ -45,6 +46,7 @@ export default class JSONReporter extends BaseReporter {
       ({
         journey,
         step,
+        timestamp,
         durationMs,
         error,
         screenshot,
@@ -60,6 +62,7 @@ export default class JSONReporter extends BaseReporter {
         }
         this.writeJSON('step/end', journey, {
           step,
+          timestamp,
           error,
           url,
           payload: {
@@ -81,7 +84,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'journey:end',
-      ({ journey, durationMs, filmstrips, networkinfo }) => {
+      ({ journey, timestamp, durationMs, filmstrips, networkinfo }) => {
         if (networkinfo) {
           networkinfo.forEach(ni => {
             this.writeJSON('journey/network_info', journey, {
@@ -105,6 +108,7 @@ export default class JSONReporter extends BaseReporter {
           });
         }
         this.writeJSON('journey/end', journey, {
+          timestamp,
           payload: {
             duration_ms: durationMs,
             error: formatError(journeyError),
@@ -124,12 +128,14 @@ export default class JSONReporter extends BaseReporter {
     type: string,
     journey: Journey,
     {
+      timestamp,
       step,
       error,
       payload,
       blob,
       url,
     }: {
+      timestamp?: number;
       url?: string;
       step?: Step;
       error?: Error;
@@ -138,8 +144,7 @@ export default class JSONReporter extends BaseReporter {
     }
   ) {
     this.write({
-      '@timestamp': new Date(), // TODO: Use monotonic clock?
-      type: type,
+      '@timestamp': timestamp || Date.now() * 1000,
       journey: {
         name: journey.options.name,
         id: journey.options.id,
