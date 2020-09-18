@@ -8,7 +8,9 @@ pipeline {
     REPO = "elastic-synthetics"
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL = 'INFO'
-    NODE_VERSION = "12"
+    DOCKERELASTIC_SECRET = 'secret/observability-team/ci/docker-registry/prod'
+    DOCKER_REGISTRY = 'docker.elastic.co'
+    NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -35,6 +37,8 @@ pipeline {
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}")
         retryWithSleep(retries: 3, seconds: 5, backoff: true) {
+          dockerLogin(secret: "${DOCKERELASTIC_SECRET}",
+                      registry: "${DOCKER_REGISTRY}")
           withNodeEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'Download dependencies',script: 'npm install')
@@ -112,7 +116,7 @@ def cleanup(){
 }
 
 def withNodeEnv(Map args=[:], Closure body){
-  docker.image("node:${NODE_VERSION}").inside(){
+  docker.image("${NODE_DOCKER_IMAGE}").inside(){
     withEnv(["HOME=${WORKSPACE}"]) {
       body()
     }
