@@ -105,8 +105,8 @@ def cleanup(){
 }
 
 def withNodeEnv(Map args=[:], Closure body){
-  docker.image("node:${NODE_VERSION}").inside("-v ${WORKSPACE}/${BASE_DIR}:/app -w /app"){
-    withEnv(["HOME=/app"]) {
+  docker.image("node:${NODE_VERSION}").inside(){
+    withEnv(["HOME=${WORKSPACE}"]) {
       body()
     }
   }
