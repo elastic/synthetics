@@ -84,15 +84,15 @@ pipeline {
           cleanup()
           withNodeEnv(){
             dir("${BASE_DIR}"){
-              sh(label: 'Runs the tests',script: 'npm test')
+              sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
+              sh(label: 'Runs the tests',script: 'npm test --ci --reporters=default --reporters=jest-junit')
             }
           }
         }
       }
       post {
         always {
-          echo "grab test results"
-          //tap2Junit(pattern: '*-output.tap', suffix: 'junit.xml', package: 'Node.js')
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
         }
       }
     }
