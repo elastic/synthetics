@@ -2,7 +2,7 @@
 - job:
     name: apm-agent-rum/elastic-synthetics
     display-name: Elastic Synthetics
-    description: Jenkins pipeline for the Elastic Synthetics project
+    description: Jenkins pipeline for the Elastic Synthetics project.
     project-type: multibranch
     script-path: .ci/Jenkinsfile
     scm:
