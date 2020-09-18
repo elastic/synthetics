@@ -34,6 +34,13 @@ pipeline {
       steps {
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}")
+        retryWithSleep(retries: 3, seconds: 5, backoff: true) {
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Download dependencies',script: 'npm install')
+            }
+          }
+        }
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false
       }
     }
