@@ -37,7 +37,7 @@
   "dependencies": {
     "commander": "^6.0.0",
     "kleur": "^4.1.1",
-    "playwright": "^1.2.1",
+    "playwright-chromium": "^1.2.1",
     "snakecase-keys": "^3.2.0",
     "sonic-boom": "^1.1.0",
     "source-map-support": "^0.5.19"
