@@ -85,7 +85,7 @@ pipeline {
           withNodeEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
-              sh(label: 'Runs the tests',script: 'npm test --ci --reporters=default --reporters=jest-junit')
+              sh(label: 'Runs the tests',script: 'jest --ci --reporters=default --reporters=jest-junit')
             }
           }
         }
@@ -113,7 +113,10 @@ def cleanup(){
 
 def withNodeEnv(Map args=[:], Closure body){
   docker.image("node:${NODE_VERSION}").inside(){
-    withEnv(["HOME=${WORKSPACE}"]) {
+    withEnv([
+      "HOME=${WORKSPACE}",
+      "PATH=${PATH}:./node_modules/.bin"
+    ]) {
       body()
     }
   }
