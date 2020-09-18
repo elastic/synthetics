@@ -11,6 +11,7 @@ pipeline {
     DOCKERELASTIC_SECRET = 'secret/observability-team/ci/docker-registry/prod'
     DOCKER_REGISTRY = 'docker.elastic.co'
     NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
+    SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -116,7 +117,7 @@ def cleanup(){
 }
 
 def withNodeEnv(Map args=[:], Closure body){
-  docker.image("${NODE_DOCKER_IMAGE}").inside(){
+  docker.image("${NODE_DOCKER_IMAGE}").inside(" --security-opt seccomp=${SECCOMP_FILE}"){
     withEnv(["HOME=${WORKSPACE}"]) {
       body()
     }
