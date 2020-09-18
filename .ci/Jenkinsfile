@@ -1,0 +1,113 @@
+#!/usr/bin/env groovy
+
+@Library('apm@current') _
+
+pipeline {
+  agent { label 'ubuntu-20 && immutable' }
+  environment {
+    REPO = "elastic-synthetics"
+    BASE_DIR = "src/github.com/elastic/${env.REPO}"
+    PIPELINE_LOG_LEVEL = 'INFO'
+    NODE_VERSION = "12"
+  }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+    buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
+    timestamps()
+    ansiColor('xterm')
+    disableResume()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+    rateLimitBuilds(throttle: [count: 60, durationName: 'hour', userBoost: true])
+    quietPeriod(10)
+  }
+  triggers {
+    issueCommentTrigger('(?i)(^/test$)')
+  }
+  parameters {
+    booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
+  }
+  stages {
+    /**
+     Checkout the code and stash it, to use it on other stages.
+     */
+    stage('Checkout') {
+      steps {
+        deleteDir()
+        gitCheckout(basedir: "${BASE_DIR}")
+        stash allowEmpty: true, name: 'source', useDefaultExcludes: false
+      }
+    }
+    /**
+     Checks formatting / linting.
+     */
+    stage('Lint') {
+      steps {
+        withGithubNotify(context: 'Linting') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Checks linting',script: 'npm run-script lint')
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     Build the main package
+     */
+    stage('Build') {
+      steps {
+        withGithubNotify(context: 'Build') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Build',script: 'npm run build')
+            }
+          }
+        }
+      }
+    }
+    /**
+     Execute integration tests.
+     */
+    stage('Test') {
+      steps {
+        withGithubNotify(context: 'Test') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Runs the tests',script: 'npm test')
+            }
+          }
+        }
+      }
+      post {
+        always {
+          echo "grab test results"
+          //tap2Junit(pattern: '*-output.tap', suffix: 'junit.xml', package: 'Node.js')
+        }
+      }
+    }
+  }
+  post {
+    cleanup {
+      notifyBuildResult(prComment: true)
+    }
+  }
+}
+
+def cleanup(){
+  dir("${BASE_DIR}"){
+    deleteDir()
+  }
+  unstash 'source'
+}
+
+def withNodeEnv(Map args=[:], Closure body){
+  docker.image("node:${NODE_VERSION}").inside("-v ${WORKSPACE}/${BASE_DIR}:/app -w /app"){
+    withEnv(["HOME=/app"]) {
+      body()
+    }
+  }
+}
