@@ -41,7 +41,7 @@ pipeline {
             }
           }
         }
-        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache"
+        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**"
       }
     }
     /**
