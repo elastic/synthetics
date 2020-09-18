@@ -5,7 +5,7 @@
 pipeline {
   agent { label 'ubuntu-20 && immutable' }
   environment {
-    REPO = "elastic-synthetics"
+    REPO = "synthetics"
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL = 'INFO'
     DOCKERELASTIC_SECRET = 'secret/observability-team/ci/docker-registry/prod'
