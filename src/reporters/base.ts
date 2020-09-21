@@ -1,6 +1,6 @@
 import SonicBoom from 'sonic-boom';
 import Runner from '../dsl/runner';
-import { green, red, cyan } from 'kleur';
+import { green, red, cyan } from 'kleur/colors';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
 export type ReporterOptions = {

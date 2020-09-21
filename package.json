@@ -10,7 +10,7 @@
     "watch": "tsc -w",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
-    "test": "NO_COLOR=1 jest",
+    "test": "jest",
     "updateSnapshot": "jest --updateSnapshot",
     "coverage": "jest --coverage"
   },
