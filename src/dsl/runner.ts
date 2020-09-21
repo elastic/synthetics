@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { Journey } from './journey';
 import { Step } from './step';
 import { reporters } from '../reporters';
-import { getMilliSecs, getMonotonicTime } from '../helpers';
+import { getMilliSecs, getMonotonicTime, getTimestamp } from '../helpers';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -105,7 +105,7 @@ export default class Runner {
       }
       this.currentJourney = journey;
       const journeyStart = process.hrtime();
-      const journeyTimestamp = Date.now() * 1000;
+      const journeyTimestamp = getTimestamp();
       this.emit('journey:start', {
         journey,
         timestamp: journeyTimestamp,
@@ -125,7 +125,7 @@ export default class Runner {
 
       for (const step of journey.steps) {
         const stepStart = getMonotonicTime();
-        const stepTimestamp = Date.now() * 1000;
+        const stepTimestamp = getTimestamp();
         const stepStartEvent = { journey, step };
         this.emit('step:start', stepStartEvent);
 

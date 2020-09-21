@@ -1,6 +1,6 @@
 import BaseReporter from './base';
 import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
-import { formatError } from '../helpers';
+import { formatError, getTimestamp } from '../helpers';
 import { Journey } from '../dsl/journey';
 import snakeCaseKeys from 'snakecase-keys';
 import { Step } from '../dsl/step';
@@ -144,7 +144,7 @@ export default class JSONReporter extends BaseReporter {
     }
   ) {
     this.write({
-      '@timestamp': timestamp || Date.now() * 1000,
+      '@timestamp': timestamp || getTimestamp(),
       journey: {
         name: journey.options.name,
         id: journey.options.id,
