@@ -1,4 +1,4 @@
-import { red, green, yellow, grey, cyan } from 'kleur';
+import { red, green, yellow, grey, cyan } from 'kleur/colors';
 import os from 'os';
 import path from 'path';
 

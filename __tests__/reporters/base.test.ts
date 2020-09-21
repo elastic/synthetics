@@ -1,3 +1,8 @@
+/**
+ * Disable the ANSI codes for kleur/colors module
+ */
+process.env.NO_COLOR = '1';
+
 import fs from 'fs';
 import { runner, step, journey } from '../../src/dsl';
 import BaseReporter from '../../src/reporters/base';
@@ -7,6 +12,7 @@ describe('base reporter', () => {
   const dest = generateTempPath();
   afterAll(() => {
     fs.unlinkSync(dest);
+    process.env.NO_COLOR = '';
   });
 
   it('writes each step to the FD', async () => {
