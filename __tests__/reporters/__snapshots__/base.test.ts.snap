@@ -7,8 +7,8 @@ Journey: j1
    ---
       stack: |-
         Error: step failed
-      ---
-   
+   ---
+
 
 [31m 1 failed[39m (0 ms) 
 
