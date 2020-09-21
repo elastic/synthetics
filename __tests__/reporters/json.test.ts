@@ -16,6 +16,7 @@ describe('json reporter', () => {
     runner.emit('journey:start', {
       journey: j1,
       params: {},
+      timestamp: 1600300800000000,
     });
     runner.emit('step:end', {
       journey: j1,
@@ -24,11 +25,15 @@ describe('json reporter', () => {
       durationMs: 10,
       screenshot: 'dummy',
       url: 'dummy',
+      timestamp: 1600300800000000,
+      start: 0,
+      end: 10,
     });
     runner.emit('journey:end', {
       journey: j1,
       params: {},
       durationMs: 11,
+      timestamp: 1600300800000000,
       filmstrips: [
         {
           snapshot: 'dummy',

@@ -45,3 +45,7 @@ export function getMonotonicTime() {
 export function generateTempPath() {
   return path.join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
 }
+
+export function getTimestamp() {
+  return Date.now() * 1000;
+}

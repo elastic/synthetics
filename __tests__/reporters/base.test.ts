@@ -18,6 +18,7 @@ describe('base reporter', () => {
     runner.emit('journey:start', {
       journey: j1,
       params: {},
+      timestamp: 1600300800000000,
     });
     const error = {
       name: 'Error',
@@ -31,6 +32,9 @@ describe('base reporter', () => {
       step: step('s1', async () => {}),
       durationMs: 10,
       url: 'dummy',
+      start: 0,
+      end: 10,
+      timestamp: 1600300800000000,
     });
     runner.emit('end', 'done');
     /**
