@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
-import { journey, step } from './dsl';
+import { journey, step } from './core';
 import { debug } from './helpers';
 import { run } from './';
 import { parseArgs } from './parse_args';

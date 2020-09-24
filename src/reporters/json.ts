@@ -1,5 +1,5 @@
 import BaseReporter from './base';
-import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
+import { StatusValue } from '../common_types';
 import { formatError, getTimestamp } from '../helpers';
 import { Journey } from '../dsl/journey';
 import snakeCaseKeys from 'snakecase-keys';
@@ -8,26 +8,6 @@ import { Step } from '../dsl/step';
 // we need this ugly require to get the program version
 /* eslint-disable @typescript-eslint/no-var-requires */
 const programVersion = require('../../package.json').version;
-
-interface JourneyResults {
-  id: string;
-  name: string;
-  meta: { [key: string]: any };
-  duration_ms: number;
-  url?: string; // URL at end of first step
-  error?: Error;
-  status: StatusValue;
-  filmstrips?: Array<FilmStrip>;
-  networkinfo?: Array<NetworkInfo>;
-  steps: Array<{
-    name: string;
-    source: string;
-    duration_ms: number;
-    error: Error;
-    screenshot: string;
-    status: StatusValue;
-  }>;
-}
 
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
@@ -47,7 +27,8 @@ export default class JSONReporter extends BaseReporter {
         journey,
         step,
         timestamp,
-        durationMs,
+        start,
+        end,
         error,
         screenshot,
         url,
@@ -67,7 +48,8 @@ export default class JSONReporter extends BaseReporter {
           url,
           payload: {
             source: step.callback.toString(),
-            duration_ms: durationMs,
+            start,
+            end,
             error: formatError(error),
             url,
             status,
@@ -84,7 +66,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'journey:end',
-      ({ journey, timestamp, durationMs, filmstrips, networkinfo }) => {
+      ({ journey, timestamp, start, end, filmstrips, networkinfo }) => {
         if (networkinfo) {
           networkinfo.forEach(ni => {
             this.writeJSON('journey/network_info', journey, {
@@ -110,7 +92,8 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON('journey/end', journey, {
           timestamp,
           payload: {
-            duration_ms: durationMs,
+            start,
+            end,
             error: formatError(journeyError),
             status: journeyStatus,
           },
@@ -144,6 +127,7 @@ export default class JSONReporter extends BaseReporter {
     }
   ) {
     this.write({
+      type,
       '@timestamp': timestamp || getTimestamp(),
       journey: {
         name: journey.options.name,

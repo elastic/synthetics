@@ -1,5 +1,5 @@
 import SonicBoom from 'sonic-boom';
-import Runner from '../dsl/runner';
+import Runner from '../core/runner';
 import { green, red, cyan } from 'kleur/colors';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
@@ -75,10 +75,10 @@ export default class BaseReporter {
       this.write(`\nJourney: ${journey.options.name}`);
     });
 
-    this.runner.on('step:end', ({ step, durationMs, error, status }) => {
+    this.runner.on('step:end', ({ step, start, end, error, status }) => {
       const message = `${symbols[status]}  Step: '${
         step.name
-      }' ${status} (${renderDuration(durationMs)} ms)`;
+      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
       this.write(indent(message));
       error && this.write(renderError(error));
       result[status]++;

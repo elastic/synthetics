@@ -1,5 +1,5 @@
-import { runner } from './dsl';
-import { RunOptions } from './dsl/runner';
+import { runner } from './core';
+import { RunOptions } from './core/runner';
 import { parseArgs } from './parse_args';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -31,4 +31,4 @@ export async function run(options: RunOptions) {
   }
 }
 
-export * from './dsl';
+export { journey, step } from './core';
