@@ -133,7 +133,7 @@ export default class Runner {
       const start = getMonotonicTime();
       const timestamp = getTimestamp();
       this.emit('step:start', { timestamp, journey, step });
-      let data: StepResult;
+      let data: StepResult = { status: 'succeeded' };
       if (options.dryRun || skipStep) {
         data.status = 'skipped';
       } else {
@@ -142,7 +142,7 @@ export default class Runner {
       /**
        * skip next steps if the previous step returns error
        */
-      skipStep = true;
+      if (data.error) skipStep = true;
       this.emit('step:end', {
         timestamp,
         journey,
