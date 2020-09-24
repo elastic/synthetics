@@ -23,6 +23,7 @@ describe('json reporter', () => {
       status: 'succeeded',
       step: step('s1', async () => {}),
       screenshot: 'dummy',
+      screenshotFormat: 'jpeg',
       url: 'dummy',
       timestamp: 1600300800000000,
       start: 0,
