@@ -164,7 +164,7 @@ export default class Runner {
   }
 
   async endJourney(journey, context: JourneyContext) {
-    const { timestamp, pluginManager, start, params, driver } = context;
+    const { timestamp, pluginManager, start, params } = context;
     const { filmstrips, networkinfo } = await pluginManager.output();
     this.emit('journey:end', {
       timestamp,
@@ -175,7 +175,6 @@ export default class Runner {
       filmstrips,
       networkinfo,
     });
-    await driver.browser.close();
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
@@ -198,6 +197,7 @@ export default class Runner {
       this.beginJourney(journey, context);
       await this.runSteps(journey, context, options);
       await this.endJourney(journey, context);
+      await Gatherer.dispose(driver);
     } catch (e) {
       journeyResult.status = 'failed';
       journeyResult.error = e;

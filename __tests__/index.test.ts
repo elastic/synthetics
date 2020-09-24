@@ -1,5 +1,5 @@
 import { run } from '../src/index';
-import { runner } from '../src/dsl';
+import { runner } from '../src/core';
 import * as ParseArgs from '../src/parse_args';
 
 describe('run', () => {
@@ -9,7 +9,7 @@ describe('run', () => {
   beforeEach(() => {
     runnerSpy = jest
       .spyOn(runner, 'run')
-      .mockImplementation(() => Promise.resolve());
+      .mockImplementation(() => Promise.resolve({}));
     parseArgsSpy = jest.spyOn(ParseArgs, 'parseArgs');
   });
 

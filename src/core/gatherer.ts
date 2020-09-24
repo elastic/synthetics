@@ -16,7 +16,7 @@ export type Driver = {
 };
 
 export class Gatherer {
-  static async setupDriver(headless: boolean): Promise<Driver> {
+  static async setupDriver(headless?: boolean): Promise<Driver> {
     const browser = await chromium.launch({ headless: headless ?? true });
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -31,5 +31,9 @@ export class Gatherer {
     network && (await pluginManager.start('network'));
     metrics && (await pluginManager.start('performance'));
     return pluginManager;
+  }
+
+  static async dispose(driver: Driver) {
+    await driver.browser.close();
   }
 }

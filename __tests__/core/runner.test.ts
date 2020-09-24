@@ -1,6 +1,5 @@
-import Runner from '../../src/dsl/runner';
-import { Journey } from '../../src/dsl/journey';
-import { Step } from '../../src/dsl/step';
+import Runner from '../../src/core/runner';
+import { Journey } from '../../src/dsl';
 
 const noop = async () => {};
 let runner: Runner;
@@ -24,18 +23,4 @@ it('add journey', () => {
   runner.addJourney(j2);
   expect(runner.currentJourney).toEqual(j2);
   expect(runner.journeys.length).toBe(2);
-});
-
-it('add steps to current journey', () => {
-  const s1 = new Step('step1', 0, noop);
-  const s2 = new Step('step2', 1, noop);
-  runner.addStep(s1);
-  expect(runner.currentJourney).toBeNull();
-
-  const j1 = new Journey({ name: 'j1' }, noop);
-  runner.addJourney(j1);
-  runner.addStep(s1);
-  expect(runner.currentJourney.steps).toEqual([s1]);
-  runner.addStep(s2);
-  expect(runner.currentJourney.steps.length).toBe(2);
 });
