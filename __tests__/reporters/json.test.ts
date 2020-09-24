@@ -31,6 +31,7 @@ describe('json reporter', () => {
     runner.emit('journey:end', {
       journey: j1,
       params: {},
+      status: 'succeeded',
       start: 0,
       end: 11,
       timestamp: 1600300800000000,

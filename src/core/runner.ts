@@ -37,8 +37,8 @@ type JourneyContext = BaseContext & {
 };
 
 type StepResult = {
-  url?: string;
   status: StatusValue;
+  url?: string;
   metrics?: Metrics;
   error?: Error;
   screenshot?: string;
@@ -58,15 +58,12 @@ interface Events {
     timestamp: number;
     params: RunParamaters;
   };
-  'journey:end': {
-    journey: Journey;
-    timestamp: number;
-    params: RunParamaters;
-    start: number;
-    end: number;
-    filmstrips?: Array<FilmStrip>;
-    networkinfo?: Array<NetworkInfo>;
-  };
+  'journey:end': BaseContext &
+    JourneyResult & {
+      journey: Journey;
+      filmstrips?: Array<FilmStrip>;
+      networkinfo?: Array<NetworkInfo>;
+    };
   'step:start': { journey: Journey; step: Step; timestamp: number };
   'step:end': StepResult & {
     timestamp: number;
@@ -128,6 +125,7 @@ export default class Runner {
     context: JourneyContext,
     options: RunOptions
   ) {
+    const results: Array<StepResult> = [];
     let skipStep = false;
     for (const step of journey.steps) {
       const start = getMonotonicTime();
@@ -138,11 +136,11 @@ export default class Runner {
         data.status = 'skipped';
       } else {
         data = await this.runStep(step, context, options);
+        /**
+         * skip next steps if the previous step returns error
+         */
+        if (data.error) skipStep = true;
       }
-      /**
-       * skip next steps if the previous step returns error
-       */
-      if (data.error) skipStep = true;
       this.emit('step:end', {
         timestamp,
         journey,
@@ -154,7 +152,9 @@ export default class Runner {
       if (options.pauseOnError && data.error) {
         await new Promise(r => process.stdin.on('data', r));
       }
+      results.push(data);
     }
+    return results;
   }
 
   beginJourney(journey: Journey, context: JourneyContext) {
@@ -163,12 +163,14 @@ export default class Runner {
     this.emit('journey:start', { journey, timestamp, params });
   }
 
-  async endJourney(journey, context: JourneyContext) {
-    const { timestamp, pluginManager, start, params } = context;
+  async endJourney(journey, result: JourneyContext & JourneyResult) {
+    const { timestamp, pluginManager, start, params, status, error } = result;
     const { filmstrips, networkinfo } = await pluginManager.output();
     this.emit('journey:end', {
       timestamp,
       journey,
+      status,
+      error,
       params,
       start,
       end: getMonotonicTime(),
@@ -178,31 +180,39 @@ export default class Runner {
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
-    const journeyResult: JourneyResult = {
+    const result: JourneyResult = {
       status: 'succeeded',
     };
     try {
-      const { headless, params } = options;
       const timestamp = getTimestamp();
       const start = getMonotonicTime();
-      const driver = await Gatherer.setupDriver(headless);
+      const driver = await Gatherer.setupDriver(options.headless);
       const pluginManager = await Gatherer.beginRecording(driver, options);
       const context: JourneyContext = {
         timestamp,
         start,
-        params,
+        params: options.params,
         driver,
         pluginManager,
       };
       this.beginJourney(journey, context);
-      await this.runSteps(journey, context, options);
-      await this.endJourney(journey, context);
+      const stepResults = await this.runSteps(journey, context, options);
+      /**
+       * Mark journey as failed if any intermediate step fails
+       */
+      for (const stepResult of stepResults) {
+        if (stepResult.status === 'failed') {
+          result.status = stepResult.status;
+          result.error = stepResult.error;
+        }
+      }
+      await this.endJourney(journey, { ...context, ...result });
       await Gatherer.dispose(driver);
     } catch (e) {
-      journeyResult.status = 'failed';
-      journeyResult.error = e;
+      result.status = 'failed';
+      result.error = e;
     }
-    return journeyResult;
+    return result;
   }
 
   async run(options: RunOptions) {
@@ -226,7 +236,6 @@ export default class Runner {
     }
     this.emit('end', {});
     this.reset();
-
     return result;
   }
 

@@ -1,9 +1,7 @@
 import BaseReporter from './base';
-import { StatusValue } from '../common_types';
 import { formatError, getTimestamp } from '../helpers';
-import { Journey } from '../dsl/journey';
+import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
-import { Step } from '../dsl/step';
 
 // we need this ugly require to get the program version
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -11,9 +9,6 @@ const programVersion = require('../../package.json').version;
 
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
-    let journeyStatus: StatusValue = 'succeeded';
-    let journeyError: Error;
-
     this.runner.on('journey:start', ({ journey, timestamp, params }) => {
       this.writeJSON('journey/start', journey, {
         timestamp,
@@ -44,7 +39,6 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON('step/end', journey, {
           step,
           timestamp,
-          error,
           url,
           payload: {
             source: step.callback.toString(),
@@ -56,17 +50,21 @@ export default class JSONReporter extends BaseReporter {
             metrics,
           },
         });
-
-        if (status === 'failed') {
-          journeyStatus = 'failed';
-          journeyError = error;
-        }
       }
     );
 
     this.runner.on(
       'journey:end',
-      ({ journey, timestamp, start, end, filmstrips, networkinfo }) => {
+      ({
+        journey,
+        timestamp,
+        start,
+        end,
+        filmstrips,
+        networkinfo,
+        status,
+        error,
+      }) => {
         if (networkinfo) {
           networkinfo.forEach(ni => {
             this.writeJSON('journey/network_info', journey, {
@@ -94,8 +92,8 @@ export default class JSONReporter extends BaseReporter {
           payload: {
             start,
             end,
-            error: formatError(journeyError),
-            status: journeyStatus,
+            error: formatError(error),
+            status,
           },
         });
       }
