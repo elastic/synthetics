@@ -1,4 +1,4 @@
-import { journey, step, runner } from '../../src/dsl';
+import { journey, step, runner } from '../../src/core/index';
 
 beforeEach(() => runner.reset());
 

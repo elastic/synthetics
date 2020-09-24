@@ -1,5 +1,5 @@
-import { runner } from './dsl';
-import { RunOptions } from './dsl/runner';
+import { runner } from './core';
+import { RunOptions } from './core/runner';
 import { parseArgs } from './parse_args';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -18,6 +18,7 @@ export async function run(options: RunOptions) {
       ...options,
       headless: options.headless ?? cliArgs.headless,
       screenshots: options.screenshots ?? cliArgs.screenshots,
+      screenshotFormat: options.screenshotFormat ?? cliArgs.screenshotFormat,
       dryRun: options.dryRun ?? cliArgs.dryRun,
       journeyName: options.journeyName ?? cliArgs.journeyName,
       network: options.network ?? cliArgs.network,
@@ -31,4 +32,4 @@ export async function run(options: RunOptions) {
   }
 }
 
-export * from './dsl';
+export { journey, step } from './core';

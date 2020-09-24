@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { runner, step, journey } from '../../src/dsl';
+import { runner, step, journey } from '../../src/core';
 import JSONReporter from '../../src/reporters/json';
 import { generateTempPath } from '../../src/helpers';
 
@@ -22,7 +22,6 @@ describe('json reporter', () => {
       journey: j1,
       status: 'succeeded',
       step: step('s1', async () => {}),
-      durationMs: 10,
       screenshot: 'dummy',
       url: 'dummy',
       timestamp: 1600300800000000,
@@ -32,7 +31,9 @@ describe('json reporter', () => {
     runner.emit('journey:end', {
       journey: j1,
       params: {},
-      durationMs: 11,
+      status: 'succeeded',
+      start: 0,
+      end: 11,
       timestamp: 1600300800000000,
       filmstrips: [
         {

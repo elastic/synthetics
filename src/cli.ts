@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
-import { journey, step } from './dsl';
+import { journey, step } from './core';
 import { debug } from './helpers';
 import { run } from './';
 import { parseArgs } from './parse_args';
@@ -58,6 +58,7 @@ process.env.DEBUG = program.debug || '';
     reporter,
     headless: program.headless,
     screenshots: program.screenshots,
+    screenshotFormat: program.screenshotFormat,
     dryRun: program.dryRun,
     journeyName: program.journeyName,
     network: program.network,
