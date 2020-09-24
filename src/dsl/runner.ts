@@ -46,6 +46,7 @@ interface Events {
     url: string;
     status: StatusValue;
     screenshot?: string;
+    screenshotMime?: string;
     error?: Error;
     metrics?: Metrics;
     start: number;
@@ -130,6 +131,7 @@ export default class Runner {
         this.emit('step:start', stepStartEvent);
 
         let screenshot: string,
+          screenshotMime: string,
           url: string,
           status: StatusValue,
           error: Error,
@@ -146,7 +148,10 @@ export default class Runner {
             }
             await page.waitForLoadState('load');
             if (screenshots) {
-              screenshot = (await page.screenshot()).toString('base64');
+              screenshot = (await page.screenshot({ type: 'jpeg' })).toString(
+                'base64'
+              );
+              screenshotMime = 'image/jpeg';
             }
             url = page.url();
             status = 'succeeded';
@@ -166,6 +171,7 @@ export default class Runner {
             durationMs,
             error,
             screenshot,
+            screenshotMime,
             url,
             status,
             metrics: metricsData,

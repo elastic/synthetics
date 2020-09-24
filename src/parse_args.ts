@@ -18,6 +18,7 @@ program
     '--screenshots',
     'take screenshots between steps (only shown in some reporters)'
   )
+  .option('--screenshot-format <format>', 'one of jpeg or png')
   .option('--network', 'capture all network information for all steps')
   .option('--metrics', 'capture performance metrics for each step')
   .option(
