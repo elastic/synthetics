@@ -37,6 +37,7 @@
   "dependencies": {
     "commander": "^6.0.0",
     "kleur": "^4.1.1",
+    "minimatch": "^3.0.4",
     "playwright": "^1.2.1",
     "snakecase-keys": "^3.2.0",
     "sonic-boom": "^1.1.0",

@@ -17,7 +17,8 @@ export type RunOptions = {
   headless?: boolean;
   screenshots?: boolean;
   dryRun?: boolean;
-  journeyName?: string;
+  journeyNames?: string[];
+  journeyTags?: string[];
   pauseOnError?: boolean;
   network?: boolean;
   outfd?: number;
@@ -217,7 +218,7 @@ export default class Runner {
 
   async run(options: RunOptions) {
     const result: RunResult = {};
-    const { reporter = 'default', journeyName, outfd } = options;
+    const { reporter = 'default', journeyNames, outfd } = options;
 
     this.emit('start', { numJourneys: this.journeys.length });
     /**
@@ -227,8 +228,9 @@ export default class Runner {
     new Reporter(this, { fd: outfd });
 
     for (const journey of this.journeys) {
-      // TODO: Replace functionality with journey.only
-      if (journeyName && journey.options.name != journeyName) {
+      if (
+        !journey.matches({ names: journeyNames, tags: options.journeyTags })
+      ) {
         continue;
       }
       const journeyResult = await this.runJourney(journey, options);

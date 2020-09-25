@@ -24,7 +24,14 @@ program
     '--dry-run',
     "don't actually execute anything, report as if each step was skipped"
   )
-  .option('--journey-name <name>', 'only run the journey with the given name')
+  .option(
+    '--journey-name <name>...',
+    'only run the journey with the given name(s), or glob matches'
+  )
+  .option(
+    '--journey-tags <name>...',
+    'only run the journey with the given tag(s), or glob matches'
+  )
   .option(
     '--outfd <fd>',
     'specify a file descriptor number for output. Default is stdout',
