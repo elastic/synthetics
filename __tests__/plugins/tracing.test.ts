@@ -19,11 +19,13 @@ describe('tracing', () => {
     const events = await tracer.stop(driver.client);
     expect(events.toString('utf-8')).toContain('screenshot');
     const filmstrips = filterFilmstrips(events);
-    expect(filmstrips[0]).toMatchObject({
-      snapshot: expect.any(String),
-      name: 'Screenshot',
-      ts: expect.any(Number),
-    });
+    expect(filmstrips).toMatchObject([
+      {
+        snapshot: expect.any(String),
+        name: 'Screenshot',
+        ts: expect.any(Number),
+      },
+    ]);
     await Gatherer.dispose(driver);
   });
 });
