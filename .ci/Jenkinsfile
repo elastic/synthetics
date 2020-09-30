@@ -175,7 +175,7 @@ def withNodeEnv(Map args=[:], Closure body){
 
 def pushDockerImage(){
   dir("${BASE_DIR}"){
-    dockerLogin(secret: "${env.DOCKER_REGISTRY_SECRET}",
+    dockerLogin(secret: "${env.DOCKERELASTIC_SECRET}",
       registry: "${env.DOCKER_REGISTRY}")
     sh(label: 'Build Docker image',
       script: """docker build \
