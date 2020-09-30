@@ -128,7 +128,7 @@ pipeline {
             DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}"
           }
           steps {
-            withGithubNotify(context: 'observability-ci') {
+            withGithubNotify(context: 'push to observability-ci') {
               pushDockerImage()
             }
           }
@@ -143,7 +143,7 @@ pipeline {
             DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
           }
           steps {
-            withGithubNotify(context: 'experimental') {
+            withGithubNotify(context: 'push to experimental') {
               pushDockerImage()
             }
           }
