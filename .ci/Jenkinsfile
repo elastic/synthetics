@@ -108,6 +108,9 @@ pipeline {
      Publish Docker images.
      */
     stage('Publish Docker image'){
+          when {
+            expression { return false } //Disabled until we have the namespace
+          }
       stages {
         stage('package'){
           steps {
