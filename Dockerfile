@@ -21,4 +21,5 @@ mv node-v* node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz
-RUN npm install -g /opt/elastic-synthetics.tgz
+RUN npm install -g /opt/elastic-synthetics.tgz \\
+      && rm /opt/elastic-synthetics.tgz
