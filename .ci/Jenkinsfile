@@ -12,6 +12,8 @@ pipeline {
     DOCKER_REGISTRY = 'docker.elastic.co'
     NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
     SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
+    DOCKER_IMG = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
+    DOCKER_IMG_PR = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -101,6 +103,24 @@ pipeline {
         }
       }
     }
+
+    /**
+     Publish Docker images.
+     */
+    stage('Publish Docker image'){
+      environment {
+        DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
+        DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}"
+      }
+      steps {
+        whenTrue(fileExists('Dockerfile')){
+          withGithubNotify(context: 'Package') {
+            cleanup()
+            pushDockerImage()
+          }
+        }
+      }
+    }
   }
   post {
     cleanup {
@@ -120,6 +140,29 @@ def withNodeEnv(Map args=[:], Closure body){
   docker.image("${NODE_DOCKER_IMAGE}").inside(" --security-opt seccomp=${SECCOMP_FILE}"){
     withEnv(["HOME=${WORKSPACE}"]) {
       body()
+    }
+  }
+}
+
+def pushDockerImage(){
+  dir("${BASE_DIR}"){
+    dockerLogin(secret: "${env.DOCKER_REGISTRY_SECRET}",
+      registry: "${env.DOCKER_REGISTRY}")
+    sh(label: 'Build Docker image',
+      script: """docker build \
+        -t ${env.DOCKER_IMG_TAG} \
+        --label BRANCH_NAME=${env.BRANCH_NAME} \
+        --label GIT_SHA=${env.GIT_BASE_COMMIT} \
+        --label TIMESTAMP=\$(date +%Y-%m-%d_%H:%M) \
+        .
+    """)
+    retryWithSleep(retries: 3, seconds: 5, backoff: true){
+      sh(label: 'Push Docker image sha',
+        script: "docker push ${env.DOCKER_IMG_TAG}")
+      sh(label: 'Re-tag Docker image',
+        script: "docker tag ${env.DOCKER_IMG_TAG} ${env.DOCKER_IMG_TAG_BRANCH}")
+      sh(label: 'Push Docker image name',
+        script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
     }
   }
 }
