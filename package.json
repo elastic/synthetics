@@ -12,7 +12,8 @@
     "lint-fix": "eslint . --fix",
     "test": "jest",
     "updateSnapshot": "jest --updateSnapshot",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "docker": "docker build . -t heartbeat-synthetics"
   },
   "bin": {
     "@elastic/synthetics": "dist/cli.js"

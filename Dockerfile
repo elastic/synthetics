@@ -16,13 +16,10 @@ RUN echo /usr/share/heartbeat/.node \\
       /opt/elastic-synthetics | xargs -IDIR sh -c "mkdir DIR && chown -R heartbeat DIR"
 ENV NODE_PATH=/usr/share/heartbeat/.node
 USER heartbeat
-RUN curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz -o /usr/share/heartbeat/.node/node.tar.gz && \
-cd /usr/share/heartbeat/.node && \
- tar -xf node.tar.gz && \
-mv node-v* node \
-rm node.tar.gz
+RUN  cd /usr/share/heartbeat/.node \\
+      && mkdir node \\
+      && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz
-RUN npm install -g /opt/elastic-synthetics.tgz \\
-      && rm /opt/elastic-synthetics.tgz
+RUN npm install -g /opt/elastic-synthetics.tgz 
