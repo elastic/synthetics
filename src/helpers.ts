@@ -1,4 +1,4 @@
-import { red, green, yellow, grey, cyan } from 'kleur';
+import { red, green, yellow, grey, cyan } from 'kleur/colors';
 import os from 'os';
 import path from 'path';
 
@@ -44,4 +44,8 @@ export function getMonotonicTime() {
 
 export function generateTempPath() {
   return path.join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
+}
+
+export function getTimestamp() {
+  return Date.now() * 1000;
 }

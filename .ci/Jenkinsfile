@@ -1,0 +1,125 @@
+#!/usr/bin/env groovy
+
+@Library('apm@current') _
+
+pipeline {
+  agent { label 'ubuntu-18 && immutable' }
+  environment {
+    REPO = "synthetics"
+    BASE_DIR = "src/github.com/elastic/${env.REPO}"
+    PIPELINE_LOG_LEVEL = 'INFO'
+    DOCKERELASTIC_SECRET = 'secret/observability-team/ci/docker-registry/prod'
+    DOCKER_REGISTRY = 'docker.elastic.co'
+    NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
+    SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
+  }
+  options {
+    timeout(time: 1, unit: 'HOURS')
+    buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
+    timestamps()
+    ansiColor('xterm')
+    disableResume()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+    rateLimitBuilds(throttle: [count: 60, durationName: 'hour', userBoost: true])
+    quietPeriod(10)
+  }
+  triggers {
+    issueCommentTrigger('(?i)(^/test$)')
+  }
+  parameters {
+    booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
+  }
+  stages {
+    /**
+     Checkout the code and stash it, to use it on other stages.
+     */
+    stage('Checkout') {
+      steps {
+        deleteDir()
+        gitCheckout(basedir: "${BASE_DIR}")
+        retryWithSleep(retries: 3, seconds: 5, backoff: true) {
+          dockerLogin(secret: "${DOCKERELASTIC_SECRET}",
+                      registry: "${DOCKER_REGISTRY}")
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Download dependencies',script: 'npm install')
+            }
+          }
+        }
+        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**"
+      }
+    }
+    /**
+     Checks formatting / linting.
+     */
+    stage('Lint') {
+      steps {
+        withGithubNotify(context: 'Linting') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Checks linting',script: 'npm run-script lint')
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     Build the main package
+     */
+    stage('Build') {
+      steps {
+        withGithubNotify(context: 'Build') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'Build',script: 'npm run build')
+            }
+          }
+        }
+      }
+    }
+    /**
+     Execute integration tests.
+     */
+    stage('Test') {
+      steps {
+        withGithubNotify(context: 'Test') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
+              sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
+            }
+          }
+        }
+      }
+      post {
+        always {
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
+        }
+      }
+    }
+  }
+  post {
+    cleanup {
+      notifyBuildResult(prComment: true)
+    }
+  }
+}
+
+def cleanup(){
+  dir("${BASE_DIR}"){
+    deleteDir()
+  }
+  unstash 'source'
+}
+
+def withNodeEnv(Map args=[:], Closure body){
+  docker.image("${NODE_DOCKER_IMAGE}").inside(" --security-opt seccomp=${SECCOMP_FILE}"){
+    withEnv(["HOME=${WORKSPACE}"]) {
+      body()
+    }
+  }
+}

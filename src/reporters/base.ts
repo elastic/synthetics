@@ -1,6 +1,6 @@
 import SonicBoom from 'sonic-boom';
-import Runner from '../dsl/runner';
-import { green, red, cyan } from 'kleur';
+import Runner from '../core/runner';
+import { green, red, cyan } from 'kleur/colors';
 import { symbols, indent, getMilliSecs } from '../helpers';
 
 export type ReporterOptions = {
@@ -12,7 +12,8 @@ function renderError(error) {
   let output = '';
   const outer = indent('');
   const inner = indent(outer);
-  output += outer + '---\n';
+  const container = outer + '---\n';
+  output += container;
   const stack = error.stack;
   if (stack) {
     const lines = String(stack).split('\n');
@@ -21,8 +22,12 @@ function renderError(error) {
       output += inner + '  ' + line + '\n';
     }
   }
-  output += indent(outer + '---\n');
+  output += container;
   return output;
+}
+
+function renderDuration(durationMs) {
+  return parseInt(durationMs);
 }
 
 export default class BaseReporter {
@@ -70,8 +75,10 @@ export default class BaseReporter {
       this.write(`\nJourney: ${journey.options.name}`);
     });
 
-    this.runner.on('step:end', ({ step, durationMs, error, status }) => {
-      const message = `${symbols[status]}  Step: '${step.name}' ${status} (${durationMs} ms)`;
+    this.runner.on('step:end', ({ step, start, end, error, status }) => {
+      const message = `${symbols[status]}  Step: '${
+        step.name
+      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
       this.write(indent(message));
       error && this.write(renderError(error));
       result[status]++;
