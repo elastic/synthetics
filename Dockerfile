@@ -19,7 +19,8 @@ USER heartbeat
 RUN curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz -o /usr/share/heartbeat/.node/node.tar.gz && \
 cd /usr/share/heartbeat/.node && \
  tar -xf node.tar.gz && \
-mv node-v* node
+mv node-v* node \
+rm node.tar.gz
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz
