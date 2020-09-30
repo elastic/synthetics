@@ -1,16 +1,4 @@
-import {
-  getMilliSecs,
-  indent,
-  getMonotonicTime,
-  formatError,
-} from '../src/helpers';
-
-it('get millseconds since start', () => {
-  const start = process.hrtime();
-  const elapsedTime = getMilliSecs(start);
-  expect(elapsedTime).toBeDefined();
-  expect(typeof elapsedTime).toBe('number');
-});
+import { indent, getMonotonicTime, formatError } from '../src/helpers';
 
 it('indent message with seperator', () => {
   // tabWidth: 2
