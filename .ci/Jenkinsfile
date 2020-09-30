@@ -13,7 +13,7 @@ pipeline {
     NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
     SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
     DOCKER_IMG = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
-    DOCKER_IMG_PR = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
+    DOCKER_IMG_PUBLIC = "${env.DOCKER_REGISTRY}/experimental/synthetics"
   }
   options {
     timeout(time: 1, unit: 'HOURS')
@@ -108,15 +108,44 @@ pipeline {
      Publish Docker images.
      */
     stage('Publish Docker image'){
-      environment {
-        DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
-        DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}"
-      }
-      steps {
-        whenTrue(fileExists('Dockerfile')){
-          withGithubNotify(context: 'Package') {
-            cleanup()
-            pushDockerImage()
+      stages {
+        stage('package'){
+          steps {
+            withGithubNotify(context: 'Package') {
+              cleanup()
+              withNodeEnv(){
+                dir("${BASE_DIR}"){
+                  sh(label: 'Build',script: 'npm run build')
+                  sh(label: 'Pack',script: 'npm pack')
+                }
+              }
+            }
+          }
+        }
+        stage('observability-ci'){
+          environment {
+            DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
+            DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}"
+          }
+          steps {
+            withGithubNotify(context: 'observability-ci') {
+              pushDockerImage()
+            }
+          }
+        }
+        stage('experimental'){
+          when {
+            expression { return false } //Disabled until we have the namespace
+            //branch 'master'
+          }
+          environment {
+            DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}"
+            DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
+          }
+          steps {
+            withGithubNotify(context: 'experimental') {
+              pushDockerImage()
+            }
           }
         }
       }
@@ -151,6 +180,7 @@ def pushDockerImage(){
     sh(label: 'Build Docker image',
       script: """docker build \
         -t ${env.DOCKER_IMG_TAG} \
+        -t ${env.DOCKER_IMG_TAG_BRANCH} \
         --label BRANCH_NAME=${env.BRANCH_NAME} \
         --label GIT_SHA=${env.GIT_BASE_COMMIT} \
         --label TIMESTAMP=\$(date +%Y-%m-%d_%H:%M) \
@@ -159,8 +189,6 @@ def pushDockerImage(){
     retryWithSleep(retries: 3, seconds: 5, backoff: true){
       sh(label: 'Push Docker image sha',
         script: "docker push ${env.DOCKER_IMG_TAG}")
-      sh(label: 'Re-tag Docker image',
-        script: "docker tag ${env.DOCKER_IMG_TAG} ${env.DOCKER_IMG_TAG_BRANCH}")
       sh(label: 'Push Docker image name',
         script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
     }
