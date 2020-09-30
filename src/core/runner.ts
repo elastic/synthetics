@@ -110,7 +110,7 @@ export default class Runner {
         data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
       }
       if (screenshots) {
-        data.screenshot = (await driver.page.screenshot()).toString();
+        data.screenshot = (await driver.page.screenshot()).toString('base64');
       }
       data.url = driver.page.url();
     } catch (error) {
