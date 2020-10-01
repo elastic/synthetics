@@ -1,4 +1,4 @@
-import { Step } from './step';
+import { Step, StepCallback } from './step';
 
 export type JourneyOptions = {
   name: string;
@@ -15,5 +15,11 @@ export class Journey {
   constructor(options: JourneyOptions, callback: JourneyCallback) {
     this.options = options;
     this.callback = callback;
+  }
+
+  addStep(name: string, callback: StepCallback) {
+    const step = new Step(name, this.steps.length + 1, callback);
+    this.steps.push(step);
+    return step;
   }
 }

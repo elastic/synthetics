@@ -1,7 +1,7 @@
 import SonicBoom from 'sonic-boom';
-import Runner from '../dsl/runner';
-import { green, red, cyan } from 'kleur';
-import { symbols, indent, getMilliSecs } from '../helpers';
+import Runner from '../core/runner';
+import { green, red, cyan } from 'kleur/colors';
+import { symbols, indent, now } from '../helpers';
 
 export type ReporterOptions = {
   fd?: number;
@@ -12,7 +12,8 @@ function renderError(error) {
   let output = '';
   const outer = indent('');
   const inner = indent(outer);
-  output += outer + '---\n';
+  const container = outer + '---\n';
+  output += container;
   const stack = error.stack;
   if (stack) {
     const lines = String(stack).split('\n');
@@ -21,8 +22,12 @@ function renderError(error) {
       output += inner + '  ' + line + '\n';
     }
   }
-  output += indent(outer + '---\n');
+  output += container;
   return output;
+}
+
+function renderDuration(durationMs) {
+  return parseInt(durationMs);
 }
 
 export default class BaseReporter {
@@ -60,30 +65,28 @@ export default class BaseReporter {
       succeeded: 0,
       failed: 0,
       skipped: 0,
-      start: process.hrtime(),
     };
-    this.runner.on('start', () => {
-      result.start = process.hrtime();
-    });
 
     this.runner.on('journey:start', ({ journey }) => {
       this.write(`\nJourney: ${journey.options.name}`);
     });
 
-    this.runner.on('step:end', ({ step, durationMs, error, status }) => {
-      const message = `${symbols[status]}  Step: '${step.name}' ${status} (${durationMs} ms)`;
+    this.runner.on('step:end', ({ step, start, end, error, status }) => {
+      const message = `${symbols[status]}  Step: '${
+        step.name
+      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
       this.write(indent(message));
       error && this.write(renderError(error));
       result[status]++;
     });
 
     this.runner.on('end', () => {
-      const { failed, succeeded, start, skipped } = result;
+      const { failed, succeeded, skipped } = result;
       let message = '\n';
       message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
       message += failed > 0 ? red(` ${failed} failed`) : '';
       message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
-      message += ` (${getMilliSecs(start)} ms) \n`;
+      message += ` (${renderDuration(now())} ms) \n`;
       this.write(message);
     });
   }
