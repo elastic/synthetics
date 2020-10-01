@@ -6,7 +6,10 @@ import Runner from '../../src/core/runner';
 
 describe('json reporter', () => {
   let dest: string;
-  const j1 = journey('j1', () => {});
+  const j1 = journey(
+    { name: 'j1', id: 'j1', tags: ['tag1', 'other:tag'] },
+    () => {}
+  );
   let stream;
   let runner: Runner;
   const timestamp = 1600300800000000;
