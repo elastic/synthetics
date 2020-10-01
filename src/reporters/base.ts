@@ -1,7 +1,7 @@
 import SonicBoom from 'sonic-boom';
 import Runner from '../core/runner';
 import { green, red, cyan } from 'kleur/colors';
-import { symbols, indent, getMilliSecs } from '../helpers';
+import { symbols, indent, now } from '../helpers';
 
 export type ReporterOptions = {
   fd?: number;
@@ -65,11 +65,7 @@ export default class BaseReporter {
       succeeded: 0,
       failed: 0,
       skipped: 0,
-      start: process.hrtime(),
     };
-    this.runner.on('start', () => {
-      result.start = process.hrtime();
-    });
 
     this.runner.on('journey:start', ({ journey }) => {
       this.write(`\nJourney: ${journey.options.name}`);
@@ -85,12 +81,12 @@ export default class BaseReporter {
     });
 
     this.runner.on('end', () => {
-      const { failed, succeeded, start, skipped } = result;
+      const { failed, succeeded, skipped } = result;
       let message = '\n';
       message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
       message += failed > 0 ? red(` ${failed} failed`) : '';
       message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
-      message += ` (${getMilliSecs(start)} ms) \n`;
+      message += ` (${renderDuration(now())} ms) \n`;
       this.write(message);
     });
   }

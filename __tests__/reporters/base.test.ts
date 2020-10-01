@@ -6,26 +6,25 @@ process.env.NO_COLOR = '1';
 import fs from 'fs';
 import { runner, step, journey } from '../../src/core';
 import BaseReporter from '../../src/reporters/base';
-import { generateTempPath } from '../../src/helpers';
+import * as helpers from '../../src/helpers';
 
 describe('base reporter', () => {
-  const dest = generateTempPath();
+  const dest = helpers.generateTempPath();
   afterAll(() => {
     fs.unlinkSync(dest);
     process.env.NO_COLOR = '';
   });
 
   it('writes each step to the FD', async () => {
-    jest.spyOn(process, 'hrtime').mockImplementation(() => {
-      return [0, 0];
-    });
+    const timestamp = 1600300800000000;
+    jest.spyOn(helpers, 'now').mockImplementation(() => 0);
     const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
     runner.emit('start', { numJourneys: 1 });
     const j1 = journey('j1', () => {});
     runner.emit('journey:start', {
       journey: j1,
       params: {},
-      timestamp: 1600300800000000,
+      timestamp,
     });
     const error = {
       name: 'Error',
@@ -40,7 +39,7 @@ describe('base reporter', () => {
       url: 'dummy',
       start: 0,
       end: 1,
-      timestamp: 1600300800000000,
+      timestamp,
     });
     runner.emit('end', 'done');
     /**

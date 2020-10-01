@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { step, journey } from '../../src/core';
 import JSONReporter from '../../src/reporters/json';
-import { formatError, generateTempPath } from '../../src/helpers';
+import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
 
 describe('json reporter', () => {
@@ -9,12 +9,13 @@ describe('json reporter', () => {
   const j1 = journey('j1', () => {});
   let stream;
   let runner: Runner;
+  const timestamp = 1600300800000000;
 
   beforeEach(() => {
     runner = new Runner();
-    dest = generateTempPath();
+    dest = helpers.generateTempPath();
     stream = new JSONReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
-    jest.useFakeTimers('modern').setSystemTime(new Date('2020-09-17'));
+    jest.spyOn(helpers, 'getTimestamp').mockImplementation(() => timestamp);
   });
 
   afterEach(() => {
@@ -49,7 +50,7 @@ describe('json reporter', () => {
     runner.emit('journey:start', {
       journey: j1,
       params: {},
-      timestamp: 1600300800000000,
+      timestamp,
     });
     runner.emit('step:end', {
       journey: j1,
@@ -57,7 +58,7 @@ describe('json reporter', () => {
       step: step('s1', async () => {}),
       screenshot: 'dummy',
       url: 'dummy',
-      timestamp: 1600300800000000,
+      timestamp,
       start: 0,
       end: 10,
     });
@@ -66,8 +67,8 @@ describe('json reporter', () => {
       params: {},
       status: 'succeeded',
       start: 0,
-      end: 10,
-      timestamp: 1600300800000000,
+      end: 11,
+      timestamp,
       filmstrips: [
         {
           snapshot: 'dummy',
@@ -106,7 +107,7 @@ describe('json reporter', () => {
     const stepEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'step/end'
     );
-    expect(stepEnd.error).toEqual(formatError(myErr));
+    expect(stepEnd.error).toEqual(helpers.formatError(myErr));
   });
 
   it('writes journey errors to the top level', async () => {
@@ -125,6 +126,6 @@ describe('json reporter', () => {
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
     );
-    expect(journeyEnd.error).toEqual(formatError(myErr));
+    expect(journeyEnd.error).toEqual(helpers.formatError(myErr));
   });
 });

@@ -7,6 +7,7 @@ import {
 } from 'playwright';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
+import { log } from './logger';
 
 export type Driver = {
   browser: ChromiumBrowser;
@@ -21,6 +22,7 @@ export type Driver = {
  */
 export class Gatherer {
   static async setupDriver(headless?: boolean): Promise<Driver> {
+    log('Gatherer: launching chrome');
     const browser = await chromium.launch({ headless });
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -33,6 +35,7 @@ export class Gatherer {
    * https://chromedevtools.github.io/devtools-protocol/v8/
    */
   static async beginRecording(driver: Driver, options: RunOptions) {
+    log('Gatherer: started recording');
     const { screenshots, network, metrics } = options;
     const pluginManager = new PluginManager(driver.client);
     screenshots && (await pluginManager.start('trace'));
