@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { log, flushLoggerSync, setLogger } from '../../src/core/logger';
+import { log, setLogger } from '../../src/core/logger';
 import { generateTempPath } from '../../src/helpers';
 
 describe('Logger', () => {
@@ -12,7 +12,6 @@ describe('Logger', () => {
   it('log to specified fd', async () => {
     process.env.DEBUG = '1';
     log(message);
-    await flushLoggerSync();
     const buffer = fs.readFileSync(fs.openSync(dest, 'r'), 'utf-8');
     expect(buffer).toContain(message);
   });
