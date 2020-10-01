@@ -20,3 +20,7 @@ export function log(msg) {
   const time = dim(cyan(`at ${parseInt(String(now()))} ms `));
   logger.write(time + italic(grey(msg)) + '\n');
 }
+
+export function flushLoggerSync() {
+  logger.flushSync();
+}

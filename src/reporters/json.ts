@@ -130,6 +130,7 @@ export default class JSONReporter extends BaseReporter {
       journey: {
         name: journey.options.name,
         id: journey.options.id,
+        tags: journey.options.tags,
       },
       step: step
         ? {

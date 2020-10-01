@@ -1,5 +1,5 @@
 import { Step, StepCallback } from './step';
-import * as minimatch from 'minimatch';
+import { match } from 'minimatch';
 
 export type JourneyOptions = {
   name: string;
@@ -25,10 +25,28 @@ export class Journey {
     return step;
   }
 
-  matches({ names, tags }: { names?: string[]; tags?: string[] }) {
-    return (
-      (names ?? []).some(n => minimatch(this.options.name, n)) &&
-      (tags ?? []).some(glob => this.options.tags.some(t => minimatch(t, glob)))
-    );
+  matches({
+    nameGlobs,
+    tagGlobs,
+  }: {
+    nameGlobs?: string[];
+    tagGlobs?: string[];
+  }): boolean {
+    if (nameGlobs && !this.nameMatches(nameGlobs)) {
+      return false;
+    }
+    if (tagGlobs && !this.tagsMatch(tagGlobs)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  nameMatches(globs: string[]): boolean {
+    return globs.some(glob => match([this.options.name], glob).length > 0);
+  }
+
+  tagsMatch(globs: string[]): boolean {
+    return globs.some(glob => match(this.options.tags, glob).length > 0);
   }
 }

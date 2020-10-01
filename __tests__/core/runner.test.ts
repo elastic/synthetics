@@ -167,6 +167,20 @@ describe('runner', () => {
     });
   });
 
+  it('run api - only runs specified journeyTags', async () => {
+    runner.addJourney(new Journey({ name: 'j1', tags: ['type1:blah'] }, noop));
+    runner.addJourney(new Journey({ name: 'j2', tags: ['type2:blah'] }, noop));
+    runner.addJourney(new Journey({ name: 'j3', tags: ['type2:blah'] }, noop));
+    const result = await runner.run({
+      outfd: fs.openSync(dest, 'w'),
+      journeyTags: ['type2:*'],
+    });
+    expect(result).toEqual({
+      j2: { status: 'succeeded' },
+      j3: { status: 'succeeded' },
+    });
+  });
+
   it('run api - accumulate failed journeys', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     const j2 = new Journey({ name: 'j2' }, noop);

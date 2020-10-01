@@ -232,15 +232,15 @@ export default class Runner {
 
     this.emit('start', { numJourneys: this.journeys.length });
 
-    for (const journey of this.journeys) {
-      if (
-        !journey.matches({ names: journeyNames, tags: options.journeyTags })
-      ) {
-        continue;
-      }
-      const journeyResult = await this.runJourney(journey, options);
-      result[journey.options.name] = journeyResult;
+    const matchingJourneys = this.journeys.filter(j =>
+      j.matches({ nameGlobs: journeyNames, tagGlobs: options.journeyTags })
+    );
+
+    for (const j of matchingJourneys) {
+      const journeyResult = await this.runJourney(j, options);
+      result[j.options.name] = journeyResult;
     }
+
     this.emit('end', {});
     this.reset();
     return result;
