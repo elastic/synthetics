@@ -40,11 +40,11 @@ export default class JSONReporter extends BaseReporter {
           step,
           timestamp,
           url,
+          error,
           payload: {
             source: step.callback.toString(),
             start,
             end,
-            error: formatError(error),
             url,
             status,
             metrics,
@@ -89,10 +89,10 @@ export default class JSONReporter extends BaseReporter {
         }
         this.writeJSON('journey/end', journey, {
           timestamp,
+          error,
           payload: {
             start,
             end,
-            error: formatError(error),
             status,
           },
         });
