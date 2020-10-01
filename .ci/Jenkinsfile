@@ -190,7 +190,7 @@ def pushDockerImage(){
       script: """docker build \
         -t ${env.DOCKER_IMG_TAG} \
         -t ${env.DOCKER_IMG_TAG_BRANCH} \
-        --build-arg STACK_VERSION ${env.STACK_VERSION} \
+        --build-arg STACK_VERSION=${env.STACK_VERSION} \
         --label BRANCH_NAME=${env.BRANCH_NAME} \
         --label GIT_SHA=${env.GIT_BASE_COMMIT} \
         --label TIMESTAMP=\$(date +%Y-%m-%d_%H:%M) \
