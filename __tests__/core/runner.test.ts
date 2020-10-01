@@ -155,7 +155,7 @@ describe('runner', () => {
     });
   });
 
-  it('run api - skip journeys', async () => {
+  it('run api - only runs specified journeyName', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     const result = await runner.run({
@@ -167,7 +167,7 @@ describe('runner', () => {
     });
   });
 
-  it('run api - accumlate failed journeys', async () => {
+  it('run api - accumulate failed journeys', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     const j2 = new Journey({ name: 'j2' }, noop);
     const error = new Error('broken journey');
