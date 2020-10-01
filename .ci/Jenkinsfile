@@ -109,6 +109,7 @@ pipeline {
      */
     stage('Publish Docker image'){
       matrix {
+        agent { label 'ubuntu-18 && immutable' }
         axes {
           axis {
             name 'STACK_VERSION'
