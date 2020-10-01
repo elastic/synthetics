@@ -160,7 +160,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     const result = await runner.run({
       outfd: fs.openSync(dest, 'w'),
-      journeyName: 'j2',
+      journeyNames: ['j2'],
     });
     expect(result).toEqual({
       j2: { status: 'succeeded' },
