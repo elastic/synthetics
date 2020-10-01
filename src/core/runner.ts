@@ -7,6 +7,7 @@ import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
+import { log } from './logger';
 
 type RunParamaters = Record<string, any>;
 
@@ -101,6 +102,7 @@ export default class Runner {
     const data: StepResult = {
       status: 'succeeded',
     };
+    log(`Runner: start step(${step.name})`);
     const { metrics, screenshots } = options;
     const { driver, pluginManager, params } = context;
     try {
@@ -117,6 +119,7 @@ export default class Runner {
       data.status = 'failed';
       data.error = error;
     }
+    log(`Runner: end step(${step.name})`);
     return data;
   }
 
@@ -183,6 +186,7 @@ export default class Runner {
     const result: JourneyResult = {
       status: 'succeeded',
     };
+    log(`Runner: start journey(${journey.options.name})`);
     try {
       const timestamp = getTimestamp();
       const start = getMonotonicTime();
@@ -212,19 +216,20 @@ export default class Runner {
       result.status = 'failed';
       result.error = e;
     }
+    log(`Runner: end journey(${journey.options.name})`);
     return result;
   }
 
   async run(options: RunOptions) {
     const result: RunResult = {};
     const { reporter = 'default', journeyName, outfd } = options;
-
-    this.emit('start', { numJourneys: this.journeys.length });
     /**
      * Set up the corresponding reporter
      */
     const Reporter = reporters[reporter];
     new Reporter(this, { fd: outfd });
+
+    this.emit('start', { numJourneys: this.journeys.length });
 
     for (const journey of this.journeys) {
       // TODO: Replace functionality with journey.only

@@ -3,7 +3,6 @@
 import { readFileSync } from 'fs';
 import { createInterface as createReadlineInterface } from 'readline';
 import { journey, step } from './core';
-import { debug } from './helpers';
 import { run } from './';
 import { parseArgs } from './parse_args';
 
@@ -26,7 +25,6 @@ const program = parseArgs();
 const loadInlineScript = (source, suiteParams) => {
   const scriptFn = new Function('step', 'suiteParams', 'console', source);
   journey('inline', async () => {
-    debug('Creating steps for inline journey');
     scriptFn.apply(null, [step, suiteParams, console]);
   });
 };
@@ -48,7 +46,6 @@ process.env.DEBUG = program.debug || '';
     const source = program.stdin
       ? await readStdin()
       : readFileSync(filePath, 'utf8');
-    debug('Running single script...' + source.toString());
     loadInlineScript(source, suiteParams);
   }
 
