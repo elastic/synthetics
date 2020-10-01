@@ -89,10 +89,10 @@ export default class JSONReporter extends BaseReporter {
         }
         this.writeJSON('journey/end', journey, {
           timestamp,
+          error,
           payload: {
             start,
             end,
-            error: formatError(error),
             status,
           },
         });
