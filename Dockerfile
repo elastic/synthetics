@@ -1,4 +1,5 @@
-FROM docker.elastic.co/beats/heartbeat:8.0.0
+ARG STACK_VERSION=7.10.0-SNAPSHOT
+FROM docker.elastic.co/beats/heartbeat:${STACK_VERSION}
 USER root
 RUN yum -y update && \
     yum -y install epel-release && \
@@ -22,4 +23,4 @@ RUN  cd /usr/share/heartbeat/.node \\
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz
-RUN npm install -g /opt/elastic-synthetics.tgz 
+RUN npm install -g /opt/elastic-synthetics.tgz

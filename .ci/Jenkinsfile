@@ -108,43 +108,51 @@ pipeline {
      Publish Docker images.
      */
     stage('Publish Docker image'){
-      stages {
-        stage('package'){
-          steps {
-            withGithubNotify(context: 'Package') {
-              cleanup()
-              withNodeEnv(){
-                dir("${BASE_DIR}"){
-                  sh(label: 'Build',script: 'npm run build')
-                  sh(label: 'Pack',script: 'npm pack')
+      matrix {
+        axes {
+          axis {
+            name 'STACK_VERSION'
+            values '8.0.0-SNAPSHOT', '7.10.0-SNAPSHOT'
+          }
+        }
+        stages {
+          stage('package'){
+            steps {
+              withGithubNotify(context: 'Package') {
+                cleanup()
+                withNodeEnv(){
+                  dir("${BASE_DIR}"){
+                    sh(label: 'Build',script: 'npm run build')
+                    sh(label: 'Pack',script: 'npm pack')
+                  }
                 }
               }
             }
           }
-        }
-        stage('observability-ci'){
-          environment {
-            DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
-            DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}"
-          }
-          steps {
-            withGithubNotify(context: 'push to observability-ci') {
-              pushDockerImage()
+          stage('observability-ci'){
+            environment {
+              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
+              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
+            }
+            steps {
+              withGithubNotify(context: 'push to observability-ci') {
+                pushDockerImage()
+              }
             }
           }
-        }
-        stage('experimental'){
-          when {
-            expression { return false } //Disabled until we have the namespace
-            //branch 'master'
-          }
-          environment {
-            DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}"
-            DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
-          }
-          steps {
-            withGithubNotify(context: 'push to experimental') {
-              pushDockerImage()
+          stage('experimental'){
+            when {
+              expression { return false } //Disabled until we have the namespace
+              //branch 'master'
+            }
+            environment {
+              DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}"
+              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
+            }
+            steps {
+              withGithubNotify(context: 'push to experimental') {
+                pushDockerImage()
+              }
             }
           }
         }
@@ -181,6 +189,7 @@ def pushDockerImage(){
       script: """docker build \
         -t ${env.DOCKER_IMG_TAG} \
         -t ${env.DOCKER_IMG_TAG_BRANCH} \
+        --build-arg STACK_VERSION ${env.STACK_VERSION} \
         --label BRANCH_NAME=${env.BRANCH_NAME} \
         --label GIT_SHA=${env.GIT_BASE_COMMIT} \
         --label TIMESTAMP=\$(date +%Y-%m-%d_%H:%M) \
