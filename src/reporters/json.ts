@@ -40,11 +40,11 @@ export default class JSONReporter extends BaseReporter {
           step,
           timestamp,
           url,
+          error,
           payload: {
             source: step.callback.toString(),
             start,
             end,
-            error: formatError(error),
             url,
             status,
             metrics,

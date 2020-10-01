@@ -28,13 +28,24 @@ describe('json reporter', () => {
       start: 0,
       end: 10,
     });
+    runner.emit('step:end', {
+      journey: j1,
+      status: 'failed',
+      step: step('s2', async () => {}),
+      screenshot: 'dummy2',
+      url: 'dummy2',
+      timestamp: 1600300800000001,
+      start: 11,
+      end: 20,
+      error: new Error('myError'),
+    });
     runner.emit('journey:end', {
       journey: j1,
       params: {},
       status: 'succeeded',
       start: 0,
-      end: 11,
-      timestamp: 1600300800000000,
+      end: 20,
+      timestamp: 1600300800000002,
       filmstrips: [
         {
           snapshot: 'dummy',
