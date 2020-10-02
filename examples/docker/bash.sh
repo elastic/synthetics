@@ -1,5 +1,6 @@
 #!/bin/sh
 docker run \
+  -it \
   --rm \
   --name=heartbeat \
   --user=heartbeat \
@@ -8,9 +9,5 @@ docker run \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
   --volume="$(pwd)/../sample-app/journeys/dist:/opt/sample-app:ro" \
   --volume="$(pwd)/../elastic-docs/dist:/opt/elastic-docs:ro" \
-  docker.elastic.co/observability-ci/synthetics:tags-8.0.0-SNAPSHOT \
-  --strict.perms=false -e \
-  -E output.elasticsearch.hosts=["localhost:9200"] \
-  -E output.elasticsearch.username=elastic \
-  -E output.elasticsearch.password=changeme \
-  -E seccomp.enabled=false
+  heartbeat-synthetics \
+  bash
