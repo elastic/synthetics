@@ -4,10 +4,12 @@ import { now } from '../helpers';
 
 const defaultFd = process.stdout.fd;
 let logger = new SonicBoom({ fd: defaultFd });
+
 export const setLogger = (fd: number) => {
   if (fd && fd !== defaultFd) {
     logger = new SonicBoom({ fd });
   }
+  return logger;
 };
 
 export function log(msg) {
