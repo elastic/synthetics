@@ -5,17 +5,16 @@ import { generateTempPath } from '../../src/helpers';
 describe('Logger', () => {
   const dest = generateTempPath();
   const message = 'wrote something';
-  setLogger(fs.openSync(dest, 'w'));
+  const stream = setLogger(fs.openSync(dest, 'w'));
   afterAll(() => {
     fs.unlinkSync(dest);
   });
-  // Test is flakey on my laptop (@andrewvc)
-  // The buffer flush may be the culprit? Tried flushSync, no luck
-  it.skip('log to specified fd', async () => {
+
+  it('log to specified fd', async () => {
     process.env.DEBUG = '1';
     log(message);
-    // wait one micro task to let the stream flush content
-    await Promise.resolve();
+    stream.end();
+    await new Promise(resolve => stream.once('finish', resolve));
     const buffer = fs.readFileSync(fs.openSync(dest, 'r'), 'utf-8');
     expect(buffer).toContain(message);
   });
