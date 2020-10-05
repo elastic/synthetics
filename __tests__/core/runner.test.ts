@@ -121,7 +121,23 @@ describe('runner', () => {
     });
   });
 
-  it('run steps - accumulate results', async () => {
+  it('run step - syntax failure', async () => {
+    const journey = new Journey({ name: 'j1' }, noop);
+    const step = journey.addStep('error step', async ({ page }) => {
+      await (page as any).clickkkkkk();
+    });
+    const runOptions = { screenshots: true };
+    const context = await setUpContext(runOptions);
+    const result = await runner.runStep(step, context, runOptions);
+    await Gatherer.dispose(context.driver);
+    expect(result).toEqual({
+      status: 'failed',
+      error: expect.any(String),
+      screenshot: expect.any(String),
+    });
+  });
+
+  it.only('run steps - accumulate results', async () => {
     const journey = new Journey({ name: 'j1' }, noop);
     journey.addStep('step1', async ({ page }) => {
       await page.goto(server.TEST_PAGE);
@@ -130,16 +146,19 @@ describe('runner', () => {
     journey.addStep('step2', async () => {
       throw error;
     });
-    const context = await setUpContext();
-    const [step1, step2] = await runner.runSteps(journey, context, {});
+    const runOptions = { screenshots: true };
+    const context = await setUpContext(runOptions);
+    const [step1, step2] = await runner.runSteps(journey, context, runOptions);
     await Gatherer.dispose(context.driver);
     expect(step1).toEqual({
       status: 'succeeded',
       url: server.TEST_PAGE,
+      screenshot: expect.any(String),
     });
     expect(step2).toEqual({
       status: 'failed',
       error,
+      screenshot: expect.any(String),
     });
   });
 
