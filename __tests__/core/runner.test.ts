@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
-import Runner, { RunOptions } from '../../src/core/runner';
+import Runner from '../../src/core/runner';
+import { step, journey } from '../../src/core';
 import { Journey } from '../../src/dsl';
 import { Server } from '../../utils/server';
 import { generateTempPath } from '../../src/helpers';
@@ -19,18 +20,6 @@ describe('runner', () => {
     await server.close();
     fs.unlinkSync(dest);
   });
-
-  const setUpContext = async (options: RunOptions = {}): Promise<any> => {
-    const driver = await Gatherer.setupDriver();
-    const pluginManager = await Gatherer.beginRecording(driver, options);
-    return {
-      params: {},
-      timestamp: 0,
-      start: 0,
-      pluginManager,
-      driver,
-    };
-  };
 
   it('support emitting/subscribing to events', () => {
     runner.on('start', ({ numJourneys }) => {
@@ -105,50 +94,59 @@ describe('runner', () => {
   });
 
   it('run step', async () => {
-    const journey = new Journey({ name: 'j1' }, noop);
-    const step = journey.addStep('step1', async ({ page }) => {
-      await page.goto(server.TEST_PAGE);
+    const j1 = journey('j1', async ({ page }) => {
+      step('step1', async () => {
+        await page.goto(server.TEST_PAGE);
+      });
     });
     const runOptions = { metrics: true, screenshots: true };
-    const context = await setUpContext(runOptions);
-    const result = await runner.runStep(step, context, runOptions);
+    const context = await Runner.context(runOptions);
+    await runner.registerJourney(j1, context);
+    const result = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
-    expect(result).toEqual({
-      status: 'succeeded',
-      metrics: expect.any(Object),
-      screenshot: expect.any(String),
-      url: server.TEST_PAGE,
-    });
+    expect(result).toEqual([
+      {
+        status: 'succeeded',
+        metrics: expect.any(Object),
+        screenshot: expect.any(String),
+        url: server.TEST_PAGE,
+      },
+    ]);
   });
 
   it('run step - syntax failure', async () => {
-    const journey = new Journey({ name: 'j1' }, noop);
-    const step = journey.addStep('error step', async ({ page }) => {
-      await (page as any).clickkkkkk();
+    const j1 = journey('j1', async ({ page }) => {
+      step('step1', async () => {
+        await (page as any).clickkkkkk();
+      });
     });
     const runOptions = { screenshots: true };
-    const context = await setUpContext(runOptions);
-    const result = await runner.runStep(step, context, runOptions);
+    const context = await Runner.context(runOptions);
+    const result = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
-    expect(result).toEqual({
-      status: 'failed',
-      error: expect.any(String),
-      screenshot: expect.any(String),
-    });
+    expect(result).toEqual([
+      {
+        status: 'failed',
+        error: expect.any(String),
+        screenshot: expect.any(String),
+      },
+    ]);
   });
 
-  it.only('run steps - accumulate results', async () => {
-    const journey = new Journey({ name: 'j1' }, noop);
-    journey.addStep('step1', async ({ page }) => {
-      await page.goto(server.TEST_PAGE);
-    });
-    const error = new Error('Broken step 2');
-    journey.addStep('step2', async () => {
-      throw error;
+  it('run steps - accumulate results', async () => {
+    const error = new Error('broken step 2');
+    const j1 = journey('j1', async ({ page }) => {
+      step('step1', async () => {
+        await page.goto(server.TEST_PAGE);
+      });
+      step('step2', () => {
+        throw error;
+      });
     });
     const runOptions = { screenshots: true };
-    const context = await setUpContext(runOptions);
-    const [step1, step2] = await runner.runSteps(journey, context, runOptions);
+    const context = await Runner.context(runOptions);
+    await runner.registerJourney(j1, context);
+    const [step1, step2] = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
     expect(step1).toEqual({
       status: 'succeeded',
@@ -201,5 +199,18 @@ describe('runner', () => {
       j1: { status: 'succeeded' },
       j2: { status: 'failed', error },
     });
+  });
+
+  it('run api - dry run', async () => {
+    runner.addJourney(new Journey({ name: 'j1' }, noop));
+    runner.addJourney(new Journey({ name: 'j2' }, noop));
+    let count = 0;
+    runner.on('journey:register', () => count++);
+    const result = await runner.run({
+      outfd: fs.openSync(dest, 'w'),
+      dryRun: true,
+    });
+    expect(result).toEqual({});
+    expect(count).toBe(2);
   });
 });

@@ -2,9 +2,10 @@ import { journey, step, runner } from '../../src/core/index';
 
 beforeEach(() => runner.reset());
 
+const noop = async () => {};
 const name = 'journey';
 it('add journeys to runner', () => {
-  const j = journey(name, () => {});
+  const j = journey(name, noop);
 
   expect(j.options.name).toBe(name);
   expect(j.options.id).toBe(name);
@@ -13,12 +14,9 @@ it('add journeys to runner', () => {
 });
 
 it('add steps to journeys', () => {
-  let s1,
-    s2 = null;
-  const j = journey(name, () => {
-    s1 = step('step1', async () => {});
-    s2 = step('step2', async () => {});
-  });
+  const j = journey(name, noop);
+  const s1 = step('step1', noop);
+  const s2 = step('step2', noop);
 
   expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
