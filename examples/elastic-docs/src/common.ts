@@ -1,13 +1,13 @@
 import { step } from '@elastic/synthetics';
 
-export const goToElasticHome = () => {
-  step('go to elastic homepage', async ({ page }) => {
+export const goToElasticHome = ({ page }) => {
+  step('go to elastic homepage', async () => {
     await page.goto('https://www.elastic.co');
   });
 };
 
-export const goToDocsHome = () => {
-  step('go to elastic homepage', async ({ page }) => {
+export const goToDocsHome = ({ page }) => {
+  step('go to elastic homepage', async () => {
     await page.goto('https://www.elastic.co/guide/index.html');
   });
 };

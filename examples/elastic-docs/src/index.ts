@@ -11,14 +11,14 @@ import './cloud_docs';
 // customize these as you like!
 const defaultSuiteParams = {
   development: {
-    homepage: 'http://localhost:4567'
+    homepage: 'http://localhost:4567',
   },
   staging: {
-    homepage: 'http://staging.localhost:4567'
+    homepage: 'http://staging.localhost:4567',
   },
   production: {
-    homepage: 'http://prod.localhost:4567'
-  }
+    homepage: 'http://prod.localhost:4567',
+  },
 };
 
 // Change the contents of this function to determine when the service you're testing is ready to run the suite
@@ -73,13 +73,8 @@ async function startService(
   let childProcess: ChildProcess;
   if (environment === 'development') {
     console.log('Starting service from `./start_service.sh`');
-    const childProcess = spawn('./hooks/start_service.sh');
-    childProcess.stdout.on('data', chunk => {
-      console.log(chunk);
-    });
-    childProcess.stderr.on('data', chunk => {
-      console.warn(chunk);
-    });
+    const childProcess = spawn('./hooks/start_service.sh', { stdio: 'pipe' });
+
     childProcess.on('close', code => {
       console.debug(`child process for service exited with ${code}`);
     });

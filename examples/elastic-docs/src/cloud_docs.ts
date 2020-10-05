@@ -1,16 +1,13 @@
 import { journey, step } from '@elastic/synthetics';
-import { goToElasticHome, goToDocsHome } from './common';
+import { goToDocsHome } from './common';
 import * as expect from 'expect';
 
-journey('a failing journey', () => {
-  goToDocsHome();
+journey('a failing journey', async ({ page }) => {
+  goToDocsHome({ page });
 
-  step(
-    'check for value that does not exist product titles',
-    async ({ page }) => {
-      expect(await page.innerHTML('body')).toMatch(
-        /thisstringisnotinthepageiguaranteeit/
-      );
-    }
-  );
+  step('check for value that does not exist product titles', async () => {
+    expect(await page.innerHTML('body')).toMatch(
+      /thisstringisnotinthepageiguaranteeit/
+    );
+  });
 });
