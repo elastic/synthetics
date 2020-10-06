@@ -3,11 +3,12 @@ import { program } from 'commander';
 program
   /* eslint-disable @typescript-eslint/no-var-requires */
   .version(require('../package.json').version)
-  .usage('[options] <file>')
+  .usage('[options] file [files]')
   .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
-  .option('--stdin', 'read script file input from stdin')
+  .option('--dir <path>', 'directory of the test files')
+  .option('--inline', 'Run inline journeys from heartbeat')
   .option('-d, --debug', 'print debug information')
   .option('--no-headless', 'run browser in headful mode')
   .option(
