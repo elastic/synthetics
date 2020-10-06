@@ -1,6 +1,6 @@
 ---
 - job:
-    name: apm-agent-rum/elastic-synthetics
+    name: apm-agent-rum/heartbeat-elastic-synthetics
     display-name: Heartbeat Packaging for Elastic Synthetics
     description: Make the packages for Heartbeat and publish them.
     project-type: multibranch
