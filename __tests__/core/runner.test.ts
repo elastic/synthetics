@@ -122,12 +122,13 @@ describe('runner', () => {
     });
     const runOptions = { screenshots: true };
     const context = await Runner.context(runOptions);
+    await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
     expect(result).toEqual([
       {
         status: 'failed',
-        error: expect.any(String),
+        error: expect.any(Error),
         screenshot: expect.any(String),
       },
     ]);

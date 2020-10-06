@@ -47,7 +47,7 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
-    runner.emit('journey:registered', {
+    runner.emit('journey:register', {
       journey: j1,
     });
     runner.emit('journey:start', {

@@ -10,7 +10,7 @@ const programVersion = require('../../package.json').version;
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
     this.runner.on('journey:register', ({ journey }) => {
-      this.writeJSON('journey/start', journey, {});
+      this.writeJSON('journey/register', journey, {});
     });
 
     this.runner.on('journey:start', ({ journey, timestamp, params }) => {
