@@ -22,7 +22,7 @@ program
   .option('--metrics', 'capture performance metrics for each step')
   .option(
     '--dry-run',
-    "don't actually execute anything, report as if each step was skipped"
+    "don't actually execute anything, report only registered journeys"
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(

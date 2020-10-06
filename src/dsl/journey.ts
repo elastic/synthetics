@@ -1,3 +1,4 @@
+import { Browser, Page, BrowserContext, CDPSession } from 'playwright';
 import { Step, StepCallback } from './step';
 
 export type JourneyOptions = {
@@ -5,7 +6,13 @@ export type JourneyOptions = {
   id?: string;
 };
 
-export type JourneyCallback = () => void;
+export type JourneyCallback = (options: {
+  page: Page;
+  context: BrowserContext;
+  browser: Browser;
+  client: CDPSession;
+  params: Record<string, any>;
+}) => Promise<void>;
 
 export class Journey {
   options: JourneyOptions;

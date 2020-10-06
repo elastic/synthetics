@@ -1,5 +1,5 @@
-ARG STACK_VERSION=7.10.0-SNAPSHOT
-FROM docker.elastic.co/beats/heartbeat:${STACK_VERSION}
+ARG STACK_VERSION=7.10.0-synthetics
+FROM docker.elastic.co/observability-ci/heartbeat:${STACK_VERSION}
 USER root
 RUN yum -y update && \
     yum -y install epel-release && \

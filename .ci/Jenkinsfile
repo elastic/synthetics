@@ -113,7 +113,7 @@ pipeline {
         axes {
           axis {
             name 'STACK_VERSION'
-            values '8.0.0-SNAPSHOT', '7.10.0-SNAPSHOT'
+            values '8.0.0-synthetics', '7.10.0-synthetics'
           }
         }
         stages {

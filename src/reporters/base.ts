@@ -82,6 +82,8 @@ export default class BaseReporter {
 
     this.runner.on('end', () => {
       const { failed, succeeded, skipped } = result;
+      const total = failed + succeeded + skipped;
+      if (total === 0) return;
       let message = '\n';
       message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
       message += failed > 0 ? red(` ${failed} failed`) : '';
