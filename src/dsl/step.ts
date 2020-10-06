@@ -1,12 +1,4 @@
-import { Browser, Page, BrowserContext, CDPSession } from 'playwright';
-
-export type StepCallback = (options: {
-  page: Page;
-  context: BrowserContext;
-  browser: Browser;
-  client: CDPSession;
-  params: Record<string, any>;
-}) => Promise<void>;
+export type StepCallback = () => void;
 
 export class Step {
   name: string;

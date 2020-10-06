@@ -20,7 +20,7 @@ describe('base reporter', () => {
     jest.spyOn(helpers, 'now').mockImplementation(() => 0);
     const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
     runner.emit('start', { numJourneys: 1 });
-    const j1 = journey('j1', () => {});
+    const j1 = journey('j1', async () => {});
     runner.emit('journey:start', {
       journey: j1,
       params: {},

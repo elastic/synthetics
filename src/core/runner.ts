@@ -54,6 +54,9 @@ type RunResult = Record<string, JourneyResult>;
 
 interface Events {
   start: { numJourneys: number };
+  'journey:register': {
+    journey: Journey;
+  };
   'journey:start': {
     journey: Journey;
     timestamp: number;
@@ -81,6 +84,20 @@ export default class Runner {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
 
+  static async context(options: RunOptions): Promise<JourneyContext> {
+    const timestamp = getTimestamp();
+    const start = getMonotonicTime();
+    const driver = await Gatherer.setupDriver(options.headless);
+    const pluginManager = await Gatherer.beginRecording(driver, options);
+    return {
+      timestamp,
+      start,
+      params: options.params,
+      driver,
+      pluginManager,
+    };
+  }
+
   addJourney(journey: Journey) {
     this.journeys.push(journey);
     this.currentJourney = journey;
@@ -104,9 +121,9 @@ export default class Runner {
     };
     log(`Runner: start step(${step.name})`);
     const { metrics, screenshots } = options;
-    const { driver, pluginManager, params } = context;
+    const { driver, pluginManager } = context;
     try {
-      await step.callback({ ...driver, params });
+      await step.callback();
       await driver.page.waitForLoadState('load');
       if (metrics) {
         data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
@@ -136,7 +153,7 @@ export default class Runner {
       const timestamp = getTimestamp();
       this.emit('step:start', { timestamp, journey, step });
       let data: StepResult = { status: 'succeeded' };
-      if (options.dryRun || skipStep) {
+      if (skipStep) {
         data.status = 'skipped';
       } else {
         data = await this.runStep(step, context, options);
@@ -161,10 +178,14 @@ export default class Runner {
     return results;
   }
 
-  beginJourney(journey: Journey, context: JourneyContext) {
+  async registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
     const { timestamp, params } = context;
     this.emit('journey:start', { journey, timestamp, params });
+    /**
+     * Load and register the steps for the current journey
+     */
+    await journey.callback({ ...context.driver, params });
   }
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
@@ -189,18 +210,8 @@ export default class Runner {
     };
     log(`Runner: start journey(${journey.options.name})`);
     try {
-      const timestamp = getTimestamp();
-      const start = getMonotonicTime();
-      const driver = await Gatherer.setupDriver(options.headless);
-      const pluginManager = await Gatherer.beginRecording(driver, options);
-      const context: JourneyContext = {
-        timestamp,
-        start,
-        params: options.params,
-        driver,
-        pluginManager,
-      };
-      this.beginJourney(journey, context);
+      const context = await Runner.context(options);
+      this.registerJourney(journey, context);
       const stepResults = await this.runSteps(journey, context, options);
       /**
        * Mark journey as failed if any intermediate step fails
@@ -212,7 +223,7 @@ export default class Runner {
         }
       }
       await this.endJourney(journey, { ...context, ...result });
-      await Gatherer.dispose(driver);
+      await Gatherer.dispose(context.driver);
     } catch (e) {
       result.status = 'failed';
       result.error = e;
@@ -231,8 +242,14 @@ export default class Runner {
     new Reporter(this, { fd: outfd });
 
     this.emit('start', { numJourneys: this.journeys.length });
-
     for (const journey of this.journeys) {
+      /**
+       * Used by heartbeat to gather all registered journeys
+       */
+      if (options.dryRun) {
+        this.emit('journey:register', { journey });
+        continue;
+      }
       // TODO: Replace functionality with journey.only
       if (journeyName && journey.options.name != journeyName) {
         continue;

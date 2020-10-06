@@ -12,8 +12,6 @@ export const journey = (
   }
   const j = new Journey(options, callback);
   runner.addJourney(j);
-  // load steps
-  j.callback();
   return j;
 };
 

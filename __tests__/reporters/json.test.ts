@@ -6,7 +6,7 @@ import Runner from '../../src/core/runner';
 
 describe('json reporter', () => {
   let dest: string;
-  const j1 = journey('j1', () => {});
+  const j1 = journey('j1', async () => {});
   let stream;
   let runner: Runner;
   const timestamp = 1600300800000000;
@@ -47,6 +47,9 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
+    runner.emit('journey:register', {
+      journey: j1,
+    });
     runner.emit('journey:start', {
       journey: j1,
       params: {},
