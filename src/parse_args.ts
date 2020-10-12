@@ -8,6 +8,7 @@ program
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
   .option('--dir <path>', 'directory of the test files')
+  .option('--pattern <pattern>', 'RegExp file patterns')
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-d, --debug', 'print debug information')
   .option('--no-headless', 'run browser in headful mode')

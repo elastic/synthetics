@@ -46,8 +46,16 @@ process.env.DEBUG = program.debug || '';
   if (program.dir) {
     const dir = join(resolvedCwd, program.dir || '.');
     const suites = [];
+    /**
+     * Match all files inside the directory with the below extensions
+     * mjs, cjs, js, jsx, ts, tsx
+     */
+    let pattern = /.([mc]js|[jt]sx?)$/;
+    if (program.pattern) {
+      pattern = new RegExp(program.pattern, 'i');
+    }
     await totalist(dir, (rel, abs) => {
-      if (/\.js$/.test(rel)) {
+      if (pattern.test(rel)) {
         suites.push(abs);
       }
     });
