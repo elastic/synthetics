@@ -68,7 +68,7 @@ export default class BaseReporter {
     };
 
     this.runner.on('journey:start', ({ journey }) => {
-      this.write(`\nJourney: ${journey.options.name}`);
+      this.write(`\nJourney: ${journey.name}`);
     });
 
     this.runner.on('step:end', ({ step, start, end, error, status }) => {
