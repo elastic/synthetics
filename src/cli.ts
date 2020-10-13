@@ -70,7 +70,7 @@ async function prepareSuites(inputs) {
   return suites.values();
 }
 
-(async () => {
+async function exec() {
   if (program.inline) {
     const source = await readStdin();
     loadInlineScript(source);
@@ -82,6 +82,8 @@ async function prepareSuites(inputs) {
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
+      } else {
+        throw new Error(`cannot find module '${name}'`);
       }
     }
     /**
@@ -115,4 +117,13 @@ async function prepareSuites(inputs) {
     outfd: program.outfd,
     metrics: program.metrics,
   });
+}
+
+(async () => {
+  try {
+    await exec();
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
 })();
