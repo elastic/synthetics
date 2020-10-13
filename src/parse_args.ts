@@ -1,18 +1,19 @@
 import { program } from 'commander';
 
+/* eslint-disable-next-line @typescript-eslint/no-var-requires */
+const { name, version } = require('../package.json');
 program
-  /* eslint-disable @typescript-eslint/no-var-requires */
-  .version(require('../package.json').version)
-  .usage('[options] file [files]')
+  .name(name)
+  .usage('[options] [dir] [files] file')
   .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
+  .option('-d, --debug', 'print debug logs info')
   .option(
     '--pattern <pattern>',
     'RegExp file patterns to search inside directory'
   )
   .option('--inline', 'Run inline journeys from heartbeat')
-  .option('-d, --debug', 'print debug information')
   .option('--no-headless', 'run browser in headful mode')
   .option(
     '--pause-on-error',
@@ -31,9 +32,10 @@ program
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(
     '--outfd <fd>',
-    'specify a file descriptor number for output. Default is stdout',
+    'specify a file descriptor for logs. Default is stdout',
     parseInt
   )
+  .version(version)
   .description('Run synthetic tests');
 
 export const parseArgs = () => {
