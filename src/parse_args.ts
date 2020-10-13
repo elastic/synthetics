@@ -14,6 +14,7 @@ program
     'RegExp file patterns to search inside directory'
   )
   .option('--inline', 'Run inline journeys from heartbeat')
+  .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
   .option(
     '--pause-on-error',

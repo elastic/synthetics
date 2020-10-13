@@ -7,6 +7,7 @@ import { promisify } from 'util';
 import { totalist } from 'totalist';
 import { step, journey } from './core';
 import { parseArgs } from './parse_args';
+import { isDepInstalled } from './helpers';
 import { run } from './';
 
 const program = parseArgs();
@@ -40,6 +41,10 @@ function requireSuites(suites: Iterable<string>) {
   }
 }
 
+/**
+ * Handle both directory and files that are passed through TTY
+ * and add them to suites
+ */
 async function prepareSuites(inputs) {
   const suites = new Set<string>();
   for (const input of inputs) {
@@ -69,16 +74,24 @@ async function prepareSuites(inputs) {
   if (program.inline) {
     const source = await readStdin();
     loadInlineScript(source);
-  } else if (stdin.isTTY) {
-    const suites = await prepareSuites(program.args);
-    requireSuites(suites);
   } else {
+    /**
+     * Preload modules before running the suites
+     */
+    const modules = (program.require || []).filter(Boolean);
+    for (const name of modules) {
+      if (isDepInstalled(name)) {
+        require(name);
+      }
+    }
     /**
      * Handled piped files by reading the STDIN
      * ex: ls example/suites/*.js
      */
-    const input = await readStdin();
-    const files = input.split('\n').filter(Boolean);
+    const input = stdin.isTTY ? program.args : await readStdin();
+    const files = Array.isArray(input)
+      ? input
+      : input.split('\n').filter(Boolean);
     const suites = await prepareSuites(files);
     requireSuites(suites);
   }
