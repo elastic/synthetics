@@ -27,6 +27,7 @@ pipeline {
   }
   triggers {
     issueCommentTrigger('(?i)(^/test$)')
+    upstream("apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }, apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }-7.x")
   }
   parameters {
     booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
