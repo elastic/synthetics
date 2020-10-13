@@ -133,7 +133,7 @@ pipeline {
           }
           stage('observability-ci'){
             environment {
-              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
+              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}-${env.STACK_VERSION}"
               DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
             }
             steps {
@@ -148,8 +148,8 @@ pipeline {
               //branch 'master'
             }
             environment {
-              DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}"
-              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
+              DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}-${env.STACK_VERSION}"
+              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
             }
             steps {
               withGithubNotify(context: "push ${DOCKER_IMG_TAG_BRANCH}") {
