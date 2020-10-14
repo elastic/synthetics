@@ -70,7 +70,7 @@ async function prepareSuites(inputs) {
   return suites.values();
 }
 
-async function exec() {
+(async () => {
   if (program.inline) {
     const source = await readStdin();
     loadInlineScript(source);
@@ -117,13 +117,7 @@ async function exec() {
     outfd: program.outfd,
     metrics: program.metrics,
   });
-}
-
-(async () => {
-  try {
-    await exec();
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-})();
+})().catch(e => {
+  console.error(e);
+  process.exit(1);
+});
