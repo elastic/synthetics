@@ -93,6 +93,30 @@ describe('runner', () => {
     });
   });
 
+  it('run journey - with hooks', async () => {
+    const journey = new Journey({ name: 'with hooks' }, noop);
+    journey.addHook('before', noop);
+    journey.addHook('after', noop);
+    const result = await runner.runJourney(journey, {});
+    expect(result).toEqual({
+      status: 'succeeded',
+    });
+  });
+
+  it('run journey - failed when hooks errors', async () => {
+    const journey = new Journey({ name: 'failed-journey' }, noop);
+    journey.addHook('before', noop);
+    const error = new Error('Broken after hook');
+    journey.addHook('after', () => {
+      throw error;
+    });
+    const result = await runner.runJourney(journey, {});
+    expect(result).toEqual({
+      status: 'failed',
+      error,
+    });
+  });
+
   it('run step', async () => {
     const j1 = journey('j1', async ({ page }) => {
       step('step1', async () => {

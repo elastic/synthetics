@@ -111,6 +111,16 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
+  async runBeforeHook(journey: Journey) {
+    log(`Runner: before hook(${journey.options.name})`);
+    await journey.hooks.before();
+  }
+
+  async runAfterHook(journey: Journey) {
+    log(`Runner: after hook(${journey.options.name})`);
+    await journey.hooks.after();
+  }
+
   async runStep(
     step: Step,
     context: JourneyContext,
@@ -208,10 +218,11 @@ export default class Runner {
     const result: JourneyResult = {
       status: 'succeeded',
     };
-    log(`Runner: start journey(${journey.name})`);
+    log(`Runner: start journey (${journey.name})`);
+    const context = await Runner.context(options);
     try {
-      const context = await Runner.context(options);
       this.registerJourney(journey, context);
+      await this.runBeforeHook(journey);
       const stepResults = await this.runSteps(journey, context, options);
       /**
        * Mark journey as failed if any intermediate step fails
@@ -222,11 +233,13 @@ export default class Runner {
           result.error = stepResult.error;
         }
       }
-      await this.endJourney(journey, { ...context, ...result });
-      await Gatherer.dispose(context.driver);
+      await this.runAfterHook(journey);
     } catch (e) {
       result.status = 'failed';
       result.error = e;
+    } finally {
+      await this.endJourney(journey, { ...context, ...result });
+      await Gatherer.dispose(context.driver);
     }
     log(`Runner: end journey(${journey.name})`);
     return result;

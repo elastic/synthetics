@@ -3,6 +3,8 @@ import os from 'os';
 import path from 'path';
 import { performance } from 'perf_hooks';
 
+export function noop() {}
+
 export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
 }

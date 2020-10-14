@@ -1,5 +1,7 @@
 import { Protocol } from 'playwright/types/protocol';
 
+export type VoidCallback = () => void;
+
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 
 export type FilmStrip = {

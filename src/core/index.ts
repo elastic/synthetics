@@ -1,5 +1,6 @@
-import { Journey, JourneyCallback, JourneyOptions, StepCallback } from '../dsl';
+import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
+import { VoidCallback } from '../common_types';
 
 export const runner = new Runner();
 
@@ -15,6 +16,14 @@ export const journey = (
   return j;
 };
 
-export const step = (name: string, callback: StepCallback) => {
+export const step = (name: string, callback: VoidCallback) => {
   return runner.currentJourney?.addStep(name, callback);
+};
+
+export const before = (callback: VoidCallback) => {
+  return runner.currentJourney?.addHook('before', callback);
+};
+
+export const after = (callback: VoidCallback) => {
+  return runner.currentJourney?.addHook('after', callback);
 };
