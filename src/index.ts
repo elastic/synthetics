@@ -38,4 +38,4 @@ export async function run(options: RunOptions) {
   }
 }
 
-export { journey, step, before, after } from './core';
+export { beforeAll, afterAll, journey, step, before, after } from './core';

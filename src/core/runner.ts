@@ -2,8 +2,13 @@ import { EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters } from '../reporters';
-import { getMonotonicTime, getTimestamp } from '../helpers';
-import { StatusValue, FilmStrip, NetworkInfo } from '../common_types';
+import { getMonotonicTime, getTimestamp, noop } from '../helpers';
+import {
+  StatusValue,
+  FilmStrip,
+  NetworkInfo,
+  VoidCallback,
+} from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
@@ -52,6 +57,9 @@ type JourneyResult = {
 
 type RunResult = Record<string, JourneyResult>;
 
+type HookType = 'beforeAll' | 'afterAll';
+export type SuiteHooks = Record<HookType, VoidCallback>;
+
 interface Events {
   start: { numJourneys: number };
   'journey:register': {
@@ -83,6 +91,10 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  hooks: SuiteHooks = {
+    beforeAll: noop,
+    afterAll: noop,
+  };
 
   static async context(options: RunOptions): Promise<JourneyContext> {
     const timestamp = getTimestamp();
@@ -98,6 +110,10 @@ export default class Runner {
     };
   }
 
+  addHook(type: HookType, callback: VoidCallback) {
+    this.hooks[type] = callback;
+  }
+
   addJourney(journey: Journey) {
     this.journeys.push(journey);
     this.currentJourney = journey;
@@ -109,6 +125,16 @@ export default class Runner {
 
   on<K extends keyof Events>(e: K, cb: (v: Events[K]) => void) {
     this.eventEmitter.on(e, cb);
+  }
+
+  async runBeforeAllHook() {
+    log(`Runner: beforeAll hook`);
+    await this.hooks.beforeAll();
+  }
+
+  async runAfterAllHook() {
+    log(`Runner: afterAll hook`);
+    await this.hooks.afterAll();
   }
 
   async runBeforeHook(journey: Journey) {
@@ -253,8 +279,8 @@ export default class Runner {
      */
     const Reporter = reporters[reporter];
     new Reporter(this, { fd: outfd });
-
     this.emit('start', { numJourneys: this.journeys.length });
+    await this.runBeforeAllHook();
     for (const journey of this.journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
@@ -270,6 +296,7 @@ export default class Runner {
       const journeyResult = await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
     }
+    await this.runAfterAllHook();
     this.emit('end', {});
     this.reset();
     return result;

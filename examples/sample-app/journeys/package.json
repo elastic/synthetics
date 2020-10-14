@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run build && npx @elastic/synthetics dist/test.journey.js -s '{\"homepage\": \"http://localhost:4567\"}'"
   },
   "keywords": [],
   "author": "",

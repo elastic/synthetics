@@ -20,10 +20,24 @@ export const step = (name: string, callback: VoidCallback) => {
   return runner.currentJourney?.addStep(name, callback);
 };
 
+export const beforeAll = (callback: VoidCallback) => {
+  runner.addHook('beforeAll', callback);
+};
+
+export const afterAll = (callback: VoidCallback) => {
+  runner.addHook('afterAll', callback);
+};
+
 export const before = (callback: VoidCallback) => {
-  return runner.currentJourney?.addHook('before', callback);
+  if (!runner.currentJourney) {
+    throw new Error('before is called outside of the journey context');
+  }
+  return runner.currentJourney.addHook('before', callback);
 };
 
 export const after = (callback: VoidCallback) => {
-  return runner.currentJourney?.addHook('after', callback);
+  if (!runner.currentJourney) {
+    throw new Error('after is called outside of the journey context');
+  }
+  return runner.currentJourney.addHook('after', callback);
 };

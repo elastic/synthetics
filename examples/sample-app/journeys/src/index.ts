@@ -1,10 +1,6 @@
-import { run } from '@elastic/synthetics';
 import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
-
-// Import your test files here
-import './test.journey';
 
 // Default parameters for running the suite. These can be overriden with the '--suite-params' option'
 // customize these as you like!
@@ -47,21 +43,18 @@ async function waitForApp(suiteParams: any) {
   throw lastError;
 }
 
-// Code to run before and after the full suite
-// By default you shouldn't need to edit this,
-// simply edit 'start_service.sh' to start your service(s)
-// This will run that, and send a SIGTERM after the
-// suite is over
-async function runSuites() {
+/**
+ * Starts the ruby app in dev environment by spawning a
+ * child process
+ */
+export async function startApp() {
   const environment = process.env['NODE_ENV'] || 'development';
   console.log(`Test suite env: ${environment}`);
   const suiteParams = { ...defaultSuiteParams[environment] };
-  // By default we run the script start_service.sh
-
   let childProcess: ChildProcess;
   if (environment === 'development') {
     console.log('Starting service from `./hooks/start_service.sh`');
-    const childProcess = spawn('./hooks/start_service.sh', {
+    childProcess = spawn('./hooks/start_service.sh', {
       stdio: 'pipe',
     });
     childProcess.on('close', code => {
@@ -79,18 +72,5 @@ async function runSuites() {
       exit(123);
     }
   }
-
-  // Run the actual test suite
-  await run({ params: suiteParams, environment });
-
-  // Clean up the script started with start_service.sh
-  if (childProcess) {
-    console.log('Terminating service with SIGTERM');
-    childProcess.kill('SIGTERM');
-  }
+  return childProcess;
 }
-
-// Do not remove below this line!
-(async () => {
-  await runSuites();
-})();

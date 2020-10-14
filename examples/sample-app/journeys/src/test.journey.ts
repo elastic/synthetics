@@ -1,4 +1,17 @@
-import { journey, step } from '@elastic/synthetics';
+import { journey, step, beforeAll, afterAll } from '@elastic/synthetics';
+import { ChildProcess } from 'child_process';
+import { startApp } from './index';
+
+let appProcess: ChildProcess;
+beforeAll(async () => {
+  appProcess = await startApp();
+});
+afterAll(() => {
+  if (appProcess) {
+    console.log('Terminating service with SIGTERM');
+    appProcess.kill('SIGTERM');
+  }
+});
 
 journey({ name: 'Old Login' }, async ({ page, params }) => {
   step('Go to home page', async () => {

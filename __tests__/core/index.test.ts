@@ -1,9 +1,26 @@
-import { journey, step, runner, before, after } from '../../src/core/index';
+import {
+  journey,
+  step,
+  runner,
+  before,
+  after,
+  beforeAll,
+  afterAll,
+} from '../../src/core/index';
 
 beforeEach(() => runner.reset());
 
 const noop = async () => {};
 const name = 'journey';
+
+it('add global hooks to runner', () => {
+  const test = () => 40;
+  beforeAll(test);
+  afterAll(test);
+  expect(runner.hooks.beforeAll).toEqual(test);
+  expect(runner.hooks.afterAll).toEqual(test);
+});
+
 it('add journeys to runner', () => {
   const j = journey(name, noop);
 
@@ -34,4 +51,12 @@ it('add hooks to journeys', () => {
   expect(runner.currentJourney.steps.length).toBe(0);
   expect(runner.currentJourney.hooks.before).toEqual(noop);
   expect(runner.currentJourney.hooks.after).toEqual(noop);
+});
+
+it('add hooks - throw error when outside journey context', () => {
+  try {
+    before(noop);
+  } catch (e) {
+    expect(e.message).toBe('before is called outside of the journey context');
+  }
 });
