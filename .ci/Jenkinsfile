@@ -27,6 +27,7 @@ pipeline {
   }
   triggers {
     issueCommentTrigger('(?i)(^/test$)')
+    upstream("apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }, apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }-7.x")
   }
   parameters {
     booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
@@ -132,7 +133,7 @@ pipeline {
           }
           stage('observability-ci'){
             environment {
-              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}"
+              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}-${env.STACK_VERSION}"
               DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
             }
             steps {
@@ -147,8 +148,7 @@ pipeline {
               //branch 'master'
             }
             environment {
-              DOCKER_IMG_TAG = "${env.DOCKER_IMG_PUBLIC}:${env.GIT_BASE_COMMIT}"
-              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}"
+              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
             }
             steps {
               withGithubNotify(context: "push ${DOCKER_IMG_TAG_BRANCH}") {
@@ -197,8 +197,10 @@ def pushDockerImage(){
         .
     """)
     retryWithSleep(retries: 3, seconds: 5, backoff: true){
-      sh(label: 'Push Docker image sha',
-        script: "docker push ${env.DOCKER_IMG_TAG}")
+      if(env.DOCKER_IMG_TAG){
+        sh(label: 'Push Docker image sha',
+          script: "docker push ${env.DOCKER_IMG_TAG}")
+      }
       sh(label: 'Push Docker image name',
         script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
     }
