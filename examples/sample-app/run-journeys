@@ -1,8 +1,0 @@
-#!/bin/sh
-
-# start the ruby app with logs
-mkdir -p logs
-/usr/bin/env ruby ./app.rb > logs/app.log 2>logs/app.error.log
-
-# run our synthetic runner with configured journeys
-npx @elastic/synthetics journeys -r ts-node/register -s '{"homepage": "http://localhost:4567"}'

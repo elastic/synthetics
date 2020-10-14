@@ -1,6 +1,6 @@
 import { journey, step, beforeAll, afterAll } from '@elastic/synthetics';
 import { ChildProcess } from 'child_process';
-import { startApp } from './index';
+import { startApp } from '../src';
 
 let appProcess: ChildProcess;
 beforeAll(async () => {
