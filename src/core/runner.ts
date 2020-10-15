@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters } from '../reporters';
-import { getMonotonicTime, getTimestamp, noop } from '../helpers';
+import { getMonotonicTime, getTimestamp } from '../helpers';
 import {
   StatusValue,
   FilmStrip,
@@ -58,7 +58,7 @@ type JourneyResult = {
 type RunResult = Record<string, JourneyResult>;
 
 type HookType = 'beforeAll' | 'afterAll';
-export type SuiteHooks = Record<HookType, VoidCallback>;
+export type SuiteHooks = Record<HookType, Array<VoidCallback>>;
 
 interface Events {
   start: { numJourneys: number };
@@ -91,10 +91,7 @@ export default class Runner {
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
-  hooks: SuiteHooks = {
-    beforeAll: noop,
-    afterAll: noop,
-  };
+  hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
 
   static async context(options: RunOptions): Promise<JourneyContext> {
     const timestamp = getTimestamp();
@@ -111,7 +108,7 @@ export default class Runner {
   }
 
   addHook(type: HookType, callback: VoidCallback) {
-    this.hooks[type] = callback;
+    this.hooks[type].push(callback);
   }
 
   addJourney(journey: Journey) {
@@ -128,23 +125,31 @@ export default class Runner {
   }
 
   async runBeforeAllHook() {
-    log(`Runner: beforeAll hook`);
-    await this.hooks.beforeAll();
+    log(`Runner: beforeAll hooks`);
+    for (const callback of this.hooks.beforeAll) {
+      await callback();
+    }
   }
 
   async runAfterAllHook() {
-    log(`Runner: afterAll hook`);
-    await this.hooks.afterAll();
+    log(`Runner: afterAll hooks`);
+    for (const callback of this.hooks.afterAll) {
+      await callback();
+    }
   }
 
   async runBeforeHook(journey: Journey) {
-    log(`Runner: before hook(${journey.options.name})`);
-    await journey.hooks.before();
+    log(`Runner: before hooks for (${journey.options.name})`);
+    for (const callback of journey.hooks.before) {
+      await callback();
+    }
   }
 
   async runAfterHook(journey: Journey) {
-    log(`Runner: after hook(${journey.options.name})`);
-    await journey.hooks.after();
+    log(`Runner: after hooks for (${journey.options.name})`);
+    for (const callback of journey.hooks.after) {
+      await callback();
+    }
   }
 
   async runStep(
@@ -155,7 +160,7 @@ export default class Runner {
     const data: StepResult = {
       status: 'succeeded',
     };
-    log(`Runner: start step(${step.name})`);
+    log(`Runner: start step (${step.name})`);
     const { metrics, screenshots } = options;
     const { driver, pluginManager } = context;
     try {
@@ -173,7 +178,7 @@ export default class Runner {
         data.screenshot = (await driver.page.screenshot()).toString('base64');
       }
     }
-    log(`Runner: end step(${step.name})`);
+    log(`Runner: end step (${step.name})`);
     return data;
   }
 
@@ -267,7 +272,7 @@ export default class Runner {
       await this.endJourney(journey, { ...context, ...result });
       await Gatherer.dispose(context.driver);
     }
-    log(`Runner: end journey(${journey.name})`);
+    log(`Runner: end journey (${journey.name})`);
     return result;
   }
 

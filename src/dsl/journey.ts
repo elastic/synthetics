@@ -1,6 +1,5 @@
 import { Browser, Page, BrowserContext, CDPSession } from 'playwright';
 import { Step } from './step';
-import { noop } from '../helpers';
 import { VoidCallback } from '../common_types';
 
 export type JourneyOptions = {
@@ -9,7 +8,7 @@ export type JourneyOptions = {
 };
 
 type HookType = 'before' | 'after';
-export type Hooks = Record<HookType, VoidCallback>;
+export type Hooks = Record<HookType, Array<VoidCallback>>;
 
 export type JourneyCallback = (options: {
   page: Page;
@@ -24,10 +23,7 @@ export class Journey {
   id?: string;
   callback: JourneyCallback;
   steps: Step[] = [];
-  hooks: Hooks = {
-    before: noop,
-    after: noop,
-  };
+  hooks: Hooks = { before: [], after: [] };
 
   constructor(options: JourneyOptions, callback: JourneyCallback) {
     this.name = options.name;
@@ -42,6 +38,6 @@ export class Journey {
   }
 
   addHook(type: HookType, callback: VoidCallback) {
-    this.hooks[type] = callback;
+    this.hooks[type].push(callback);
   }
 }
