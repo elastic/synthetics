@@ -13,6 +13,8 @@ heartbeat.synthetic_suites:
   path: "/opt/elastic-docs"
   schedule: "@every 1m"
 
+processors:
+
 heartbeat.monitors:
 - type: browser
   id: my-monitor
