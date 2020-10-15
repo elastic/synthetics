@@ -5,13 +5,13 @@ heartbeat.config.monitors:
   reload.enabled: false
   reload.period: 5s
 
-#heartbeat.synthetic_suites:
-#- name: Sample appp
-# path: "/opt/sample-app/journeys"
-#schedule: "@every 1m"
-#- name: Docs Suite
-#path: "/opt/elastic-docs"
-#schedule: "@every 1m"
+heartbeat.synthetic_suites:
+- name: Sample app
+  path: "/opt/sample-app/journeys"
+  schedule: "@every 1m"
+- name: Docs Suite
+  path: "/opt/elastic-docs"
+  schedule: "@every 1m"
 
 heartbeat.monitors:
 - type: browser
@@ -19,9 +19,9 @@ heartbeat.monitors:
   name: My Monitor
   schedule: "@every 1m"
   script: |-
-    step("load homepage", async ({page, params}) => {
+    step("load homepage", async () => {
         await page.goto('https://www.elastic.co');
     });
-    step("hover over products menu", async ({page}) => {
+    step("hover over products menu", async () => {
         await page.hover('css=[data-nav-item=products]');
     });
