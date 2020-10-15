@@ -4,19 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx @elastic/synthetics journeys -s '{\"homepage\": \"http://localhost:4567\"}'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
     "@elastic/synthetics": "file:../../",
-    "expect": "^26.4.2",
-    "typescript": "^3.9.7"
-  },
-  "devDependencies": {
-    "ts-loader": "^8.0.2"
+    "axios": "^0.19.2"
   }
 }

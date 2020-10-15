@@ -59,3 +59,11 @@ export async function runParallel(callbacks) {
   const promises = callbacks.map(cb => cb());
   return await Promise.all(promises);
 }
+
+export function isDepInstalled(dep) {
+  try {
+    return require.resolve(dep);
+  } catch (e) {
+    return false;
+  }
+}

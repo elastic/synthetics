@@ -1,6 +1,6 @@
-import { journey, step } from '@elastic/synthetics';
+import { journey, step } from '../../dist';
 import { goToElasticHome, goToDocsHome } from './common';
-import * as expect from 'expect';
+import * as assert from 'assert';
 
 journey('Navigate to docs', async ({ page }) => {
   goToElasticHome({ page });
@@ -18,6 +18,6 @@ journey('check that docs mention cloud', async ({ page }) => {
   goToDocsHome({ page });
 
   step('check for expected product titles', async () => {
-    expect(await page.innerHTML('body')).toMatch(/cloud/i);
+    assert.match(await page.innerHTML('body'), /cloud/i);
   });
 });
