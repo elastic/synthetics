@@ -132,8 +132,8 @@ export default class JSONReporter extends BaseReporter {
       type,
       '@timestamp': timestamp || getTimestamp(),
       journey: {
-        name: journey.options.name,
-        id: journey.options.id,
+        name: journey.name,
+        id: journey.id,
       },
       step: step
         ? {

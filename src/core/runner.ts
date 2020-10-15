@@ -208,7 +208,7 @@ export default class Runner {
     const result: JourneyResult = {
       status: 'succeeded',
     };
-    log(`Runner: start journey(${journey.options.name})`);
+    log(`Runner: start journey(${journey.name})`);
     try {
       const context = await Runner.context(options);
       this.registerJourney(journey, context);
@@ -228,7 +228,7 @@ export default class Runner {
       result.status = 'failed';
       result.error = e;
     }
-    log(`Runner: end journey(${journey.options.name})`);
+    log(`Runner: end journey(${journey.name})`);
     return result;
   }
 
@@ -251,11 +251,11 @@ export default class Runner {
         continue;
       }
       // TODO: Replace functionality with journey.only
-      if (journeyName && journey.options.name != journeyName) {
+      if (journeyName && journey.name != journeyName) {
         continue;
       }
       const journeyResult = await this.runJourney(journey, options);
-      result[journey.options.name] = journeyResult;
+      result[journey.name] = journeyResult;
     }
     this.emit('end', {});
     this.reset();

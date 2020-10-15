@@ -15,12 +15,14 @@ export type JourneyCallback = (options: {
 }) => Promise<void>;
 
 export class Journey {
-  options: JourneyOptions;
+  name: string;
+  id?: string;
   callback: JourneyCallback;
   steps: Step[] = [];
 
   constructor(options: JourneyOptions, callback: JourneyCallback) {
-    this.options = options;
+    this.name = options.name;
+    this.id = options.id;
     this.callback = callback;
   }
 

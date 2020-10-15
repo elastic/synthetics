@@ -7,8 +7,8 @@ const name = 'journey';
 it('add journeys to runner', () => {
   const j = journey(name, noop);
 
-  expect(j.options.name).toBe(name);
-  expect(j.options.id).toBe(name);
+  expect(j.name).toBe(name);
+  expect(j.id).toBe(name);
   expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
 });
