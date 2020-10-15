@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters } from '../reporters';
-import { getMonotonicTime, getTimestamp } from '../helpers';
+import { getMonotonicTime, getTimestamp, runParallel } from '../helpers';
 import {
   StatusValue,
   FilmStrip,
@@ -126,30 +126,22 @@ export default class Runner {
 
   async runBeforeAllHook() {
     log(`Runner: beforeAll hooks`);
-    for (const callback of this.hooks.beforeAll) {
-      await callback();
-    }
+    await runParallel(this.hooks.beforeAll);
   }
 
   async runAfterAllHook() {
     log(`Runner: afterAll hooks`);
-    for (const callback of this.hooks.afterAll) {
-      await callback();
-    }
+    await runParallel(this.hooks.afterAll);
   }
 
   async runBeforeHook(journey: Journey) {
-    log(`Runner: before hooks for (${journey.options.name})`);
-    for (const callback of journey.hooks.before) {
-      await callback();
-    }
+    log(`Runner: before hooks for (${journey.name})`);
+    await runParallel(journey.hooks.before);
   }
 
   async runAfterHook(journey: Journey) {
-    log(`Runner: after hooks for (${journey.options.name})`);
-    for (const callback of journey.hooks.after) {
-      await callback();
-    }
+    log(`Runner: after hooks for (${journey.name})`);
+    await runParallel(journey.hooks.after);
   }
 
   async runStep(

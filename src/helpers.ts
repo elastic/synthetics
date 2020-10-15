@@ -51,3 +51,11 @@ export function getTimestamp() {
 export function now() {
   return performance.now();
 }
+
+/**
+ * Execute all the callbacks in parallel using Promise.all
+ */
+export async function runParallel(callbacks) {
+  const promises = callbacks.map(cb => cb());
+  return await Promise.all(promises);
+}
