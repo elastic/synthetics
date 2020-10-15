@@ -39,6 +39,13 @@ describe('runner', () => {
     expect(runner.journeys.length).toBe(2);
   });
 
+  it('add hooks', async () => {
+    runner.addHook('beforeAll', noop);
+    runner.addHook('afterAll', noop);
+    expect(runner.hooks.beforeAll).toEqual([noop]);
+    expect(runner.hooks.afterAll).toEqual([noop]);
+  });
+
   it('run journey - with events payload', async () => {
     const journey = new Journey({ name: 'j1' }, noop);
     const step = journey.addStep('step1', noop);
@@ -84,6 +91,30 @@ describe('runner', () => {
     journey.addStep('step1', noop);
     const error = new Error('Broken step 2');
     journey.addStep('step2', async () => {
+      throw error;
+    });
+    const result = await runner.runJourney(journey, {});
+    expect(result).toEqual({
+      status: 'failed',
+      error,
+    });
+  });
+
+  it('run journey - with hooks', async () => {
+    const journey = new Journey({ name: 'with hooks' }, noop);
+    journey.addHook('before', noop);
+    journey.addHook('after', noop);
+    const result = await runner.runJourney(journey, {});
+    expect(result).toEqual({
+      status: 'succeeded',
+    });
+  });
+
+  it('run journey - failed when hooks errors', async () => {
+    const journey = new Journey({ name: 'failed-journey' }, noop);
+    journey.addHook('before', noop);
+    const error = new Error('Broken after hook');
+    journey.addHook('after', () => {
       throw error;
     });
     const result = await runner.runJourney(journey, {});
@@ -213,5 +244,39 @@ describe('runner', () => {
     });
     expect(result).toEqual({});
     expect(count).toBe(2);
+  });
+
+  it('run - should preserve order hooks/journeys/steps', async () => {
+    const result = [];
+    runner.addHook('beforeAll', async () => result.push('beforeAll1'));
+    runner.addHook('afterAll', async () => result.push('afterAll1'));
+    const j1 = new Journey({ name: 'j1' }, noop);
+    j1.addHook('before', () => result.push('before1'));
+    j1.addHook('after', () => result.push('after1'));
+    j1.addStep('s1', () => result.push('step1'));
+    const j2 = new Journey({ name: 'j1' }, noop);
+    runner.addHook('beforeAll', () => result.push('beforeAll2'));
+    runner.addHook('afterAll', () => result.push('afterAll2'));
+    j2.addHook('before', () => result.push('before2'));
+    j2.addHook('after', () => result.push('after2'));
+    j2.addStep('s2', () => result.push('step2'));
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+
+    await runner.run({
+      outfd: fs.openSync(dest, 'w'),
+    });
+    expect(result).toEqual([
+      'beforeAll1',
+      'beforeAll2',
+      'before1',
+      'step1',
+      'after1',
+      'before2',
+      'step2',
+      'after2',
+      'afterAll1',
+      'afterAll2',
+    ]);
   });
 });
