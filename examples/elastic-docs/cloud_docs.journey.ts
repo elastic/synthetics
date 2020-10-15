@@ -1,5 +1,5 @@
 import { journey, step } from '../../dist';
-import { goToDocsHome } from './common.journey';
+import { goToDocsHome } from './common';
 import * as assert from 'assert';
 
 journey('a failing journey', async ({ page }) => {

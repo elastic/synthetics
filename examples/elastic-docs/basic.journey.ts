@@ -1,4 +1,4 @@
-import { journey, step } from '../../../dist';
+import { journey, step } from '../../dist';
 import { goToElasticHome, goToDocsHome } from './common';
 import * as assert from 'assert';
 

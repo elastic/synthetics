@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import { default as axios } from 'axios';
 import { exit } from 'process';
+import { join } from 'path';
 
 // Default parameters for running the suite. These can be overriden with the '--suite-params' option'
 // customize these as you like!
@@ -53,8 +54,8 @@ export async function startApp() {
   const suiteParams = { ...defaultSuiteParams[environment] };
   let childProcess: ChildProcess;
   if (environment === 'development') {
-    console.log('Starting service from `./hooks/start_service.sh`');
-    childProcess = spawn('./hooks/start_service.sh', {
+    console.log('Starting service from `../start_service.sh`');
+    childProcess = spawn(join(__dirname, '../start_service.sh'), {
       stdio: 'pipe',
     });
     childProcess.on('close', code => {

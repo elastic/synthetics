@@ -6,6 +6,7 @@ import { stat } from 'fs';
 import { promisify } from 'util';
 import { totalist } from 'totalist';
 import { step, journey } from './core';
+import { log } from './core/logger';
 import { parseArgs } from './parse_args';
 import { isDepInstalled } from './helpers';
 import { run } from './';
@@ -47,6 +48,11 @@ function requireSuites(suites: Iterable<string>) {
  */
 async function prepareSuites(inputs) {
   const suites = new Set<string>();
+  const addSuite = absPath => {
+    log(`Processing file: ${absPath}`);
+    suites.add(require.resolve(absPath));
+  };
+
   for (const input of inputs) {
     const absPath = join(resolvedCwd, input);
     const stats = await statAsync(absPath);
@@ -54,17 +60,17 @@ async function prepareSuites(inputs) {
       await totalist(absPath, (rel, abs) => {
         /**
          * Match all files inside the directory with the
-         * mjs, cjs, js, ts extensions
+         * .journey.{mjs|cjs|js|ts) extensions
          */
         const pattern = program.pattern
           ? new RegExp(program.pattern, 'i')
-          : /.([mc]js|[jt]s?)$/;
+          : /.journey.([mc]js|[jt]s?)$/;
         if (pattern.test(rel)) {
-          suites.add(abs);
+          addSuite(abs);
         }
       });
     } else {
-      suites.add(absPath);
+      addSuite(absPath);
     }
   }
   return suites.values();
@@ -77,8 +83,12 @@ async function prepareSuites(inputs) {
   } else {
     /**
      * Preload modules before running the suites
+     * we support `.ts` files out of the box by invoking
+     * the `ts-node/register` which only compiles TS files
      */
-    const modules = (program.require || []).filter(Boolean);
+    const modules = ['ts-node/register']
+      .concat(program.require || [])
+      .filter(Boolean);
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
@@ -88,7 +98,7 @@ async function prepareSuites(inputs) {
     }
     /**
      * Handled piped files by reading the STDIN
-     * ex: ls example/suites/*.js
+     * ex: ls example/suites/*.js | npx @elastic/synthetics
      */
     const input = stdin.isTTY ? program.args : await readStdin();
     const files = Array.isArray(input)
