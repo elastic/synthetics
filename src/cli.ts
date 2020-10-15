@@ -52,19 +52,18 @@ async function prepareSuites(inputs) {
     log(`Processing file: ${absPath}`);
     suites.add(require.resolve(absPath));
   };
-
+  /**
+   * Match all files inside the directory with the
+   * .journey.{mjs|cjs|js|ts) extensions
+   */
+  const pattern = program.pattern
+    ? new RegExp(program.pattern, 'i')
+    : /.journey.([mc]js|[jt]s?)$/;
   for (const input of inputs) {
     const absPath = join(resolvedCwd, input);
     const stats = await statAsync(absPath);
     if (stats.isDirectory()) {
       await totalist(absPath, (rel, abs) => {
-        /**
-         * Match all files inside the directory with the
-         * .journey.{mjs|cjs|js|ts) extensions
-         */
-        const pattern = program.pattern
-          ? new RegExp(program.pattern, 'i')
-          : /.journey.([mc]js|[jt]s?)$/;
         if (pattern.test(rel)) {
           addSuite(abs);
         }
