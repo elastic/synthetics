@@ -1,4 +1,4 @@
-import { step } from '@elastic/synthetics';
+import { step } from '../../dist';
 
 export const goToElasticHome = ({ page }) => {
   step('go to elastic homepage', async () => {

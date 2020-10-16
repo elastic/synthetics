@@ -3,6 +3,8 @@ import os from 'os';
 import path from 'path';
 import { performance } from 'perf_hooks';
 
+export function noop() {}
+
 export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
 }
@@ -48,4 +50,20 @@ export function getTimestamp() {
  */
 export function now() {
   return performance.now();
+}
+
+/**
+ * Execute all the callbacks in parallel using Promise.all
+ */
+export async function runParallel(callbacks) {
+  const promises = callbacks.map(cb => cb());
+  return await Promise.all(promises);
+}
+
+export function isDepInstalled(dep) {
+  try {
+    return require.resolve(dep);
+  } catch (e) {
+    return false;
+  }
 }
