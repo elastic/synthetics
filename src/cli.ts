@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { stdin, cwd } from 'process';
-import { join, isAbsolute } from 'path';
+import { resolve } from 'path';
 import { stat } from 'fs';
 import { promisify } from 'util';
 import { totalist } from 'totalist';
@@ -60,7 +60,7 @@ async function prepareSuites(inputs: string[]) {
     ? new RegExp(program.pattern, 'i')
     : /.journey.([mc]js|[jt]s?)$/;
   for (const input of inputs) {
-    const absPath = isAbsolute(input) ? input : join(resolvedCwd, input);
+    const absPath = resolve(resolvedCwd, input);
     const stats = await statAsync(absPath);
     if (stats.isDirectory()) {
       await totalist(absPath, (rel, abs) => {
