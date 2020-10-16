@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { stdin, cwd } from 'process';
-import { join } from 'path';
+import { join, isAbsolute } from 'path';
 import { stat } from 'fs';
 import { promisify } from 'util';
 import { totalist } from 'totalist';
@@ -40,10 +40,14 @@ function requireSuites(suites: Iterable<string>) {
   }
 }
 
-async function prepareSuites(inputs) {
+/**
+ * Handle both directory and files that are passed through TTY
+ * and add them to suites
+ */
+async function prepareSuites(inputs: string[]) {
   const suites = new Set<string>();
   for (const input of inputs) {
-    const absPath = join(resolvedCwd, input);
+    const absPath = isAbsolute(input) ? input : join(resolvedCwd, input);
     const stats = await statAsync(absPath);
     if (stats.isDirectory()) {
       await totalist(absPath, (rel, abs) => {
