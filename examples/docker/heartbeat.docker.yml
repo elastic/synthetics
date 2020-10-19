@@ -7,7 +7,7 @@ heartbeat.config.monitors:
 
 heartbeat.synthetic_suites:
 - name: Sample app
-  path: "/opt/sample-app/journeys"
+  path: "/opt/sample-app"
   schedule: "@every 1m"
 - name: Docs Suite
   path: "/opt/elastic-docs"

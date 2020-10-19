@@ -1,5 +1,6 @@
 #!/bin/sh
-IMAGE=${1:-docker.elastic.co/observability-ci/synthetics:master-8.0.0-synthetics}
+VERSION=${1:-7.10.0}
+IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
 echo "Using image $IMAGE"
 docker run \
   -it \
@@ -9,7 +10,7 @@ docker run \
   --net=host \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
-  --volume="$(pwd)/../sample-app/journeys/dist:/opt/sample-app:ro" \
-  --volume="$(pwd)/../elastic-docs/dist:/opt/elastic-docs:ro" \
+  --volume="$(pwd)/../sample-app/journeys:/opt/sample-app:ro" \
+  --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
   $IMAGE \
   bash
