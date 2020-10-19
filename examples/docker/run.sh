@@ -1,5 +1,5 @@
 #!/bin/sh
-VERSION=${1:-7.10.0}
+VERSION=${1:-7.11.0}
 IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
 echo "Using image $IMAGE"
 docker run \
