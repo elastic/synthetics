@@ -91,6 +91,7 @@ export default class JSONReporter extends BaseReporter {
         end,
         filmstrips,
         networkinfo,
+        browserlogs,
         status,
         error,
       }) => {
@@ -113,6 +114,13 @@ export default class JSONReporter extends BaseReporter {
                 },
               },
               blob: strip.snapshot,
+            });
+          });
+        }
+        if (browserlogs) {
+          browserlogs.forEach(log => {
+            this.writeJSON('journey/browserlogs', journey, {
+              payload: log,
             });
           });
         }

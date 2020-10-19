@@ -34,7 +34,7 @@ import {
   NetworkInfo,
   VoidCallback,
 } from '../common_types';
-import { PluginManager } from '../plugins';
+import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
@@ -100,6 +100,7 @@ interface Events {
       journey: Journey;
       filmstrips?: Array<FilmStrip>;
       networkinfo?: Array<NetworkInfo>;
+      browserlogs?: Array<BrowserMessage>;
     };
   'step:start': { journey: Journey; step: Step; timestamp: number };
   'step:end': StepResult & {
@@ -118,7 +119,7 @@ export default class Runner {
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
 
-  static async context(options: RunOptions): Promise<JourneyContext> {
+  static async createContext(options: RunOptions): Promise<JourneyContext> {
     const timestamp = getTimestamp();
     const start = getMonotonicTime();
     const driver = await Gatherer.setupDriver(options.headless);
@@ -249,7 +250,11 @@ export default class Runner {
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
     const { timestamp, pluginManager, start, params, status, error } = result;
-    const { filmstrips, networkinfo } = await pluginManager.output();
+    const {
+      filmstrips,
+      networkinfo,
+      browserlogs,
+    } = await pluginManager.output();
     this.emit('journey:end', {
       timestamp,
       journey,
@@ -260,6 +265,7 @@ export default class Runner {
       end: getMonotonicTime(),
       filmstrips,
       networkinfo,
+      browserlogs: status == 'failed' ? browserlogs : null,
     });
   }
 
@@ -268,7 +274,7 @@ export default class Runner {
       status: 'succeeded',
     };
     log(`Runner: start journey (${journey.name})`);
-    const context = await Runner.context(options);
+    const context = await Runner.createContext(options);
     try {
       this.registerJourney(journey, context);
       await this.runBeforeHook(journey);
