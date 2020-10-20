@@ -1,3 +1,4 @@
+#!/bin/sh
 #!/bin/bash
 VERSION=${1:-7.10.0}
 if [[ version =~ ^[0-9] ]]; then
@@ -7,6 +8,7 @@ else
 fi
 echo "Using image $IMAGE"
 docker run \
+  -it \
   --rm \
   --name=heartbeat \
   --user=heartbeat \
@@ -16,7 +18,4 @@ docker run \
   --volume="$(pwd)/../sample-app/journeys:/opt/sample-app:ro" \
   --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
   $IMAGE \
-  --strict.perms=false -e \
-  -E output.elasticsearch.hosts=["localhost:9200"] \
-  -E output.elasticsearch.username=elastic \
-  -E output.elasticsearch.password=changeme \
+  bash
