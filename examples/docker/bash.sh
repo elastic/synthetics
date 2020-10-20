@@ -1,6 +1,11 @@
 #!/bin/sh
+#!/bin/bash
 VERSION=${1:-7.10.0}
-IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
+if [[ version =~ ^[0-9] ]]; then
+	IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
+else
+	IMAGE=$VERSION
+fi
 echo "Using image $IMAGE"
 docker run \
   -it \
