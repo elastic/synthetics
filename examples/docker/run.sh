@@ -16,4 +16,3 @@ docker run \
   -E output.elasticsearch.hosts=["localhost:9200"] \
   -E output.elasticsearch.username=elastic \
   -E output.elasticsearch.password=changeme \
-  -E seccomp.enabled=false
