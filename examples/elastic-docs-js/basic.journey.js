@@ -1,9 +1,10 @@
-import { journey, step } from '@elastic/synthetics';
-import { goToElasticHome, goToDocsHome } from './common';
-import * as assert from 'assert';
+const { journey, step } = require('@elastic/synthetics');
+const assert = require('assert');
 
-journey('Navigate to docs', async ({ page }) => {
-  goToElasticHome({ page });
+journey('Navigate to docs', async ({ page, params }) => {
+  step('go to elastic homepage', async () => {
+    await page.goto('https://www.elastic.co');
+  });
 
   step('hover on learn', async () => {
     await page.hover('[data-nav-item=learn]');
@@ -15,7 +16,9 @@ journey('Navigate to docs', async ({ page }) => {
 });
 
 journey('check that docs mention cloud', async ({ page }) => {
-  goToDocsHome({ page });
+  step('go to docs homepage', async () => {
+    await page.goto('https://www.elastic.co/guide/index.html');
+  });
 
   step('check for expected product titles', async () => {
     assert.match(await page.innerHTML('body'), /cloud/i);

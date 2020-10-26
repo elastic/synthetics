@@ -1,11 +1,9 @@
 import { journey, step } from '@elastic/synthetics';
-import { goToElasticHome, goToDocsHome } from './common';
 import * as assert from 'assert';
 
-journey('Navigate to docs', async ({ page }) => {
-  goToElasticHome({ page });
-
-  step('hover on learn', async () => {
+journey('Basic', async ({ page }) => {
+  step('Go to grid', async () => {
+    await page.
     await page.hover('[data-nav-item=learn]');
   });
 

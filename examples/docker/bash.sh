@@ -17,5 +17,6 @@ docker run \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
   --volume="$(pwd)/../sample-app/journeys:/opt/sample-app:ro" \
   --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
+  --volume="$(pwd)/../elastic-docs-js:/opt/elastic-docs-js:ro" \
   $IMAGE \
   bash
