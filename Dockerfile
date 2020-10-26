@@ -17,7 +17,7 @@ ENV NODE_PATH=/usr/share/heartbeat/.node
 USER heartbeat
 RUN  cd /usr/share/heartbeat/.node \\
       && mkdir node \\
-      && curl https://nodejs.org/dist/v12.19.0/node-v12.19.0-linux-x64.tar.xz | tar -xJ --strip 1 -C node
+      && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz

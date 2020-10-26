@@ -1,6 +1,6 @@
-import { journey, step } from '@elastic/synthetics';
-import { goToDocsHome, goToElasticHome } from './common';
-import assert from 'assert';
+import { journey, step } from '../../dist';
+import { goToElasticHome, goToDocsHome } from './common';
+import * as assert from 'assert';
 
 journey('Navigate to docs', async ({ page }) => {
   goToElasticHome({ page });
