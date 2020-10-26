@@ -34,12 +34,12 @@ import {
 } from './';
 import { Driver } from '../core/gatherer';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserlogs';
+type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
 
 type PluginOutput = {
   filmstrips?: Array<FilmStrip>;
   networkinfo?: Array<NetworkInfo>;
-  browserlogs?: Array<BrowserMessage>;
+  browserconsole?: Array<BrowserMessage>;
 };
 
 type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
@@ -64,7 +64,7 @@ export class PluginManager {
         instance = new PerformanceManager(this.driver.client);
         instance.start();
         break;
-      case 'browserlogs':
+      case 'browserconsole':
         instance = new BrowserConsole(this.driver.page);
         instance.start();
         break;
@@ -82,7 +82,7 @@ export class PluginManager {
     const data = {
       filmstrips: [],
       networkinfo: [],
-      browserlogs: null,
+      browserconsole: null,
     };
     for (const [, plugin] of this.plugins) {
       if (plugin instanceof NetworkManager) {
@@ -91,7 +91,7 @@ export class PluginManager {
         const result = await plugin.stop(this.driver.client);
         data.filmstrips = filterFilmstrips(result);
       } else if (plugin instanceof BrowserConsole) {
-        data.browserlogs = plugin.stop();
+        data.browserconsole = plugin.stop();
       }
     }
     return data;

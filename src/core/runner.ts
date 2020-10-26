@@ -100,7 +100,7 @@ interface Events {
       journey: Journey;
       filmstrips?: Array<FilmStrip>;
       networkinfo?: Array<NetworkInfo>;
-      browserlogs?: Array<BrowserMessage>;
+      browserconsole?: Array<BrowserMessage>;
     };
   'step:start': { journey: Journey; step: Step; timestamp: number };
   'step:end': StepResult & {
@@ -254,7 +254,7 @@ export default class Runner {
     const {
       filmstrips,
       networkinfo,
-      browserlogs,
+      browserconsole,
     } = await pluginManager.output();
     this.emit('journey:end', {
       timestamp,
@@ -266,7 +266,7 @@ export default class Runner {
       end: getMonotonicTime(),
       filmstrips,
       networkinfo,
-      browserlogs: status == 'failed' ? browserlogs : null,
+      browserconsole: status == 'failed' ? browserconsole : null,
     });
   }
 

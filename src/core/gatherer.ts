@@ -63,7 +63,7 @@ export class Gatherer {
     log('Gatherer: started recording');
     const { screenshots, network, metrics } = options;
     const pluginManager = new PluginManager(driver);
-    pluginManager.start('browserlogs');
+    pluginManager.start('browserconsole');
     screenshots && (await pluginManager.start('trace'));
     network && (await pluginManager.start('network'));
     metrics && (await pluginManager.start('performance'));
