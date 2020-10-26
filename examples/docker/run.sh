@@ -13,7 +13,6 @@ docker run \
   --net=host \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
-  --volume="$(pwd)/../sample-app/journeys:/opt/sample-app:ro" \
   --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
   $IMAGE \
   --strict.perms=false -e \

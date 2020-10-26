@@ -36,7 +36,7 @@ async function readStdin() {
   return chunks.join();
 }
 
-function requireSuites(suites: Iterable<string>) {
+async function requireSuites(suites: Iterable<string>) {
   for (const suite of suites) {
     require(suite);
   }
@@ -58,7 +58,7 @@ async function prepareSuites(inputs: string[]) {
    */
   const pattern = program.pattern
     ? new RegExp(program.pattern, 'i')
-    : /.journey.([mc]js|[jt]s?)$/;
+    : /.+\.journey\.([mc]js|[jt]s?)$/;
 
   for (const input of inputs) {
     const absPath = resolve(resolvedCwd, input);
