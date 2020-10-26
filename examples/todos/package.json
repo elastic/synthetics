@@ -1,5 +1,5 @@
 {
-  "name": "rich",
+  "name": "todos",
   "version": "1.0.0",
   "description": "This suite tests the examples that ship with the open source Vue.js project.",
   "main": "index.js",
