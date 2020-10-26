@@ -17,6 +17,3 @@ docker run \
   --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
   $IMAGE \
   --strict.perms=false -e \
-  -E output.elasticsearch.hosts=["localhost:9200"] \
-  -E output.elasticsearch.username=elastic \
-  -E output.elasticsearch.password=changeme \
