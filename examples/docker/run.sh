@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION=${1:-7.10.0}
-if [[ version =~ ^[0-9] ]]; then
+if [[ $VERSION =~ ^[0-9] ]]; then
 	IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
 else
 	IMAGE=$VERSION
