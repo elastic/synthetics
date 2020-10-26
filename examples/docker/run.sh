@@ -1,6 +1,6 @@
 #!/bin/bash
 VERSION=${1:-7.10.0}
-if [[ $VERSION =~ ^[0-9] ]]; then
+if [[ version =~ ^[0-9] ]]; then
 	IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
 else
 	IMAGE=$VERSION
@@ -17,3 +17,6 @@ docker run \
   --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
   $IMAGE \
   --strict.perms=false -e \
+  -E output.elasticsearch.hosts=["localhost:9200"] \
+  -E output.elasticsearch.username=elastic \
+  -E output.elasticsearch.password=changeme \
