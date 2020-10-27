@@ -270,7 +270,7 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
-    log(`run(): ${this.journeys} journeys`);
+    log(`run(): ${this.journeys.length} journeys`);
     const result: RunResult = {};
     const { reporter = 'default', journeyName, outfd } = options;
     /**
