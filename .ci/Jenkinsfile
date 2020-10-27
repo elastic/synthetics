@@ -144,11 +144,10 @@ pipeline {
           }
           stage('experimental'){
             when {
-              expression { return false } //Disabled until we have the namespace
-              //branch 'master'
+              branch 'master'
             }
             environment {
-              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
+              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.STACK_VERSION}"
             }
             steps {
               withGithubNotify(context: "push ${DOCKER_IMG_TAG_BRANCH}") {
