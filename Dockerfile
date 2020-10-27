@@ -19,6 +19,8 @@ RUN  cd /usr/share/heartbeat/.node \\
       && mkdir node \\
       && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
+# Install playwright first since it speeds up the install of elastic-synthetics*.tgz, since it doesn't need to re-download the
+# browsers every time the code there changes
 RUN npm i -g playwright
-COPY elastic-synthetics*.tgz /opt/elastic-synthetics.tgz
+COPY elastic-synthetics-*.tgz /opt/elastic-synthetics.tgz
 RUN npm install -g /opt/elastic-synthetics.tgz

@@ -81,12 +81,24 @@ async function prepareSuites(inputs: string[]) {
     const source = await readStdin();
     loadInlineScript(source);
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('ts-node').register({
+      compilerOptions: {
+        esModuleInterop: true,
+        allowJs: true,
+        declaration: true,
+        declarationMap: true,
+        sourceMap: true,
+        target: 'es2018',
+        module: 'commonjs',
+      },
+    });
     /**
      * Preload modules before running the suites
      * we support `.ts` files out of the box by invoking
      * the `ts-node/register` which only compiles TS files
      */
-    const modules = ['ts-node'].concat(program.require || []).filter(Boolean);
+    const modules = [].concat(program.require || []).filter(Boolean);
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
