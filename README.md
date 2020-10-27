@@ -1,12 +1,12 @@
-# synthetic-monitoring
-Synthetic Monitoring with Real Browsers
+# Experimental Synthetics Agent
 
+Synthetic Monitoring with Real Browsers.
+**Please note this is an unsupported experimental project. Expect things to break and change!** 
 
-## Development
+Docs are forthcoming, feel free to browse the repository, but we ask that you refrain from asking questions about use till docs
+are published.
 
-Build the main package: `npm run build`
-
-Run: `node dist/cli.js -s '{"homepage":"https://cloud.elastic.co"}' examples/inline/sample-inline-journey.js`
+If you'd like to stay informed about synthetic monitoring development please visit [our synthetic monitoring page](https://www.elastic.co/what-is/synthetic-monitoring) where you can sign up to be notified of our initial release.
 
 ## CI
 
