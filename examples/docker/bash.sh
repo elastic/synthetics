@@ -1,4 +1,3 @@
-#!/bin/sh
 #!/bin/bash
 VERSION=${1:-7.10.0}
 if [[ version =~ ^[0-9] ]]; then
