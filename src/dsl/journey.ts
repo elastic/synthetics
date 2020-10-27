@@ -23,7 +23,7 @@
  *
  */
 
-import { Browser, Page, BrowserContext, CDPSession } from 'playwright';
+import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import { Step } from './step';
 import { VoidCallback } from '../common_types';
 
