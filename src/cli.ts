@@ -36,7 +36,7 @@ async function readStdin() {
   return chunks.join();
 }
 
-async function requireSuites(suites: Iterable<string>) {
+function requireSuites(suites: Iterable<string>) {
   for (const suite of suites) {
     require(suite);
   }
