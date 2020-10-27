@@ -26,6 +26,7 @@
 import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
 import { VoidCallback } from '../common_types';
+import { log } from './logger';
 
 export const runner = new Runner();
 
@@ -33,6 +34,7 @@ export const journey = (
   options: JourneyOptions | string,
   callback: JourneyCallback
 ) => {
+  log(`register journey: ${options}`)
   if (typeof options === 'string') {
     options = { name: options, id: options };
   }
@@ -42,6 +44,7 @@ export const journey = (
 };
 
 export const step = (name: string, callback: VoidCallback) => {
+  log(`register step: ${name}`)
   return runner.currentJourney?.addStep(name, callback);
 };
 

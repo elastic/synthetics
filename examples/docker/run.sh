@@ -1,11 +1,24 @@
 #!/bin/bash
+set -e
+set -x
 VERSION=${1:-7.10.0}
-if [[ version =~ ^[0-9] ]]; then
-	IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
+shift # discard first arg
+HEARTBEAT_ARGS=$@
+
+if [ -z $1 ]; then
+  HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme"
+else
+  HEARTBEAT_ARGS = $@
+fi
+
+# Set Image based on version
+if [[ $VERSION =~ ^[0-9] ]]; then
+	IMAGE=docker.elastic.co/experimental/synthetics:$VERSION-synthetics
 else
 	IMAGE=$VERSION
 fi
-echo "Using image $IMAGE"
+
+echo "Using image '$IMAGE' with extra args: $HEARTBEAT_ARGS"
 docker run \
   --rm \
   --name=heartbeat \
@@ -13,10 +26,7 @@ docker run \
   --net=host \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
-  --volume="$(pwd)/../sample-app/journeys:/opt/sample-app:ro" \
-  --volume="$(pwd)/../elastic-docs:/opt/elastic-docs:ro" \
+  --volume="$(pwd)/../:/opt/examples:ro" \
   $IMAGE \
   --strict.perms=false -e \
-  -E output.elasticsearch.hosts=["localhost:9200"] \
-  -E output.elasticsearch.username=elastic \
-  -E output.elasticsearch.password=changeme \
+  $HEARTBEAT_ARGS
