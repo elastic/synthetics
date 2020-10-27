@@ -13,7 +13,7 @@ fi
 
 # Set Image based on version
 if [[ $VERSION =~ ^[0-9] ]]; then
-	IMAGE=docker.elastic.co/observability-ci/synthetics:master-$VERSION-synthetics
+	IMAGE=docker.elastic.co/experimental/synthetics:$VERSION-synthetics
 else
 	IMAGE=$VERSION
 fi
