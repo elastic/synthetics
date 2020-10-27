@@ -1,4 +1,11 @@
-import { indent, getMonotonicTime, formatError } from '../src/helpers';
+import { cwd } from 'process';
+import {
+  indent,
+  getMonotonicTime,
+  formatError,
+  findPkgJsonByTraversing,
+  generateTempPath,
+} from '../src/helpers';
 
 it('indent message with seperator', () => {
   // tabWidth: 2
@@ -24,4 +31,13 @@ it('format errors', () => {
     message,
     stack,
   });
+});
+
+it('throw error when no package.json found', async () => {
+  try {
+    const tempPath = generateTempPath();
+    await findPkgJsonByTraversing(tempPath, cwd());
+  } catch (e) {
+    expect(e).toMatch('Could not find package.json file in');
+  }
 });
