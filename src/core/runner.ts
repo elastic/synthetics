@@ -142,7 +142,7 @@ export default class Runner {
   }
 
   emit<K extends keyof Events>(e: K, v: Events[K]) {
-    log(`emit> ${e}`);
+    log(`Runner: emit> ${e}`);
     this.eventEmitter.emit(e, v);
   }
 
@@ -295,7 +295,7 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
-    log(`run(): ${this.journeys.length} journeys`);
+    log(`Runner: run ${this.journeys.length} journeys`);
     const result: RunResult = {};
     const { reporter = 'default', journeyName, outfd } = options;
     /**
@@ -327,7 +327,7 @@ export default class Runner {
   }
 
   reset() {
-    log('reseting runner');
+    log('Runner: reset');
     this.currentJourney = null;
     this.journeys = [];
   }

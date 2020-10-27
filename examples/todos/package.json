@@ -1,13 +1,8 @@
 {
   "name": "todos",
-  "version": "1.0.0",
+  "private": true,
   "description": "This suite tests the examples that ship with the open source Vue.js project.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "scripts": {},
   "license": "MIT",
   "dependencies": {
     "@elastic/synthetics": "file:../../elastic-synthetics-0.0.1.tgz"
