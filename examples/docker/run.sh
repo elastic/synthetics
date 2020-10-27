@@ -1,12 +1,12 @@
 #!/bin/bash
+set -e
+set -x
 VERSION=${1:-7.10.0}
 shift # discard first arg
 HEARTBEAT_ARGS=$@
 
 if [ -z $1 ]; then
-  HEARTBEAT_ARGS=-E output.elasticsearch.hosts=["localhost:9200"] \
-  -E output.elasticsearch.username=elastic \
-  -E output.elasticsearch.password=changeme \
+  HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme"
 else
   HEARTBEAT_ARGS = $@
 fi
@@ -29,4 +29,4 @@ docker run \
   --volume="$(pwd)/../:/opt/examples:ro" \
   $IMAGE \
   --strict.perms=false -e \
-  $@
+  $HEARTBEAT_ARGS
