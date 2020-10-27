@@ -1,7 +1,11 @@
 import { red, green, yellow, cyan } from 'kleur/colors';
 import os from 'os';
 import path from 'path';
+import fs from 'fs';
+import { promisify } from 'util';
 import { performance } from 'perf_hooks';
+
+const statAsync = promisify(fs.stat);
 
 export function noop() {}
 
@@ -66,4 +70,35 @@ export function isDepInstalled(dep) {
   } catch (e) {
     return false;
   }
+}
+
+export async function isDirectory(path) {
+  return (await statAsync(path)).isDirectory();
+}
+
+export async function isFile(filePath) {
+  return fs.existsSync(filePath) && (await statAsync(filePath)).isFile();
+}
+
+/**
+ * Traverse the directory tree up from the cwd until we find
+ * package.json file to check if the user is invoking our script
+ * from an NPM project.
+ */
+export async function findPkgJsonByTraversing(resolvePath, cwd) {
+  const packageJSON = path.resolve(resolvePath, 'package.json');
+  if (await isFile(packageJSON)) {
+    return packageJSON;
+  }
+  const parentDirectory = path.dirname(resolvePath);
+  /**
+   * We are in the system root and package.json does not exist
+   */
+  if (resolvePath === parentDirectory) {
+    throw red(
+      `Could not find package.json file in: ${cwd}\n` +
+        `It is recommended to run the agent in an NPM project.`
+    );
+  }
+  return findPkgJsonByTraversing(parentDirectory, cwd);
 }
