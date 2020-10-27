@@ -96,8 +96,9 @@ export async function findPkgJsonByTraversing(resolvePath, cwd) {
    */
   if (resolvePath === parentDirectory) {
     throw red(
-      `Could not find package.json file in: ${cwd}\n` +
-        `It is recommended to run the agent in an NPM project.`
+      `Could not find package.json file in: "${cwd}"\n` +
+        `It is recommended to run the agent in an NPM project.\n` +
+        `You can create one by running "npm init -y" in the project folder.`
     );
   }
   return findPkgJsonByTraversing(parentDirectory, cwd);
