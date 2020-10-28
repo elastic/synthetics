@@ -24,3 +24,4 @@ ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 RUN npm i -g playwright
 COPY elastic-synthetics-*.tgz /opt/elastic-synthetics.tgz
 RUN npm install -g /opt/elastic-synthetics.tgz
+ENV HEARTBEAT_SYNTHETICS_TGZ=/opt/elastic-synthetics.tgz

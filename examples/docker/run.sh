@@ -2,13 +2,15 @@
 set -e
 set -x
 VERSION=${1:-7.10.0}
-shift # discard first arg
+if [ ! -z $1 ]; then
+  shift # discard first arg
+fi
 HEARTBEAT_ARGS=$@
 
 if [ -z $1 ]; then
   HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme"
 else
-  HEARTBEAT_ARGS = $@
+  HEARTBEAT_ARGS="$@"
 fi
 
 # Set Image based on version
@@ -26,7 +28,7 @@ docker run \
   --net=host \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
-  --volume="$(pwd)/../:/opt/examples:ro" \
+  --volume="$(pwd)/../:/opt/examples:rw" \
   $IMAGE \
   --strict.perms=false -e \
   $HEARTBEAT_ARGS
