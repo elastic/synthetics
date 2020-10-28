@@ -2,12 +2,12 @@
 set -e
 set -x
 VERSION=${1:-7.10.0}
-if [ -z $1 ]; then
+if [ ! -z $1 ]; then
   shift # discard first arg
 fi
 HEARTBEAT_ARGS=$@
 
-if [ ! -z $1 ]; then
+if [ -z $1 ]; then
   HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme"
 else
   HEARTBEAT_ARGS="$@"
