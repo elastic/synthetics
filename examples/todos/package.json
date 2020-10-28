@@ -5,6 +5,6 @@
   "scripts": {},
   "license": "MIT",
   "dependencies": {
-    "@elastic/synthetics": "file:../../elastic-synthetics-0.0.1.tgz"
+    "@elastic/synthetics": "file:../../elastic-synthetics.tgz"
   }
 }
