@@ -1,7 +1,7 @@
 import { step } from '@elastic/synthetics';
 import assert from 'assert';
 import { join } from 'path';
-import { Page } from 'playwright-chromium';
+import { Page } from 'playwright-core';
 
 export const loadAppStep = (page: Page) => {
   step('go to app', async () => {
