@@ -91,6 +91,7 @@ export default class JSONReporter extends BaseReporter {
         end,
         filmstrips,
         networkinfo,
+        browserconsole,
         status,
         error,
       }) => {
@@ -113,6 +114,14 @@ export default class JSONReporter extends BaseReporter {
                 },
               },
               blob: strip.snapshot,
+            });
+          });
+        }
+        if (browserconsole) {
+          browserconsole.forEach(({ timestamp, text, type, step }) => {
+            this.writeJSON('journey/browserconsole', journey, {
+              step,
+              payload: { timestamp, text, type },
             });
           });
         }
@@ -147,7 +156,7 @@ export default class JSONReporter extends BaseReporter {
     }: {
       timestamp?: number;
       url?: string;
-      step?: Step;
+      step?: Partial<Step>;
       error?: Error;
       payload?: { [key: string]: any };
       blob?: string;

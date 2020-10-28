@@ -156,7 +156,7 @@ describe('runner', () => {
       });
     });
     const runOptions = { metrics: true, screenshots: true };
-    const context = await Runner.context(runOptions);
+    const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
@@ -177,7 +177,7 @@ describe('runner', () => {
       });
     });
     const runOptions = { screenshots: true };
-    const context = await Runner.context(runOptions);
+    const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
@@ -201,7 +201,7 @@ describe('runner', () => {
       });
     });
     const runOptions = { screenshots: true };
-    const context = await Runner.context(runOptions);
+    const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const [step1, step2] = await runner.runSteps(j1, context, runOptions);
     await Gatherer.dispose(context.driver);
