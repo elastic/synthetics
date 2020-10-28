@@ -23,7 +23,7 @@
  *
  */
 
-import { Protocol } from 'playwright/types/protocol';
+import { Protocol } from 'playwright-chromium/types/protocol';
 
 export type VoidCallback = () => void;
 

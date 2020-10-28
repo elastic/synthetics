@@ -23,7 +23,7 @@
  *
  */
 
-import { CDPSession } from 'playwright';
+import { CDPSession } from 'playwright-chromium';
 import { FilmStrip } from '../common_types';
 
 type TraceEvents = {

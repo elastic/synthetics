@@ -23,7 +23,7 @@
  *
  */
 
-import { CDPSession } from 'playwright';
+import { CDPSession } from 'playwright-chromium';
 
 const supportedMetrics = new Set<string>([
   'Timestamp',

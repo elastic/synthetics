@@ -29,7 +29,7 @@ import {
   ChromiumBrowser,
   ChromiumBrowserContext,
   Page,
-} from 'playwright';
+} from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
 import { log } from './logger';

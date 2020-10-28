@@ -23,8 +23,8 @@
  *
  */
 
-import { CDPSession } from 'playwright';
-import { Protocol } from 'playwright/types/protocol';
+import { CDPSession } from 'playwright-chromium';
+import { Protocol } from 'playwright-chromium/types/protocol';
 import { NetworkInfo } from '../common_types';
 
 export class NetworkManager {

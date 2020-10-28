@@ -21,7 +21,7 @@ RUN  cd /usr/share/heartbeat/.node \\
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 # Install playwright first since it speeds up the install of elastic-synthetics*.tgz, since it doesn't need to re-download the
 # browsers every time the code there changes
-RUN npm i -g playwright
+RUN npm i -g playwright-chromium
 COPY elastic-synthetics-*.tgz /opt/elastic-synthetics.tgz
 RUN npm install -g /opt/elastic-synthetics.tgz
 ENV HEARTBEAT_SYNTHETICS_TGZ=/opt/elastic-synthetics.tgz
