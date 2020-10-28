@@ -23,7 +23,7 @@
  *
  */
 
-import { Page } from 'playwright';
+import { Page } from 'playwright-chromium';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
