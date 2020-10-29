@@ -109,3 +109,5 @@ tmp
 *.swp
 
 e2e/tmp
+
+.idea
