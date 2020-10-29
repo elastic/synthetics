@@ -73,7 +73,7 @@ export default class BaseReporter {
        * it as the last listener giving enough room for
        * other reporters to write to stream
        */
-      process.nextTick(() => this.stream.end());
+      setImmediate(() => this.stream.end());
     } else {
       /**
        * If the user has passed a custom FD we don't close the FD, but we do flush it

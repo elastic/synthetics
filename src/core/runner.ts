@@ -328,8 +328,8 @@ export default class Runner {
       result[journey.name] = journeyResult;
     }
     await this.runAfterAllHook();
-    this.emit('end', {});
     this.reset();
+    this.emit('end', {});
     return result;
   }
 
