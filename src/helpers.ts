@@ -49,8 +49,8 @@ export function formatError(error: Error) {
   if (!(error instanceof Error)) {
     return;
   }
-  const { name, message, stack } = error;
-  return { name, message, stack };
+  const { name, stack } = error;
+  return { name, stack: rewriteErrorStack(stack) };
 }
 
 export function generateTempPath() {
@@ -127,4 +127,36 @@ export async function findPkgJsonByTraversing(resolvePath, cwd) {
     );
   }
   return findPkgJsonByTraversing(parentDirectory, cwd);
+}
+
+/**
+ * Playwright specific Error logs
+ * remove repetetive error log messages from Playwright custom errors
+ */
+export function rewriteErrorStack(stack: string) {
+  if (!stack) {
+    return stack;
+  }
+  const separator = '\n';
+  const lines = String(stack).split(separator);
+
+  const logStart = /[=]{3,} logs [=]{3,}/;
+  const logEnd = /[=]{10,}/;
+  let startIndex = 0;
+  let endIndex = lines.length;
+  lines.forEach((line, index) => {
+    if (logStart.test(line)) {
+      startIndex = index;
+    } else if (logEnd.test(line)) {
+      endIndex = index;
+    }
+  });
+  const linesToRemove = startIndex + 3;
+  if (startIndex > 0 && linesToRemove < endIndex) {
+    return lines
+      .slice(0, linesToRemove)
+      .concat(...lines.slice(endIndex))
+      .join(separator);
+  }
+  return lines.join(separator);
 }
