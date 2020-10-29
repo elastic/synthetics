@@ -29,6 +29,15 @@ import JSONReporter from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
 
+/**
+ * Mock package version to avoid breaking JSON payload
+ * for every release
+ */
+jest.mock(
+  '../../package.json',
+  jest.fn(() => ({ version: '0.0.1' }))
+);
+
 describe('json reporter', () => {
   let dest: string;
   const j1 = journey('j1', async () => {});
