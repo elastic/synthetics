@@ -1,16 +1,16 @@
 {
   "name": "@elastic/synthetics",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.0",
+  "description": "Elastic synthetic monitoring agent",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "prepublish": "npm run build",
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
     "test": "jest",
-    "updateSnapshot": "jest --updateSnapshot",
     "coverage": "jest --coverage",
     "docker": "docker build . -t heartbeat-synthetics"
   },
