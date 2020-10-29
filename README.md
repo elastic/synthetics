@@ -21,7 +21,7 @@ If you'd like to stay informed about synthetic monitoring development please vis
 ### To Run Example Journey with Docker and hearbeat, 
 Data will be pushed to ES, which can be viewed using uptime app
 
-`node ./examples/docker/run.sh 7.10.0  -E output.elasticsearch.hosts=["http://localhost:9200"] -E output.elasticsearch.username=admin -E output.elasticsearch.password=changeme`
+`./examples/docker/run.sh 7.10.0  -E output.elasticsearch.hosts=["http://localhost:9200"] -E output.elasticsearch.username=admin -E output.elasticsearch.password=changeme`
 
 ## CI
 
