@@ -26,7 +26,7 @@
 import SonicBoom from 'sonic-boom';
 import Runner from '../core/runner';
 import { green, red, cyan } from 'kleur/colors';
-import { symbols, indent, now } from '../helpers';
+import { symbols, indent, now, rewriteErrorStack } from '../helpers';
 
 export type ReporterOptions = {
   fd?: number;
@@ -39,16 +39,17 @@ function renderError(error) {
   const inner = indent(outer);
   const container = outer + '---\n';
   output += container;
-  const stack = error.stack;
+  let stack = error.stack;
   if (stack) {
-    const lines = String(stack).split('\n');
     output += inner + 'stack: |-\n';
+    stack = rewriteErrorStack(stack);
+    const lines = String(stack).split('\n');
     for (const line of lines) {
       output += inner + '  ' + line + '\n';
     }
   }
   output += container;
-  return output;
+  return red(output);
 }
 
 function renderDuration(durationMs) {
