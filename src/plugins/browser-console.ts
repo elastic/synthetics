@@ -25,10 +25,11 @@
 
 import { Page } from 'playwright-chromium';
 import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
+import { getMonotonicTime, getTimestamp, TimestampMs } from '../helpers';
 
 export interface BrowserMessage {
-  timestamp: number;
+  timestamp: TimestampMs;
+  offset: number;
   text: string;
   type: string;
   step: { name: string; index: number };
@@ -46,6 +47,7 @@ export class BrowserConsole {
         const { name, index } = this.currentStep;
         this.messages.push({
           timestamp: getTimestamp(),
+          offset: getMonotonicTime(),
           text: msg.text(),
           type,
           step: { name, index },

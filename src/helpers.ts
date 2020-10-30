@@ -66,12 +66,9 @@ export function getMonotonicTime() {
   return hrTime[0] * 1 + hrTime[1] / 1e9;
 }
 
-/**
- * Timestamp at which the current node process began.
- */
-const processStart = performance.timeOrigin;
-export function getTimestamp() {
-  return (processStart + now()) * 1000;
+export type TimestampMs = number;
+export function getTimestamp(): TimestampMs {
+  return Date.now();
 }
 
 /**
