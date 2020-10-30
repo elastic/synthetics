@@ -8,7 +8,7 @@ fi
 HEARTBEAT_ARGS=$@
 
 if [ -z $1 ]; then
-  HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9201"] -E output.elasticsearch.username=admin -E output.elasticsearch.password=changeme"
+  HEARTBEAT_ARGS="-E output.elasticsearch.hosts=["localhost:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme"
 else
   HEARTBEAT_ARGS="$@"
 fi
