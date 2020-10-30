@@ -28,7 +28,6 @@ import { formatError, getTimestamp } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 
-// we need this ugly require to get the program version
 /* eslint-disable @typescript-eslint/no-var-requires */
 const programVersion = require('../../package.json').version;
 
