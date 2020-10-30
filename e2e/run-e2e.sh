@@ -19,12 +19,11 @@ normal=$(tput sgr0)
 E2E_DIR="${0%/*}"
 TMP_DIR="tmp"
 APM_IT_DIR="tmp/apm-integration-testing"
-#DOCKER_DIR="../examples/docker/run.sh -E output.elasticsearch.hosts=[\"http://localhost:9201\"] -E output.elasticsearch.username=admin -E output.elasticsearch.password=changeme"
-DOCKER_DIR="../examples/docker"
+DOCKER_DIR="../examples/docker/"
 
 cd ${E2E_DIR}
 
-KIBANA_VERSION=8.0.0
+KIBANA_VERSION=7.10.0
 
 #
 # Create tmp folder
@@ -34,11 +33,27 @@ echo "${bold}Temporary folder${normal}"
 echo "Temporary files will be stored in: ${E2E_DIR}${TMP_DIR}"
 mkdir -p ${TMP_DIR}
 
+
+# Start synthetics docker examples
+echo "" # newline
+echo "${bold}Starting synthetics docker examples${normal}"
+echo "" # newline
+cd ${DOCKER_DIR}
+
+./run.sh 7.10.0 \
+    -E output.elasticsearch.hosts=["localhost:9201"] \
+    -E output.elasticsearch.username=admin \
+    -E output.elasticsearch.password=changeme \
+     > ../../e2e/tmp/synthetics.log 2>&1 &
+
+cd ../../e2e/
+
 #
 # apm-integration-testing
 ##################################################
 echo "" # newline
 echo "${bold}apm-integration-testing (logs: ${E2E_DIR}${TMP_DIR}/apm-it.log)${normal}"
+
 
 # pull if folder already exists
 if [ -d ${APM_IT_DIR} ]; then
@@ -56,6 +71,7 @@ if [ $? -ne 0 ]; then
     echo "⚠️  Initializing apm-integration-testing failed."
     exit 1
 fi
+\
 
 # Start apm-integration-testing
 echo "Starting docker-compose"
@@ -83,15 +99,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-cd ${DOCKER_DIR}
-
-# Start synthetics docker examples
-./run.sh  > ../../e2e/tmp/synthetics.log 2>&1 &
-
-# echo "Deleting existing indices (heartbeat* and .heartbeat*)"
-curl --silent --user admin:changeme -XDELETE "localhost:${ELASTICSEARCH_PORT}/.apm*" > /dev/null
-curl --silent --user admin:changeme -XDELETE "localhost:${ELASTICSEARCH_PORT}/apm*" > /dev/null
-
 
 # Wait for Kibana to start
 ##################################################
@@ -99,12 +106,34 @@ echo "" # newline
 echo "${bold}Waiting for Kibana to start...${normal}"
 yarn wait-on -i 500 -w 500 http-get://admin:changeme@localhost:$KIBANA_PORT/api/status > /dev/null
 
-echo "✅ Setup completed successfully. Running tests..."
+
+# Wait for Heartbeat docker to start
+##################################################
+echo "" # newline
+echo "${bold}Waiting for Heartbeat docker to start...${normal}"
+until [ "`docker inspect -f {{.State.Running}} heartbeat`" == "true" ]; do
+    sleep 0.1;
+done;
+
+echo "✅ Setup completed successfully. Running e2e tests..."
 
 #
 # run e2e tests journey
 ##################################################
-cat ../inline/uptime-monitors.js | npx @elastic/synthetics --inline
+
+
+
+npx @elastic/synthetics uptime.journey.ts
+
+
+if [ $? == 1 ]; then
+   echo "✅ Tests Succeeded"
+fi
+
+if [ $? == 0 ]; then
+  echo  "⚠️  Tests failed."
+fi
+
 
 e2e_status=$?
 

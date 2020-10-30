@@ -108,6 +108,6 @@ tmp
 # Vim temp files
 *.swp
 
-e2e/tmp
+e2e/tmp/
 
-.idea
+.idea/
