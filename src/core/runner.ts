@@ -303,12 +303,12 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
+    const result: RunResult = {};
     if (this.active) {
-      return;
+      return result;
     }
     this.active = true;
     log(`Runner: run ${this.journeys.length} journeys`);
-    const result: RunResult = {};
     const { reporter = 'default', journeyName, outfd } = options;
     /**
      * Set up the corresponding reporter

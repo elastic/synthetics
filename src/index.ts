@@ -46,7 +46,7 @@ export async function run(options: RunOptions) {
   setLogger(outfd);
 
   try {
-    await runner.run({
+    return await runner.run({
       ...options,
       headless: options.headless ?? cliArgs.headless,
       screenshots: options.screenshots ?? cliArgs.screenshots,
