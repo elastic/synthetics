@@ -42,9 +42,9 @@ const program = parseArgs();
 const resolvedCwd = cwd();
 /**
  * Set debug based on DEBUG ENV and -d flags
- * namespsace - es - elastic synthetics
+ * namespace - synthetics
  */
-const namespace = 'es';
+const namespace = 'synthetics';
 process.env.DEBUG =
   process.env.DEBUG === namespace || (program.debug ? program.debug : '');
 

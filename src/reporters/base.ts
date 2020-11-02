@@ -24,9 +24,15 @@
  */
 
 import SonicBoom from 'sonic-boom';
-import Runner from '../core/runner';
 import { green, red, cyan } from 'kleur/colors';
-import { symbols, indent, now, rewriteErrorStack } from '../helpers';
+import Runner from '../core/runner';
+import {
+  symbols,
+  indent,
+  now,
+  findPWLogsIndexes,
+  rewriteErrorStack,
+} from '../helpers';
 
 export type ReporterOptions = {
   fd?: number;
@@ -42,7 +48,7 @@ function renderError(error) {
   let stack = error.stack;
   if (stack) {
     output += inner + 'stack: |-\n';
-    stack = rewriteErrorStack(stack);
+    stack = rewriteErrorStack(stack, findPWLogsIndexes(stack));
     const lines = String(stack).split('\n');
     for (const line of lines) {
       output += inner + '  ' + line + '\n';

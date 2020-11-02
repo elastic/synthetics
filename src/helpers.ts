@@ -32,6 +32,7 @@ import { performance } from 'perf_hooks';
 
 const statAsync = promisify(fs.lstat);
 const readAsync = promisify(fs.readdir);
+const SEPARATOR = '\n';
 
 export function noop() {}
 
@@ -45,14 +46,6 @@ export const symbols = {
   succeeded: green('✓'),
   failed: red('✖'),
 };
-
-export function formatError(error: Error) {
-  if (!(error instanceof Error)) {
-    return;
-  }
-  const { name, stack } = error;
-  return { name, stack: rewriteErrorStack(stack) };
-}
 
 export function generateTempPath() {
   return join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
@@ -158,20 +151,18 @@ export async function totalist(
 }
 
 /**
- * Playwright specific Error logs
- * remove repetetive error log messages from Playwright custom errors
+ * Find index of Playwright specific Error logs that is thrown
+ * as part of the custom error message/stack
  */
-export function rewriteErrorStack(stack: string) {
-  if (!stack) {
-    return stack;
+export function findPWLogsIndexes(msgOrStack: string): [number, number] {
+  let startIndex = 0;
+  let endIndex = 0;
+  if (!msgOrStack) {
+    return [startIndex, endIndex];
   }
-  const separator = '\n';
-  const lines = String(stack).split(separator);
-
+  const lines = String(msgOrStack).split(SEPARATOR);
   const logStart = /[=]{3,} logs [=]{3,}/;
   const logEnd = /[=]{10,}/;
-  let startIndex = 0;
-  let endIndex = lines.length;
   lines.forEach((line, index) => {
     if (logStart.test(line)) {
       startIndex = index;
@@ -179,12 +170,44 @@ export function rewriteErrorStack(stack: string) {
       endIndex = index;
     }
   });
-  const linesToRemove = startIndex + 3;
-  if (startIndex > 0 && linesToRemove < endIndex) {
-    return lines
-      .slice(0, linesToRemove)
-      .concat(...lines.slice(endIndex))
-      .join(separator);
+  return [startIndex, endIndex];
+}
+
+export function rewriteErrorMessage(message: string, start: number) {
+  if (start === 0) {
+    return message;
   }
-  return lines.join(separator);
+  return message.split(SEPARATOR).slice(0, start).join(SEPARATOR);
+}
+
+export function rewriteErrorStack(stack: string, indexes: [number, number]) {
+  const [start, end] = indexes;
+  /**
+   * Do not rewrite if its not a playwright error
+   */
+  if (start === 0 && end === 0) {
+    return stack;
+  }
+  const linesToKeep = start + 3;
+  if (start > 0 && linesToKeep < end) {
+    const lines = stack.split(SEPARATOR);
+    return lines
+      .slice(0, linesToKeep)
+      .concat(...lines.slice(end))
+      .join(SEPARATOR);
+  }
+  return stack;
+}
+
+export function formatError(error: Error) {
+  if (!(error instanceof Error)) {
+    return;
+  }
+  const { name, message, stack } = error;
+  const indexes = findPWLogsIndexes(message);
+  return {
+    name,
+    message: rewriteErrorMessage(message, indexes[0]),
+    stack: rewriteErrorStack(stack, indexes),
+  };
 }

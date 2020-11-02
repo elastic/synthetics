@@ -31,6 +31,7 @@ import {
   findPkgJsonByTraversing,
   generateTempPath,
   rewriteErrorStack,
+  findPWLogsIndexes,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -50,10 +51,11 @@ it('get monotonic clock time', () => {
 
 it('format errors', () => {
   const error = new Error('testing');
-  const { name, stack } = error;
+  const { name, message, stack } = error;
   const formatted = formatError(error);
   expect(formatted).toStrictEqual({
     name,
+    message,
     stack,
   });
 });
@@ -100,7 +102,10 @@ it('rewrite error stack from Playwright', () => {
     at Page.hover (mockedPath/client/page.js:415:21)
     at Step.eval [as callback] (eval at loadInlineScript (mockedPath/src/cli.ts:52:20), <anonymous>:10:14)`;
 
-  const newPlaywrightStack = rewriteErrorStack(playwrightStack).split('\n');
+  const indexes = findPWLogsIndexes(playwrightStack);
+  const newPlaywrightStack = rewriteErrorStack(playwrightStack, indexes).split(
+    '\n'
+  );
   expect(newPlaywrightStack).toMatchObject([
     'Error: page.hover: Frame has been detached.',
     '  =========================== logs ===========================',
@@ -115,8 +120,9 @@ it('rewrite error stack from Playwright', () => {
   ]);
 });
 
-it('do not rewrite non playwright errors', () => {
+it('does not rewrite non playwright errors', () => {
   const normalStack = new Error('Tets').stack;
-  const newNormalStack = rewriteErrorStack(normalStack);
+  const indexes = findPWLogsIndexes(normalStack);
+  const newNormalStack = rewriteErrorStack(normalStack, indexes);
   expect(normalStack).toStrictEqual(newNormalStack);
 });
