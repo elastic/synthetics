@@ -50,6 +50,7 @@ export async function run(options: RunOptions) {
       ...options,
       headless: options.headless ?? cliArgs.headless,
       screenshots: options.screenshots ?? cliArgs.screenshots,
+      filmstrips: options.filmstrips ?? cliArgs.filmstrips,
       dryRun: options.dryRun ?? cliArgs.dryRun,
       journeyName: options.journeyName ?? cliArgs.journeyName,
       network: options.network ?? cliArgs.network,

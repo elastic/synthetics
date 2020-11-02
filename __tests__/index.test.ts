@@ -62,6 +62,7 @@ describe('run', () => {
       environment: 'debug',
       headless: true,
       screenshots: true,
+      filmstrips: false,
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,

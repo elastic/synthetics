@@ -47,6 +47,7 @@ export type RunOptions = {
   reporter?: 'default' | 'json';
   headless?: boolean;
   screenshots?: boolean;
+  filmstrips?: boolean;
   dryRun?: boolean;
   journeyName?: string;
   pauseOnError?: boolean;
