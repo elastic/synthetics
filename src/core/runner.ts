@@ -56,7 +56,6 @@ export type RunOptions = {
 };
 
 type BaseContext = {
-  timestamp: number;
   params: RunParamaters;
   start: number;
   end?: number;
@@ -102,9 +101,8 @@ interface Events {
       networkinfo?: Array<NetworkInfo>;
       browserconsole?: Array<BrowserMessage>;
     };
-  'step:start': { journey: Journey; step: Step; timestamp: number };
+  'step:start': { journey: Journey; step: Step };
   'step:end': StepResult & {
-    timestamp: number;
     start: number;
     end: number;
     journey: Journey;
@@ -120,12 +118,10 @@ export default class Runner {
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const timestamp = getTimestamp();
     const start = getMonotonicTime();
     const driver = await Gatherer.setupDriver(options.headless);
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
-      timestamp,
       start,
       params: options.params,
       driver,
@@ -211,8 +207,7 @@ export default class Runner {
     let skipStep = false;
     for (const step of journey.steps) {
       const start = getMonotonicTime();
-      const timestamp = getTimestamp();
-      this.emit('step:start', { timestamp, journey, step });
+      this.emit('step:start', { journey, step });
       let data: StepResult = { status: 'succeeded' };
       if (skipStep) {
         data.status = 'skipped';
@@ -224,12 +219,11 @@ export default class Runner {
         if (data.error) skipStep = true;
       }
       this.emit('step:end', {
-        timestamp,
         journey,
         step,
-        ...data,
         start,
         end: getMonotonicTime(),
+        ...data,
       });
       if (options.pauseOnError && data.error) {
         await new Promise(r => process.stdin.on('data', r));
@@ -241,7 +235,8 @@ export default class Runner {
 
   async registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
-    const { timestamp, params } = context;
+    const timestamp = getTimestamp();
+    const { params } = context;
     this.emit('journey:start', { journey, timestamp, params });
     /**
      * Load and register the steps for the current journey
@@ -250,14 +245,13 @@ export default class Runner {
   }
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
-    const { timestamp, pluginManager, start, params, status, error } = result;
+    const { pluginManager, start, params, status, error } = result;
     const {
       filmstrips,
       networkinfo,
       browserconsole,
     } = await pluginManager.output();
     this.emit('journey:end', {
-      timestamp,
       journey,
       status,
       error,
