@@ -27,7 +27,6 @@
 
 import { stdin, cwd } from 'process';
 import { resolve } from 'path';
-import { totalist } from 'totalist';
 import { step, journey } from './core';
 import { log } from './core/logger';
 import { parseArgs } from './parse_args';
@@ -35,6 +34,7 @@ import {
   findPkgJsonByTraversing,
   isDepInstalled,
   isDirectory,
+  totalist,
 } from './helpers';
 import { run } from './';
 
@@ -85,6 +85,10 @@ async function prepareSuites(inputs: string[]) {
   const pattern = program.pattern
     ? new RegExp(program.pattern, 'i')
     : /.+\.journey\.([mc]js|[jt]s?)$/;
+  /**
+   * Ignore node_modules by default when running suites
+   */
+  const ignored = /node_modules/i;
 
   for (const input of inputs) {
     const absPath = resolve(resolvedCwd, input);
@@ -95,7 +99,7 @@ async function prepareSuites(inputs: string[]) {
     await findPkgJsonByTraversing(absPath, resolvedCwd);
     if (await isDirectory(absPath)) {
       await totalist(absPath, (rel, abs) => {
-        if (pattern.test(rel)) {
+        if (pattern.test(rel) && !ignored.test(rel)) {
           addSuite(abs);
         }
       });
@@ -111,24 +115,15 @@ async function prepareSuites(inputs: string[]) {
     const source = await readStdin();
     loadInlineScript(source);
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('ts-node').register({
-      compilerOptions: {
-        esModuleInterop: true,
-        allowJs: true,
-        declaration: true,
-        declarationMap: true,
-        sourceMap: true,
-        target: 'es2018',
-        module: 'commonjs',
-      },
-    });
     /**
      * Preload modules before running the suites
      * we support `.ts` files out of the box by invoking
-     * the `ts-node/register` which only compiles TS files
+     * the `ts-node` via `transpile-only` mode which only compiles
+     *  TS files without doing any extensive type checks
      */
-    const modules = [].concat(program.require || []).filter(Boolean);
+    const modules = ['ts-node/register/transpile-only']
+      .concat(program.require || [])
+      .filter(Boolean);
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
