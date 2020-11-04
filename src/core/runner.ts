@@ -114,6 +114,7 @@ interface Events {
 }
 
 export default class Runner {
+  active = false;
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
@@ -302,8 +303,12 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
-    log(`Runner: run ${this.journeys.length} journeys`);
     const result: RunResult = {};
+    if (this.active) {
+      return result;
+    }
+    this.active = true;
+    log(`Runner: run ${this.journeys.length} journeys`);
     const { reporter = 'default', journeyName, outfd } = options;
     /**
      * Set up the corresponding reporter
@@ -337,5 +342,6 @@ export default class Runner {
     log('Runner: reset');
     this.currentJourney = null;
     this.journeys = [];
+    this.active = false;
   }
 }
