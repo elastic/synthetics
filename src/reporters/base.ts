@@ -61,7 +61,7 @@ export default class BaseReporter {
   constructor(public runner: Runner, public options: ReporterOptions = {}) {
     this.runner = runner;
     this.fd = options.fd || process.stdout.fd;
-    this.stream = new SonicBoom({ fd: this.fd });
+    this.stream = new SonicBoom({ fd: this.fd, sync: true });
     this._registerListeners();
     this.runner.on('end', () => this.close());
   }

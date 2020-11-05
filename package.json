@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepublish": "npm run build",
+    "clean": "rm -rf dist",
+    "prepublish": "npm run clean && npm run build",
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",

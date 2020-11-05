@@ -28,7 +28,16 @@ import Runner from './runner';
 import { VoidCallback } from '../common_types';
 import { log } from './logger';
 
-export const runner = new Runner();
+/**
+ * Use a gloabl Runner which would be accessed by the runtime and
+ * required to handle the local vs global invocation through CLI
+ */
+const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
+if (!global[SYNTHETICS_RUNNER]) {
+  global[SYNTHETICS_RUNNER] = new Runner();
+}
+
+export const runner = global[SYNTHETICS_RUNNER];
 
 export const journey = (
   options: JourneyOptions | string,

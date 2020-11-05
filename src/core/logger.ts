@@ -28,7 +28,7 @@ import { grey, cyan, dim, italic } from 'kleur/colors';
 import { now } from '../helpers';
 
 const defaultFd = process.stdout.fd;
-let logger = new SonicBoom({ fd: defaultFd });
+let logger = new SonicBoom({ fd: defaultFd, sync: true });
 
 export const setLogger = (fd: number) => {
   if (fd && fd !== defaultFd) {
