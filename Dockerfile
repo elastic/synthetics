@@ -21,4 +21,4 @@ RUN  cd /usr/share/heartbeat/.node \\
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 # Install the latest version of @elastic/synthetics, so heartbeat can
 # call the executable directly
-RUN npm i -g @elastic/synthetics
+RUN npm i -g @elastic/synthetics@alpha
