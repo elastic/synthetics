@@ -1,5 +1,11 @@
 import { journey } from '@elastic/synthetics';
-import { loadAppStep, addTaskStep, assertTaskListSizeStep, checkForTaskStep, destroyTaskStep } from './helpers';
+import {
+  loadAppStep,
+  addTaskStep,
+  assertTaskListSizeStep,
+  checkForTaskStep,
+  destroyTaskStep,
+} from './helpers';
 
 journey('basic addition and completion of single task', async ({ page }) => {
   const testText = "Don't put salt in your eyes";
@@ -12,12 +18,8 @@ journey('basic addition and completion of single task', async ({ page }) => {
   assertTaskListSizeStep(page, 0);
 });
 
-journey("adding and removing a few tasks", async ({page}) => {
-  const testTasks = [
-    "Task 1",
-    "Task 2",
-    "Task 3",
-  ];
+journey('adding and removing a few tasks', async ({ page }) => {
+  const testTasks = ['Task 1', 'Task 2', 'Task 3'];
 
   loadAppStep(page);
   testTasks.forEach(t => {
@@ -25,12 +27,12 @@ journey("adding and removing a few tasks", async ({page}) => {
   });
 
   assertTaskListSizeStep(page, 3);
-  
+
   // remove the middle task and check that it worked
   destroyTaskStep(page, testTasks[1]);
   assertTaskListSizeStep(page, 2);
 
   // add a new task and check it exists
-  addTaskStep(page, "Task 4");
+  addTaskStep(page, 'Task 4');
   assertTaskListSizeStep(page, 3);
-})
+});
