@@ -64,7 +64,6 @@ describe('base reporter', () => {
       url: 'dummy',
       start: 0,
       end: 1,
-      timestamp,
     });
     runner.emit('end', 'done');
     /**

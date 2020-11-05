@@ -49,7 +49,6 @@ export default class JSONReporter extends BaseReporter {
       ({
         journey,
         step,
-        timestamp,
         start,
         end,
         error,
@@ -66,7 +65,6 @@ export default class JSONReporter extends BaseReporter {
         }
         this.writeJSON('step/end', journey, {
           step,
-          timestamp,
           url,
           error,
           payload: {
@@ -85,7 +83,6 @@ export default class JSONReporter extends BaseReporter {
       'journey:end',
       ({
         journey,
-        timestamp,
         start,
         end,
         filmstrips,
@@ -119,13 +116,13 @@ export default class JSONReporter extends BaseReporter {
         if (browserconsole) {
           browserconsole.forEach(({ timestamp, text, type, step }) => {
             this.writeJSON('journey/browserconsole', journey, {
+              timestamp,
               step,
-              payload: { timestamp, text, type },
+              payload: { text, type },
             });
           });
         }
         this.writeJSON('journey/end', journey, {
-          timestamp,
           error,
           payload: {
             start,
