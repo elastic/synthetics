@@ -14,6 +14,6 @@ docker run \
   --net=host \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
-  --volume="$(pwd)/../:/opt/examples:rw" \
+  --volume="$(pwd)/../../:/opt/elastic-synthetics:rw" \
   $IMAGE \
   bash

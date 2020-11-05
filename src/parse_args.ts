@@ -26,9 +26,9 @@
 import { program } from 'commander';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const { name, version } = require('../package.json');
+const { version } = require('../package.json');
 program
-  .name(name)
+  .name('elastic-synthetics')
   .usage('[options] [dir] [files] file')
   .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')

@@ -5,7 +5,7 @@
   "scripts": {},
   "license": "MIT",
   "dependencies": {
-    "@elastic/synthetics": "file:../../elastic-synthetics.tgz",
+    "@elastic/synthetics": "file:../../",
     "playwright-core": "^1.5.2"
   }
 }

@@ -34,7 +34,7 @@ export const journey = (
   options: JourneyOptions | string,
   callback: JourneyCallback
 ) => {
-  log(`register journey: ${options}`)
+  log(`register journey: ${options}`);
   if (typeof options === 'string') {
     options = { name: options, id: options };
   }
@@ -44,7 +44,7 @@ export const journey = (
 };
 
 export const step = (name: string, callback: VoidCallback) => {
-  log(`register step: ${name}`)
+  log(`register step: ${name}`);
   return runner.currentJourney?.addStep(name, callback);
 };
 

@@ -25,12 +25,13 @@
 
 import { red, green, yellow, cyan } from 'kleur/colors';
 import os from 'os';
-import path from 'path';
+import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 
-const statAsync = promisify(fs.stat);
+const statAsync = promisify(fs.lstat);
+const readAsync = promisify(fs.readdir);
 
 export function noop() {}
 
@@ -54,7 +55,7 @@ export function formatError(error: Error) {
 }
 
 export function generateTempPath() {
-  return path.join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
+  return join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
 }
 
 /**
@@ -111,11 +112,11 @@ export async function isFile(filePath) {
  * from an NPM project.
  */
 export async function findPkgJsonByTraversing(resolvePath, cwd) {
-  const packageJSON = path.resolve(resolvePath, 'package.json');
+  const packageJSON = resolve(resolvePath, 'package.json');
   if (await isFile(packageJSON)) {
     return packageJSON;
   }
-  const parentDirectory = path.dirname(resolvePath);
+  const parentDirectory = dirname(resolvePath);
   /**
    * We are in the system root and package.json does not exist
    */
@@ -127,4 +128,31 @@ export async function findPkgJsonByTraversing(resolvePath, cwd) {
     );
   }
   return findPkgJsonByTraversing(parentDirectory, cwd);
+}
+
+/**
+ * Modified version of `totalist` package that handles the symlink issue
+ * and avoids infinite recursion
+ *
+ * Based on code from totalist!
+ * https://github.com/lukeed/totalist/blob/44379974e535afe9c38e8d643dd64c59101a14b9/src/async.js#L8
+ */
+export async function totalist(
+  dir: string,
+  callback: (relPath: string, absPath: string) => any,
+  pre = ''
+) {
+  dir = resolve('.', dir);
+  await readAsync(dir).then(arr => {
+    return Promise.all(
+      arr.map(str => {
+        const abs = join(dir, str);
+        return statAsync(abs).then(stats =>
+          stats.isDirectory()
+            ? totalist(abs, callback, join(pre, str))
+            : callback(join(pre, str), abs)
+        );
+      })
+    );
+  });
 }
