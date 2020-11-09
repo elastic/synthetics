@@ -56,7 +56,7 @@ afterAll(() => {
   server.close();
 });
 
-journey('Basic journey', async ({ page }) => {
+journey('Basic journey', async ({ page, browser }) => {
   step('visit server homepage', async () => {
     await page.goto(server.url);
   });
@@ -70,18 +70,43 @@ journey('Basic journey', async ({ page }) => {
 Creates a journey and also grants a fresh playwright browser, context
 and page instance.
 
-##### step(name, callback)
+##### step(name, function)
 
 ---
 
 Create a step as part of the multi step journey which will be invoked in the
 order they are registered as part of the journey
 
-##### beforeAll(callback)
+##### beforeAll(function)
 
 ---
 
-Provides a way to set up something before starting the whole journey.
+Provide a function that will be called before any of the journey runs. If the
+provided function is a promise, the runner waits for the promise to resolve
+before invoking the journey. Useful when setting up global state/server that
+will be used multiple journeys.
+
+##### afterAll(function)
+
+---
+
+Runs the provided function after all the journeys have completed. Useful for
+removing the global state/closing the server in the tests.
+
+##### before(function)
+
+---
+
+Runs a function before invoking any of the steps that are registered as part of
+the journey. Useful for setting up local state that is part of a single
+journey.
+
+##### after(function)
+
+---
+
+Runs a function after all the steps in a journey gets completed. Useful for
+removing the local state.
 
 ## CI
 
