@@ -9,5 +9,5 @@ This suite tests the examples that ship with the open source Vue.js project.
 npm install
 
 // Invoke the Synthetics runner
-./node_modules/.bin/elastic-synthetics .
+npx @elastic/synthetics .
 ```
