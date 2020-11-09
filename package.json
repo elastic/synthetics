@@ -16,6 +16,7 @@
     "docker": "docker build . -t heartbeat-synthetics"
   },
   "bin": {
+    "@elastic/synthetics": "dist/cli.js",
     "elastic-synthetics": "dist/cli.js"
   },
   "files": [
