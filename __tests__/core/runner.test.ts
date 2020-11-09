@@ -181,6 +181,7 @@ describe('runner', () => {
     expect(result).toEqual([
       {
         status: 'failed',
+        url: 'about:blank',
         error: expect.any(Error),
         screenshot: expect.any(String),
       },
@@ -209,6 +210,7 @@ describe('runner', () => {
     });
     expect(step2).toEqual({
       status: 'failed',
+      url: server.TEST_PAGE,
       error,
       screenshot: expect.any(String),
     });
