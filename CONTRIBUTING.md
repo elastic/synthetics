@@ -1,4 +1,4 @@
-# Contributing to the APM Agent
+# Contributing to the Synthetics Agent
 
 The Elastic Synthetics Agent is open source and we love to receive contributions from our community — you!
 
