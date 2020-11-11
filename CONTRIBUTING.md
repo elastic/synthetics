@@ -6,7 +6,7 @@ There are many ways to contribute, from writing tutorials or blog posts,
 improving the documentation, submitting bug reports and feature requests or
 writing code.
 
-You can get in touch with us through [Discuss](https://discuss.elastic.co/tags/c/observability/uptime/75/synthetics),
+You can get in touch with us through [Discuss](https://discuss.elastic.co/tags/c/observability/uptime/75/synthetics)—
 feedback and ideas are always welcome.
 
 ## Code contributions

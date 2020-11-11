@@ -37,7 +37,7 @@ Options:
 
 ## Documentation
 
-Documentation is avaiable on [elastic.co](https://www.elastic.co/guide/en/observability/7.10/synthetic-monitoring.html)
+Documentation is avaiable on [elastic.co](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
 
 Have questions? Want to leave feedback? Visit the [Synthetics discussion
 forum](https://discuss.elastic.co/tags/c/observability/uptime/75/synthetics).
