@@ -41,9 +41,12 @@ import { run } from './';
 const program = parseArgs();
 const resolvedCwd = cwd();
 /**
- * Set debug based on flag
+ * Set debug based on DEBUG ENV and -d flags
+ * namespace - synthetics
  */
-process.env.DEBUG = program.debug || '';
+const namespace = 'synthetics';
+process.env.DEBUG =
+  process.env.DEBUG === namespace || (program.debug ? program.debug : '');
 
 const loadInlineScript = source => {
   const scriptFn = new Function('step', 'page', 'browser', 'params', source);
