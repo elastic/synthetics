@@ -8,6 +8,13 @@ RUN yum -y install epel-release && \
 	  xorg-x11-fonts-cyrillic xorg-x11-fonts-Type1 xorg-x11-fonts-misc \
 	  yum clean all && \
     rm -rf /var/cache/yum
+
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+ENTRYPOINT ["/tini", "--", "/usr/local/bin/docker-entrypoint"]
+
+# or docker run your-image /your/program ...
 RUN echo /usr/share/heartbeat/.node \\
       /usr/share/heartbeat/.npm \\
       /usr/share/heartbeat/.cache \\
