@@ -4,4 +4,4 @@
 pushd ../../
 ./build-docker.sh $1
 popd
-./run.sh heartbeat-synthetics-local
+./run.sh heartbeat-synthetics-local $@
