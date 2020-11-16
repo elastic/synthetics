@@ -56,7 +56,6 @@ export type RunOptions = {
 };
 
 type BaseContext = {
-  timestamp: number;
   params: RunParamaters;
   start: number;
   end?: number;
@@ -102,9 +101,8 @@ interface Events {
       networkinfo?: Array<NetworkInfo>;
       browserconsole?: Array<BrowserMessage>;
     };
-  'step:start': { journey: Journey; step: Step; timestamp: number };
+  'step:start': { journey: Journey; step: Step };
   'step:end': StepResult & {
-    timestamp: number;
     start: number;
     end: number;
     journey: Journey;
@@ -114,18 +112,17 @@ interface Events {
 }
 
 export default class Runner {
+  active = false;
   eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const timestamp = getTimestamp();
     const start = getMonotonicTime();
     const driver = await Gatherer.setupDriver(options.headless);
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
-      timestamp,
       start,
       params: options.params,
       driver,
@@ -189,11 +186,11 @@ export default class Runner {
       if (metrics) {
         data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
       }
-      data.url = driver.page.url();
     } catch (error) {
       data.status = 'failed';
       data.error = error;
     } finally {
+      data.url = driver.page.url();
       if (screenshots) {
         data.screenshot = (await driver.page.screenshot()).toString('base64');
       }
@@ -211,8 +208,7 @@ export default class Runner {
     let skipStep = false;
     for (const step of journey.steps) {
       const start = getMonotonicTime();
-      const timestamp = getTimestamp();
-      this.emit('step:start', { timestamp, journey, step });
+      this.emit('step:start', { journey, step });
       let data: StepResult = { status: 'succeeded' };
       if (skipStep) {
         data.status = 'skipped';
@@ -224,12 +220,11 @@ export default class Runner {
         if (data.error) skipStep = true;
       }
       this.emit('step:end', {
-        timestamp,
         journey,
         step,
-        ...data,
         start,
         end: getMonotonicTime(),
+        ...data,
       });
       if (options.pauseOnError && data.error) {
         await new Promise(r => process.stdin.on('data', r));
@@ -241,7 +236,8 @@ export default class Runner {
 
   async registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
-    const { timestamp, params } = context;
+    const timestamp = getTimestamp();
+    const { params } = context;
     this.emit('journey:start', { journey, timestamp, params });
     /**
      * Load and register the steps for the current journey
@@ -250,14 +246,13 @@ export default class Runner {
   }
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
-    const { timestamp, pluginManager, start, params, status, error } = result;
+    const { pluginManager, start, params, status, error } = result;
     const {
       filmstrips,
       networkinfo,
       browserconsole,
     } = await pluginManager.output();
     this.emit('journey:end', {
-      timestamp,
       journey,
       status,
       error,
@@ -302,8 +297,12 @@ export default class Runner {
   }
 
   async run(options: RunOptions) {
-    log(`Runner: run ${this.journeys.length} journeys`);
     const result: RunResult = {};
+    if (this.active) {
+      return result;
+    }
+    this.active = true;
+    log(`Runner: run ${this.journeys.length} journeys`);
     const { reporter = 'default', journeyName, outfd } = options;
     /**
      * Set up the corresponding reporter
@@ -328,8 +327,8 @@ export default class Runner {
       result[journey.name] = journeyResult;
     }
     await this.runAfterAllHook();
-    this.emit('end', {});
     this.reset();
+    this.emit('end', {});
     return result;
   }
 
@@ -337,5 +336,6 @@ export default class Runner {
     log('Runner: reset');
     this.currentJourney = null;
     this.journeys = [];
+    this.active = false;
   }
 }

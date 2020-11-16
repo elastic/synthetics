@@ -84,14 +84,12 @@ describe('runner', () => {
       expect(event).toMatchObject({
         journey,
         step,
-        timestamp: expect.any(Number),
       });
     });
     runner.on('step:end', event => {
       expect(event).toMatchObject({
         journey,
         step,
-        timestamp: expect.any(Number),
         status: 'succeeded',
         url: 'about:blank',
         start: expect.any(Number),
@@ -101,7 +99,6 @@ describe('runner', () => {
     runner.on('journey:end', event => {
       expect(event).toMatchObject({
         journey,
-        timestamp: expect.any(Number),
         status: 'succeeded',
         start: expect.any(Number),
         end: expect.any(Number),
@@ -184,6 +181,7 @@ describe('runner', () => {
     expect(result).toEqual([
       {
         status: 'failed',
+        url: 'about:blank',
         error: expect.any(Error),
         screenshot: expect.any(String),
       },
@@ -212,6 +210,7 @@ describe('runner', () => {
     });
     expect(step2).toEqual({
       status: 'failed',
+      url: server.TEST_PAGE,
       error,
       screenshot: expect.any(String),
     });

@@ -24,9 +24,15 @@
  */
 
 import SonicBoom from 'sonic-boom';
-import Runner from '../core/runner';
 import { green, red, cyan } from 'kleur/colors';
-import { symbols, indent, now } from '../helpers';
+import Runner from '../core/runner';
+import {
+  symbols,
+  indent,
+  now,
+  findPWLogsIndexes,
+  rewriteErrorStack,
+} from '../helpers';
 
 export type ReporterOptions = {
   fd?: number;
@@ -39,16 +45,17 @@ function renderError(error) {
   const inner = indent(outer);
   const container = outer + '---\n';
   output += container;
-  const stack = error.stack;
+  let stack = error.stack;
   if (stack) {
-    const lines = String(stack).split('\n');
     output += inner + 'stack: |-\n';
+    stack = rewriteErrorStack(stack, findPWLogsIndexes(stack));
+    const lines = String(stack).split('\n');
     for (const line of lines) {
       output += inner + '  ' + line + '\n';
     }
   }
   output += container;
-  return output;
+  return red(output);
 }
 
 function renderDuration(durationMs) {
@@ -61,7 +68,7 @@ export default class BaseReporter {
   constructor(public runner: Runner, public options: ReporterOptions = {}) {
     this.runner = runner;
     this.fd = options.fd || process.stdout.fd;
-    this.stream = new SonicBoom({ fd: this.fd });
+    this.stream = new SonicBoom({ fd: this.fd, sync: true });
     this._registerListeners();
     this.runner.on('end', () => this.close());
   }
@@ -73,7 +80,7 @@ export default class BaseReporter {
        * it as the last listener giving enough room for
        * other reporters to write to stream
        */
-      process.nextTick(() => this.stream.end());
+      setImmediate(() => this.stream.end());
     } else {
       /**
        * If the user has passed a custom FD we don't close the FD, but we do flush it

@@ -8,6 +8,13 @@ RUN yum -y install epel-release && \
 	  xorg-x11-fonts-cyrillic xorg-x11-fonts-Type1 xorg-x11-fonts-misc \
 	  yum clean all && \
     rm -rf /var/cache/yum
+
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+ENTRYPOINT ["/tini", "--", "/usr/local/bin/docker-entrypoint"]
+
+# or docker run your-image /your/program ...
 RUN echo /usr/share/heartbeat/.node \\
       /usr/share/heartbeat/.npm \\
       /usr/share/heartbeat/.cache \\
@@ -19,9 +26,6 @@ RUN  cd /usr/share/heartbeat/.node \\
       && mkdir node \\
       && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
-# Install playwright first since it speeds up the install of elastic-synthetics*.tgz, since it doesn't need to re-download the
-# browsers every time the code there changes
-RUN npm i -g playwright-chromium
-COPY elastic-synthetics-*.tgz /opt/elastic-synthetics.tgz
-RUN npm install -g /opt/elastic-synthetics.tgz
-ENV HEARTBEAT_SYNTHETICS_TGZ=/opt/elastic-synthetics.tgz
+# Install the latest version of @elastic/synthetics, so heartbeat can
+# call the executable directly
+RUN npm i -g @elastic/synthetics@alpha

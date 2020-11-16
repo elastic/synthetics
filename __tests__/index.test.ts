@@ -23,11 +23,40 @@
  *
  */
 
-import { run } from '../src/index';
+import { run, journey } from '../src/index';
 import { runner } from '../src/core';
 import * as ParseArgs from '../src/parse_args';
+import { generateTempPath } from '../src/helpers';
+import fs from 'fs';
 
-describe('run', () => {
+describe('Run', () => {
+  const dest = generateTempPath();
+  afterEach(() => {
+    fs.unlinkSync(dest);
+  });
+
+  it('multiple run invokes runner only once', async () => {
+    journey('j1', async () => {});
+    journey('j2', async () => {});
+    /**
+     * call multiple runs in parallel simulating
+     * CLI and programmatic API runs
+     */
+    const promises = [run, run].map(r =>
+      r({
+        outfd: fs.openSync(dest, 'w'),
+      })
+    );
+    const results = await Promise.all(promises);
+
+    expect(results).toEqual([
+      { j1: { status: 'succeeded' }, j2: { status: 'succeeded' } },
+      {},
+    ]);
+  });
+});
+
+describe('Run - cli args', () => {
   let runnerSpy: jest.SpyInstance;
   let parseArgsSpy: jest.SpyInstance;
 

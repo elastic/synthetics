@@ -1,21 +1,23 @@
 {
   "name": "@elastic/synthetics",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.1-alpha.6",
+  "description": "Elastic synthetic monitoring agent",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "clean": "rm -rf dist",
+    "prepublish": "npm run clean && npm run build",
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
     "test": "jest",
-    "updateSnapshot": "jest --updateSnapshot",
     "coverage": "jest --coverage",
     "docker": "docker build . -t heartbeat-synthetics"
   },
   "bin": {
-    "@elastic/synthetics": "dist/cli.js"
+    "@elastic/synthetics": "dist/cli.js",
+    "elastic-synthetics": "dist/cli.js"
   },
   "files": [
     "dist",

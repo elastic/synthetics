@@ -1,5 +1,5 @@
 import { step } from '@elastic/synthetics';
-import assert from 'assert';
+import * as assert from 'assert';
 import { join } from 'path';
 import { Page } from 'playwright-core';
 

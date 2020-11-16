@@ -29,6 +29,15 @@ import JSONReporter from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
 
+/**
+ * Mock package version to avoid breaking JSON payload
+ * for every release
+ */
+jest.mock(
+  '../../package.json',
+  jest.fn(() => ({ version: '0.0.1' }))
+);
+
 describe('json reporter', () => {
   let dest: string;
   const j1 = journey('j1', async () => {});
@@ -86,7 +95,6 @@ describe('json reporter', () => {
       step: step('s1', async () => {}),
       screenshot: 'dummy',
       url: 'dummy',
-      timestamp,
       start: 0,
       end: 10,
     });
@@ -96,7 +104,6 @@ describe('json reporter', () => {
       status: 'succeeded',
       start: 0,
       end: 11,
-      timestamp,
       filmstrips: [
         {
           snapshot: 'dummy',
@@ -126,7 +133,6 @@ describe('json reporter', () => {
       step: step('s2', async () => {}),
       screenshot: 'dummy2',
       url: 'dummy2',
-      timestamp: 1600300800000001,
       start: 11,
       end: 20,
       error: myErr,
@@ -143,7 +149,6 @@ describe('json reporter', () => {
 
     runner.emit('journey:end', {
       journey: j1,
-      timestamp: 1600300800000001,
       start: 0,
       end: 1,
       params: {},

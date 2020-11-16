@@ -1,14 +1,39 @@
 # Experimental Synthetics Agent
 
 Synthetic Monitoring with Real Browsers.
-**Please note this is an unsupported experimental project. Expect things to break and change!** 
+**Please note this is an unsupported experimental project. Expect things to break and change!**
 
-Docs are forthcoming, feel free to browse the repository, but we ask that you refrain from asking questions about use till docs
-are published.
+## Usage
 
-If you'd like to stay informed about synthetic monitoring development please visit [our synthetic monitoring page](https://www.elastic.co/what-is/synthetic-monitoring) where you can sign up to be notified of our initial release.
+Install the package
 
-## CI
+```sh
+npm install -g @elastic/synthetics
+```
 
-The CI will not run builds for collaborators PRs that are not approval by a members of Elastic org,
-Elastic Users can launch the CI on PRs by putting a comment like `/test` or manually on the CI.
+Run the suites via CLI
+
+```
+npx @elastic/synthetics [options] [dir] [files] file
+```
+
+## Documentation
+
+- [Introduction](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
+- [CLI Options](https://www.elastic.co/guide/en/observability/current/synthetics-command-reference.html#elastic-synthetics-command)
+- [Syntax](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-syntax)
+- [Creating a Journey](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-create-journey)
+- [Creating a Step](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-create-step)
+- [Running via CLI](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-test-suite)
+- [Running via Heartbeat](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-inline-journey)
+
+Complete documentation is avaiable on [elastic.co](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
+
+Have questions? Want to leave feedback? Visit the [Synthetics discussion
+forum](https://discuss.elastic.co/tags/c/observability/uptime/75/synthetics).
+
+## Contributing
+
+Contributions are welcome, but we recommend that you take a moment and read our contribution guide first.
+
+<sup><br>Made with ♥️ and ☕️ by Elastic and our community.</sup>
