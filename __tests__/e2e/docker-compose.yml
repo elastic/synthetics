@@ -1,0 +1,58 @@
+version: '3.7'
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=es01
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+  kib01:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    container_name: kib01
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    networks:
+      - elastic
+#  synth1:
+#    build: ../../Dockerfile
+#    container_name: synthetics
+#    security_opt:
+#      - seccomp: ../../seccomp_profile.json
+#    environment:
+#      ELASTICSEARCH_URL: http://es01:9200
+#      ELASTICSEARCH_HOSTS: http://es01:9200
+#    command:
+#      -E output.elasticsearch.hosts=["localhost:9200"]
+#      -E output.elasticsearch.username=elastic
+#      -E output.elasticsearch.password=changeme"
+#
+#    networks:
+#      - elastic
+
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

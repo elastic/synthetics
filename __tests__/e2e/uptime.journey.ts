@@ -30,17 +30,6 @@ journey('E2e test synthetics', async ({ page }) => {
     await page.goto('http://localhost:5601/app/uptime');
   });
 
-  step('Enter username and password', async () => {
-    await page.fill('input[data-test-subj=loginUsername]', 'admin');
-    await page.fill('input[data-test-subj=loginPassword]', 'changeme');
-  });
-
-  step('submit form', async () => {
-    await page.click('button[data-test-subj=logbinSubmit]');
-    // wait for loading
-    await new Promise(r => setTimeout(r, 3000));
-  });
-
   step('Check if there is table data', async () => {
     await page.click('[data-test-subj=uptimeOverviewPage]');
     await page.click('div.euiBasicTable', { timeout: 60 * 1000 });

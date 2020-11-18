@@ -1,0 +1,14 @@
+{
+  "name": "e2e-synthetics",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "setup": "sh scripts/setup.sh",
+    "test": "npm i && npm run setup &&  sh scripts/test.sh"
+  },
+  "devDependencies": {
+    "@elastic/synthetics": "../../",
+    "wait-on": "^5.0.1"
+  }
+}
