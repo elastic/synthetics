@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # variables
 KIBANA_PORT=5601
@@ -24,8 +25,8 @@ yarn wait-on -i 500 -w 500 http-get://admin:changeme@localhost:$KIBANA_PORT/api/
 # Wait for Heartbeat docker to start
 ##################################################
 echo "" # newline
-echo "${bold}Waiting for Heartbeat docker to start...${normal}"
-until [ "`docker inspect -f {{.State.Running}} heartbeat`" == "true" ]; do
+echo "${bold}Waiting for synthetics docker to start...${normal}"
+until [ "`docker inspect -f {{.State.Running}} synthetics`" == "true" ]; do
     sleep 0.1;
 done;
 

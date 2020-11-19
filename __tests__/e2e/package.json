@@ -4,8 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "setup": "sh scripts/setup.sh",
-    "test": "npm i && npm run setup &&  sh scripts/test.sh"
+    "setup": "bash scripts/setup.sh",
+    "test": "npm i && npm run setup &&  bash scripts/test.sh"
   },
   "devDependencies": {
     "@elastic/synthetics": "../../",

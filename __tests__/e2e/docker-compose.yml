@@ -29,29 +29,30 @@ services:
       ELASTICSEARCH_HOSTS: http://es01:9200
     networks:
       - elastic
-#  synth1:
-#    build: ../../Dockerfile
-#    container_name: synthetics
-#    security_opt:
-#      - seccomp: ../../seccomp_profile.json
-#    environment:
-#      ELASTICSEARCH_URL: http://es01:9200
-#      ELASTICSEARCH_HOSTS: http://es01:9200
-#    command:
-#      -E output.elasticsearch.hosts=["localhost:9200"]
-#      -E output.elasticsearch.username=elastic
-#      -E output.elasticsearch.password=changeme"
-#
-#    networks:
-#      - elastic
+  synth01:
+    image: docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
+    container_name: synthetics
+    depends_on:
+      - es01
+      - kib01
+    volumes:
+      - ../../examples/docker/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro
+      - ../../:/opt/elastic-synthetics:rw
+    security_opt:
+      - seccomp=../../examples/docker/seccomp_profile.json
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    command:
+      -E output.elasticsearch.hosts=["es01:9200"]
+
+    networks:
+      - elastic
 
 volumes:
   data01:
     driver: local
-  data02:
-    driver: local
-  data03:
-    driver: local
+
 
 networks:
   elastic:
