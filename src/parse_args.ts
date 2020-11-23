@@ -57,6 +57,10 @@ program
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(
+    '--ws-endpoint <endpoint>',
+    'Browser WebSocket endpoint to connect to'
+  )
+  .option(
     '--outfd <fd>',
     'specify a file descriptor for logs. Default is stdout',
     parseInt

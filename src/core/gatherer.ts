@@ -46,9 +46,18 @@ export type Driver = {
  * related capabilities for the runner to run all journeys
  */
 export class Gatherer {
-  static async setupDriver(headless?: boolean): Promise<Driver> {
-    log('Gatherer: launching chrome');
-    const browser = await chromium.launch({ headless });
+  static async setupDriver(
+    headless?: boolean,
+    wsEndpoint?: string
+  ): Promise<Driver> {
+    let browser;
+    if (wsEndpoint) {
+      log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
+      browser = await chromium.connect({ wsEndpoint });
+    } else {
+      log('Gatherer: launching chrome');
+      browser = await chromium.launch({ headless });
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
     const client = await context.newCDPSession(page);

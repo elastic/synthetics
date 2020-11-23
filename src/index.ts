@@ -55,6 +55,7 @@ export async function run(options: RunOptions) {
       network: options.network ?? cliArgs.network,
       pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError,
       reporter: cliArgs.json && !options.reporter ? 'json' : options.reporter,
+      wsEndpoint: options.wsEndpoint ?? cliArgs.wsEndpoint,
       outfd,
     });
   } catch (e) {
