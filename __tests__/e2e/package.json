@@ -8,7 +8,6 @@
     "test": "npm i && npm run setup &&  bash scripts/test.sh"
   },
   "devDependencies": {
-    "@elastic/synthetics": "../../",
-    "wait-on": "^5.0.1"
+    "@elastic/synthetics": "../../"
   }
 }
