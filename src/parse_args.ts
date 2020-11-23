@@ -45,11 +45,9 @@ program
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
   )
-  .option(
-    '--screenshots',
-    'take screenshots between steps (only shown in some reporters)'
-  )
-  .option('--network', 'capture all network information for all steps')
+  .option('--screenshots', 'take screenshot for each step')
+  .option('--filmstrips', 'record detailed filmstrip info for all journeys')
+  .option('--network', 'capture network information for all journeys')
   .option('--metrics', 'capture performance metrics for each step')
   .option(
     '--dry-run',
