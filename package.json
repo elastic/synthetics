@@ -13,7 +13,7 @@
     "lint:fix": "npm run lint -- --fix",
     "test": "jest",
     "coverage": "jest --coverage",
-    "docker": "docker build . -t heartbeat-synthetics"
+    "docker": "./build-docker.sh"
   },
   "bin": {
     "@elastic/synthetics": "dist/cli.js",
