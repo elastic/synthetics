@@ -1,67 +1,62 @@
 version: '3.7'
 services:
-  es01:
+  elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
-    container_name: es01
+    container_name: elasticsearch
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
       retries: 10
       interval: 20s
     environment:
-      - node.name=es01
+      - node.name=elasticsearch
       - cluster.name=es-docker-cluster
-      - cluster.initial_master_nodes=es01
+      - cluster.initial_master_nodes=elasticsearch
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
         soft: -1
         hard: -1
-    volumes:
-      - data01:/usr/share/elasticsearch/data
     ports:
-      - 9200:9200
+      - 127.0.0.1:9200:9200
     networks:
       - elastic
-  kib01:
+  kibana:
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
-    container_name: kib01
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+      - synthetic
     healthcheck:
-      test: ["CMD", "curl", "-I", "http://localhost:5601/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
       interval: 30s
       retries: 10
       start_period: 30s
     ports:
-      - 5601:5601
+      - 127.0.0.1:5601:5601
     environment:
-      ELASTICSEARCH_URL: http://es01:9200
-      ELASTICSEARCH_HOSTS: http://es01:9200
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     networks:
       - elastic
-  synth01:
+  synthetic:
     image: docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
     container_name: synthetics
     depends_on:
-      - es01
-      - kib01
+      - elasticsearch
     volumes:
       - ../../examples/docker/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro
       - ../../:/opt/elastic-synthetics:rw
     security_opt:
       - seccomp=../../examples/docker/seccomp_profile.json
     environment:
-      ELASTICSEARCH_URL: http://es01:9200
-      ELASTICSEARCH_HOSTS: http://es01:9200
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     command:
-      -E output.elasticsearch.hosts=["es01:9200"]
+      -E output.elasticsearch.hosts=["elasticsearch:9200"]
 
     networks:
       - elastic
-
-volumes:
-  data01:
-    driver: local
-
 
 networks:
   elastic:
