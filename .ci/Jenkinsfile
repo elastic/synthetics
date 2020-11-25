@@ -111,6 +111,7 @@ pipeline {
           cleanup()
           withNodeEnv(){
             dir("${BASE_DIR}"){
+              sh('sleep 3600')
               sh(label: 'install dependencies',script: 'npm i')
               dir("__tests__/e2e"){
                 sh(label: 'run e2e tests',script: 'npm run test')
