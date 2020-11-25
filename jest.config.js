@@ -30,5 +30,5 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
   testPathIgnorePatterns: ['dist'],
-  modulePathIgnorePatterns: ['*.journey.ts|js']
+  modulePathIgnorePatterns: ['/e2e/']
 };
