@@ -202,7 +202,7 @@ def withNodeEnv(Map args=[:], Closure body){
     sh(label: 'install Node.js', script: '''
       set +x
       if [ -z "$(command -v nvm)" ]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
+        curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
       fi
 
       export NVM_DIR="${HOME}/.nvm"
