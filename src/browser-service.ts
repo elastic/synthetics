@@ -23,14 +23,12 @@
  *
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+import { createServer } from 'http';
+import { createProxyServer } from 'http-proxy';
+import { chromium } from 'playwright-chromium';
 
-const httpProxy = require('http-proxy');
-const http = require('http');
-const { chromium } = require('playwright-chromium');
-
-const proxy = httpProxy.createProxyServer();
-const proxyServer = http.createServer();
+const proxy = createProxyServer();
+const proxyServer = createServer();
 
 proxyServer.on('upgrade', async function (req, socket, head) {
   const browserServer = await chromium.launchServer({ headless: true });
@@ -41,10 +39,12 @@ proxyServer.on('upgrade', async function (req, socket, head) {
   const target = parts.join('/');
   console.log(`New browser: ${wsEndpoint}`);
   proxy.ws(req, socket, head, { target });
-  socket.on('close', async () => {
+  const closeBrowser = async () => {
     await browserServer.close();
     console.log(`Socket closed: ${wsEndpoint}`);
-  });
+  };
+  socket.on('close', closeBrowser);
+  socket.on('error', closeBrowser);
 });
 
 const port = 9322;

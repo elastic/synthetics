@@ -50,7 +50,7 @@ export class Gatherer {
     headless?: boolean,
     wsEndpoint?: string
   ): Promise<Driver> {
-    let browser;
+    let browser: ChromiumBrowser;
     if (wsEndpoint) {
       log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
       browser = await chromium.connect({ wsEndpoint });
