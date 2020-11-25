@@ -105,6 +105,22 @@ pipeline {
       }
     }
 
+    stage('E2e Test') {
+      steps {
+        withGithubNotify(context: 'E2e Test') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'install dependencies',script: 'npm i')
+              dir("__tests__/e2e"){
+                sh(label: 'run e2e tests',script: 'npm run test')
+              }
+            }
+          }
+        }
+      }
+    }
+
     /**
      Publish Docker images.
      */
