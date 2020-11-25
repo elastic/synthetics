@@ -112,8 +112,13 @@ pipeline {
           withNodeEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'install dependencies',script: 'npm i')
+              sh(label: 'set permissions', script: '''
+                chmod -R ugo+rw examples
+              ''')
               dir("__tests__/e2e"){
-                sh(label: 'run e2e tests',script: 'npm run test')
+                timeout(time: 10, unit: 'MINUTES') {
+                  sh(label: 'run e2e tests',script: 'npm run test')
+                }
               }
             }
           }
