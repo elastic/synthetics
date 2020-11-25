@@ -49,7 +49,7 @@ pipeline {
             }
           }
         }
-        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**"
+        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**,.nvm/.git/**"
       }
     }
     /**
@@ -109,7 +109,7 @@ pipeline {
       steps {
         withGithubNotify(context: 'E2e Test') {
           cleanup()
-          withNodeNativeEnv(){
+          withNodeEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'install dependencies',script: 'npm i')
               dir("__tests__/e2e"){
@@ -200,7 +200,11 @@ def withNodeInDockerEnv(Map args=[:], Closure body){
 def withNodeEnv(Map args=[:], Closure body){
   withEnv(["HOME=${WORKSPACE}"]) {
     sh(label: 'install Node.js', script: '''
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
+      set +x
+      if [ -z "$(command -v nvm)" ]; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
+      fi
+
       export NVM_DIR="${HOME}/.nvm"
       [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
       nvm install --lts
