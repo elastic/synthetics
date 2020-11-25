@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -xe
 
 
 # formatting
@@ -22,5 +22,3 @@ echo "✅ Setup completed successfully. Running e2e tests..."
 ##################################################
 
 npx @elastic/synthetics uptime.journey.ts
-
-
