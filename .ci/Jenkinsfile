@@ -111,7 +111,6 @@ pipeline {
           cleanup()
           withNodeEnv(){
             dir("${BASE_DIR}"){
-              sh(label: 'install dependencies',script: 'npm i')
               sh(label: 'set permissions', script: '''
                 chmod -R ugo+rw examples
               ''')
