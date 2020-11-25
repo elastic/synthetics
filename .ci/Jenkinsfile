@@ -109,9 +109,8 @@ pipeline {
       steps {
         withGithubNotify(context: 'E2e Test') {
           cleanup()
-          withNodeEnv(){
+          withNodeNativeEnv(){
             dir("${BASE_DIR}"){
-              sh('sleep 3600')
               sh(label: 'install dependencies',script: 'npm i')
               dir("__tests__/e2e"){
                 sh(label: 'run e2e tests',script: 'npm run test')
@@ -190,9 +189,25 @@ def cleanup(){
   unstash 'source'
 }
 
-def withNodeEnv(Map args=[:], Closure body){
+def withNodeInDockerEnv(Map args=[:], Closure body){
   docker.image("${NODE_DOCKER_IMAGE}").inside(" --security-opt seccomp=${SECCOMP_FILE}"){
     withEnv(["HOME=${WORKSPACE}"]) {
+      body()
+    }
+  }
+}
+
+def withNodeEnv(Map args=[:], Closure body){
+  withEnv(["HOME=${WORKSPACE}"]) {
+    sh(label: 'install Node.js', script: '''
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
+      export NVM_DIR="${HOME}/.nvm"
+      [ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"
+      nvm install --lts
+      nvm version | head -n1 > .nvm-node-version
+    ''')
+    def node_version = readFile(file: '.nvm-node-version').trim()
+    withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){
       body()
     }
   }
