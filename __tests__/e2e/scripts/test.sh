@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 set -xe
 
-
-# formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
-
+if [ -z "${JENKINS_URL}" ]; then
+  # formatting
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+fi
 
 # Wait for synthetics docker to start
 ##################################################
 echo "" # newline
 echo "${bold}Waiting for synthetics docker to start...${normal}"
-until [ "`docker inspect -f {{.State.Running}} synthetics`" == "true" ]; do
+until [ "$(docker inspect -f {{.State.Running}} synthetics)" == "true" ]; do
     sleep 0.1;
 done;
 

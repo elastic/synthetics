@@ -10,9 +10,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
+if [ -z "${JENKINS_URL}" ]; then
+  # formatting
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+fi
 
 # paths
 E2E_DIR="./"
