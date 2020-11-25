@@ -1,0 +1,14 @@
+{
+  "name": "e2e-synthetics",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "test": "npm i && npm run setup &&  bash scripts/test.sh"
+  },
+  "devDependencies": {
+    "@elastic/synthetics": "file:../../",
+    "axios": "^0.21.0"
+  }
+}

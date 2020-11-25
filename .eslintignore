@@ -1,2 +1,3 @@
 dist
 examples
+__tests__/e2e/tmp/
