@@ -26,6 +26,6 @@ RUN  cd /usr/share/heartbeat/.node \\
       && mkdir node \\
       && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
-# Install the latest version of @elastic/synthetics, so heartbeat can
-# call the executable directly
-RUN npm i -g @elastic/synthetics@alpha
+# Install the latest version of @elastic/synthetics forcefully ignoring the previously
+# cached node_modules, hearbeat then calls the global executable to run test suites
+RUN npm i -g -f @elastic/synthetics

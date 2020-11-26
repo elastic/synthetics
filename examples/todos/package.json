@@ -5,7 +5,7 @@
   "scripts": {},
   "license": "MIT",
   "dependencies": {
-    "@elastic/synthetics": "^0.0.1-alpha.6",
+    "@elastic/synthetics": "*",
     "playwright-core": "^1.5.2"
   }
 }
