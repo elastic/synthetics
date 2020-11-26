@@ -54,6 +54,7 @@ export type RunOptions = {
   network?: boolean;
   outfd?: number;
   metrics?: boolean;
+  wsEndpoint?: string;
 };
 
 type BaseContext = {
@@ -121,7 +122,10 @@ export default class Runner {
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const start = getMonotonicTime();
-    const driver = await Gatherer.setupDriver(options.headless);
+    const driver = await Gatherer.setupDriver(
+      options.headless,
+      options.wsEndpoint
+    );
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
       start,
