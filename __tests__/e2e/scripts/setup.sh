@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -xe
 
 # variables
 
@@ -10,9 +10,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
+if [ -z "${JENKINS_URL}" ]; then
+  # formatting
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+fi
 
 # paths
 E2E_DIR="./"
@@ -32,4 +34,3 @@ echo "${bold}Starting elasticsearch , kibana and synthetics docker${normal}"
 echo "" # newline
 
 STACK_VERSION=7.10.0 docker-compose --file docker-compose.yml up --remove-orphans > ${TMP_DIR}/docker-logs.log 2>&1 &
-

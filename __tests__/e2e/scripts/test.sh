@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-set -e
+set -xe
 
-
-# formatting
-bold=$(tput bold)
-normal=$(tput sgr0)
-
+if [ -z "${JENKINS_URL}" ]; then
+  # formatting
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+  SLEEP_TIME="0.1"
+else
+  SLEEP_TIME="10"
+fi
 
 # Wait for synthetics docker to start
 ##################################################
 echo "" # newline
 echo "${bold}Waiting for synthetics docker to start...${normal}"
-until [ "`docker inspect -f {{.State.Running}} synthetics`" == "true" ]; do
-    sleep 0.1;
+until [ "$(docker inspect -f {{.State.Running}} synthetics)" == "true" ]; do
+  sleep ${SLEEP_TIME};
 done;
 
 echo "✅ Setup completed successfully. Running e2e tests..."
@@ -22,5 +25,3 @@ echo "✅ Setup completed successfully. Running e2e tests..."
 ##################################################
 
 npx @elastic/synthetics uptime.journey.ts
-
-

@@ -53,8 +53,7 @@ services:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     command:
-      -E output.elasticsearch.hosts=["elasticsearch:9200"]
-
+      -E output.elasticsearch.hosts=["elasticsearch:9200"] --strict.perms=false --environment container
     networks:
       - elastic
 
