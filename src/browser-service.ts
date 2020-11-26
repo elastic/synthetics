@@ -23,6 +23,7 @@
  *
  */
 
+import { URL } from 'url';
 import { createServer } from 'http';
 import { createProxyServer } from 'http-proxy';
 import { chromium } from 'playwright-chromium';
@@ -33,12 +34,10 @@ const proxyServer = createServer();
 proxyServer.on('upgrade', async function (req, socket, head) {
   const browserServer = await chromium.launchServer({ headless: true });
   const wsEndpoint = browserServer.wsEndpoint();
-  const parts = wsEndpoint.split('/');
-  const guid = parts.pop();
-  req.url = `/${guid}`;
-  const target = parts.join('/');
+  const { pathname, origin } = new URL(wsEndpoint);
+  req.url = pathname;
   console.log(`New browser: ${wsEndpoint}`);
-  proxy.ws(req, socket, head, { target });
+  proxy.ws(req, socket, head, { target: origin });
   const closeBrowser = async () => {
     await browserServer.close();
     console.log(`Socket closed: ${wsEndpoint}`);
