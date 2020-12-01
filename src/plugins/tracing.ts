@@ -43,8 +43,7 @@ export function filterFilmstrips(
     return (
       name === 'Screenshot' &&
       cat === 'disabled-by-default-devtools.screenshot' &&
-      args &&
-      args.snapshot
+      args?.snapshot
     );
   });
 
@@ -68,6 +67,10 @@ export class Tracing {
       'disabled-by-default-devtools.screenshot',
     ];
     await client.send('Tracing.start', {
+      /**
+       * Using `ReportEvents` makes gathering trace events
+       * much faster as opposed to using `ReturnAsStream` mode
+       */
       transferMode: 'ReportEvents',
       traceConfig: {
         includedCategories,
