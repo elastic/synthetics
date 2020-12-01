@@ -24,35 +24,36 @@
  */
 
 import { Page } from 'playwright-chromium';
+import { DefaultPluginOutput } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
-export interface BrowserMessage {
-  timestamp: number;
+export type BrowserMessage = {
   text: string;
   type: string;
-  step: { name: string; index: number };
-}
+} & DefaultPluginOutput;
 
 const defaultMessageLimit = 1000;
 
 export class BrowserConsole {
   private messages: BrowserMessage[] = [];
-  public currentStep: Partial<Step> = null;
+  _currentStep: Partial<Step> = null;
+
   private consoleEventListener = msg => {
-    if (this.currentStep) {
-      const type = msg.type();
-      if (type === 'error' || type === 'warning') {
-        const { name, index } = this.currentStep;
-        this.messages.push({
-          timestamp: getTimestamp(),
-          text: msg.text(),
-          type,
-          step: { name, index },
-        });
-        if (this.messages.length > defaultMessageLimit) {
-          this.messages.splice(0, 1);
-        }
+    if (!this._currentStep) {
+      return;
+    }
+    const type = msg.type();
+    if (type === 'error' || type === 'warning') {
+      const { name, index } = this._currentStep;
+      this.messages.push({
+        timestamp: getTimestamp(),
+        text: msg.text(),
+        type,
+        step: { name, index },
+      });
+      if (this.messages.length > defaultMessageLimit) {
+        this.messages.splice(0, 1);
       }
     }
   };
@@ -64,7 +65,7 @@ export class BrowserConsole {
   }
 
   stop() {
-    this.page.removeListener('console', this.consoleEventListener);
+    this.page.off('console', this.consoleEventListener);
     return this.messages;
   }
 }

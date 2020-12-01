@@ -94,6 +94,8 @@ export default class JSONReporter extends BaseReporter {
         if (networkinfo) {
           networkinfo.forEach(ni => {
             this.writeJSON('journey/network_info', journey, {
+              timestamp: ni.timestamp,
+              step: ni.step,
               payload: snakeCaseKeys(ni),
             });
           });

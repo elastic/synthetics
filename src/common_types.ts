@@ -24,6 +24,7 @@
  */
 
 import { Protocol } from 'playwright-chromium/types/protocol';
+import { Step } from './dsl';
 
 export type VoidCallback = () => void;
 
@@ -35,6 +36,11 @@ export type FilmStrip = {
   ts: number;
 };
 
+export type DefaultPluginOutput = {
+  step?: Partial<Step>;
+  timestamp: number;
+};
+
 export type NetworkInfo = {
   url: string;
   method: string;
@@ -42,7 +48,7 @@ export type NetworkInfo = {
   request: Protocol.Network.Request;
   response: Protocol.Network.Response;
   isNavigationRequest: boolean;
-  start: number;
-  end: number;
+  requestSentTime: number;
+  loadEndTime: number;
   status: number;
-};
+} & DefaultPluginOutput;
