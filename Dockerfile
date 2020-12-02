@@ -1,4 +1,5 @@
 ARG STACK_VERSION=7.10.0-synthetics
+ENV ELASTIC_SYNTHETICS_CAPABLE=true
 FROM docker.elastic.co/observability-ci/heartbeat:${STACK_VERSION}
 USER root
 RUN yum -y install epel-release && \
