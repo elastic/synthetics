@@ -42,7 +42,6 @@ describe('tracing', () => {
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
     const events = await tracer.stop(driver.client);
-    expect(events.toString('utf-8')).toContain('screenshot');
     const filmstrips = filterFilmstrips(events);
     expect(filmstrips).toMatchObject([
       {

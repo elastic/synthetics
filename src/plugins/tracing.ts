@@ -26,7 +26,7 @@
 import { CDPSession } from 'playwright-chromium';
 import { FilmStrip } from '../common_types';
 
-type TraceEvents = {
+type TraceEvent = {
   cat: string;
   name: string;
   args?: {
@@ -35,37 +35,17 @@ type TraceEvents = {
   ts: number;
 };
 
-export async function readProtocolStream(
-  client: CDPSession,
-  handle: string
-): Promise<Buffer> {
-  let eof = false;
-  const chunks = [];
-  while (!eof) {
-    const response = await client.send('IO.read', { handle });
-    eof = response.eof;
-    const chunk = Buffer.from(
-      response.data,
-      response.base64Encoded ? 'base64' : 'utf-8'
+export function filterFilmstrips(
+  traceEvents: Array<TraceEvent>
+): Array<FilmStrip> {
+  const events = traceEvents.filter(event => {
+    const { args, cat, name } = event;
+    return (
+      name === 'Screenshot' &&
+      cat === 'disabled-by-default-devtools.screenshot' &&
+      args?.snapshot
     );
-    chunks.push(chunk);
-  }
-  await client.send('IO.close', { handle });
-  return Buffer.concat(chunks);
-}
-
-export function filterFilmstrips(buffer: Buffer): Array<FilmStrip> {
-  const data = JSON.parse(buffer.toString('utf-8'));
-  const events = (data.traceEvents as TraceEvents[]).filter(
-    ({ args, cat, name }) => {
-      return (
-        name === 'Screenshot' &&
-        cat === 'disabled-by-default-devtools.screenshot' &&
-        args &&
-        args.snapshot
-      );
-    }
-  );
+  });
 
   return events.map(event => ({
     snapshot: event.args.snapshot,
@@ -80,26 +60,38 @@ export function filterFilmstrips(buffer: Buffer): Array<FilmStrip> {
  */
 export class Tracing {
   async start(client: CDPSession) {
-    const includedCategories = ['disabled-by-default-devtools.screenshot'];
-    const { categories } = await client.send('Tracing.getCategories');
-    const excludedCategories = categories.filter(
-      cat => !includedCategories.includes(cat)
-    );
-
+    const includedCategories = [
+      // exclude all default categories
+      '-*',
+      // capture screenshots
+      'disabled-by-default-devtools.screenshot',
+    ];
     await client.send('Tracing.start', {
-      transferMode: 'ReturnAsStream',
+      /**
+       * Using `ReportEvents` makes gathering trace events
+       * much faster as opposed to using `ReturnAsStream` mode
+       */
+      transferMode: 'ReportEvents',
       traceConfig: {
         includedCategories,
-        excludedCategories,
       },
     });
   }
 
   async stop(client: CDPSession) {
-    const [event] = await Promise.all([
-      new Promise(f => client.once('Tracing.tracingComplete', f)),
+    const events = [];
+    const collectListener = payload => events.push(...payload.value);
+    client.on('Tracing.dataCollected', collectListener);
+
+    const [traceEvents] = await Promise.all([
+      new Promise(resolve =>
+        client.once('Tracing.tracingComplete', () => {
+          client.off('Tracing.dataCollected', collectListener);
+          resolve(events);
+        })
+      ),
       client.send('Tracing.end'),
     ]);
-    return readProtocolStream(client, (event as any).stream);
+    return traceEvents as Array<TraceEvent>;
   }
 }
