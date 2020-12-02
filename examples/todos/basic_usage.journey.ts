@@ -28,3 +28,15 @@ journey('check that input placeholder is correct', async ({ page }) => {
     );
   });
 });
+
+journey('failing journey', async ({ page }) => {
+  step('go to app', async () => {
+    const path = 'file://' + join(__dirname, 'app', 'index.html');
+    await page.goto(path);
+  });
+
+  step('check title is present with wrong text', async () => {
+    const header = await page.$('h1');
+    deepStrictEqual(await header.textContent(), 'ThisIsNotTheTitle');
+  });
+});

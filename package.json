@@ -40,6 +40,7 @@
     "commander": "^6.0.0",
     "http-proxy": "^1.18.1",
     "kleur": "^4.1.1",
+    "playwright-core": "=1.6.2",
     "playwright-chromium": "=1.6.2",
     "snakecase-keys": "^3.2.0",
     "sonic-boom": "^1.1.0",

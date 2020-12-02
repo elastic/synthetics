@@ -28,8 +28,8 @@ import {
   chromium,
   ChromiumBrowser,
   ChromiumBrowserContext,
-  Page,
 } from 'playwright-chromium';
+import { Page } from 'playwright-core';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
 import { log } from './logger';
