@@ -52,12 +52,24 @@ export function generateTempPath() {
 }
 
 /**
- * As per the timings used in the Network Events from
- * Chrome devtools protocol
+ * We internally use the clock timing similar to the
+ * Chrome devtools protocol network events for
+ * journey and step start/end fields to make
+ * querying in the UI easier
  */
 export function getMonotonicTime() {
-  const hrTime = process.hrtime();
+  const hrTime = process.hrtime(); // [seconds, nanoseconds]
   return hrTime[0] * 1 + hrTime[1] / 1e9;
+}
+
+/**
+ * Converts the trace events timestamp field from the
+ * format -  hrTime[0] * 1e6 + Math.round(hrTime[1] / 1000) to
+ * the local internal timestamp similar to other event
+ * types (journey, step, etc)
+ */
+export function convertTraceTimestamp(ts: number) {
+  return ts / 1e6;
 }
 
 /**

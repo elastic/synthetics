@@ -46,8 +46,8 @@ describe('tracing', () => {
     expect(filmstrips).toMatchObject([
       {
         snapshot: expect.any(String),
-        name: 'Screenshot',
         ts: expect.any(Number),
+        startTime: expect.any(Number),
       },
     ]);
     await Gatherer.dispose(driver);

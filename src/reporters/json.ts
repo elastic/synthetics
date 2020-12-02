@@ -105,7 +105,7 @@ export default class JSONReporter extends BaseReporter {
               payload: {
                 index,
                 ...{
-                  name: strip.name,
+                  startTime: strip.startTime,
                   ts: strip.ts,
                 },
               },
