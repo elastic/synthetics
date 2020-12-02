@@ -34,7 +34,7 @@ import {
   NetworkInfo,
   VoidCallback,
 } from '../common_types';
-import { BrowserConsole, BrowserMessage, PluginManager } from '../plugins';
+import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
@@ -185,7 +185,7 @@ export default class Runner {
     const { metrics, screenshots } = options;
     const { driver, pluginManager } = context;
     try {
-      pluginManager.get(BrowserConsole).currentStep = step;
+      pluginManager.onStep(step);
       await step.callback();
       await driver.page.waitForLoadState('load');
       if (metrics) {

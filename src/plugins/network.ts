@@ -26,8 +26,11 @@
 import { CDPSession } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { NetworkInfo } from '../common_types';
+import { Step } from '../dsl';
+import { getTimestamp } from '../helpers';
 
 export class NetworkManager {
+  _currentStep: Partial<Step> = null;
   waterfallMap = new Map<string, NetworkInfo>();
 
   async start(client: CDPSession) {
@@ -50,14 +53,16 @@ export class NetworkManager {
     const isNavigationRequest = requestId == loaderId && type === 'Document';
 
     this.waterfallMap.set(requestId, {
+      step: this._currentStep,
+      timestamp: getTimestamp(),
       url,
       request,
       type,
       method,
-      start: timestamp,
+      requestSentTime: timestamp,
       isNavigationRequest,
       status: 0,
-      end: 0,
+      loadEndTime: 0,
       response: null,
     });
   }
@@ -89,7 +94,7 @@ export class NetworkManager {
     if (!record) {
       return;
     }
-    record.end = timestamp;
+    record.loadEndTime = timestamp;
   }
 
   _onLoadingFailed(event: Protocol.Network.loadingFailedPayload) {
@@ -98,7 +103,7 @@ export class NetworkManager {
     if (!record) {
       return;
     }
-    record.end = timestamp;
+    record.loadEndTime = timestamp;
   }
 
   stop() {

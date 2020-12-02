@@ -33,6 +33,7 @@ import {
   filterFilmstrips,
 } from './';
 import { Driver } from '../core/gatherer';
+import { Step } from '../dsl';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
 
@@ -76,6 +77,11 @@ export class PluginManager {
 
   get<T extends Plugin>(Type: new (...args: any[]) => T): T {
     return this.plugins.get(Type.name) as T;
+  }
+
+  onStep(step: Step) {
+    this.get(BrowserConsole) && (this.get(BrowserConsole)._currentStep = step);
+    this.get(NetworkManager) && (this.get(NetworkManager)._currentStep = step);
   }
 
   async output(): Promise<PluginOutput> {
