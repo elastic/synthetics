@@ -44,7 +44,10 @@ type TraceEvent = {
   args?: {
     snapshot: string;
   };
-  // monotonic clock timestamp of the event
+  /**
+   * Platform specific monotonic non decreasing clock time
+   * https://source.chromium.org/chromium/chromium/src/+/master:base/time/time.h;l=936;bpv=0;bpt=0
+   */
   ts: number;
 };
 

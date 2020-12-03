@@ -53,7 +53,7 @@ export function generateTempPath() {
 
 /**
  * We internally use the clock timing similar to the
- * Chrome devtools protocol network events for
+ * chrome devtools protocol network events for
  * journey and step start/end fields to make
  * querying in the UI easier
  */
@@ -65,8 +65,10 @@ export function getMonotonicTime() {
 /**
  * Converts the trace events timestamp field from the
  * format -  hrTime[0] * 1e6 + Math.round(hrTime[1] / 1000) to
- * the local internal timestamp similar to other event
- * types (journey, step, etc)
+ * the internal timestamp similar to other event types (journey, step, etc)
+ * Reference - https://github.com/samccone/chrome-trace-event/blob/d45bc8af3b5c53a3adfa2c5fc107b4fae054f579/lib/trace-event.ts#L21-L22
+ *
+ * Tested and verified on both Darwin and Linux
  */
 export function convertTraceTimestamp(ts: number) {
   return ts / 1e6;
