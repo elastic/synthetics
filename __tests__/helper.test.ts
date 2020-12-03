@@ -32,6 +32,7 @@ import {
   generateTempPath,
   rewriteErrorStack,
   findPWLogsIndexes,
+  convertTraceTimestamp,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -43,10 +44,16 @@ it('indent message with seperator', () => {
 
 it('get monotonic clock time', () => {
   jest.spyOn(process, 'hrtime').mockImplementation(() => {
-    return [1, 1e7];
+    return [392583, 998697551];
   });
   const elapsedTime = getMonotonicTime();
-  expect(elapsedTime).toBe(1.01);
+  expect(elapsedTime).toBe(392583.998697551);
+});
+
+it('convert trace timestamp to internal time', () => {
+  const traceTimestamp = 392583998697;
+  const elapsedTime = convertTraceTimestamp(traceTimestamp);
+  expect(elapsedTime).toBe(392583.998697);
 });
 
 it('format errors', () => {

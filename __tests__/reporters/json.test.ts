@@ -107,8 +107,8 @@ describe('json reporter', () => {
       filmstrips: [
         {
           snapshot: 'dummy',
-          name: 'screenshot',
-          ts: 1,
+          ts: 392583998697,
+          startTime: 392583.998697,
         },
       ],
       networkinfo: [

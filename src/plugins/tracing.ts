@@ -25,13 +25,29 @@
 
 import { CDPSession } from 'playwright-chromium';
 import { FilmStrip } from '../common_types';
+import { convertTraceTimestamp } from '../helpers';
 
+/**
+ * Trace Event Format
+ * https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU
+ */
 type TraceEvent = {
-  cat: string;
   name: string;
+  // event category
+  cat: string;
+  // process id
+  pid: number;
+  // thread id
+  tid: number;
+  // event phase
+  ph?: string;
   args?: {
     snapshot: string;
   };
+  /**
+   * Platform specific monotonic non decreasing clock time
+   * https://source.chromium.org/chromium/chromium/src/+/master:base/time/time.h;l=936;bpv=0;bpt=0
+   */
   ts: number;
 };
 
@@ -49,8 +65,8 @@ export function filterFilmstrips(
 
   return events.map(event => ({
     snapshot: event.args.snapshot,
-    name: event.name,
     ts: event.ts,
+    startTime: convertTraceTimestamp(event.ts),
   }));
 }
 
