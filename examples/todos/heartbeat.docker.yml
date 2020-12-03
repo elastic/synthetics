@@ -1,0 +1,11 @@
+---
+seccomp.enabled: false
+heartbeat.config.monitors:
+  path: "${path.config}/monitors.d/*.yml"
+  reload.enabled: false
+  reload.period: 5s
+
+heartbeat.synthetic_suites:
+- name: Todos
+  path: "/opt/synthetics-suites/todos"
+  schedule: "@every 1m"
