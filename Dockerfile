@@ -1,6 +1,6 @@
 ARG STACK_VERSION=7.10.0-synthetics
-ENV ELASTIC_SYNTHETICS_CAPABLE=true
 FROM docker.elastic.co/observability-ci/heartbeat:${STACK_VERSION}
+ENV ELASTIC_SYNTHETICS_CAPABLE=true
 USER root
 RUN yum -y install epel-release && \
     yum -y install atk cups gtk gdk xrandr pango.x86_64 libXcomposite.x86_64 libXcursor.x86_64 libXdamage.x86_64 \
