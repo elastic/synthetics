@@ -23,4 +23,4 @@ COPY ./ /opt/synthetics-suites/todos
 # Install NPM deps locally on this image
 # Please note that it's important to run both `npm install` AND `npm install playwright`
 # for more see this issue: https://github.com/microsoft/playwright/issues/3712
-RUN cd /opt/synthetics-suites/todos && npm install && npm install playwright
+RUN cd /opt/synthetics-suites/todos && npm install && npm install playwright-chromium
