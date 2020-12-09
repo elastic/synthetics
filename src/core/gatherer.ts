@@ -59,7 +59,7 @@ export class Gatherer {
       log('Gatherer: launching chrome');
 
       if (!sandbox) {
-        log(`Gatherer: chromium sandbox is disabled ${sandbox}`);
+        log('Gatherer: chromium sandbox is disabled');
       }
 
       browser = await chromium.launch({
