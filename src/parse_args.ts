@@ -64,7 +64,7 @@ program
     'specify a file descriptor for logs. Default is stdout',
     parseInt
   )
-  .option('--no-sandbox', 'disable chromium sandbox', parseInt)
+  .option('--no-sandbox', 'disable chromium sandbox')
   .version(version)
   .description('Run synthetic tests');
 
