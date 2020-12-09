@@ -45,8 +45,8 @@ const resolvedCwd = cwd();
  * namespace - synthetics
  */
 const namespace = 'synthetics';
-process.env.DEBUG =
-  process.env.DEBUG === namespace || (program.debug ? program.debug : '');
+process.env.DEBUG = (process.env.DEBUG === namespace ||
+  (program.debug ? program.debug : '')) as string;
 
 const loadInlineScript = source => {
   const scriptFn = new Function('step', 'page', 'browser', 'params', source);
@@ -164,6 +164,7 @@ async function prepareSuites(inputs: string[]) {
     pauseOnError: program.pauseOnError,
     outfd: program.outfd,
     metrics: program.metrics,
+    sandbox: program.sandbox,
   });
 })().catch(e => {
   console.error(e);

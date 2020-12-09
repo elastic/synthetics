@@ -48,7 +48,8 @@ export type Driver = {
 export class Gatherer {
   static async setupDriver(
     headless?: boolean,
-    wsEndpoint?: string
+    wsEndpoint?: string,
+    sandbox = true
   ): Promise<Driver> {
     let browser: ChromiumBrowser;
     if (wsEndpoint) {
@@ -56,7 +57,15 @@ export class Gatherer {
       browser = await chromium.connect({ wsEndpoint });
     } else {
       log('Gatherer: launching chrome');
-      browser = await chromium.launch({ headless });
+
+      if (!sandbox) {
+        log(`Gatherer: chromium sandbox is disabled ${sandbox}`);
+      }
+
+      browser = await chromium.launch({
+        headless,
+        chromiumSandbox: sandbox,
+      });
     }
     const context = await browser.newContext();
     const page = await context.newPage();

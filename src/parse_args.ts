@@ -24,6 +24,7 @@
  */
 
 import { program } from 'commander';
+import { CliArgs } from './common_types';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -63,10 +64,11 @@ program
     'specify a file descriptor for logs. Default is stdout',
     parseInt
   )
+  .option('--no-sandbox', 'disable chromium sandbox', parseInt)
   .version(version)
   .description('Run synthetic tests');
 
 export const parseArgs = () => {
   program.parse(process.argv);
-  return program;
+  return (program as unknown) as CliArgs;
 };
