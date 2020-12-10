@@ -43,6 +43,12 @@ describe('network', () => {
     await driver.page.goto(server.TEST_PAGE);
     const netinfo = await network.stop();
     expect(netinfo.length).toBeGreaterThan(0);
+    expect(netinfo[0].timings).toMatchObject({
+      dns: expect.any(Number),
+      total: expect.any(Number),
+      wait: expect.any(Number),
+      receive: expect.any(Number),
+    });
     await Gatherer.dispose(driver);
   });
 });
