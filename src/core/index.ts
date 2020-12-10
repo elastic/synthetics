@@ -37,7 +37,7 @@ if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
 }
 
-export const runner = global[SYNTHETICS_RUNNER];
+export const runner: Runner = global[SYNTHETICS_RUNNER];
 
 export const journey = (
   options: JourneyOptions | string,

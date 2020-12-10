@@ -55,6 +55,7 @@ export type RunOptions = {
   outfd?: number;
   metrics?: boolean;
   wsEndpoint?: string;
+  sandbox?: boolean;
 };
 
 type BaseContext = {
@@ -124,7 +125,8 @@ export default class Runner {
     const start = getMonotonicTime();
     const driver = await Gatherer.setupDriver(
       options.headless,
-      options.wsEndpoint
+      options.wsEndpoint,
+      options.sandbox
     );
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
