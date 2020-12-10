@@ -20,13 +20,15 @@ else
 	IMAGE=$VERSION
 fi
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 echo "Using image '$IMAGE' with extra args: $HEARTBEAT_ARGS"
 docker run \
   --rm \
   --name=heartbeat \
   --user=heartbeat \
   --net=host \
-  --security-opt seccomp=seccomp_profile.json \
+  --security-opt seccomp=$SCRIPT_DIR/seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
   --volume="$(pwd)/../../:/opt/elastic-synthetics:rw" \
   $IMAGE \

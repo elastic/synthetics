@@ -7,5 +7,6 @@ heartbeat.config.monitors:
 
 heartbeat.synthetic_suites:
 - name: Todos
-  path: "/opt/synthetics-suites/todos"
+  # SUITES_DIR is an environment var provided by the docker container
+  path: "${SUITES_DIR}/todos"
   schedule: "@every 1m"

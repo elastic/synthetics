@@ -1,3 +1,4 @@
+#!/bin/sh
 # This demonstrates building and tagging a custom offline docker heartbeat image with synthetics
 # with all dependencies pre-bundled.
 

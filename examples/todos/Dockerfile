@@ -4,7 +4,8 @@
 
 # Use our synthetics image as a base.
 ARG STACK_VERSION=latest
-FROM docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
+#FROM docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
+FROM heartbeat-synthetics-local
 
 # This flag variable will prevent heartbeat from running `npm i` or
 # similar commands that depend on an internet connection.
@@ -17,11 +18,11 @@ ENV ELASTIC_SYNTHETICS_OFFLINE=true
 # to do in this manner.
 COPY heartbeat.docker.yml /usr/share/heartbeat/heartbeat.yml
 
-RUN mkdir -p ~/synthetics-suites/todos
+RUN mkdir -p $SUITES_DIR/todos
 # Copy your custom synthetics tests into a folder on the image
-COPY ./ ~/synthetics-suites/todos/
+COPY ./* $SUITES_DIR/todos/
 
 # Install NPM deps locally on this image
 # Please note that it's important to run both `npm install` AND `npm install playwright`
 # for more see this issue: https://github.com/microsoft/playwright/issues/3712
-RUN cd ~/synthetics-suites/todos && npm install && npm install playwright-chromium
+RUN cd $SUITES_DIR/todos && npm install && npm install playwright-chromium
