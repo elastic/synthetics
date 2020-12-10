@@ -4,8 +4,10 @@
 
 # Use our synthetics image as a base.
 ARG STACK_VERSION=latest
-#FROM docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
-FROM heartbeat-synthetics-local
+FROM docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
+# Use the line below if you're using a custom base image, usually only for
+# developers
+#FROM heartbeat-synthetics-local
 
 # This flag variable will prevent heartbeat from running `npm i` or
 # similar commands that depend on an internet connection.
