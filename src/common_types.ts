@@ -50,5 +50,18 @@ export type NetworkInfo = {
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
+  responseReceivedTime: number;
   status: number;
+  timings?: {
+    blocked: number;
+    queueing: number;
+    dns: number;
+    ssl: number;
+    proxy: number;
+    connect: number;
+    send: number;
+    wait: number;
+    receive: number;
+    total: number;
+  };
 } & DefaultPluginOutput;
