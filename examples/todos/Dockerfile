@@ -17,10 +17,11 @@ ENV ELASTIC_SYNTHETICS_OFFLINE=true
 # to do in this manner.
 COPY heartbeat.docker.yml /usr/share/heartbeat/heartbeat.yml
 
+RUN mkdir -p ~/synthetics-suites/todos
 # Copy your custom synthetics tests into a folder on the image
-COPY ./ /opt/synthetics-suites/todos
+COPY ./ ~/synthetics-suites/todos/
 
 # Install NPM deps locally on this image
 # Please note that it's important to run both `npm install` AND `npm install playwright`
 # for more see this issue: https://github.com/microsoft/playwright/issues/3712
-RUN cd /opt/synthetics-suites/todos && npm install && npm install playwright-chromium
+RUN cd ~/synthetics-suites/todos && npm install && npm install playwright-chromium

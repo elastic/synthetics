@@ -20,6 +20,7 @@ RUN echo /usr/share/heartbeat/.node \\
       /usr/share/heartbeat/.npm \\
       /usr/share/heartbeat/.cache \\
       /usr/share/heartbeat/.config \\
+      /usr/share/heartbeat/suites \\
       /opt/elastic-synthetics | xargs -IDIR sh -c "mkdir DIR && chown -R heartbeat DIR"
 ENV NODE_PATH=/usr/share/heartbeat/.node
 USER heartbeat
