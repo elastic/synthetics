@@ -81,6 +81,7 @@ describe('Run - cli args', () => {
       screenshots: undefined,
       outfd: undefined,
       reporter: undefined,
+      sandbox: undefined,
     });
   });
 
