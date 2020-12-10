@@ -149,10 +149,6 @@ export class NetworkManager {
       loadEndTime,
       responseReceivedTime,
     } = record;
-    const { timing } = response;
-    const issueTime = requestSentTime;
-    const startTime = timing.requestTime;
-
     const result: NetworkInfo['timings'] = {
       blocked: -1,
       queueing: -1,
@@ -165,6 +161,10 @@ export class NetworkManager {
       receive: -1,
       total: -1,
     };
+    if (response == null) {
+      return result;
+    }
+
     const toMilliseconds = (time: number) => (time === -1 ? -1 : time * 1000);
     const calculateDiffInMs = (
       name: keyof NetworkInfo['timings'],
@@ -200,10 +200,13 @@ export class NetworkManager {
         );
       }
     };
+    const timing = response.timing;
     const actResRcvdTime = this.getResponseReceivedTime(
-      response.timing,
+      timing,
       responseReceivedTime
     );
+    const issueTime = requestSentTime;
+    const startTime = timing == null ? -1 : timing.requestTime;
     const endTime = firstPositive([loadEndTime, actResRcvdTime]) || startTime;
 
     if (timing == null) {
