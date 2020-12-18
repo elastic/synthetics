@@ -22,7 +22,7 @@ COPY heartbeat.docker.yml /usr/share/heartbeat/heartbeat.yml
 
 RUN mkdir -p $SUITES_DIR/todos
 # Copy your custom synthetics tests into a folder on the image
-COPY ./* $SUITES_DIR/todos/
+COPY . $SUITES_DIR/todos/
 
 # Install NPM deps locally on this image
 # Please note that it's important to run both `npm install` AND `npm install playwright`
