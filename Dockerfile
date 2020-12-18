@@ -15,12 +15,15 @@ ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
 RUN chmod +x /tini
 ENTRYPOINT ["/tini", "--", "/usr/local/bin/docker-entrypoint"]
 
+ENV SUITES_DIR=/usr/share/heartbeat/suites
+
 # or docker run your-image /your/program ...
 RUN echo /usr/share/heartbeat/.node \\
       /usr/share/heartbeat/.npm \\
       /usr/share/heartbeat/.cache \\
       /usr/share/heartbeat/.config \\
-      /opt/elastic-synthetics | xargs -IDIR sh -c "mkdir DIR && chown -R heartbeat DIR"
+      $SUITES_DIR \\
+      /opt/elastic-synthetics | xargs -IDIR sh -c "mkdir DIR && chown -R heartbeat:heartbeat DIR"
 ENV NODE_PATH=/usr/share/heartbeat/.node
 USER heartbeat
 RUN  cd /usr/share/heartbeat/.node \\
