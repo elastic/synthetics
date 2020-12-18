@@ -6,6 +6,6 @@
   "license": "MIT",
   "dependencies": {
     "@elastic/synthetics": "*",
-    "playwright-chromium": "^1.7.0"
+    "playwright-core": "=1.6.2"
   }
 }
