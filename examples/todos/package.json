@@ -5,6 +5,7 @@
   "scripts": {},
   "license": "MIT",
   "dependencies": {
-    "@elastic/synthetics": "*"
+    "@elastic/synthetics": "*",
+    "playwright-chromium": "^1.7.0"
   }
 }
