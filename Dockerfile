@@ -18,16 +18,16 @@ ENTRYPOINT ["/tini", "--", "/usr/local/bin/docker-entrypoint"]
 ENV SUITES_DIR=/usr/share/heartbeat/suites
 
 # or docker run your-image /your/program ...
-RUN echo /usr/share/heartbeat/.node \\
-      /usr/share/heartbeat/.npm \\
-      /usr/share/heartbeat/.cache \\
-      /usr/share/heartbeat/.config \\
-      $SUITES_DIR \\
+RUN echo /usr/share/heartbeat/.node \
+      /usr/share/heartbeat/.npm \
+      /usr/share/heartbeat/.cache \
+      /usr/share/heartbeat/.config \
+      $SUITES_DIR \
       /opt/elastic-synthetics | xargs -IDIR sh -c "mkdir DIR && chown -R heartbeat:heartbeat DIR"
 ENV NODE_PATH=/usr/share/heartbeat/.node
 USER heartbeat
-RUN  cd /usr/share/heartbeat/.node \\
-      && mkdir node \\
+RUN  cd /usr/share/heartbeat/.node \
+      && mkdir node \
       && curl https://nodejs.org/dist/v12.18.4/node-v12.18.4-linux-x64.tar.xz | tar -xJ --strip 1 -C node
 ENV PATH="/usr/share/heartbeat/.node/node/bin:$PATH"
 # Install the latest version of @elastic/synthetics forcefully ignoring the previously
