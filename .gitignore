@@ -111,3 +111,4 @@ tmp
 __tests__/e2e/tmp/
 
 .idea/
+seccomp/build

@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  seccomp-profiler:
+    build: ./
+    working_dir: /home/synthetics/seccomp
+    command: bash -c "sh /home/synthetics/seccomp/profile.sh"
+    stdin_open: true
+    tty: true
+    privileged: true
+    volumes:
+      - ..:/home/synthetics

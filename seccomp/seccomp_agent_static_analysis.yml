@@ -1,0 +1,105 @@
+seccomp:
+  default_action: log
+  syscalls:
+  - names:
+    - stat #4
+    - mprotect #10
+    - brk #12
+    - access #21
+    - socket #41
+    - connect #42
+    - bind #49
+    - getsockname #51
+    - gettimeofday #96
+    - getuid #102
+    - getgid #104
+    - geteuid #107
+    - getegid #108
+    - set_tid_address #218
+    - clock_gettime #228
+    - epoll_wait #232
+    - set_robust_list #273
+    - prlimit64 #302
+    - statx #332
+    action: allow
+  - names:
+    - accept
+    - accept4
+    - arch_prctl
+    - capget
+    - capset
+    - chdir
+    - chroot
+    - clone
+    - close
+    - copy_file_range
+    - dup
+    - dup2
+    - dup3
+    - epoll_create
+    - epoll_create1
+    - epoll_ctl
+    - epoll_pwait
+    - execve
+    - exit
+    - exit_group
+    - fchdir
+    - fchmod
+    - fchown
+    - fcntl
+    - fstat
+    - fsync
+    - ftruncate
+    - futex
+    - getdents64
+    - getpid
+    - getsockopt
+    - gettid
+    - ioctl
+    - kill
+    - lseek
+    - madvise
+    - mincore
+    - mlock
+    - mmap
+    - mount
+    - munmap
+    - nanosleep
+    - newfstatat
+    - openat
+    - pipe
+    - pipe2
+    - prctl
+    - pread64
+    - ptrace
+    - pwrite64
+    - read
+    - readlinkat
+    - recvfrom
+    - recvmsg
+    - rt_sigaction
+    - rt_sigprocmask
+    - rt_sigreturn
+    - sched_getaffinity
+    - sched_yield
+    - seccomp
+    - sendmsg
+    - sendto
+    - setgid
+    - setgroups
+    - setitimer
+    - setpgid
+    - setsid
+    - setsockopt
+    - setuid
+    - shutdown
+    - sigaltstack
+    - tgkill
+    - uname
+    - unshare
+    - wait4
+    - waitid
+    - write
+    - writev
+    action: allow
+
