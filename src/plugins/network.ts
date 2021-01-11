@@ -84,7 +84,10 @@ export class NetworkManager {
        * the redirect request with original request
        */
       this.waterfallMap.delete(requestId);
-      this.waterfallMap.set(`${requestId}:redirect`, redirectedRecord);
+      this.waterfallMap.set(
+        `redirect:${timestamp}:${requestId}`,
+        redirectedRecord
+      );
     }
 
     this.waterfallMap.set(requestId, {
