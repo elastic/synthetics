@@ -26,6 +26,7 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { NetworkManager } from '../../src/plugins/network';
 import { Server } from '../../utils/server';
+import { wsEndpoint } from '../../utils/test-config';
 
 describe('network', () => {
   let server: Server;
@@ -36,8 +37,8 @@ describe('network', () => {
     await server.close();
   });
 
-  it('capture network info', async () => {
-    const driver = await Gatherer.setupDriver();
+  it('should capture network info', async () => {
+    const driver = await Gatherer.setupDriver(true, wsEndpoint);
     const network = new NetworkManager();
     await network.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);

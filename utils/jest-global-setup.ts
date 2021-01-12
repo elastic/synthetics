@@ -23,28 +23,28 @@
  *
  */
 
-import { Gatherer } from '../../src/core/gatherer';
-import { PluginManager } from '../../src/plugins';
-import { NetworkManager } from '../../src/plugins/network';
-import { wsEndpoint } from '../../utils/test-config';
+import { spawn } from 'child_process';
+import { wsEndpoint } from './test-config';
 
-jest.mock('../../src/plugins/network');
+module.exports = async () => {
+  if (wsEndpoint) {
+    return new Promise((resolve, reject) => {
+      console.log(`\nRunning BrowserService ${wsEndpoint}`);
+      const process = spawn('node', ['./dist/browser-service.js']);
+      (global as any).__browserServiceProcess = process;
+      process.stdout.on('data', data => {
+        if (data.indexOf('Listening on port: 9322') >= 0) {
+          console.log(`${data}`);
+          resolve(process);
+        }
+      });
 
-describe('Gatherer', () => {
-  it('boot and dispose driver', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
-    expect(typeof driver.page.goto).toBe('function');
-    await Gatherer.dispose(driver);
-  });
-
-  it('begin recording based on flags', async () => {
-    const driver = await Gatherer.setupDriver(true);
-    const pluginManager = await Gatherer.beginRecording(driver, {
-      network: true,
+      process.stderr.on('data', data => {
+        const message = `BrowserService: ${data}`;
+        reject(message);
+      });
     });
-    expect(pluginManager).toBeInstanceOf(PluginManager);
-    const network = pluginManager.get(NetworkManager);
-    expect(network.start).toHaveBeenCalled();
-    await Gatherer.dispose(driver);
-  });
-});
+  } else {
+    console.log(`\nRunning without BrowserService`);
+  }
+};

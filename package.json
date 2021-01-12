@@ -11,7 +11,9 @@
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
-    "test": "jest",
+    "test": "npm run test:unit && npm run test:browser-service",
+    "test:unit": "jest",
+    "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
     "coverage": "jest --coverage",
     "docker": "./build-docker.sh"
   },

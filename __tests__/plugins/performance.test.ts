@@ -26,6 +26,7 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { PerformanceManager } from '../../src/plugins/performance';
 import { Server } from '../../utils/server';
+import { wsEndpoint } from '../../utils/test-config';
 
 describe('performance', () => {
   let server: Server;
@@ -37,7 +38,7 @@ describe('performance', () => {
   });
 
   it('should capture page metrics', async () => {
-    const driver = await Gatherer.setupDriver();
+    const driver = await Gatherer.setupDriver(true, wsEndpoint);
     const performance = new PerformanceManager(driver.client);
     await performance.start();
     await driver.page.goto(server.TEST_PAGE);

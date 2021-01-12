@@ -30,5 +30,7 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
   testPathIgnorePatterns: ['dist'],
-  modulePathIgnorePatterns: ['/e2e/']
+  modulePathIgnorePatterns: ['/e2e/'],
+  globalSetup: './utils/jest-global-setup.ts',
+  globalTeardown: './utils/jest-global-teardown.ts',
 };

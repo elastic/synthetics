@@ -26,6 +26,7 @@
 import { Tracing, filterFilmstrips } from '../../src/plugins/tracing';
 import { Gatherer } from '../../src/core/gatherer';
 import { Server } from '../../utils/server';
+import { wsEndpoint } from '../../utils/test-config';
 
 describe('tracing', () => {
   let server: Server;
@@ -37,7 +38,7 @@ describe('tracing', () => {
   });
 
   it('should capture filmstrips', async () => {
-    const driver = await Gatherer.setupDriver();
+    const driver = await Gatherer.setupDriver(true, wsEndpoint);
     const tracer = new Tracing();
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
