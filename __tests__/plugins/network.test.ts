@@ -36,7 +36,7 @@ describe('network', () => {
     await server.close();
   });
 
-  it('should capture network info', async () => {
+  it('capture network info', async () => {
     const driver = await Gatherer.setupDriver();
     const network = new NetworkManager();
     await network.start(driver.client);
@@ -49,6 +49,27 @@ describe('network', () => {
       wait: expect.any(Number),
       receive: expect.any(Number),
     });
+    await Gatherer.dispose(driver);
+  });
+
+  it('produce distinct events for redirects', async () => {
+    const driver = await Gatherer.setupDriver();
+    const network = new NetworkManager();
+    await network.start(driver.client);
+    /**
+     * Set up two level of redirects
+     */
+    server.setRedirect('/route1', '/route2');
+    server.setRedirect('/route2', '/route3');
+    server.route('/route3', (req, res) => {
+      res.end('route3');
+    });
+    await driver.page.goto(server.PREFIX + '/route1');
+    const netinfo = await network.stop();
+    expect(netinfo.length).toEqual(3);
+    expect(netinfo[0].status).toBe(302);
+    expect(netinfo[1].status).toBe(302);
+    expect(netinfo[2].status).toBe(200);
     await Gatherer.dispose(driver);
   });
 });

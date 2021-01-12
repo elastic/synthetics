@@ -51,6 +51,44 @@ export class NetworkManager {
     const { requestId, request, timestamp, type, loaderId } = event;
     const { url, method } = request;
     const isNavigationRequest = requestId == loaderId && type === 'Document';
+    const record = this.waterfallMap.get(requestId);
+    /**
+     * On redirects, another `requestWillBeSent` event will be fired for the
+     * same requestId. We calculate the timings for the redirect request using
+     * the `redirectedResponse` from the redirected request.
+     */
+    if (record) {
+      if (event.redirectResponse) {
+        const response = event.redirectResponse;
+        const data = Object.assign(event, {
+          type: event.type,
+          response,
+          encodedDataLength: response.encodedDataLength,
+        });
+        this._onResponseReceived(data);
+        this._onLoadingFinished(data);
+      } else {
+        /**
+         * Edge case, we handle it to proceed with next navigation
+         */
+        this._onLoadingFailed(
+          Object.assign(event, {
+            type: event.type,
+            errorText: 'redirectResponse data is not available',
+          })
+        );
+      }
+      const redirectedRecord = this.waterfallMap.get(requestId);
+      /**
+       * Rewrite the map with new redirect id to not reset
+       * the redirect request with original request
+       */
+      this.waterfallMap.delete(requestId);
+      this.waterfallMap.set(
+        `redirect:${timestamp}:${requestId}`,
+        redirectedRecord
+      );
+    }
 
     this.waterfallMap.set(requestId, {
       step: this._currentStep,

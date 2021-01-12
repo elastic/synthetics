@@ -30,6 +30,7 @@ import { join } from 'path';
 import { AddressInfo } from 'net';
 
 export class Server {
+  PREFIX: string;
   TEST_PAGE: string;
   _server: http.Server;
   _routes = new Map<string, RequestListener>();
@@ -45,7 +46,15 @@ export class Server {
     this._server = http.createServer(this._onRequest.bind(this));
     this._server.listen(0);
     const { port } = this._server.address() as AddressInfo;
-    this.TEST_PAGE = `http://localhost:${port}/index.html`;
+    this.PREFIX = `http://localhost:${port}`;
+    this.TEST_PAGE = `${this.PREFIX}/index.html`;
+  }
+
+  setRedirect(from, to) {
+    this.route(from, (req, res) => {
+      res.writeHead(302, { location: to });
+      res.end();
+    });
   }
 
   route(path, handler: RequestListener) {
