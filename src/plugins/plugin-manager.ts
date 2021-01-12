@@ -23,25 +23,17 @@
  *
  */
 
-import { NetworkInfo, FilmStrip } from '../common_types';
+import { PluginOutput } from '../common_types';
 import {
   BrowserConsole,
-  BrowserMessage,
   NetworkManager,
   PerformanceManager,
   Tracing,
-  filterFilmstrips,
 } from './';
 import { Driver } from '../core/gatherer';
 import { Step } from '../dsl';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-
-type PluginOutput = {
-  filmstrips?: Array<FilmStrip>;
-  networkinfo?: Array<NetworkInfo>;
-  browserconsole?: Array<BrowserMessage>;
-};
 
 type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
 
@@ -85,17 +77,13 @@ export class PluginManager {
   }
 
   async output(): Promise<PluginOutput> {
-    const data = {
-      filmstrips: [],
-      networkinfo: [],
-      browserconsole: null,
-    };
+    const data: PluginOutput = {};
     for (const [, plugin] of this.plugins) {
       if (plugin instanceof NetworkManager) {
         data.networkinfo = plugin.stop();
       } else if (plugin instanceof Tracing) {
         const result = await plugin.stop(this.driver.client);
-        data.filmstrips = filterFilmstrips(result);
+        Object.assign(data, { ...result });
       } else if (plugin instanceof BrowserConsole) {
         data.browserconsole = plugin.stop();
       }

@@ -24,54 +24,10 @@
  */
 
 import { CDPSession } from 'playwright-chromium';
-import { FilmStrip } from '../common_types';
-import { convertTraceTimestamp } from '../helpers';
+import { TraceProcessor } from '../sdk/trace-processor';
 
 /**
- * Trace Event Format
- * https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU
- */
-type TraceEvent = {
-  name: string;
-  // event category
-  cat: string;
-  // process id
-  pid: number;
-  // thread id
-  tid: number;
-  // event phase
-  ph?: string;
-  args?: {
-    snapshot: string;
-  };
-  /**
-   * Platform specific monotonic non decreasing clock time
-   * https://source.chromium.org/chromium/chromium/src/+/master:base/time/time.h;l=936;bpv=0;bpt=0
-   */
-  ts: number;
-};
-
-export function filterFilmstrips(
-  traceEvents: Array<TraceEvent>
-): Array<FilmStrip> {
-  const events = traceEvents.filter(event => {
-    const { args, cat, name } = event;
-    return (
-      name === 'Screenshot' &&
-      cat === 'disabled-by-default-devtools.screenshot' &&
-      args?.snapshot
-    );
-  });
-
-  return events.map(event => ({
-    snapshot: event.args.snapshot,
-    ts: event.ts,
-    startTime: convertTraceTimestamp(event.ts),
-  }));
-}
-
-/**
- * Custom Tracer that only traces the filmstrips
+ * Custom Tracer that listenes from events from specified categories
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  */
 export class Tracing {
@@ -79,7 +35,17 @@ export class Tracing {
     const includedCategories = [
       // exclude all default categories
       '-*',
-      // capture screenshots
+      // Used instead of 'toplevel' in Chrome 71+
+      'disabled-by-default-lighthouse',
+      // Cumulative Layout Shift metric
+      'loading',
+      // UserTiming marks/measures
+      'blink.user_timing',
+      // Most of the events we need are from these two categories
+      // Includes FCP, LCP, Main thread frames, process, etc.
+      'devtools.timeline',
+      'disabled-by-default-devtools.timeline',
+      // capture screenshots - up to 450 max for each trace (https://goo.gl/rBfhn4)
       'disabled-by-default-devtools.screenshot',
     ];
     await client.send('Tracing.start', {
@@ -108,6 +74,6 @@ export class Tracing {
       ),
       client.send('Tracing.end'),
     ]);
-    return traceEvents as Array<TraceEvent>;
+    return TraceProcessor.computeTraceOfTab(traceEvents);
   }
 }

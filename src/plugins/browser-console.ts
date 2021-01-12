@@ -24,14 +24,9 @@
  */
 
 import { Page } from 'playwright-chromium';
-import { DefaultPluginOutput } from '../common_types';
+import { BrowserMessage } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
-
-export type BrowserMessage = {
-  text: string;
-  type: string;
-} & DefaultPluginOutput;
 
 const defaultMessageLimit = 1000;
 

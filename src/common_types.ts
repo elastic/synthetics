@@ -37,10 +37,20 @@ export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 
-export type FilmStrip = {
-  snapshot: string;
+export type TraceOutput = {
   ts: number;
+  type?: string;
+  name?: string;
   startTime: number;
+};
+
+export type FilmStrip = TraceOutput & {
+  snapshot: string;
+};
+
+export type PerformanceMeasure = TraceOutput & {
+  endTime: number;
+  duration: number;
 };
 
 export type DefaultPluginOutput = {
@@ -81,6 +91,19 @@ export type NetworkInfo = {
   };
 } & DefaultPluginOutput;
 
+export type BrowserMessage = {
+  text: string;
+  type: string;
+} & DefaultPluginOutput;
+
+export type PluginOutput = {
+  filmstrips?: Array<FilmStrip>;
+  userTiming?: Array<TraceOutput | PerformanceMeasure>;
+  experience?: Array<TraceOutput>;
+  networkinfo?: Array<NetworkInfo>;
+  browserconsole?: Array<BrowserMessage>;
+};
+
 export type CliArgs = {
   config?: string;
   environment?: string;
@@ -88,7 +111,7 @@ export type CliArgs = {
   headless?: boolean;
   screenshots?: boolean;
   metrics?: boolean;
-  filmstrips?: boolean;
+  trace?: boolean;
   dryRun?: boolean;
   journeyName?: string;
   network?: boolean;

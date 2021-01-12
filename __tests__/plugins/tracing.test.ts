@@ -23,7 +23,7 @@
  *
  */
 
-import { Tracing, filterFilmstrips } from '../../src/plugins/tracing';
+import { Tracing } from '../../src/plugins/tracing';
 import { Gatherer } from '../../src/core/gatherer';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
@@ -47,9 +47,9 @@ describe('tracing', () => {
      * trace events
      */
     await driver.page.waitForTimeout(100);
-    const events = await tracer.stop(driver.client);
+    const {filmstrips} = await tracer.stop(driver.client);
     await Gatherer.stop();
-    const filmstrips = filterFilmstrips(events);
+    await Gatherer.dispose(driver);
     expect(filmstrips.length).toBeGreaterThan(0);
     expect(filmstrips[0]).toMatchObject({
       snapshot: expect.any(String),

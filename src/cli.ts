@@ -186,6 +186,7 @@ async function prepareSuites(inputs: string[]) {
     outfd: options.outfd,
     metrics: options.metrics,
     sandbox: options.sandbox,
+    trace: options.trace,
   });
 
   /**

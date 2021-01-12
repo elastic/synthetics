@@ -43,6 +43,7 @@ type OutputType =
   | 'journey/network_info'
   | 'journey/filmstrips'
   | 'journey/browserconsole'
+  | 'journey/timing'
   | 'journey/end';
 
 type Payload = {
@@ -299,6 +300,8 @@ export default class JSONReporter extends BaseReporter {
         filmstrips,
         networkinfo,
         browserconsole,
+        userTiming,
+        experience,
         status,
         error,
       }) => {
@@ -340,6 +343,21 @@ export default class JSONReporter extends BaseReporter {
               timestamp,
               step,
               payload: { text, type } as Payload,
+            });
+          });
+        }
+        const timings = userTiming.concat(experience);
+        if (timings.length > 0) {
+          timings.forEach(({ startTime, ts, name, type }) => {
+            this.writeJSON({
+              type: 'journey/timing',
+              journey,
+              payload: {
+                name,
+                type,
+                startTime,
+                ts,
+              },
             });
           });
         }

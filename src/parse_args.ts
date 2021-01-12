@@ -64,7 +64,7 @@ program
     'pause on error until a keypress is made in the console. Useful during development'
   )
   .option('--screenshots', 'take screenshot for each step')
-  .option('--filmstrips', 'record detailed filmstrip info for all journeys')
+  .option('--trace', 'record chrome trace events for all journeys')
   .option('--network', 'capture network information for all journeys')
   .option('--metrics', 'capture performance metrics for each step')
   .option(

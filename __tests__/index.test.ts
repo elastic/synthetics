@@ -67,7 +67,7 @@ describe('Run', () => {
       },
       headless: false,
       screenshots: true,
-      filmstrips: false,
+      trace: false,
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,

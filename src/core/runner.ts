@@ -30,14 +30,13 @@ import { reporters, Reporter } from '../reporters';
 import { getMonotonicTime, getTimestamp, runParallel } from '../helpers';
 import {
   StatusValue,
-  FilmStrip,
-  NetworkInfo,
   HooksCallback,
   Params,
+  PluginOutput,
   CliArgs,
   HooksArgs,
 } from '../common_types';
-import { BrowserMessage, PluginManager } from '../plugins';
+import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
@@ -96,11 +95,9 @@ interface Events {
     params: Params;
   };
   'journey:end': BaseContext &
-    JourneyResult & {
+    JourneyResult &
+    PluginOutput & {
       journey: Journey;
-      filmstrips?: Array<FilmStrip>;
-      networkinfo?: Array<NetworkInfo>;
-      browserconsole?: Array<BrowserMessage>;
     };
   'step:start': { journey: Journey; step: Step };
   'step:end': StepResult & {
@@ -265,8 +262,7 @@ export default class Runner {
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
     const { pluginManager, start, params, status, error } = result;
-    const { filmstrips, networkinfo, browserconsole } =
-      await pluginManager.output();
+    const pluginOutput = await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,
@@ -274,9 +270,8 @@ export default class Runner {
       params,
       start,
       end: getMonotonicTime(),
-      filmstrips,
-      networkinfo,
-      browserconsole: status == 'failed' ? browserconsole : null,
+      ...pluginOutput,
+      browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
     });
   }
 
