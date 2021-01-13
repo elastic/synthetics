@@ -41,6 +41,7 @@ module.exports = async () => {
 
       process.stderr.on('data', data => {
         const message = `BrowserService: ${data}`;
+        process.kill();
         reject(message);
       });
     });

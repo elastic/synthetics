@@ -26,7 +26,7 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { PluginManager } from '../../src/plugins';
 import { NetworkManager } from '../../src/plugins/network';
-import { wsEndpoint } from '../../utils/test-config';
+import { wsEndpoint } from '../utils/test-config';
 
 jest.mock('../../src/plugins/network');
 
@@ -38,7 +38,7 @@ describe('Gatherer', () => {
   });
 
   it('begin recording based on flags', async () => {
-    const driver = await Gatherer.setupDriver(true);
+    const driver = await Gatherer.setupDriver(true, wsEndpoint);
     const pluginManager = await Gatherer.beginRecording(driver, {
       network: true,
     });

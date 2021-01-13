@@ -25,8 +25,8 @@
 
 import { Tracing, filterFilmstrips } from '../../src/plugins/tracing';
 import { Gatherer } from '../../src/core/gatherer';
-import { Server } from '../../utils/server';
-import { wsEndpoint } from '../../utils/test-config';
+import { Server } from '../utils/server';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('tracing', () => {
   let server: Server;

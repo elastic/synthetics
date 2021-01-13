@@ -25,8 +25,8 @@
 
 import { Gatherer } from '../../src/core/gatherer';
 import { PerformanceManager } from '../../src/plugins/performance';
-import { Server } from '../../utils/server';
-import { wsEndpoint } from '../../utils/test-config';
+import { Server } from '../utils/server';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('performance', () => {
   let server: Server;

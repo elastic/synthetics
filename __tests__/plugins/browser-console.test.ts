@@ -25,8 +25,8 @@
 
 import { Gatherer } from '../../src/core/gatherer';
 import { BrowserConsole } from '../../src/plugins';
-import { Server } from '../../utils/server';
-import { wsEndpoint } from '../../utils/test-config';
+import { Server } from '../utils/server';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('BrowserConsole', () => {
   let server: Server;

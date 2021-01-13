@@ -28,9 +28,9 @@ import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
 import { step, journey } from '../../src/core';
 import { Journey } from '../../src/dsl';
-import { Server } from '../../utils/server';
+import { Server } from '../utils/server';
 import { generateTempPath } from '../../src/helpers';
-import { wsEndpoint } from '../../utils/test-config';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('runner', () => {
   let runner: Runner, server: Server;
