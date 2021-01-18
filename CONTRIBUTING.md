@@ -98,6 +98,17 @@ npm run watch
 npm run test
 ```
 
+### pre-commit
+
+This project uses [pre-commit](https://pre-commit.com/) so, after installing it, please install the already configured pre-commit hooks we support, to enable pre-commit in your local git repository:
+
+```shell
+$ pre-commit install
+pre-commit installed at .git/hooks/pre-commit
+```
+
+To understand more about the hooks we use, please take a look at pre-commit's [configuration file](./.pre-commit-config.yml).
+
 ### Testing
 
 This project currently has both unit and integration tests.
