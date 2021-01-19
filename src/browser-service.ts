@@ -31,6 +31,12 @@ import { chromium } from 'playwright-chromium';
 const proxy = createProxyServer();
 const proxyServer = createServer();
 
+/**
+ * TODO: refactor browser service into a class
+ * to manage this state with init/dispose.
+ */
+let closeCallbacks = [];
+
 proxyServer.on('upgrade', async function (req, socket, head) {
   const browserServer = await chromium.launchServer({ headless: true });
   const wsEndpoint = browserServer.wsEndpoint();
@@ -39,9 +45,14 @@ proxyServer.on('upgrade', async function (req, socket, head) {
   console.log(`New browser: ${wsEndpoint}`);
   proxy.ws(req, socket, head, { target: origin });
   const closeBrowser = async () => {
+    const index = closeCallbacks.indexOf(closeBrowser);
+    if (index >= 0) {
+      closeCallbacks.splice(index, 1);
+    }
     await browserServer.close();
     console.log(`Socket closed: ${wsEndpoint}`);
   };
+  closeCallbacks.push(closeBrowser);
   socket.on('close', closeBrowser);
   socket.on('error', closeBrowser);
 });
@@ -49,4 +60,13 @@ proxyServer.on('upgrade', async function (req, socket, head) {
 const port = 9322;
 proxyServer.listen(port, () => {
   console.log(`Listening on port: ${port}`);
+});
+
+process.on('SIGTERM', async () => {
+  for (let i = 0; i < closeCallbacks.length; i++) {
+    const callback = closeCallbacks[i];
+    await callback();
+  }
+  closeCallbacks = [];
+  process.exit(0);
 });

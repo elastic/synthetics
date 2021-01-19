@@ -23,42 +23,29 @@
  *
  */
 
-import { Gatherer } from '../../src/core/gatherer';
-import { PerformanceManager } from '../../src/plugins/performance';
-import { Server } from '../utils/server';
-import { wsEndpoint } from '../utils/test-config';
+import { spawn } from 'child_process';
+import { wsEndpoint } from './test-config';
 
-describe('performance', () => {
-  let server: Server;
-  beforeAll(async () => {
-    server = await Server.create();
-  });
-  afterAll(async () => {
-    await server.close();
-  });
+module.exports = async () => {
+  if (wsEndpoint) {
+    return new Promise((resolve, reject) => {
+      console.log(`\nRunning BrowserService ${wsEndpoint}`);
+      const process = spawn('node', ['./dist/browser-service.js']);
+      (global as any).__browserServiceProcess = process;
+      process.stdout.on('data', data => {
+        if (data.indexOf('Listening on port: 9322') >= 0) {
+          console.log(`${data}`);
+          resolve(process);
+        }
+      });
 
-  it('should capture page metrics', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
-    const performance = new PerformanceManager(driver.client);
-    await performance.start();
-    await driver.page.goto(server.TEST_PAGE);
-    const metrics = await performance.getMetrics();
-    expect(Object.keys(metrics)).toEqual([
-      'Timestamp',
-      'Documents',
-      'Frames',
-      'JSEventListeners',
-      'Nodes',
-      'LayoutCount',
-      'RecalcStyleCount',
-      'LayoutDuration',
-      'RecalcStyleDuration',
-      'ScriptDuration',
-      'TaskDuration',
-      'JSHeapUsedSize',
-      'JSHeapTotalSize',
-    ]);
-    await performance.stop();
-    await Gatherer.dispose(driver);
-  });
-});
+      process.stderr.on('data', data => {
+        const message = `BrowserService: ${data}`;
+        process.kill();
+        reject(message);
+      });
+    });
+  } else {
+    console.log(`\nRunning without BrowserService`);
+  }
+};

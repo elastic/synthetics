@@ -25,7 +25,8 @@
 
 import { Gatherer } from '../../src/core/gatherer';
 import { BrowserConsole } from '../../src/plugins';
-import { Server } from '../../utils/server';
+import { Server } from '../utils/server';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('BrowserConsole', () => {
   let server: Server;
@@ -37,7 +38,7 @@ describe('BrowserConsole', () => {
   });
 
   it('should capture browser console logs', async () => {
-    const driver = await Gatherer.setupDriver();
+    const driver = await Gatherer.setupDriver(true, wsEndpoint);
     const browserConsole = new BrowserConsole(driver.page);
     browserConsole.start();
     await driver.page.goto(server.TEST_PAGE);

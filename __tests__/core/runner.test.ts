@@ -28,8 +28,9 @@ import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
 import { step, journey } from '../../src/core';
 import { Journey } from '../../src/dsl';
-import { Server } from '../../utils/server';
+import { Server } from '../utils/server';
 import { generateTempPath } from '../../src/helpers';
+import { wsEndpoint } from '../utils/test-config';
 
 describe('runner', () => {
   let runner: Runner, server: Server;
@@ -104,7 +105,7 @@ describe('runner', () => {
         end: expect.any(Number),
       });
     });
-    const result = await runner.runJourney(journey, {});
+    const result = await runner.runJourney(journey, { wsEndpoint });
     expect(result.status).toBe('succeeded');
   });
 
@@ -115,7 +116,7 @@ describe('runner', () => {
     journey.addStep('step2', async () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, {});
+    const result = await runner.runJourney(journey, { wsEndpoint });
     expect(result).toEqual({
       status: 'failed',
       error,
@@ -126,7 +127,7 @@ describe('runner', () => {
     const journey = new Journey({ name: 'with hooks' }, noop);
     journey.addHook('before', noop);
     journey.addHook('after', noop);
-    const result = await runner.runJourney(journey, {});
+    const result = await runner.runJourney(journey, { wsEndpoint });
     expect(result).toEqual({
       status: 'succeeded',
     });
@@ -139,7 +140,7 @@ describe('runner', () => {
     journey.addHook('after', () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, {});
+    const result = await runner.runJourney(journey, { wsEndpoint });
     expect(result).toEqual({
       status: 'failed',
       error,
@@ -221,6 +222,7 @@ describe('runner', () => {
     const journey = new Journey({ name }, noop);
     runner.addJourney(journey);
     const result = await runner.run({
+      wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
     });
     expect(result).toEqual({
@@ -232,6 +234,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     const result = await runner.run({
+      wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
       journeyName: 'j2',
     });
@@ -249,6 +252,7 @@ describe('runner', () => {
     });
     runner.addJourney(j2);
     const result = await runner.run({
+      wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
     });
     expect(result).toEqual({
@@ -263,6 +267,7 @@ describe('runner', () => {
     let count = 0;
     runner.on('journey:register', () => count++);
     const result = await runner.run({
+      wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
       dryRun: true,
     });
@@ -288,6 +293,7 @@ describe('runner', () => {
     runner.addJourney(j2);
 
     await runner.run({
+      wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
     });
     expect(result).toEqual([
