@@ -23,32 +23,15 @@
  *
  */
 
-import { spawn } from 'child_process';
-import { wsEndpoint } from './test-config';
+import { BrowserService } from './core/browser-service';
 
-module.exports = async () => {
-  if (wsEndpoint) {
-    return new Promise((resolve, reject) => {
-      console.log(`\nRunning BrowserService ${wsEndpoint}`);
-      const browserServiceProcess = spawn(
-        'node',
-        ['./dist/run-browser-service.js'],
-        { env: { ...process.env, DEBUG: 'true' } }
-      );
-      (global as any).__browserServiceProcess = browserServiceProcess;
-      browserServiceProcess.stdout.on('data', data => {
-        if (data.indexOf('Listening on port: 9322') >= 0) {
-          resolve(browserServiceProcess);
-        }
-      });
+const browserService = new BrowserService();
+browserService.init();
 
-      browserServiceProcess.stderr.on('data', data => {
-        const message = `BrowserService: ${data}`;
-        browserServiceProcess.kill();
-        reject(message);
-      });
-    });
-  } else {
-    console.log(`\nRunning without BrowserService`);
-  }
+const exitFn = async () => {
+  await browserService.dispose();
+  process.exit(0);
 };
+
+process.on('SIGTERM', exitFn);
+process.on('SIGINT', exitFn);
