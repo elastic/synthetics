@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 VERSION=${1:-7.10.0}
-if [[ $VERSION =~ ^[0-9] ]]; then
-	IMAGE=docker.elastic.co/experimental/synthetics:$VERSION-synthetics
+if [[ ${VERSION} =~ ^[0-9] ]]; then
+	IMAGE="docker.elastic.co/experimental/synthetics:${VERSION}-synthetics"
 else
-	IMAGE=$VERSION
+	IMAGE=${VERSION}
 fi
-echo "Using image $IMAGE"
+echo "Using image ${IMAGE}"
 docker run \
   -it \
   --rm \
@@ -15,5 +15,5 @@ docker run \
   --security-opt seccomp=seccomp_profile.json \
   --volume="$(pwd)/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro" \
   --volume="$(pwd)/../../:/opt/elastic-synthetics:rw" \
-  $IMAGE \
+  "${IMAGE}" \
   bash

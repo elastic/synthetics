@@ -62,6 +62,7 @@ pipeline {
           withNodeEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'Checks linting',script: 'npm run-script lint')
+              preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
             }
           }
         }
