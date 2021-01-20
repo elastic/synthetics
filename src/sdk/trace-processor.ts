@@ -24,7 +24,12 @@
  */
 
 import LighthouseTraceProcessor from 'lighthouse/lighthouse-core/lib/tracehouse/trace-processor';
-import { ExperienceMetrics, Filmstrips, UserTimings } from './trace-metrics';
+import {
+  ExperienceMetrics,
+  Filmstrips,
+  CumulativeLayoutShift,
+  UserTimings,
+} from './trace-metrics';
 
 const ACCEPTABLE_NAVIGATION_URL_REGEX = /^(file|https?):/;
 
@@ -32,7 +37,7 @@ const ACCEPTABLE_NAVIGATION_URL_REGEX = /^(file|https?):/;
  * Trace Event Format
  * https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU
  */
-type TraceEvent = {
+export type TraceEvent = {
   name: string;
   // event category
   cat: string;
@@ -45,7 +50,12 @@ type TraceEvent = {
   args?: {
     snapshot: string;
     frame: string;
-    data: Record<string, unknown>;
+    data: {
+      had_recent_input: boolean;
+      is_main_frame: boolean;
+      cumulative_score: number;
+      score: number;
+    } & Record<string, unknown>;
   };
   /**
    * Platform specific monotonic non decreasing clock time
@@ -65,10 +75,12 @@ export type LHTrace = {
   timeOriginEvt: TraceEvent;
   lcpInvalidated: boolean;
   processEvents: Array<TraceEvent>;
+  mainThreadEvents: Array<TraceEvent>;
 };
 
 /**
- * Extends
+ * Extends the lighthouse trace processor which extracts all the meaningful trace
+ * events in chronological order from the tab's process
  */
 export class TraceProcessor extends LighthouseTraceProcessor {
   static _isNavigationStartOfInterest(event) {
@@ -81,6 +93,7 @@ export class TraceProcessor extends LighthouseTraceProcessor {
   }
 
   static computeTraceOfTab(traceEvents) {
+    // Origin of the trace is based on the last navigation event
     const options = {
       timeOriginDeterminationMethod: 'lastNavigationStart',
     };
@@ -88,11 +101,13 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     const userTiming = UserTimings.compute(trace);
     const filmstrips = Filmstrips.compute(trace);
     const experience = ExperienceMetrics.compute(trace);
+    const layoutShift = CumulativeLayoutShift.compute(trace);
 
     return {
       userTiming,
       filmstrips,
       experience,
+      layoutShift,
     };
   }
 }

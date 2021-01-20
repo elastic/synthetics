@@ -42,15 +42,12 @@ export type TraceOutput = {
   type?: string;
   name?: string;
   startTime: number;
+  endTime?: number;
+  duration?: number;
 };
 
 export type FilmStrip = TraceOutput & {
   snapshot: string;
-};
-
-export type PerformanceMeasure = TraceOutput & {
-  endTime: number;
-  duration: number;
 };
 
 export type DefaultPluginOutput = {
@@ -98,10 +95,11 @@ export type BrowserMessage = {
 
 export type PluginOutput = {
   filmstrips?: Array<FilmStrip>;
-  userTiming?: Array<TraceOutput | PerformanceMeasure>;
+  userTiming?: Array<TraceOutput>;
   experience?: Array<TraceOutput>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
+  layoutShift?: Array<TraceOutput>;
 };
 
 export type CliArgs = {

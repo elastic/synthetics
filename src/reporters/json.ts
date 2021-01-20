@@ -302,6 +302,7 @@ export default class JSONReporter extends BaseReporter {
         browserconsole,
         userTiming,
         experience,
+        layoutShift,
         status,
         error,
       }) => {
@@ -346,21 +347,22 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        const timings = userTiming.concat(experience);
-        if (timings.length > 0) {
-          timings.forEach(({ startTime, ts, name, type }) => {
-            this.writeJSON({
-              type: 'journey/timing',
-              journey,
-              payload: {
-                name,
-                type,
-                startTime,
-                ts,
-              },
-            });
+        const traces = userTiming.concat(experience, layoutShift);
+        traces.forEach(({ startTime, ts, name, type, duration, endTime }) => {
+          this.writeJSON({
+            type: 'journey/timing',
+            journey,
+            payload: {
+              name,
+              type,
+              startTime,
+              ts,
+              endTime,
+              duration,
+            },
           });
-        }
+        });
+
         this.writeJSON({
           type: 'journey/end',
           journey,

@@ -23,39 +23,15 @@
  *
  */
 
-import { FilmStrip, PerformanceMeasure, TraceOutput } from '../common_types';
+import { FilmStrip, TraceOutput } from '../common_types';
 import { convertTraceTimestamp } from '../helpers';
-import type { LHTrace } from './trace-processor';
-
-/**
- * Trace Event Format
- * https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU
- */
-type TraceEvent = {
-  name: string;
-  // event category
-  cat: string;
-  // process id
-  pid: number;
-  // thread id
-  tid: number;
-  // event phase
-  ph?: string;
-  args?: {
-    snapshot: string;
-  };
-  /**
-   * Platform specific monotonic non decreasing clock time
-   * https://source.chromium.org/chromium/chromium/src/+/master:base/time/time.h;l=936;bpv=0;bpt=0
-   */
-  ts: number;
-};
+import type { LHTrace, TraceEvent } from './trace-processor';
 
 export class UserTimings {
   static compute(trace: LHTrace) {
     const { processEvents } = trace;
     const measuresMap = new Map();
-    const userTimings: Array<TraceOutput | PerformanceMeasure> = [];
+    const userTimings: Array<TraceOutput> = [];
 
     for (const event of processEvents) {
       const { name, ph, ts, args } = event;
@@ -155,5 +131,70 @@ export class ExperienceMetrics {
     experienceMetrics.push(this.buildMetric(loadEvt));
 
     return experienceMetrics.filter(b => Boolean(b));
+  }
+}
+
+export class CumulativeLayoutShift {
+  static computeLCPValue(events: Array<TraceEvent>) {
+    // find the last LayoutShift event
+    let finalLayoutShiftEvent;
+    for (let i = events.length - 1; i >= 0; i--) {
+      const event = events[i];
+      if (event.name === 'LayoutShift' && event.args?.data?.is_main_frame) {
+        finalLayoutShiftEvent = event;
+        break;
+      }
+    }
+
+    // If no events found, consider the score as 0
+    if (!finalLayoutShiftEvent) {
+      return {
+        value: 0,
+      };
+    }
+
+    const cumulativeScore = finalLayoutShiftEvent.args.data.cumulative_score;
+    // if the score is not available, then we consider it as missing data
+    // denoted as -1
+    if (cumulativeScore == null) {
+      return {
+        value: -1,
+      };
+    }
+
+    /**
+     * Calculate the cumulative score from summing all the individual
+     * score from each layout shift events as cumulative score value
+     * results in inconsistencies when there was user input during navigation start
+     *  See https://bugs.chromium.org/p/chromium/issues/detail?id=1094974
+     */
+    const score = events
+      .filter(
+        e =>
+          e.name === 'LayoutShift' &&
+          e.args?.data &&
+          e.args.data.is_main_frame &&
+          !e.args.data.had_recent_input
+      )
+      .map(e => e.args.data.score)
+      .reduce((acc, value) => acc + value, 0);
+
+    return {
+      value: score,
+      event: finalLayoutShiftEvent,
+    };
+  }
+
+  static compute(trace: LHTrace) {
+    const events = trace.mainThreadEvents;
+    const { value, event } = this.computeLCPValue(events);
+
+    return {
+      name: event.name,
+      type: 'measure',
+      duration: value,
+      ts: event.ts,
+      startTime: convertTraceTimestamp(event.ts),
+    } as TraceOutput;
   }
 }
