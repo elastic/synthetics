@@ -1,0 +1,32 @@
+# Seccomp profile generated from ./build/syslog
+
+seccomp:
+  default_action: errno
+  syscalls:
+  - 
+    action: allow
+    names:
+      - clock_gettime
+  -
+    # "/usr/bin/node"
+    action: allow
+    names:
+      - read #0
+      - write #1
+      - close #3
+      - mprotect #10
+      - writev #20
+      - getpid #39
+      - epoll_wait #232
+      - epoll_ctl #233
+      - openat #257
+      - statx #332
+  -
+    # "/home/synthetics/seccomp/seccomp_exec"
+    action: allow
+    names:
+      - rt_sigprocmask #14
+      - getpid #39
+      - clone #56
+      - newfstatat #262
+      - pipe2 #293

@@ -1,0 +1,6 @@
+seccomp:
+  default_action: log
+  syscalls:
+  - names:
+    - clock_gettime
+    action: allow
