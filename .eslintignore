@@ -1,3 +1,4 @@
 dist
 examples
 __tests__/e2e/tmp/
+src/sdk/lh-trace-processor.ts

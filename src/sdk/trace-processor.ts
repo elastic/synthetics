@@ -23,7 +23,7 @@
  *
  */
 
-import LighthouseTraceProcessor from 'lighthouse/lighthouse-core/lib/tracehouse/trace-processor';
+import LighthouseTraceProcessor from './lh-trace-processor';
 import {
   ExperienceMetrics,
   Filmstrips,
@@ -92,7 +92,7 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     );
   }
 
-  static computeTraceOfTab(traceEvents) {
+  static computeTrace(traceEvents) {
     // Origin of the trace is based on the last navigation event
     const options = {
       timeOriginDeterminationMethod: 'lastNavigationStart',

@@ -74,6 +74,6 @@ export class Tracing {
       ),
       client.send('Tracing.end'),
     ]);
-    return TraceProcessor.computeTraceOfTab(traceEvents);
+    return TraceProcessor.computeTrace(traceEvents);
   }
 }
