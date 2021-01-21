@@ -27,7 +27,7 @@ import { CDPSession } from 'playwright-chromium';
 import { TraceProcessor } from '../sdk/trace-processor';
 
 /**
- * Custom Tracer that listenes from events from specified categories
+ * Custom Tracer that listenes for events from specified categories
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  */
 export class Tracing {
