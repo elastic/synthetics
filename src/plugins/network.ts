@@ -160,7 +160,7 @@ export class NetworkManager {
     responseReceivedTime: number
   ) {
     if (timing == null) {
-      return -1;
+      return responseReceivedTime;
     }
     const startTime = timing.requestTime;
     const headersReceivedTime = startTime + timing.receiveHeadersEnd / 1000;
