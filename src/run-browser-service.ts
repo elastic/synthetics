@@ -35,3 +35,4 @@ const exitFn = async () => {
 
 process.on('SIGTERM', exitFn);
 process.on('SIGINT', exitFn);
+process.on('uncaughtException', exitFn);

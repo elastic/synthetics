@@ -44,5 +44,6 @@ describe('BrowserService', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto('https://elastic.co');
+    await browser.close();
   });
 });
