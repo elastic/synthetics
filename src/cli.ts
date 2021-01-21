@@ -120,13 +120,8 @@ async function prepareSuites(inputs: string[]) {
   } else {
     /**
      * Preload modules before running the suites
-     * we support `.ts` files out of the box by invoking
-     * the `ts-node` via `transpile-only` mode which only compiles
-     *  TS files without doing any extensive type checks
      */
-    const modules = ['ts-node/register/transpile-only']
-      .concat(program.require || [])
-      .filter(Boolean);
+    const modules = [].concat(program.require || []).filter(Boolean);
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
@@ -135,7 +130,21 @@ async function prepareSuites(inputs: string[]) {
       }
     }
     /**
-     * Handled piped files by reading the STDIN
+     * Transform `.ts` files out of the box by invoking
+     * the `ts-node` via `transpile-only` mode that compiles
+     * TS files without doing any extensive type checks
+     */
+    /* eslint-disable-next-line @typescript-eslint/no-var-requires */
+    require('ts-node').register({
+      transpileOnly: true,
+      compilerOptions: {
+        esModuleInterop: true,
+        allowJs: true,
+        target: 'es2018',
+      },
+    });
+    /**
+     * Handle piped files by reading the STDIN
      * ex: ls example/suites/*.js | npx @elastic/synthetics
      */
     const files =

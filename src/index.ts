@@ -27,11 +27,16 @@ import { runner } from './core';
 import { RunOptions } from './core/runner';
 import { setLogger } from './core/logger';
 import { parseArgs } from './parse_args';
-
-/* eslint-disable @typescript-eslint/no-var-requires */
-require('source-map-support').install();
+import sourceMapSupport from 'source-map-support';
 
 export async function run(options: RunOptions) {
+  /**
+   * Install source map support
+   */
+  sourceMapSupport.install({
+    environment: 'node',
+  });
+
   const cliArgs = parseArgs();
   /**
    * Use the NODE_ENV variable to control the environment if its not explicity
