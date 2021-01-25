@@ -40,7 +40,7 @@ services:
     networks:
       - elastic
   synthetic:
-    image: docker.elastic.co/beats/heartbeat:${STACK_VERSION}
+    image: ${STACK_IMAGE:-docker.elastic.co/beats/heartbeat}:${STACK_VERSION}
     container_name: synthetics
     depends_on:
       - elasticsearch
