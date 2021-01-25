@@ -44,23 +44,21 @@ describe('network', () => {
     await driver.page.goto(server.TEST_PAGE);
     const netinfo = await network.stop();
     expect(netinfo.length).toBeGreaterThan(0);
-    expect(netinfo[0]).toEqual(
-      jasmine.objectContaining({
-        step: null,
-        timestamp: expect.any(Number),
-        url: server.TEST_PAGE,
-        request: expect.any(Object),
-        response: expect.any(Object),
-        type: 'Document',
-        method: 'GET',
-        requestSentTime: expect.any(Number),
-        isNavigationRequest: true,
-        status: 200,
-        loadEndTime: expect.any(Number),
-        responseReceivedTime: expect.any(Number),
-        timings: expect.any(Object),
-      })
-    );
+    expect(netinfo[0]).toMatchObject({
+      isNavigationRequest: true,
+      step: null,
+      timestamp: expect.any(Number),
+      url: server.TEST_PAGE,
+      request: expect.any(Object),
+      response: expect.any(Object),
+      type: 'Document',
+      method: 'GET',
+      requestSentTime: expect.any(Number),
+      status: 200,
+      loadEndTime: expect.any(Number),
+      responseReceivedTime: expect.any(Number),
+      timings: expect.any(Object),
+    });
     await Gatherer.dispose(driver);
   });
 
