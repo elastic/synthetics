@@ -23,32 +23,27 @@
  *
  */
 
-import { spawn } from 'child_process';
-import { wsEndpoint } from './test-config';
+import { BrowserService } from '../../src/core/browser-service';
+import { chromium } from 'playwright-chromium';
 
-module.exports = async () => {
-  if (wsEndpoint) {
-    return new Promise((resolve, reject) => {
-      console.log(`\nRunning BrowserService ${wsEndpoint}`);
-      const browserServiceProcess = spawn(
-        'node',
-        ['./dist/run-browser-service.js'],
-        { env: { ...process.env, DEBUG: 'true' } }
-      );
-      (global as any).__browserServiceProcess = browserServiceProcess;
-      browserServiceProcess.stdout.on('data', data => {
-        if (data.indexOf('Listening on port: 9322') >= 0) {
-          resolve(browserServiceProcess);
-        }
-      });
+describe('BrowserService', () => {
+  let browserService: BrowserService;
+  beforeEach(() => {
+    browserService = new BrowserService({ port: 9323 });
+    browserService.init();
+  });
 
-      browserServiceProcess.stderr.on('data', data => {
-        const message = `BrowserService: ${data}`;
-        browserServiceProcess.kill();
-        reject(message);
-      });
+  afterEach(async () => {
+    await browserService.dispose();
+  });
+
+  it('should create browser pages', async () => {
+    const browser = await chromium.connect({
+      wsEndpoint: 'ws://localhost:9323',
     });
-  } else {
-    console.log(`\nRunning without BrowserService`);
-  }
-};
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('https://elastic.co');
+    await browser.close();
+  });
+});
