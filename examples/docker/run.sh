@@ -31,4 +31,4 @@ docker run \
   --volume="$(pwd)/../../:/opt/elastic-synthetics:rw" \
   "${IMAGE}" \
   --strict.perms=false -e \
-  "${HEARTBEAT_ARGS}"
+  ${HEARTBEAT_ARGS}
