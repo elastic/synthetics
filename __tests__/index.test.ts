@@ -56,7 +56,7 @@ describe('Run', () => {
   });
 });
 
-describe('Run - cli args', () => {
+describe.skip('Run - cli args', () => {
   let runnerSpy: jest.SpyInstance;
   let parseArgsSpy: jest.SpyInstance;
 
