@@ -23,26 +23,8 @@
  *
  */
 
-import { BrowserService } from '../../src/core/browser-service';
-import { Gatherer } from '../../src/core/gatherer';
-import { Server } from '../utils/server';
+import { journey, step } from '../../dist';
 
-describe('BrowserService', () => {
-  let browserService: BrowserService;
-  let server: Server;
-  beforeAll(async () => {
-    server = await Server.create();
-    browserService = new BrowserService({ port: 9323 });
-    browserService.init();
-  });
-  afterAll(async () => {
-    await server.close();
-    await browserService.dispose();
-  });
-
-  it('should create browser pages', async () => {
-    const driver = await Gatherer.setupDriver(true, 'ws://localhost:9323');
-    await driver.page.goto(server.TEST_PAGE);
-    await Gatherer.dispose(driver);
-  });
+journey('fake journey', async ({}) => {
+  step('step1', async () => {});
 });

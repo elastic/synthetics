@@ -161,7 +161,7 @@ async function prepareSuites(inputs: string[]) {
    */
   const reporter = program.json ? 'json' : 'default';
 
-  await run({
+  const results = await run({
     params: suiteParams,
     environment: program.environment,
     reporter,
@@ -175,6 +175,15 @@ async function prepareSuites(inputs: string[]) {
     metrics: program.metrics,
     sandbox: program.sandbox,
   });
+
+  /**
+   * Exit with error status if any journey fails
+   */
+  for (const result of Object.values(results)) {
+    if (result.status === 'failed') {
+      process.exit(1);
+    }
+  }
 })().catch(e => {
   console.error(e);
   process.exit(1);

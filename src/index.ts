@@ -26,7 +26,6 @@
 import { runner } from './core';
 import { RunOptions } from './core/runner';
 import { setLogger } from './core/logger';
-import { parseArgs } from './parse_args';
 import sourceMapSupport from 'source-map-support';
 
 export async function run(options: RunOptions) {
@@ -36,8 +35,6 @@ export async function run(options: RunOptions) {
   sourceMapSupport.install({
     environment: 'node',
   });
-
-  const cliArgs = parseArgs();
   /**
    * Use the NODE_ENV variable to control the environment if its not explicity
    * passed from either CLI or through the API
@@ -45,25 +42,15 @@ export async function run(options: RunOptions) {
   options.environment = options.environment || process.env['NODE_ENV'];
   /**
    * set up logger with appropriate file descriptor
-   * to capture all the DEBUG logs when running from heartbeat
+   * to capture all the DEBUG logs when run through heartbeat
    */
-  const outfd = options.outfd ?? cliArgs.outfd;
-  setLogger(outfd);
+  setLogger(options.outfd);
 
   try {
     return await runner.run({
       ...options,
-      headless: options.headless ?? cliArgs.headless,
-      screenshots: options.screenshots ?? cliArgs.screenshots,
-      filmstrips: options.filmstrips ?? cliArgs.filmstrips,
-      dryRun: options.dryRun ?? cliArgs.dryRun,
-      journeyName: options.journeyName ?? cliArgs.journeyName,
-      network: options.network ?? cliArgs.network,
-      pauseOnError: options.pauseOnError ?? cliArgs.pauseOnError,
-      reporter: cliArgs.json && !options.reporter ? 'json' : options.reporter,
-      wsEndpoint: options.wsEndpoint ?? cliArgs.wsEndpoint,
-      sandbox: options.sandbox ?? cliArgs.sandbox,
-      outfd,
+      headless: options.headless ?? true,
+      sandbox: options.sandbox ?? true,
     });
   } catch (e) {
     console.error('Failed to run the test', e);
