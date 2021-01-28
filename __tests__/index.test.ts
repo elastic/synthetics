@@ -23,16 +23,16 @@
  *
  */
 
+import fs from 'fs';
 import { run, journey } from '../src/index';
 import { runner } from '../src/core';
-import * as ParseArgs from '../src/parse_args';
+import { RunOptions } from '../src/core/runner';
 import { generateTempPath } from '../src/helpers';
-import fs from 'fs';
 
 describe('Run', () => {
   const dest = generateTempPath();
   afterEach(() => {
-    fs.unlinkSync(dest);
+    fs.existsSync(dest) && fs.unlinkSync(dest);
   });
 
   it('multiple run invokes runner only once', async () => {
@@ -54,82 +54,33 @@ describe('Run', () => {
       {},
     ]);
   });
-});
 
-describe.skip('Run - cli args', () => {
-  let runnerSpy: jest.SpyInstance;
-  let parseArgsSpy: jest.SpyInstance;
-
-  beforeEach(() => {
-    runnerSpy = jest
+  it('calls runner with proper options', async () => {
+    const runnerSpy = jest
       .spyOn(runner, 'run')
       .mockImplementation(() => Promise.resolve({}));
-    parseArgsSpy = jest.spyOn(ParseArgs, 'parseArgs');
-  });
 
-  it('uses undefined options when none specified', async () => {
-    parseArgsSpy.mockImplementation(() => ({}));
     await run({ params: {}, environment: 'debug' });
     expect(runnerSpy.mock.calls[0][0]).toEqual({
-      dryRun: undefined,
-      environment: 'debug',
-      headless: undefined,
-      journeyName: undefined,
-      network: undefined,
-      params: {},
-      pauseOnError: undefined,
-      screenshots: undefined,
-      outfd: undefined,
-      reporter: undefined,
-      sandbox: undefined,
-    });
-  });
-
-  it('uses specified option values', async () => {
-    const reporter: 'default' | 'json' = 'json';
-    const runParams = {
-      params: {},
       environment: 'debug',
       headless: true,
+      params: {},
+      sandbox: true,
+    });
+    const runParams: RunOptions = {
+      params: {},
+      environment: 'debug',
+      headless: false,
       screenshots: true,
       filmstrips: false,
       dryRun: true,
       journeyName: 'There and Back Again',
       network: true,
       pauseOnError: true,
-      outfd: undefined,
-      reporter,
+      reporter: 'json',
+      sandbox: true,
     };
     await run(runParams);
-    expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
-  });
-
-  it('uses cli args if some options are not specified', async () => {
-    parseArgsSpy.mockImplementation(() => {
-      return {
-        headless: true,
-        screenshots: true,
-        dryRun: true,
-        journeyName: 'There and Back Again',
-        network: true,
-        pauseOnError: true,
-        reporter: undefined,
-        outfd: undefined,
-      } as any;
-    });
-
-    await run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls[0][0]).toEqual({
-      dryRun: true,
-      environment: 'debug',
-      headless: true,
-      journeyName: 'There and Back Again',
-      network: true,
-      params: {},
-      pauseOnError: true,
-      screenshots: true,
-      reporter: undefined,
-      outfd: undefined,
-    });
+    expect(runnerSpy.mock.calls[1][0]).toEqual(runParams);
   });
 });

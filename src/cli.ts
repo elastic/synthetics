@@ -184,7 +184,6 @@ async function prepareSuites(inputs: string[]) {
       process.exit(1);
     }
   }
-  return results;
 })().catch(e => {
   console.error(e);
   process.exit(1);
