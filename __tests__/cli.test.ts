@@ -27,17 +27,29 @@ import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 
 describe('CLI', () => {
+  const FIXTURES_DIR = join(__dirname, 'fixtures');
   it('run suites and exit with 0', async () => {
-    const cli = new CLIMock([join(__dirname, 'fixtures', 'fake.journey.ts')]);
+    const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts')]);
     await cli.waitFor('Journey: fake journey');
-    expect(cli.text()).toContain('fake journey');
+    expect(cli.output()).toContain('fake journey');
     expect(await cli.exitCode).toBe(0);
   });
 
   it('run suites and exit with 1', async () => {
-    const cli = new CLIMock([join(__dirname, 'fixtures', 'error.journey.ts')]);
+    const cli = new CLIMock([join(FIXTURES_DIR, 'error.journey.ts')]);
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(1);
+  });
+
+  it('produce json output via --json flag', async () => {
+    const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), '--json']);
+    await cli.waitFor('fake journey');
+    const output = cli.output();
+    expect(JSON.parse(output).journey).toEqual({
+      id: 'fake journey',
+      name: 'fake journey',
+    });
+    expect(await cli.exitCode).toBe(0);
   });
 });
 
@@ -78,7 +90,7 @@ class CLIMock {
     return new Promise(r => (this.waitForPromise = r));
   }
 
-  text() {
+  output() {
     return this.data;
   }
 }
