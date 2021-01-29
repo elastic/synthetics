@@ -24,7 +24,6 @@
  */
 
 import { program } from 'commander';
-import { CliArgs } from './common_types';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -68,7 +67,4 @@ program
   .version(version)
   .description('Run synthetic tests');
 
-export const parseArgs = () => {
-  program.parse(process.argv);
-  return (program as unknown) as CliArgs;
-};
+export default program.parse(process.argv);
