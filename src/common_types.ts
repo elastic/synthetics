@@ -25,7 +25,6 @@
 
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
-import { program } from 'commander';
 
 export type VoidCallback = () => void;
 
@@ -67,9 +66,7 @@ export type NetworkInfo = {
   };
 } & DefaultPluginOutput;
 
-type CommandType = typeof program.Command;
-
-export interface CliArgs extends CommandType {
+export type CliArgs = {
   environment?: string;
   outfd?: number;
   headless?: boolean;
@@ -84,6 +81,9 @@ export interface CliArgs extends CommandType {
   wsEndpoint?: string;
   sandbox?: boolean;
   json?: boolean;
+  pattern?: string;
+  inline: boolean;
+  require: string[];
   debug?: boolean;
   suiteParams?: string;
-}
+};

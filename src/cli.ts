@@ -29,7 +29,8 @@ import { stdin, cwd } from 'process';
 import { resolve } from 'path';
 import { step, journey } from './core';
 import { log } from './core/logger';
-import { parseArgs } from './parse_args';
+import program from './parse_args';
+import { CliArgs } from './common_types';
 import {
   findPkgJsonByTraversing,
   isDepInstalled,
@@ -38,15 +39,16 @@ import {
 } from './helpers';
 import { run } from './';
 
-const program = parseArgs();
+const options = program.opts() as CliArgs;
 const resolvedCwd = cwd();
 /**
  * Set debug based on DEBUG ENV and -d flags
  * namespace - synthetics
  */
 const namespace = 'synthetics';
-process.env.DEBUG = (process.env.DEBUG === namespace ||
-  (program.debug ? program.debug : '')) as string;
+if (process.env.DEBUG === namespace || Boolean(options.debug)) {
+  process.env.DEBUG = '1';
+}
 
 const loadInlineScript = source => {
   const scriptFn = new Function('step', 'page', 'browser', 'params', source);
@@ -85,8 +87,8 @@ async function prepareSuites(inputs: string[]) {
    * Match all files inside the directory with the
    * .journey.{mjs|cjs|js|ts) extensions
    */
-  const pattern = program.pattern
-    ? new RegExp(program.pattern, 'i')
+  const pattern = options.pattern
+    ? new RegExp(options.pattern, 'i')
     : /.+\.journey\.([mc]js|[jt]s?)$/;
   /**
    * Ignore node_modules by default when running suites
@@ -114,14 +116,14 @@ async function prepareSuites(inputs: string[]) {
 }
 
 (async () => {
-  if (program.inline) {
+  if (options.inline) {
     const source = await readStdin();
     loadInlineScript(source);
   } else {
     /**
      * Preload modules before running the suites
      */
-    const modules = [].concat(program.require || []).filter(Boolean);
+    const modules = [].concat(options.require || []).filter(Boolean);
     for (const name of modules) {
       if (isDepInstalled(name)) {
         require(name);
@@ -155,25 +157,24 @@ async function prepareSuites(inputs: string[]) {
     requireSuites(suites);
   }
 
-  const suiteParams = JSON.parse(program.suiteParams);
   /**
    * use JSON reporter if json flag is enabled
    */
-  const reporter = program.json ? 'json' : 'default';
+  const reporter = options.json ? 'json' : 'default';
 
   const results = await run({
-    params: suiteParams,
-    environment: program.environment,
+    params: JSON.parse(options.suiteParams),
+    environment: options.environment,
     reporter,
-    headless: program.headless,
-    screenshots: program.screenshots,
-    dryRun: program.dryRun,
-    journeyName: program.journeyName,
-    network: program.network,
-    pauseOnError: program.pauseOnError,
-    outfd: program.outfd,
-    metrics: program.metrics,
-    sandbox: program.sandbox,
+    headless: options.headless,
+    screenshots: options.screenshots,
+    dryRun: options.dryRun,
+    journeyName: options.journeyName,
+    network: options.network,
+    pauseOnError: options.pauseOnError,
+    outfd: options.outfd,
+    metrics: options.metrics,
+    sandbox: options.sandbox,
   });
 
   /**
