@@ -135,7 +135,7 @@ pipeline {
         axes {
           axis {
             name 'STACK_VERSION'
-            values '8.0.0-synthetics', '7.10.0-synthetics'
+            values '8.0.0-synthetics', '7.10.0-synthetics', '7.11.0-synthetics'
           }
         }
         stages {
