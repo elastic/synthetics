@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -ex
-VERSION=${1:-7.10.0}
+VERSION=${1:-7.11.0}
 if [ -n "${1}" ]; then
   shift # discard first arg
 fi

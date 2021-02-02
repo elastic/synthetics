@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION=${1:-7.10.0}
+VERSION=${1:-7.11.0}
 if [[ ${VERSION} =~ ^[0-9] ]]; then
 	IMAGE="docker.elastic.co/experimental/synthetics:${VERSION}-synthetics"
 else
