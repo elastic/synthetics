@@ -231,6 +231,7 @@ pipeline {
               dir("${BASE_DIR}"){
                 withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
+                    sh(script: 'npm run clean', label: 'clean release')
                     sh(script: 'npm ci', label: 'prepare the ci environment')
                     sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version')
                     gitPush()
