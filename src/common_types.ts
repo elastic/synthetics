@@ -46,7 +46,7 @@ export type NetworkInfo = {
   method: string;
   type: string;
   request: Protocol.Network.Request;
-  response: Protocol.Network.Response;
+  response: Protocol.Network.Response | null;
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
