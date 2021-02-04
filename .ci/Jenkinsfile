@@ -218,6 +218,9 @@ pipeline {
         }
         stage('Release CI') {
           options { skipDefaultCheckout() }
+          input {
+            message 'Should we release a new version?'
+          }
           steps {
             cleanup()
             withNodeEnv(){
