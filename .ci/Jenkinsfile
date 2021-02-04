@@ -228,7 +228,7 @@ pipeline {
                 prepareRelease() {
                   sh(script: "npm publish --otp=\${TOTP_CODE} --tag alpha", label: 'publish to NPM')
                   setEnvVar('VERSION', sh(script: '''node -p "require('./package.json').version"''', returnStdout: true).trim())
-                  sh(script: "npm dist-tag add @elastic/synthetics@${VERSION} latest", label: 'retag latest')
+                  sh(script: "npm dist-tag add elastic/synthetics@${VERSION} latest", label: 'retag latest')
                 }
               }
             }
