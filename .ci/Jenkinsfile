@@ -229,10 +229,20 @@ pipeline {
             cleanup()
             withNodeEnv(){
               dir("${BASE_DIR}"){
-                prepareRelease() {
-                  sh(script: "npm publish --otp=${env.TOTP_CODE} --tag alpha", label: 'publish to NPM')
-                  setEnvVar('VERSION', sh(script: '''node -p "require('./package.json').version"''', returnStdout: true).trim())
-                  sh(script: "npm dist-tag add elastic/synthetics@${env.VERSION} latest", label: 'retag latest')
+                withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
+                  withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
+                    sh(script: 'npm ci', label: 'prepare the ci environment')
+                    sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version')
+                    gitPush()
+                    gitPush(args: '--tags')
+                    setEnvVar('VERSION', sh(script: '''node -p "require('./package.json').version"''', returnStdout: true).trim())
+                    withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
+                      sh(script: "npm publish --otp=${env.TOTP_CODE} --tag alpha", label: 'publish to NPM')
+                    }
+                    withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
+                      sh(script: "npm dist-tag --otp=${env.TOTP_CODE} add elastic/synthetics@${env.VERSION} latest", label: 'retag latest')
+                    }
+                  }
                 }
               }
             }
@@ -319,25 +329,6 @@ def pushDockerImage(){
       }
       sh(label: 'Push Docker image name',
         script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
-    }
-  }
-}
-
-/**
-  This is the wrapper to prepare the release context, for such, it's required
-  to decouple the build environment preparation from the TOTP access, otherwise
-  the TOTP might expire if it takes too long.
- */
-def prepareRelease(Closure body){
-  withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
-    withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
-      sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version')
-      sh(script: 'npm ci', label: 'prepare the ci environment')
-      gitPush()
-      gitPush(args: '--tags')
-      withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
-        body()
-      }
     }
   }
 }
