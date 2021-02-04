@@ -14,9 +14,11 @@ pipeline {
     SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
     DOCKER_IMG = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
     DOCKER_IMG_PUBLIC = "${env.DOCKER_REGISTRY}/experimental/synthetics"
+    NPMRC_SECRET = 'secret/jenkins-ci/npmjs/elasticmachine'
+    TOTP_SECRET = 'totp/code/npmjs-elasticmachine'
   }
   options {
-    timeout(time: 1, unit: 'HOURS')
+    timeout(time: 12, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
     buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '20', daysToKeepStr: '30'))
     timestamps()
     ansiColor('xterm')
@@ -31,12 +33,16 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
+    booleanParam(name: 'release', defaultValue: false, description: 'Release. If so, all the other parameters will be ignored when releasing from master.')
   }
   stages {
     /**
      Checkout the code and stash it, to use it on other stages.
      */
     stage('Checkout') {
+      options {
+        timeout(5)
+      }
       steps {
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}")
@@ -56,6 +62,9 @@ pipeline {
      Checks formatting / linting.
      */
     stage('Lint') {
+      options {
+        timeout(5)
+      }
       steps {
         withGithubNotify(context: 'Linting') {
           cleanup()
@@ -68,11 +77,13 @@ pipeline {
         }
       }
     }
-
     /**
      Build the main package
      */
     stage('Build') {
+      options {
+        timeout(5)
+      }
       steps {
         withGithubNotify(context: 'Build') {
           cleanup()
@@ -88,6 +99,9 @@ pipeline {
      Execute integration tests.
      */
     stage('Test') {
+      options {
+        timeout(5)
+      }
       steps {
         withGithubNotify(context: 'Test') {
           cleanup()
@@ -105,8 +119,10 @@ pipeline {
         }
       }
     }
-
     stage('E2e Test') {
+      options {
+        timeout(15)
+      }
       steps {
         withGithubNotify(context: 'E2e Test') {
           cleanup()
@@ -125,11 +141,13 @@ pipeline {
         }
       }
     }
-
     /**
      Publish Docker images.
      */
     stage('Publish Docker image'){
+      options {
+        timeout(15)
+      }
       matrix {
         agent { label 'ubuntu-18 && immutable' }
         axes {
@@ -176,6 +194,57 @@ pipeline {
               }
             }
           }
+        }
+      }
+    }
+    stage('Release') {
+      options {
+        skipDefaultCheckout()
+      }
+      when {
+        beforeAgent true
+        allOf {
+          branch 'master'
+          expression { return params.release }
+        }
+      }
+      stages {
+        stage('Notify') {
+          options { skipDefaultCheckout() }
+          steps {
+            notifyStatus(slackStatus: 'warning', subject: "[${env.REPO}] Release ready to be pushed",
+                         body: "Please go to (<${env.BUILD_URL}input|here>) to approve or reject within 12 hours.")
+          }
+        }
+        stage('Release CI') {
+          options { skipDefaultCheckout() }
+          steps {
+            cleanup()
+            withNodeEnv(){
+              dir("${BASE_DIR}"){
+                prepareRelease() {
+                  sh(script: "npm publish --otp=\${TOTP_CODE} --tag alpha", label: 'publish to NPM')
+                  setEnvVar('VERSION', sh(script: '''node -p "require('./package.json').version"''', returnStdout: true).trim())
+                  sh(script: "npm dist-tag add @elastic/synthetics@${VERSION} latest", label: 'retag latest')
+                }
+              }
+            }
+          }
+          post {
+            success {
+              notifyStatus(slackStatus: 'good', subject: "[${env.REPO}] Release published", body: "Great news, the release has been done successfully. (<${env.RUN_DISPLAY_URL}|Open>). \n Release URL: (<https://github.com/elastic/apm-agent-rum-js/releases|Here>)")
+            }
+            always {
+              script {
+                currentBuild.description = "${currentBuild.description?.trim() ? currentBuild.description : ''} released"
+              }
+            }
+          }
+        }
+      }
+      post {
+        failure {
+          notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Release failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
         }
       }
     }
@@ -245,4 +314,36 @@ def pushDockerImage(){
         script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
     }
   }
+}
+
+/**
+  This is the wrapper to prepare the release context, for such, it's required
+  to decouple the build environment preparation from the TOTP access, otherwise
+  the TOTP might expire if it takes too long.
+ */
+def prepareRelease(Closure body){
+  withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
+    withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
+      sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version')
+      sh(script: 'npm ci', label: 'prepare the ci environment')
+      gitPush()
+      gitPush(args: '--tags')
+      withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
+        body()
+      }
+    }
+  }
+}
+
+/**
+  This is the wrapper to send notifications for the release process through
+  slack and email, since it requires some formatting to support the same
+  message in both systems.
+ */
+def notifyStatus(def args = [:]) {
+  slackSend(channel: '#synthetics-user_experience-uptime', color: args.slackStatus, message: "${args.subject}. ${args.body}",
+            tokenCredentialId: 'jenkins-slack-integration-token')
+  // transform slack URL format '(<URL|description>)' to 'URL'.
+  def bodyEmail = args.body.replaceAll('\\(<', '').replaceAll('\\|.*>\\)', '')
+  emailext(subject: args.subject, to: 'synthrum@elastic.co', body: bodyEmail)
 }
