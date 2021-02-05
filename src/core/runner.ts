@@ -59,7 +59,7 @@ export type RunOptions = {
 };
 
 type BaseContext = {
-  params: RunParamaters;
+  params?: RunParamaters;
   start: number;
   end?: number;
 };

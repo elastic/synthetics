@@ -42,6 +42,10 @@ export class NetworkManager {
       'Network.requestWillBeSent',
       this._onRequestWillBeSent.bind(this)
     );
+    client.on(
+      'Network.requestWillBeSentExtraInfo',
+      this._onRequestWillBeSentExtraInfo.bind(this)
+    );
     client.on('Network.responseReceived', this._onResponseReceived.bind(this));
     client.on('Network.loadingFinished', this._onLoadingFinished.bind(this));
     client.on('Network.loadingFailed', this._onLoadingFailed.bind(this));
@@ -107,6 +111,23 @@ export class NetworkManager {
     });
   }
 
+  _onRequestWillBeSentExtraInfo(
+    event: Protocol.Network.requestWillBeSentExtraInfoPayload
+  ) {
+    const { requestId, headers } = event;
+    const record = this.waterfallMap.get(requestId);
+    if (!record) {
+      return;
+    }
+    /**
+     * Enhance request headers with additional information
+     */
+    record.request.headers = {
+      ...record.request.headers,
+      ...headers,
+    };
+  }
+
   _onResponseReceived(event: Protocol.Network.responseReceivedPayload) {
     const { requestId, response, timestamp } = event;
     const record = this.waterfallMap.get(requestId);
@@ -118,15 +139,6 @@ export class NetworkManager {
       response,
       responseReceivedTime: timestamp,
     });
-    /**
-     * Enhance request headers with additional information
-     */
-    if (response.requestHeaders) {
-      record.request.headers = {
-        ...record.request.headers,
-        ...response.requestHeaders,
-      };
-    }
   }
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {

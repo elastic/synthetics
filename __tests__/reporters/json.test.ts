@@ -25,9 +25,10 @@
 
 import fs from 'fs';
 import { step, journey } from '../../src/core';
-import JSONReporter from '../../src/reporters/json';
+import JSONReporter, { formatNetworkFields } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
+import { NETWORK_INFO } from '../fixtures/networkinfo';
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -35,7 +36,7 @@ import Runner from '../../src/core/runner';
  */
 jest.mock(
   '../../package.json',
-  jest.fn(() => ({ version: '0.0.1' }))
+  jest.fn(() => ({ version: '0.0.1', name: '@elastic/synthetics' }))
 );
 
 describe('json reporter', () => {
@@ -81,6 +82,16 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
+    const originalProcess = global.process;
+    global.process = {
+      ...originalProcess,
+      pid: 110,
+      ppid: 110,
+      title: 'node',
+      platform: 'darwin',
+      argv: ['npx', '@elastic/synthetics', 'suites'],
+    };
+
     runner.emit('journey:register', {
       journey: j1,
     });
@@ -100,7 +111,6 @@ describe('json reporter', () => {
     });
     runner.emit('journey:end', {
       journey: j1,
-      params: {},
       status: 'succeeded',
       start: 0,
       end: 11,
@@ -114,14 +124,20 @@ describe('json reporter', () => {
       networkinfo: [
         {
           request: {},
-          response: {},
+          response: undefined,
           isNavigationRequest: true,
         } as any,
       ],
     });
     runner.emit('end', 'done');
-
+    global.process = originalProcess;
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+  });
+
+  it('formats network fields in ECS format', async () => {
+    for (const network of NETWORK_INFO) {
+      expect(formatNetworkFields(network as any)).toMatchSnapshot();
+    }
   });
 
   it('writes step errors to the top level', async () => {
@@ -151,7 +167,6 @@ describe('json reporter', () => {
       journey: j1,
       start: 0,
       end: 1,
-      params: {},
       status: 'failed',
       error: myErr,
     });

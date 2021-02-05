@@ -1,12 +1,98 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`json reporter formats network fields in ECS format 1`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "method": "GET",
+      "referrer": undefined,
+    },
+    "response": Object {
+      "body": Object {
+        "bytes": 3329,
+      },
+      "mime_type": "text/html",
+      "status_code": 200,
+    },
+    "version": 2,
+  },
+  "tls": Object {
+    "cipher": "AES_128_GCM",
+    "client": Object {
+      "issuer": "Cloudflare Inc ECC CA-3",
+      "not_after": "1970-01-19T20:06:00.000Z",
+      "not_before": "1970-01-19T11:19:40.800Z",
+    },
+  },
+  "url": "https://vigneshh.in/",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+}
+`;
+
+exports[`json reporter formats network fields in ECS format 2`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "method": "GET",
+      "referrer": "https://vigneshh.in/",
+    },
+    "response": Object {
+      "body": Object {
+        "bytes": 425,
+      },
+      "mime_type": "application/javascript",
+      "status_code": 200,
+    },
+    "version": 2,
+  },
+  "tls": Object {
+    "cipher": "AES_128_GCM",
+    "client": Object {
+      "issuer": "Cloudflare Inc ECC CA-3",
+      "not_after": "1970-01-19T20:06:00.000Z",
+      "not_before": "1970-01-19T11:19:40.800Z",
+    },
+  },
+  "url": "https://vigneshh.in/static/main.js",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+}
+`;
+
+exports[`json reporter formats network fields in ECS format 3`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "method": "POST",
+      "referrer": "https://vigneshh.in/",
+    },
+    "response": undefined,
+    "version": undefined,
+  },
+  "tls": undefined,
+  "url": "https://www.google-analytics.com/",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+}
+`;
+
 exports[`json reporter writes each step as NDJSON to the FD 1`] = `
-"{\\"type\\":\\"journey/register\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/start\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"params\\":{}},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"step/screenshot\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"step/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"start\\":0,\\"end\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"request\\":{},\\"response\\":{},\\"is_navigation_request\\":true},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/filmstrips\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"index\\":0,\\"startTime\\":392583.998697,\\"ts\\":392583998697},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"start\\":0,\\"end\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
+"{\\"type\\":\\"journey/register\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/start\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"params\\":{}},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"step/screenshot\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"step/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"start\\":0,\\"end\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"http\\":{\\"request\\":{\\"body\\":{\\"bytes\\":0,\\"content\\":\\"\\"}}},\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"request\\":{},\\"is_navigation_request\\":true},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/filmstrips\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"index\\":0,\\"startTime\\":392583.998697,\\"ts\\":392583998697},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"process\\":{\\"pid\\":110,\\"ppid\\":110,\\"title\\":\\"node\\",\\"args\\":[\\"npx\\",\\"@elastic/synthetics\\",\\"suites\\"]},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"start\\":0,\\"end\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
 "
 `;

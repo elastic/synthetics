@@ -72,18 +72,20 @@ function getMetadata() {
   };
 }
 
-function formatHttpVersion(protocol: string) {
+function formatHTTPVersion(protocol: string) {
   if (protocol === 'h2') {
     return 2;
   } else if (protocol === 'http/1.1') {
     return 1.1;
   } else if (protocol === 'http/1.0') {
     return 1.0;
+  } else if (protocol && protocol.startsWith('h3')) {
+    return 3;
   }
   return;
 }
 
-function formatECSFields(network: NetworkInfo) {
+export function formatNetworkFields(network: NetworkInfo) {
   const { request, response, url } = network;
   const postdata = request.postData || '';
   const tls = response?.securityDetails;
@@ -91,16 +93,16 @@ function formatECSFields(network: NetworkInfo) {
   return {
     // URL and USER AGENT would be parsed and mapped by heartbeat
     url,
-    user_agent: request.headers['user_agent'],
+    user_agent: request.headers?.['User-Agent'],
     http: {
-      version: formatHttpVersion(response?.protocol),
+      version: formatHTTPVersion(response?.protocol),
       request: {
         body: {
           bytes: postdata.length,
           content: postdata,
         },
         method: request.method,
-        referrer: request.headers['referer'],
+        referrer: request.headers?.Referer,
       },
       response: response
         ? {
@@ -200,7 +202,7 @@ export default class JSONReporter extends BaseReporter {
               type: 'journey/network_info',
               journey,
               timestamp: ni.timestamp,
-              root_fields: formatECSFields(ni),
+              root_fields: formatNetworkFields(ni),
               step: ni.step,
               payload: snakeCaseKeys(ni),
             });
