@@ -28,6 +28,7 @@ import { formatError, getTimestamp } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import { NetworkInfo } from '../common_types';
+import { Protocol } from 'playwright-chromium/types/protocol';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -56,12 +57,6 @@ type OutputFields = {
 
 function getMetadata() {
   return {
-    process: {
-      pid: process.pid,
-      ppid: process.ppid,
-      title: process.title,
-      args: process.argv,
-    },
     os: {
       platform: process.platform,
     },
@@ -72,58 +67,85 @@ function getMetadata() {
   };
 }
 
-function formatHTTPVersion(protocol: string) {
+function formatVersion(protocol: string | undefined) {
+  if (!protocol) {
+    return;
+  }
   if (protocol === 'h2') {
     return 2;
   } else if (protocol === 'http/1.1') {
     return 1.1;
   } else if (protocol === 'http/1.0') {
     return 1.0;
-  } else if (protocol && protocol.startsWith('h3')) {
+  } else if (protocol.startsWith('h3')) {
     return 3;
   }
-  return;
+}
+
+function formatRequest(request: Protocol.Network.Request) {
+  const postData = request.postData ? request.postData : '';
+  return {
+    ...request,
+    body: {
+      bytes: postData.length,
+      content: postData,
+    },
+    referrer: request.headers?.Referer,
+  };
+}
+
+function formatResponse(response: Protocol.Network.Response) {
+  if (!response) {
+    return;
+  }
+  return {
+    ...response,
+    body: {
+      bytes: response.encodedDataLength,
+    },
+    status_code: response.status,
+  };
+}
+
+function formatTLS(tls: Protocol.Network.SecurityDetails) {
+  if (!tls) {
+    return;
+  }
+  const cipher = `${tls.keyExchange ? tls.keyExchange + '_' : ''}${
+    tls.cipher
+  }_${tls.keyExchangeGroup}`;
+  const [name, version] = tls.protocol.toLowerCase().split(' ');
+  return {
+    cipher,
+    server: {
+      x509: {
+        issuer: {
+          common_name: tls.issuer,
+        },
+        subject: {
+          common_name: tls.subjectName,
+        },
+        not_after: new Date(tls.validTo * 1000).toISOString(),
+        not_before: new Date(tls.validFrom * 1000).toISOString(),
+      },
+    },
+    version_protocol: name,
+    version: version,
+  };
 }
 
 export function formatNetworkFields(network: NetworkInfo) {
   const { request, response, url } = network;
-  const postdata = request.postData || '';
-  const tls = response?.securityDetails;
-
   return {
     // URL and USER AGENT would be parsed and mapped by heartbeat
     url,
     user_agent: request.headers?.['User-Agent'],
     http: {
-      version: formatHTTPVersion(response?.protocol),
-      request: {
-        body: {
-          bytes: postdata.length,
-          content: postdata,
-        },
-        method: request.method,
-        referrer: request.headers?.Referer,
-      },
-      response: response
-        ? {
-            body: {
-              bytes: response.encodedDataLength,
-            },
-            mime_type: response.mimeType,
-            status_code: response.status,
-          }
-        : undefined,
+      version: formatVersion(response?.protocol),
+      request: formatRequest(request),
+      response: formatResponse(response),
     },
-    tls: tls
-      ? {
-          cipher: tls.cipher,
-          client: {
-            issuer: tls.issuer,
-            not_after: new Date(tls.validTo).toISOString(),
-            not_before: new Date(tls.validFrom).toISOString(),
-          },
-        }
-      : undefined,
+    tls: formatTLS(response?.securityDetails),
   };
 }
 
@@ -202,7 +224,7 @@ export default class JSONReporter extends BaseReporter {
               type: 'journey/network_info',
               journey,
               timestamp: ni.timestamp,
-              root_fields: formatNetworkFields(ni),
+              root_fields: snakeCaseKeys(formatNetworkFields(ni)),
               step: ni.step,
               payload: snakeCaseKeys(ni),
             });

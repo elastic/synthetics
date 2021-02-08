@@ -24,6 +24,7 @@
  */
 
 import fs from 'fs';
+import snakeCaseKeys from 'snakecase-keys';
 import { step, journey } from '../../src/core';
 import JSONReporter, { formatNetworkFields } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
@@ -82,14 +83,11 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
+    // Mocking the process in node environment
     const originalProcess = global.process;
     global.process = {
       ...originalProcess,
-      pid: 110,
-      ppid: 110,
-      title: 'node',
       platform: 'darwin',
-      argv: ['npx', '@elastic/synthetics', 'suites'],
     };
 
     runner.emit('journey:register', {
@@ -136,7 +134,9 @@ describe('json reporter', () => {
 
   it('formats network fields in ECS format', async () => {
     for (const network of NETWORK_INFO) {
-      expect(formatNetworkFields(network as any)).toMatchSnapshot();
+      expect(
+        snakeCaseKeys(formatNetworkFields(network as any))
+      ).toMatchSnapshot();
     }
   });
 
