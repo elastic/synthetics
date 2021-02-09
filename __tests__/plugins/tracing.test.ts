@@ -42,15 +42,19 @@ describe('tracing', () => {
     const tracer = new Tracing();
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
+    /**
+     * Introduce a delay to make sure there are enough
+     * trace events
+     */
+    await driver.page.waitForTimeout(100);
     const events = await tracer.stop(driver.client);
-    const filmstrips = filterFilmstrips(events);
-    expect(filmstrips).toMatchObject([
-      {
-        snapshot: expect.any(String),
-        ts: expect.any(Number),
-        startTime: expect.any(Number),
-      },
-    ]);
     await Gatherer.dispose(driver);
+    const filmstrips = filterFilmstrips(events);
+    expect(filmstrips.length).toBeGreaterThan(0);
+    expect(filmstrips[0]).toMatchObject({
+      snapshot: expect.any(String),
+      ts: expect.any(Number),
+      startTime: expect.any(Number),
+    });
   });
 });
