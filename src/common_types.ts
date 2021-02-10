@@ -41,8 +41,14 @@ export type DefaultPluginOutput = {
   timestamp: number;
 };
 
+export type BrowserInfo = {
+  name: string;
+  version: string;
+};
+
 export type NetworkInfo = {
   url: string;
+  browser: BrowserInfo;
   method: string;
   type: string;
   request: Protocol.Network.Request;

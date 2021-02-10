@@ -25,15 +25,19 @@
 
 import { CDPSession } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
-import { NetworkInfo } from '../common_types';
+import { NetworkInfo, BrowserInfo } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
 export class NetworkManager {
+  private _browser: BrowserInfo;
   _currentStep: Partial<Step> = null;
   waterfallMap = new Map<string, NetworkInfo>();
 
   async start(client: CDPSession) {
+    const { product } = await client.send('Browser.getVersion');
+    const [name, version] = product.split('/');
+    this._browser = { name, version };
     await client.send('Network.enable');
     /**
      * Listen for all network events
@@ -95,6 +99,7 @@ export class NetworkManager {
     }
 
     this.waterfallMap.set(requestId, {
+      browser: this._browser,
       step: this._currentStep,
       timestamp: getTimestamp(),
       url,

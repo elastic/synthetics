@@ -124,6 +124,7 @@ describe('json reporter', () => {
           request: {},
           response: undefined,
           isNavigationRequest: true,
+          browser: {},
         } as any,
       ],
     });

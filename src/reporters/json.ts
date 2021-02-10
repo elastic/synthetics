@@ -135,11 +135,15 @@ function formatTLS(tls: Protocol.Network.SecurityDetails) {
 }
 
 export function formatNetworkFields(network: NetworkInfo) {
-  const { request, response, url } = network;
+  const { request, response, url, browser } = network;
   return {
-    // URL and USER AGENT would be parsed and mapped by heartbeat
+    // URL would be parsed and mapped by heartbeat
     url,
-    user_agent: request.headers?.['User-Agent'],
+    user_agent: {
+      name: browser.name,
+      version: browser.version,
+      original: request.headers?.['User-Agent'],
+    },
     http: {
       version: formatVersion(response?.protocol),
       request: formatRequest(request),

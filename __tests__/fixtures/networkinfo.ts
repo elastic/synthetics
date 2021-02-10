@@ -25,6 +25,7 @@
 
 export const NETWORK_INFO = [
   {
+    browser: { name: 'HeadlessChrome', version: '90.0.4392.0' },
     step: {
       name: 'go to app',
       index: 1,
@@ -100,6 +101,7 @@ export const NETWORK_INFO = [
     },
   },
   {
+    browser: { name: 'HeadlessChrome', version: '90.0.4392.0' },
     step: {
       name: 'go to app',
       index: 1,
@@ -171,6 +173,7 @@ export const NETWORK_INFO = [
     },
   },
   {
+    browser: { name: 'HeadlessChrome', version: '90.0.4392.0' },
     timestamp: 1612482095713278.2,
     url: 'https://www.google-analytics.com/',
     request: {

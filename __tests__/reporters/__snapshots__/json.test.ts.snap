@@ -79,7 +79,11 @@ Object {
     "version_protocol": "tls",
   },
   "url": "https://vigneshh.in/",
-  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
 }
 `;
 
@@ -160,7 +164,11 @@ Object {
     "version_protocol": "tls",
   },
   "url": "https://vigneshh.in/static/main.js",
-  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
 }
 `;
 
@@ -190,7 +198,11 @@ Object {
   },
   "tls": undefined,
   "url": "https://www.google-analytics.com/",
-  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
 }
 `;
 
@@ -199,7 +211,7 @@ exports[`json reporter writes each step as NDJSON to the FD 1`] = `
 {\\"type\\":\\"journey/start\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"params\\":{}},\\"package_version\\":\\"0.0.1\\"}
 {\\"type\\":\\"step/screenshot\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
 {\\"type\\":\\"step/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"start\\":0,\\"end\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"http\\":{\\"request\\":{\\"body\\":{\\"bytes\\":0,\\"content\\":\\"\\"}}},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"request\\":{},\\"is_navigation_request\\":true},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"user_agent\\":{},\\"http\\":{\\"request\\":{\\"body\\":{\\"bytes\\":0,\\"content\\":\\"\\"}}},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"request\\":{},\\"is_navigation_request\\":true,\\"browser\\":{}},\\"package_version\\":\\"0.0.1\\"}
 {\\"type\\":\\"journey/filmstrips\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"index\\":0,\\"startTime\\":392583.998697,\\"ts\\":392583998697},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
 {\\"type\\":\\"journey/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"start\\":0,\\"end\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
 "
