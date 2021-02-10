@@ -25,15 +25,19 @@
 
 import { CDPSession } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
-import { NetworkInfo } from '../common_types';
+import { NetworkInfo, BrowserInfo } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
 export class NetworkManager {
+  private _browser: BrowserInfo;
   _currentStep: Partial<Step> = null;
   waterfallMap = new Map<string, NetworkInfo>();
 
   async start(client: CDPSession) {
+    const { product } = await client.send('Browser.getVersion');
+    const [name, version] = product.split('/');
+    this._browser = { name, version };
     await client.send('Network.enable');
     /**
      * Listen for all network events
@@ -41,6 +45,10 @@ export class NetworkManager {
     client.on(
       'Network.requestWillBeSent',
       this._onRequestWillBeSent.bind(this)
+    );
+    client.on(
+      'Network.requestWillBeSentExtraInfo',
+      this._onRequestWillBeSentExtraInfo.bind(this)
     );
     client.on('Network.responseReceived', this._onResponseReceived.bind(this));
     client.on('Network.loadingFinished', this._onLoadingFinished.bind(this));
@@ -91,6 +99,7 @@ export class NetworkManager {
     }
 
     this.waterfallMap.set(requestId, {
+      browser: this._browser,
       step: this._currentStep,
       timestamp: getTimestamp(),
       url,
@@ -107,6 +116,23 @@ export class NetworkManager {
     });
   }
 
+  _onRequestWillBeSentExtraInfo(
+    event: Protocol.Network.requestWillBeSentExtraInfoPayload
+  ) {
+    const { requestId, headers } = event;
+    const record = this.waterfallMap.get(requestId);
+    if (!record) {
+      return;
+    }
+    /**
+     * Enhance request headers with additional information
+     */
+    record.request.headers = {
+      ...record.request.headers,
+      ...headers,
+    };
+  }
+
   _onResponseReceived(event: Protocol.Network.responseReceivedPayload) {
     const { requestId, response, timestamp } = event;
     const record = this.waterfallMap.get(requestId);
@@ -118,15 +144,6 @@ export class NetworkManager {
       response,
       responseReceivedTime: timestamp,
     });
-    /**
-     * Enhance request headers with additional information
-     */
-    if (response.requestHeaders) {
-      record.request.headers = {
-        ...record.request.headers,
-        ...response.requestHeaders,
-      };
-    }
   }
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {
