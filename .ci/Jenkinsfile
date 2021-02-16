@@ -16,6 +16,7 @@ pipeline {
     DOCKER_IMG_PUBLIC = "${env.DOCKER_REGISTRY}/experimental/synthetics"
     NPMRC_SECRET = 'secret/jenkins-ci/npmjs/elasticmachine'
     TOTP_SECRET = 'totp/code/npmjs-elasticmachine'
+    SLACK_CHANNEL = '#synthetics-user_experience-uptime'
   }
   options {
     timeout(time: 12, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
@@ -341,9 +342,10 @@ def pushDockerImage(){
   message in both systems.
  */
 def notifyStatus(def args = [:]) {
-  slackSend(channel: '#synthetics-user_experience-uptime', color: args.slackStatus, message: "${args.subject}. ${args.body}",
-            tokenCredentialId: 'jenkins-slack-integration-token')
-  // transform slack URL format '(<URL|description>)' to 'URL'.
-  def bodyEmail = args.body.replaceAll('\\(<', '').replaceAll('\\|.*>\\)', '')
-  emailext(subject: args.subject, to: 'synthrum@elastic.co', body: bodyEmail)
+  releaseNotification(slackChannel: "${env.SLACK_CHANNEL}",
+                      slackColor: args.slackStatus,
+                      slackCredentialsId: 'jenkins-slack-integration-token',
+                      to: 'synthrum@elastic.co',
+                      subject: args.subject,
+                      body: args.body)
 }
