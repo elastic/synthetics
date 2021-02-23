@@ -39,16 +39,27 @@ export type Reporters = keyof typeof reporters;
 
 export type TraceOutput = {
   ts: number;
-  type?: string;
   name?: string;
   startTime: number;
   endTime?: number;
-  duration?: number;
-  score?: number;
 };
 
-export type FilmStrip = TraceOutput & {
+export type UserTiming = TraceOutput & {
+  name: string;
+  type: string;
+  duration?: number;
+};
+
+export type Filmstrip = TraceOutput & {
   snapshot: string;
+};
+
+export type LayoutShift = {
+  exists: boolean;
+  score: number;
+  name: string;
+  ts?: number;
+  startTime?: number;
 };
 
 export type DefaultPluginOutput = {
@@ -95,12 +106,12 @@ export type BrowserMessage = {
 } & DefaultPluginOutput;
 
 export type PluginOutput = {
-  filmstrips?: Array<FilmStrip>;
-  userTiming?: Array<TraceOutput>;
-  experience?: Array<TraceOutput>;
+  filmstrips?: Array<Filmstrip>;
+  userTiming?: Array<UserTiming>;
+  experience?: Array<UserTiming>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
-  layoutShift?: TraceOutput;
+  layoutShift?: LayoutShift;
 };
 
 export type CliArgs = {

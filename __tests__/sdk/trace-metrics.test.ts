@@ -27,13 +27,15 @@ import {
   UserTimings,
   ExperienceMetrics,
   CumulativeLayoutShift,
+  Filmstrips,
 } from '../../src/sdk/trace-metrics';
 import { createTestTrace } from '../utils/create-test-trace';
 import { USER_TIMING_EVENTS } from '../fixtures/trace/user-timing';
+import { FILMSTRIP_EVENTS } from '../fixtures/trace/filmstrips';
 
 describe('Trace metrics', () => {
   const { traceEvents } = createTestTrace();
-  it('compute user timing metrics', async () => {
+  it('compute user timing metrics', () => {
     const processEvents = traceEvents.concat(USER_TIMING_EVENTS as any);
     const metrics = UserTimings.compute({ processEvents } as any);
     expect(metrics).toMatchInlineSnapshot(`
@@ -62,7 +64,7 @@ describe('Trace metrics', () => {
     `);
   });
 
-  it('compute user experience metrics', async () => {
+  it('compute user experience metrics', () => {
     const domContentLoadedEvt = {
       name: 'domContentLoadedEventEnd',
       ts: 10,
@@ -109,24 +111,25 @@ describe('Trace metrics', () => {
     ]);
   });
 
-  it('computes layout shift', () => {
-    function makeTrace(events) {
-      const shiftEvents = events.map(data => {
-        return {
-          name: 'LayoutShift',
-          cat: 'loading',
-          ts: 15,
-          args: {
-            data: {
-              is_main_frame: true,
-              had_recent_input: data.had_recent_input,
-              score: data.score,
-            },
+  function makeTrace(events) {
+    const shiftEvents = events.map(data => {
+      return {
+        name: 'LayoutShift',
+        cat: 'loading',
+        ts: 15,
+        args: {
+          data: {
+            is_main_frame: true,
+            had_recent_input: data.had_recent_input,
+            score: data.score,
           },
-        };
-      });
-      return traceEvents.concat(shiftEvents);
-    }
+        },
+      };
+    });
+    return traceEvents.concat(shiftEvents);
+  }
+
+  it('computes layout shift', () => {
     let mainThreadEvents = makeTrace([
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: false },
@@ -137,6 +140,7 @@ describe('Trace metrics', () => {
     expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
       name: 'LayoutShift',
       score: 3,
+      exists: true,
       ts: 15,
       startTime: 0.000015,
     });
@@ -150,8 +154,26 @@ describe('Trace metrics', () => {
     expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
       name: 'LayoutShift',
       score: 4,
+      exists: true,
       ts: 15,
       startTime: 0.000015,
     });
+  });
+
+  it('returns zero when no layout shift is present ', () => {
+    expect(
+      CumulativeLayoutShift.compute({ mainThreadEvents: traceEvents } as any)
+    ).toEqual({
+      name: 'LayoutShift',
+      score: 0,
+      exists: false,
+    });
+  });
+
+  it('computes filmstrips', () => {
+    const events = traceEvents.concat(FILMSTRIP_EVENTS as any);
+    const metrics = Filmstrips.compute(events as any);
+    expect(metrics.length).toBe(1);
+    expect(metrics[0].snapshot).toContain('data:image/jpeg;base64');
   });
 });

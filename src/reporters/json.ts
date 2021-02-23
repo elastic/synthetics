@@ -27,7 +27,13 @@ import BaseReporter from './base';
 import { formatError, getTimestamp } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
-import { NetworkInfo, StatusValue } from '../common_types';
+import {
+  Filmstrip,
+  LayoutShift,
+  NetworkInfo,
+  UserTiming,
+  StatusValue,
+} from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Metrics } from '../plugins';
 
@@ -43,7 +49,7 @@ type OutputType =
   | 'journey/network_info'
   | 'journey/filmstrips'
   | 'journey/browserconsole'
-  | 'journey/timing'
+  | 'journey/metrics'
   | 'journey/end';
 
 type Payload = {
@@ -347,24 +353,9 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        if (userTiming) {
-          userTiming
-            .concat(experience, layoutShift || [])
-            .forEach(({ startTime, ts, name, type, duration, endTime }) => {
-              this.writeJSON({
-                type: 'journey/timing',
-                journey,
-                payload: {
-                  name,
-                  type,
-                  startTime,
-                  ts,
-                  endTime,
-                  duration,
-                },
-              });
-            });
-        }
+        this.writeMetrics(journey, userTiming);
+        this.writeMetrics(journey, layoutShift);
+        this.writeMetrics(journey, experience);
 
         this.writeJSON({
           type: 'journey/end',
@@ -380,7 +371,22 @@ export default class JSONReporter extends BaseReporter {
     );
   }
 
-  // Writes a structured synthetics event
+  writeMetrics(
+    journey: Journey,
+    events: Array<UserTiming> | Array<Filmstrip> | LayoutShift
+  ) {
+    const metrics = Array.isArray(events) ? events : [events];
+    metrics.forEach(event => {
+      event &&
+        this.writeJSON({
+          type: 'journey/metrics',
+          journey,
+          payload: { ...event },
+        });
+    });
+  }
+
+  // Writes a structered synthetics event
   // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
   // it before passing it into this function!
   // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured

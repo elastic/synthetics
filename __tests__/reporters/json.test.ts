@@ -133,7 +133,6 @@ describe('json reporter', () => {
           browser: {},
         } as any,
       ],
-      userTiming: [],
       experience: [
         {
           name: 'navigationStart',

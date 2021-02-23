@@ -23,7 +23,7 @@
  *
  */
 
-import { FilmStrip, TraceOutput } from '../common_types';
+import { Filmstrip, LayoutShift, UserTiming } from '../common_types';
 import { convertTraceTimestamp } from '../helpers';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
@@ -31,7 +31,7 @@ export class UserTimings {
   static compute(trace: LHTrace) {
     const { processEvents } = trace;
     const measuresMap = new Map();
-    const userTimings: Array<TraceOutput> = [];
+    const userTimings: Array<UserTiming> = [];
 
     for (const event of processEvents) {
       const { name, ph, ts, args } = event;
@@ -94,7 +94,7 @@ export class ExperienceMetrics {
   }
 
   static compute(trace: LHTrace) {
-    const experienceMetrics: Array<TraceOutput> = [];
+    const experienceMetrics: Array<UserTiming> = [];
     const {
       domContentLoadedEvt,
       firstContentfulPaintEvt,
@@ -144,35 +144,35 @@ export class CumulativeLayoutShift {
     return { score: clsScore, event: finalLayoutShiftEvent };
   }
 
-  static compute(trace: LHTrace) {
+  static compute(trace: LHTrace): LayoutShift {
     const events = trace.mainThreadEvents;
     const { score, event } = this.computeCLSValue(events);
 
-    if (event == null) {
-      return;
+    const metric = { name: this.type, score, exists: false };
+    if (!event) {
+      return metric;
     }
     return {
       name: this.type,
       score: score,
       ts: event.ts,
+      exists: true,
       startTime: convertTraceTimestamp(event.ts),
-    } as TraceOutput;
+    };
   }
 }
 
 export class Filmstrips {
-  static compute(traceEvents: Array<TraceEvent>) {
+  static compute(traceEvents: Array<TraceEvent>): Array<Filmstrip> {
     return traceEvents
       .filter(event => {
         const { args, name } = event;
         return name === 'Screenshot' && args?.snapshot;
       })
-      .map(event => {
-        return {
-          snapshot: `data:image/jpeg;base64,${event.args.snapshot}`,
-          ts: event.ts,
-          startTime: convertTraceTimestamp(event.ts),
-        } as FilmStrip;
-      });
+      .map(event => ({
+        snapshot: `data:image/jpeg;base64,${event.args.snapshot}`,
+        ts: event.ts,
+        startTime: convertTraceTimestamp(event.ts),
+      }));
   }
 }

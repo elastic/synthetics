@@ -23,51 +23,20 @@
  *
  */
 
-const pid = 1000;
-const tid = 2000;
-const frame = 'A1'.repeat(16);
+import { TraceProcessor } from '../../src/sdk/trace-processor';
+import { createTestTrace } from '../utils/create-test-trace';
 
-export function createTestTrace() {
-  const timeOrigin = 0;
-  const traceEvents = [
-    {
-      name: 'navigationStart',
-      ts: timeOrigin,
-      pid,
-      tid,
-      ph: 'R',
-      cat: 'blink.user_timing',
-      args: {
-        frame,
-        data: { documentLoaderURL: '' },
-      },
-    },
-    {
-      name: 'TracingStartedInBrowser',
-      ts: timeOrigin,
-      pid,
-      tid,
-      ph: 'I',
-      cat: 'disabled-by-default-devtools.timeline',
-      args: {
-        data: {
-          frameTreeNodeId: 6,
-          persistentIds: true,
-          frames: [{ frame, url: 'about:blank', name: '', processId: pid }],
-        },
-      },
-      s: 't',
-    },
-    {
-      name: 'thread_name',
-      ts: timeOrigin,
-      pid,
-      tid,
-      ph: 'M',
-      cat: '__metadata',
-      args: { name: 'CrRendererMain' },
-    },
-  ];
-
-  return { traceEvents };
-}
+describe('Trace processor', () => {
+  it('computes trace of the tab', () => {
+    const { traceEvents } = createTestTrace();
+    const output = TraceProcessor.computeTrace(traceEvents as any);
+    expect(output).toEqual({
+      userTiming: [],
+      filmstrips: [],
+      experience: [
+        { name: 'navigationStart', ts: 0, type: 'mark', startTime: 0 },
+      ],
+      layoutShift: { name: 'LayoutShift', score: 0, exists: false },
+    });
+  });
+});
