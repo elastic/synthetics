@@ -47,11 +47,7 @@ export async function run(options: RunOptions) {
   setLogger(options.outfd);
 
   try {
-    return await runner.run({
-      ...options,
-      headless: options.headless ?? true,
-      sandbox: options.sandbox ?? true,
-    });
+    return await runner.run(options);
   } catch (e) {
     console.error('Failed to run the test', e);
     process.exit(1);

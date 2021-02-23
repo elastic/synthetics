@@ -32,13 +32,13 @@ jest.mock('../../src/plugins/network');
 
 describe('Gatherer', () => {
   it('boot and dispose driver', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     expect(typeof driver.page.goto).toBe('function');
     await Gatherer.dispose(driver);
   });
 
   it('begin recording based on flags', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const pluginManager = await Gatherer.beginRecording(driver, {
       network: true,
     });

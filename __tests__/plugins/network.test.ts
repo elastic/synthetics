@@ -38,7 +38,7 @@ describe('network', () => {
   });
 
   it('should capture network info', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
     await network.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
@@ -63,7 +63,7 @@ describe('network', () => {
   });
 
   it('produce distinct events for redirects', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
     await network.start(driver.client);
     /**

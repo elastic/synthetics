@@ -60,13 +60,6 @@ describe('Run', () => {
       .spyOn(runner, 'run')
       .mockImplementation(() => Promise.resolve({}));
 
-    await run({ params: {}, environment: 'debug' });
-    expect(runnerSpy.mock.calls[0][0]).toEqual({
-      environment: 'debug',
-      headless: true,
-      params: {},
-      sandbox: true,
-    });
     const runParams: RunOptions = {
       params: {},
       environment: 'debug',
@@ -81,6 +74,6 @@ describe('Run', () => {
       sandbox: true,
     };
     await run(runParams);
-    expect(runnerSpy.mock.calls[1][0]).toEqual(runParams);
+    expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
   });
 });

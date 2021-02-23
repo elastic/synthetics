@@ -38,7 +38,7 @@ describe('BrowserConsole', () => {
   });
 
   it('should capture browser console logs', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const browserConsole = new BrowserConsole(driver.page);
     browserConsole.start();
     await driver.page.goto(server.TEST_PAGE);
