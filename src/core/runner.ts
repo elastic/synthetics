@@ -189,7 +189,6 @@ export default class Runner {
     try {
       pluginManager.onStep(step);
       await step.callback();
-      await driver.page.waitForLoadState('load');
       if (metrics) {
         data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
       }
@@ -199,6 +198,7 @@ export default class Runner {
     } finally {
       data.url = driver.page.url();
       if (screenshots) {
+        await driver.page.waitForLoadState('load');
         data.screenshot = (await driver.page.screenshot()).toString('base64');
       }
     }
