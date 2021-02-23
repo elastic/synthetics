@@ -49,8 +49,11 @@ export class UserTimings {
         continue;
       }
 
+      /**
+       * user timing mark events falls under `R` and i or I
+       * measure events starts with `b` and ends with `e`
+       */
       const phase = ph.toLowerCase();
-      // user timing mark events falls under R and i or I
       if (phase === 'r' || phase === 'i') {
         userTimings.push({
           name,
@@ -76,36 +79,14 @@ export class UserTimings {
   }
 }
 
-export class Filmstrips {
-  static compute(trace: LHTrace) {
-    const { processEvents } = trace;
-    return processEvents
-      .filter(event => {
-        const { args, name, cat } = event;
-        return (
-          name === 'Screenshot' &&
-          cat === 'disabled-by-default-devtools.screenshot' &&
-          args?.snapshot
-        );
-      })
-      .map(event => {
-        return {
-          snapshot: event.args.snapshot,
-          ts: event.ts,
-          startTime: convertTraceTimestamp(event.ts),
-        } as FilmStrip;
-      });
-  }
-}
-
 export class ExperienceMetrics {
-  static buildMetric(event: TraceEvent) {
+  static buildMetric(event: TraceEvent, name?: string) {
     if (!event) {
       return;
     }
 
     return {
-      name: event.name,
+      name: name || event.name,
       ts: event.ts,
       type: 'mark',
       startTime: convertTraceTimestamp(event.ts),
@@ -126,7 +107,9 @@ export class ExperienceMetrics {
     experienceMetrics.push(this.buildMetric(timeOriginEvt));
     experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt));
     !lcpInvalidated &&
-      experienceMetrics.push(this.buildMetric(largestContentfulPaintEvt));
+      experienceMetrics.push(
+        this.buildMetric(largestContentfulPaintEvt, 'largestContentfulPaint')
+      );
     experienceMetrics.push(this.buildMetric(domContentLoadedEvt));
     experienceMetrics.push(this.buildMetric(loadEvt));
 
@@ -135,66 +118,61 @@ export class ExperienceMetrics {
 }
 
 export class CumulativeLayoutShift {
-  static computeLCPValue(events: Array<TraceEvent>) {
-    // find the last LayoutShift event
+  static type = 'LayoutShift';
+
+  static computeCLSValue(events: Array<TraceEvent>) {
+    const layoutShiftEvents = events.filter(
+      event => event.name === this.type && event.args?.data.is_main_frame
+    );
+    // Chromium will set `had_recent_input` if there was recent user input, which
+    // skips shift events from contributing to CLS. This results in the first few shift
+    // events having `had_recent_input` set to true, so ignore it for those events.
+    // See https://bugs.chromium.org/p/chromium/issues/detail?id=1094974.
+    let ignoreHadRecentInput = true;
     let finalLayoutShiftEvent;
-    for (let i = events.length - 1; i >= 0; i--) {
-      const event = events[i];
-      if (event.name === 'LayoutShift' && event.args?.data?.is_main_frame) {
-        finalLayoutShiftEvent = event;
-        break;
+    let clsScore = 0;
+    for (const event of layoutShiftEvents) {
+      if (event.args.data.had_recent_input) {
+        if (!ignoreHadRecentInput) continue;
+      } else {
+        ignoreHadRecentInput = false;
       }
+      clsScore += event.args.data.score;
+      finalLayoutShiftEvent = event;
     }
 
-    // If no events found, consider the score as 0
-    if (!finalLayoutShiftEvent) {
-      return {
-        value: 0,
-      };
-    }
-
-    const cumulativeScore = finalLayoutShiftEvent.args.data.cumulative_score;
-    // if the score is not available, then we consider it as missing data
-    // denoted as -1
-    if (cumulativeScore == null) {
-      return {
-        value: -1,
-      };
-    }
-
-    /**
-     * Calculate the cumulative score from summing all the individual
-     * score from each layout shift events as cumulative score value
-     * results in inconsistencies when there was user input during navigation start
-     *  See https://bugs.chromium.org/p/chromium/issues/detail?id=1094974
-     */
-    const score = events
-      .filter(
-        e =>
-          e.name === 'LayoutShift' &&
-          e.args?.data &&
-          e.args.data.is_main_frame &&
-          !e.args.data.had_recent_input
-      )
-      .map(e => e.args.data.score)
-      .reduce((acc, value) => acc + value, 0);
-
-    return {
-      value: score,
-      event: finalLayoutShiftEvent,
-    };
+    return { score: clsScore, event: finalLayoutShiftEvent };
   }
 
   static compute(trace: LHTrace) {
     const events = trace.mainThreadEvents;
-    const { value, event } = this.computeLCPValue(events);
+    const { score, event } = this.computeCLSValue(events);
 
+    if (event == null) {
+      return;
+    }
     return {
-      name: event.name,
-      type: 'measure',
-      duration: value,
+      name: this.type,
+      score: score,
       ts: event.ts,
       startTime: convertTraceTimestamp(event.ts),
     } as TraceOutput;
+  }
+}
+
+export class Filmstrips {
+  static compute(traceEvents: Array<TraceEvent>) {
+    return traceEvents
+      .filter(event => {
+        const { args, name } = event;
+        return name === 'Screenshot' && args?.snapshot;
+      })
+      .map(event => {
+        return {
+          snapshot: `data:image/jpeg;base64,${event.args.snapshot}`,
+          ts: event.ts,
+          startTime: convertTraceTimestamp(event.ts),
+        } as FilmStrip;
+      });
   }
 }

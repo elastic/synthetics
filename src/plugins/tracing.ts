@@ -24,7 +24,7 @@
  */
 
 import { CDPSession } from 'playwright-chromium';
-import { TraceProcessor } from '../sdk/trace-processor';
+import { TraceEvent, TraceProcessor } from '../sdk/trace-processor';
 
 /**
  * Custom Tracer that listenes for events from specified categories
@@ -74,6 +74,6 @@ export class Tracing {
       ),
       client.send('Tracing.end'),
     ]);
-    return TraceProcessor.computeTrace(traceEvents);
+    return TraceProcessor.computeTrace(traceEvents as Array<TraceEvent>);
   }
 }

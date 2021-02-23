@@ -133,6 +133,21 @@ describe('json reporter', () => {
           browser: {},
         } as any,
       ],
+      userTiming: [],
+      experience: [
+        {
+          name: 'navigationStart',
+          ts: 3065705158085,
+          type: 'mark',
+          startTime: 3065705.158085,
+        },
+        {
+          name: 'firstContentfulPaint',
+          ts: 3065705560142,
+          type: 'mark',
+          startTime: 3065705.560142,
+        },
+      ],
     });
     runner.emit('end', 'done');
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();

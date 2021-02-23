@@ -44,6 +44,7 @@ export type TraceOutput = {
   startTime: number;
   endTime?: number;
   duration?: number;
+  score?: number;
 };
 
 export type FilmStrip = TraceOutput & {
@@ -99,7 +100,7 @@ export type PluginOutput = {
   experience?: Array<TraceOutput>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
-  layoutShift?: Array<TraceOutput>;
+  layoutShift?: TraceOutput;
 };
 
 export type CliArgs = {

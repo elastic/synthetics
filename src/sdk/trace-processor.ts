@@ -48,7 +48,7 @@ export type TraceEvent = {
   // event phase
   ph?: string;
   args?: {
-    snapshot: string;
+    snapshot?: string;
     frame: string;
     data: {
       had_recent_input: boolean;
@@ -92,14 +92,14 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     );
   }
 
-  static computeTrace(traceEvents) {
+  static computeTrace(traceEvents: Array<TraceEvent>) {
     // Origin of the trace is based on the last navigation event
     const options = {
       timeOriginDeterminationMethod: 'lastNavigationStart',
     };
     const trace: LHTrace = super.computeTraceOfTab({ traceEvents }, options);
     const userTiming = UserTimings.compute(trace);
-    const filmstrips = Filmstrips.compute(trace);
+    const filmstrips = Filmstrips.compute(traceEvents);
     const experience = ExperienceMetrics.compute(trace);
     const layoutShift = CumulativeLayoutShift.compute(trace);
 

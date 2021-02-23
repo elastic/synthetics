@@ -47,13 +47,19 @@ describe('tracing', () => {
      * trace events
      */
     await driver.page.waitForTimeout(100);
-    const {filmstrips} = await tracer.stop(driver.client);
+    const { filmstrips, experience } = await tracer.stop(driver.client);
     await Gatherer.stop();
-    await Gatherer.dispose(driver);
     expect(filmstrips.length).toBeGreaterThan(0);
     expect(filmstrips[0]).toMatchObject({
       snapshot: expect.any(String),
       ts: expect.any(Number),
+      startTime: expect.any(Number),
+    });
+    expect(experience.length).toBeGreaterThan(0);
+    expect(experience[0]).toMatchObject({
+      name: 'navigationStart',
+      ts: expect.any(Number),
+      type: 'mark',
       startTime: expect.any(Number),
     });
   });

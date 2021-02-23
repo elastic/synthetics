@@ -347,21 +347,24 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        const traces = userTiming.concat(experience, layoutShift);
-        traces.forEach(({ startTime, ts, name, type, duration, endTime }) => {
-          this.writeJSON({
-            type: 'journey/timing',
-            journey,
-            payload: {
-              name,
-              type,
-              startTime,
-              ts,
-              endTime,
-              duration,
-            },
-          });
-        });
+        if (userTiming) {
+          userTiming
+            .concat(experience, layoutShift || [])
+            .forEach(({ startTime, ts, name, type, duration, endTime }) => {
+              this.writeJSON({
+                type: 'journey/timing',
+                journey,
+                payload: {
+                  name,
+                  type,
+                  startTime,
+                  ts,
+                  endTime,
+                  duration,
+                },
+              });
+            });
+        }
 
         this.writeJSON({
           type: 'journey/end',
