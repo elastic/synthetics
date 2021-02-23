@@ -38,7 +38,7 @@ describe('tracing', () => {
   });
 
   it('should capture filmstrips', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const tracer = new Tracing();
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);

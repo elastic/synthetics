@@ -123,11 +123,7 @@ export default class Runner {
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const start = getMonotonicTime();
-    const driver = await Gatherer.setupDriver(
-      options.headless,
-      options.wsEndpoint,
-      options.sandbox
-    );
+    const driver = await Gatherer.setupDriver(options);
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
       start,

@@ -41,6 +41,11 @@ program
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
+  .option('--sandbox', 'enable chromium sandboxing')
+  .option(
+    '--ws-endpoint <endpoint>',
+    'Browser WebSocket endpoint to connect to'
+  )
   .option(
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
@@ -55,15 +60,10 @@ program
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(
-    '--ws-endpoint <endpoint>',
-    'Browser WebSocket endpoint to connect to'
-  )
-  .option(
     '--outfd <fd>',
     'specify a file descriptor for logs. Default is stdout',
     parseInt
   )
-  .option('--no-sandbox', 'disable chromium sandbox')
   .version(version)
   .description('Run synthetic tests');
 
