@@ -27,8 +27,9 @@ import BaseReporter from './base';
 import { formatError, getTimestamp } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
-import { NetworkInfo } from '../common_types';
+import { NetworkInfo, StatusValue } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
+import { Metrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -43,6 +44,19 @@ type OutputType =
   | 'journey/browserconsole'
   | 'journey/end';
 
+type Payload = {
+  source?: string;
+  start?: number;
+  end?: number;
+  url?: string;
+  status?: StatusValue | number;
+  metrics?: Metrics;
+  params?: Record<string, any>;
+  type?: OutputType;
+  text?: string;
+  index?: number;
+};
+
 type OutputFields = {
   type: OutputType;
   journey: Journey;
@@ -51,7 +65,7 @@ type OutputFields = {
   step?: Partial<Step>;
   error?: Error;
   root_fields?: Record<string, unknown>;
-  payload?: Record<string, unknown>;
+  payload?: Payload | NetworkInfo;
   blob?: string;
 };
 
@@ -167,7 +181,7 @@ export default class JSONReporter extends BaseReporter {
         type: 'journey/start',
         journey,
         timestamp,
-        payload: { params, source: journey.callback.toString },
+        payload: { params, source: journey.callback.toString() },
       });
     });
 
@@ -258,7 +272,7 @@ export default class JSONReporter extends BaseReporter {
               journey,
               timestamp,
               step,
-              payload: { text, type },
+              payload: { text, type } as Payload,
             });
           });
         }
@@ -276,7 +290,7 @@ export default class JSONReporter extends BaseReporter {
     );
   }
 
-  // Writes a structered synthetics event
+  // Writes a structured synthetics event
   // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
   // it before passing it into this function!
   // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured
@@ -298,11 +312,17 @@ export default class JSONReporter extends BaseReporter {
       journey: {
         name: journey.name,
         id: journey.id,
+        ...(type === 'journey/end' ? { status: payload.status } : {}),
       },
       step: step
         ? {
             name: step.name,
             index: step.index,
+            ...(type === 'step/end'
+              ? {
+                  status: payload.status,
+                }
+              : {}),
           }
         : undefined,
       root_fields: { ...(root_fields || {}), ...getMetadata() },
