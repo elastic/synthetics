@@ -51,7 +51,7 @@ type Payload = {
   url?: string;
   status?: StatusValue | number;
   metrics?: Metrics;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   type?: OutputType;
   text?: string;
   index?: number;
@@ -312,13 +312,13 @@ export default class JSONReporter extends BaseReporter {
       journey: {
         name: journey.name,
         id: journey.id,
-        status: payload?.status,
+        status: type === 'journey/end' ? payload.status : undefined,
       },
       step: step
         ? {
             name: step.name,
             index: step.index,
-            status: payload?.status,
+            status: type === 'step/end' ? payload.status : undefined,
           }
         : undefined,
       root_fields: { ...(root_fields || {}), ...getMetadata() },
