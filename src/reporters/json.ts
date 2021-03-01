@@ -312,17 +312,13 @@ export default class JSONReporter extends BaseReporter {
       journey: {
         name: journey.name,
         id: journey.id,
-        ...(type === 'journey/end' ? { status: payload.status } : {}),
+        status: payload?.status,
       },
       step: step
         ? {
             name: step.name,
             index: step.index,
-            ...(type === 'step/end'
-              ? {
-                  status: payload.status,
-                }
-              : {}),
+            status: payload?.status,
           }
         : undefined,
       root_fields: { ...(root_fields || {}), ...getMetadata() },
