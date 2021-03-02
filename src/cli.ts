@@ -160,7 +160,7 @@ async function prepareSuites(inputs: string[]) {
   /**
    * use JSON reporter if json flag is enabled
    */
-  const reporter = options.json ? 'json' : 'default';
+  const reporter = options.json ? 'json' : options.reporter;
 
   const results = await run({
     params: JSON.parse(options.suiteParams),

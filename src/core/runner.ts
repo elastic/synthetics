@@ -33,30 +33,21 @@ import {
   FilmStrip,
   NetworkInfo,
   VoidCallback,
+  CliArgs,
 } from '../common_types';
 import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
 
-type RunParamaters = Record<string, any>;
-
-export type RunOptions = {
+export type RunOptions = Omit<
+  CliArgs,
+  'debug' | 'json' | 'pattern' | 'inline' | 'require' | 'suiteParams'
+> & {
   params?: RunParamaters;
-  environment?: string;
-  reporter?: 'default' | 'json';
-  headless?: boolean;
-  screenshots?: boolean;
-  filmstrips?: boolean;
-  dryRun?: boolean;
-  journeyName?: string;
-  pauseOnError?: boolean;
-  network?: boolean;
-  outfd?: number;
-  metrics?: boolean;
-  wsEndpoint?: string;
-  sandbox?: boolean;
 };
+
+type RunParamaters = Record<string, unknown>;
 
 type BaseContext = {
   params?: RunParamaters;
@@ -306,11 +297,11 @@ export default class Runner {
     }
     this.active = true;
     log(`Runner: run ${this.journeys.length} journeys`);
-    const { reporter = 'default', journeyName, outfd } = options;
+    const { reporter, journeyName, outfd } = options;
     /**
-     * Set up the corresponding reporter
+     * Set up the corresponding reporter and fallback
      */
-    const Reporter = reporters[reporter];
+    const Reporter = reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
     this.emit('start', { numJourneys: this.journeys.length });
     await this.runBeforeAllHook();

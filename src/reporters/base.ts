@@ -65,8 +65,8 @@ function renderDuration(durationMs) {
 export default class BaseReporter {
   stream: SonicBoom;
   fd: number;
-  constructor(public runner: Runner, public options: ReporterOptions = {}) {
-    this.runner = runner;
+
+  constructor(public runner: Runner, options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
     this.stream = new SonicBoom({ fd: this.fd, sync: true });
     this._registerListeners();
