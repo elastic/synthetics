@@ -60,7 +60,7 @@ describe('json reporter', () => {
 
   const readAndCloseStream = async () => {
     /**
-     * Close the underyling stream writing to FD to read all the contents
+     * Close the underlying stream writing to FD to read all the contents
      */
     stream.end();
     await new Promise(resolve => stream.once('finish', resolve));
