@@ -89,14 +89,14 @@ export default class JUnitReporter extends BaseReporter {
 
         entry.attributes.tests++;
         if (status === 'failed') {
-          const { name, message } = formatError(error);
+          const { name, message, stack } = formatError(error);
           caseEntry.children.push({
             name: 'failure',
             attributes: {
               message,
               type: name,
             },
-            text: `${name}: ${message}`,
+            text: stack,
           });
           entry.attributes.failures++;
         } else if (status === 'skipped') {
