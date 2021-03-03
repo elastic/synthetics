@@ -144,7 +144,9 @@ pipeline {
       }
       post {
         always {
-          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/**/junit.xml")
+          sh(label: 'debug purposes',script: "ls -ltr ${BASE_DIR}/${E2E_FOLDER}")
+          archiveArtifacts(allowEmptyArchive: true, artifacts: "${BASE_DIR}/${E2E_FOLDER}/junit.xml")
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/junit.xml")
         }
       }
     }

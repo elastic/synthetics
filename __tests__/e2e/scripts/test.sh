@@ -30,6 +30,6 @@ errorLevel=$?
 #
 # transform reporter to junit only format
 ##################################################
-grep -v "Waiting" tmp/reporter.out > tmp/junit.xml
+grep -v "Waiting" tmp/reporter.out > junit.xml
 
 exit ${errorLevel}
