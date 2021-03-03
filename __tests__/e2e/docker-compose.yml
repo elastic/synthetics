@@ -30,7 +30,7 @@ services:
       - elasticsearch
       - synthetic
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:5601/api/status"]
       interval: 30s
       retries: 10
       start_period: 30s

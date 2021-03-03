@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -xe
+set -eo pipefail
 
 if [ -z "${JENKINS_URL}" ]; then
   # formatting
@@ -14,7 +14,7 @@ fi
 ##################################################
 echo "" # newline
 echo "${bold}Waiting for synthetics docker to start...${normal}"
-until [ "$(docker inspect -f {{.State.Running}} synthetics)" == "true" ]; do
+until [ "$(docker inspect -f '{{.State.Running}}' synthetics)" == "true" ]; do
   sleep ${SLEEP_TIME};
 done;
 
@@ -23,5 +23,13 @@ echo "✅ Setup completed successfully. Running e2e tests..."
 #
 # run e2e tests journey
 ##################################################
+set +e
+npx @elastic/synthetics uptime.journey.ts --reporter junit | tee tmp/reporter.out
+errorLevel=$?
 
-npx @elastic/synthetics uptime.journey.ts
+#
+# transform reporter to junit only format
+##################################################
+grep -v "Waiting" tmp/reporter.out > tmp/junit.xml
+
+exit ${errorLevel}
