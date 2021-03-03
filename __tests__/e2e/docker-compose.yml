@@ -18,7 +18,9 @@ services:
         soft: -1
         hard: -1
     ports:
-      - 127.0.0.1:9200:9200
+      - '9220:9200'
+    expose:
+      - '9220'
     networks:
       - elastic
   kibana:
@@ -33,14 +35,16 @@ services:
       retries: 10
       start_period: 30s
     ports:
-      - 127.0.0.1:5601:5601
+      - 127.0.0.1:5620:5601
+    expose:
+      - '5620'
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     networks:
       - elastic
   synthetic:
-    image: docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
+    image: docker.elastic.co/experimental/synthetics:${SYNTHETICS_VERSION}-synthetics
     container_name: synthetics
     depends_on:
       - elasticsearch

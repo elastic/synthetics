@@ -42,7 +42,7 @@ journey('E2e test synthetics', async ({ page }) => {
   }
 
   step('Go to kibana uptime app', async () => {
-    await page.goto('http://localhost:5601/app/uptime');
+    await page.goto('http://localhost:5620/app/uptime');
   });
 
   step('Check if there is table data', async () => {
@@ -67,7 +67,7 @@ async function waitForSyntheticsData() {
   while (!status) {
     try {
       const { data } = await axios.post(
-        'http://localhost:9200/heartbeat-*/_search',
+        'http://localhost:9220/heartbeat-*/_search',
         {
           query: {
             bool: {
@@ -100,7 +100,7 @@ async function waitForElasticSearch() {
 
   while (!esStatus) {
     try {
-      const { data } = await axios.get('http://localhost:9200/_cluster/health');
+      const { data } = await axios.get('http://localhost:9220/_cluster/health');
       esStatus = data?.status !== 'red';
     } catch (e) {}
   }
@@ -113,7 +113,7 @@ async function waitForKibana() {
 
   while (!esStatus) {
     try {
-      const { data } = await axios.get('http://localhost:5601/api/status');
+      const { data } = await axios.get('http://localhost:5620/api/status');
       esStatus = data?.status.overall.state === 'green';
     } catch (e) {}
   }
