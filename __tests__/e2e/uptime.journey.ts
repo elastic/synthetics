@@ -36,7 +36,7 @@ journey('E2e test synthetics', async ({ page }) => {
   async function refreshUptimeApp() {
     while (!(await page.$('div.euiBasicTable'))) {
       await page.click('[data-test-subj=superDatePickerApplyTimeButton]', {
-        timeout: 40 * 1000,
+        timeout: 60 * 1000,
       });
     }
   }
