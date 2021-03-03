@@ -5,13 +5,7 @@ exports[`base reporter writes each step to the FD 1`] = `
    <testsuite name=\\"j1\\" tests=\\"2\\" failures=\\"1\\" skipped=\\"1\\" errors=\\"0\\">
       <testcase name=\\"s1\\" classname=\\"j1 s1\\" time=\\"1\\">
          <failure message=\\"Boom\\" type=\\"Error\\">
-         Error: Boom
-             at Object.&lt;anonymous&gt; (/Users/vigneshh/elastic/synthetic-monitoring/__tests__/reporters/junit.test.ts:50:14)
-             at Object.asyncJestTest (/Users/vigneshh/elastic/synthetic-monitoring/node_modules/jest-jasmine2/build/jasmineAsyncInstall.js:106:37)
-             at /Users/vigneshh/elastic/synthetic-monitoring/node_modules/jest-jasmine2/build/queueRunner.js:45:12
-             at new Promise (&lt;anonymous&gt;)
-             at mapper (/Users/vigneshh/elastic/synthetic-monitoring/node_modules/jest-jasmine2/build/queueRunner.js:28:19)
-             at /Users/vigneshh/elastic/synthetic-monitoring/node_modules/jest-jasmine2/build/queueRunner.js:75:41
+         at /__tests/reporters/junit.test.ts
          </failure>
       </testcase>
       <testcase name=\\"s2\\" classname=\\"j1 s2\\" time=\\"1\\">

@@ -44,10 +44,16 @@ describe('base reporter', () => {
       params: {},
       timestamp,
     });
+    const error = new Error('Boom');
+    /**
+     * Snapshots would be different for everyone
+     * so keep it simple
+     */
+    error.stack = 'at /__tests/reporters/junit.test.ts';
     runner.emit('step:end', {
       journey: j1,
       status: 'failed',
-      error: new Error('Boom'),
+      error,
       step: step('s1', async () => {}),
       start: 0,
       end: 1,
