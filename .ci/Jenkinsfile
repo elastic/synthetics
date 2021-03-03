@@ -136,9 +136,7 @@ pipeline {
                 chmod -R ugo+rw examples
               ''')
               dir("${E2E_FOLDER}"){
-                timeout(time: 10, unit: 'MINUTES') {
-                  sh(label: 'run e2e tests',script: 'npm run test')
-                }
+                sh(label: 'run e2e tests',script: 'npm run test')
               }
             }
           }
