@@ -19,7 +19,6 @@ services:
         hard: -1
     ports:
       - '9220:9200'
-      - '9320:9300'
     expose:
       - '9220'
     networks:
