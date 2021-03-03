@@ -121,6 +121,9 @@ pipeline {
       }
     }
     stage('E2e Test') {
+      environment {
+        E2E_FOLDER = "__tests__/e2e"
+      }
       options {
         timeout(15)
       }
@@ -132,13 +135,18 @@ pipeline {
               sh(label: 'set permissions', script: '''
                 chmod -R ugo+rw examples
               ''')
-              dir("__tests__/e2e"){
+              dir("${E2E_FOLDER}"){
                 timeout(time: 10, unit: 'MINUTES') {
                   sh(label: 'run e2e tests',script: 'npm run test')
                 }
               }
             }
           }
+        }
+      }
+      post {
+        always {
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/**/junit.xml")
         }
       }
     }
