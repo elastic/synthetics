@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`base reporter writes each step to the FD 1`] = `
+"<testsuites name=\\"\\" tests=\\"2\\" failures=\\"1\\" skipped=\\"1\\" errors=\\"0\\" time=\\"0\\">
+   <testsuite name=\\"j1\\" tests=\\"2\\" failures=\\"1\\" skipped=\\"1\\" errors=\\"0\\">
+      <testcase name=\\"s1\\" classname=\\"j1 s1\\" time=\\"1\\">
+         <failure message=\\"Boom\\" type=\\"Error\\">
+         Error: Boom
+         </failure>
+      </testcase>
+      <testcase name=\\"s2\\" classname=\\"j1 s2\\" time=\\"1\\">
+         <skipped message=\\"previous step failed\\">
+         </skipped>
+      </testcase>
+   </testsuite>
+</testsuites>
+"
+`;

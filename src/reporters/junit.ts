@@ -23,7 +23,7 @@
  *
  */
 
-import { formatError, now } from '../helpers';
+import { formatError, indent, now } from '../helpers';
 import BaseReporter from './base';
 
 type XMLEntry = {
@@ -42,6 +42,9 @@ type XMLEntry = {
   text?: string;
 };
 
+/**
+ * JUnit Reporting Format - https://llg.cubic.org/docs/junit/
+ */
 export default class JUnitReporter extends BaseReporter {
   private totalTests = 0;
   private totalFailures = 0;
@@ -78,7 +81,7 @@ export default class JUnitReporter extends BaseReporter {
           name: 'testcase',
           attributes: {
             name: step.name,
-            classname: step.name + ' ' + journey.name,
+            classname: journey.name + ' ' + step.name,
             time: end - start,
           },
           children: [],
@@ -86,20 +89,22 @@ export default class JUnitReporter extends BaseReporter {
 
         entry.attributes.tests++;
         if (status === 'failed') {
-          const { name, message, stack } = formatError(error);
+          const { name, message } = formatError(error);
           caseEntry.children.push({
             name: 'failure',
             attributes: {
               message,
               type: name,
             },
-            text: stack,
+            text: `${name}: ${message}`,
           });
           entry.attributes.failures++;
         } else if (status === 'skipped') {
           caseEntry.children.push({
             name: 'skipped',
-            message: 'previous step failed',
+            attributes: {
+              message: 'previous step failed',
+            },
           });
           entry.attributes.skipped++;
         }
@@ -130,8 +135,7 @@ export default class JUnitReporter extends BaseReporter {
         },
         children: [...journeyMap.values()],
       };
-      const tokens = serializeXML(root);
-      const output = tokens.join('\n');
+      const output = serializeEntries(root).join('\n');
       this.write(output);
     });
   }
@@ -145,17 +149,19 @@ function escape(text: string): string {
     .replace(/>/g, '&gt;');
 }
 
-function serializeXML(entry: XMLEntry, tokens: string[] = []) {
-  const xmlAttributes: string[] = [];
-  for (const name of Object.keys(entry.attributes || {})) {
-    xmlAttributes.push(`${name}="${escape(String(entry.attributes[name]))}"`);
-  }
-  tokens.push(`<${entry.name} ${xmlAttributes.join(' ')}>`);
+function serializeEntries(entry: XMLEntry, tokens: string[] = [], space = '') {
+  tokens.push(
+    indent(
+      `<${entry.name} ${Object.entries(entry.attributes || {})
+        .map(([key, value]) => `${key}="${escape(String(value))}"`)
+        .join(' ')}>`,
+      space
+    )
+  );
   for (const child of entry.children || []) {
-    serializeXML(child, tokens);
+    serializeEntries(child, tokens, space + '   ');
   }
-  if (entry.text) tokens.push(escape(entry.text));
-  tokens.push(`</${entry.name}>`);
-
+  if (entry.text) tokens.push(indent(escape(entry.text), space));
+  tokens.push(indent(`</${entry.name}>`, space));
   return tokens;
 }
