@@ -25,10 +25,11 @@
 
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
+import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
+export type Reporters = keyof typeof reporters;
 
 export type FilmStrip = {
   snapshot: string;
@@ -83,7 +84,7 @@ export type CliArgs = {
   journeyName?: string;
   network?: boolean;
   pauseOnError?: boolean;
-  reporter?: string;
+  reporter?: Reporters;
   wsEndpoint?: string;
   sandbox?: boolean;
   json?: boolean;

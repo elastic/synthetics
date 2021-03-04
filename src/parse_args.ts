@@ -24,6 +24,11 @@
  */
 
 import { program } from 'commander';
+import { reporters } from './reporters';
+
+const availableReporters = Object.keys(reporters)
+  .map(r => String(r))
+  .join();
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -33,6 +38,10 @@ program
   .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
+  .option(
+    '--reporter <reporter>',
+    `output repoter format, can be one of ${availableReporters}`
+  )
   .option('-d, --debug', 'print debug logs info')
   .option(
     '--pattern <pattern>',

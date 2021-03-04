@@ -25,8 +25,10 @@
 
 import BaseReporter from './base';
 import JSONReporter from './json';
+import JUnitReporter from './junit';
 
 export const reporters = {
   default: BaseReporter,
   json: JSONReporter,
+  junit: JUnitReporter,
 };

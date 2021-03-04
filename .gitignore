@@ -109,6 +109,7 @@ tmp
 *.swp
 
 __tests__/e2e/tmp/
+__tests__/e2e/junit.xml
 
 .idea/
 seccomp/build
