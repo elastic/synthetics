@@ -2,13 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.1-alpha10 (2021-03-04)
+
+### Features
+
+- Move all the ECS specific fields under `root_fields`
+  [#164](https://github.com/elastic/synthetics/issues/164)
+- Add support for Junit reporter
+  [#149](https://github.com/elastic/synthetics/issues/149)
+- Expose status field for `step/end` and `journey/end`
+  [#230](https://github.com/elastic/synthetics/issues/230)
+
+### Bug fixes
+
+- Disable chromium sandboxing by default
+  [#225](https://github.com/elastic/synthetics/issues/225)
+
 ## v0.0.1-alpha9 (2021-02-01)
 
-## Features
+### Features
 
 - Add runtime seccomp profiler for the synthetics agent [#181](https://github.com/elastic/synthetics/issues/181)
 
-## Bug fixes
+### Bug fixes
 
 - Exit with non-zero code when any step/journey fails [#191](https://github.com/elastic/synthetics/issues/191)
 - Calculate blocking time properly for missing network data [#187](https://github.com/elastic/synthetics/issues/187)
