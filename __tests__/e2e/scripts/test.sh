@@ -23,13 +23,5 @@ echo "✅ Setup completed successfully. Running e2e tests..."
 #
 # run e2e tests journey
 ##################################################
-set +e
-npx @elastic/synthetics uptime.journey.ts --reporter junit | tee tmp/reporter.out
+SYNTHETICS_JUNIT_FILE='junit.xml' npx @elastic/synthetics uptime.journey.ts --reporter junit
 errorLevel=$?
-
-#
-# transform reporter to junit only format
-##################################################
-grep -v "Waiting" tmp/reporter.out > junit.xml
-
-exit ${errorLevel}
