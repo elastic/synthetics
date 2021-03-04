@@ -24,21 +24,35 @@
  */
 
 import fs from 'fs';
-import { runner, step, journey } from '../../src/core';
+import { join } from 'path';
+import { step, journey } from '../../src/core';
+import Runner from '../../src/core/runner';
 import JUnitReporter from '../../src/reporters/junit';
 import * as helpers from '../../src/helpers';
 
-describe('base reporter', () => {
-  const dest = helpers.generateTempPath();
+describe('junit reporter', () => {
+  beforeEach(() => {});
+  let dest: string;
+  let runner: Runner;
+  let stream;
+  const timestamp = 1600300800000000;
+  const j1 = journey('j1', async () => {});
+  const s1 = step('s1', async () => {});
+
+  beforeAll(() => {
+    runner = new Runner();
+  });
+
+  beforeEach(() => {
+    runner = new Runner();
+    dest = helpers.generateTempPath();
+    stream = new JUnitReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
+    jest.spyOn(helpers, 'now').mockImplementation(() => 0);
+  });
+
   afterAll(() => fs.unlinkSync(dest));
 
-  it('writes each step to the FD', async () => {
-    const timestamp = 1600300800000000;
-    jest.spyOn(helpers, 'now').mockImplementation(() => 0);
-    const { stream } = new JUnitReporter(runner, {
-      fd: fs.openSync(dest, 'w'),
-    });
-    const j1 = journey('j1', async () => {});
+  it('writes the output to fd', async () => {
     runner.emit('journey:start', {
       journey: j1,
       params: {},
@@ -54,7 +68,7 @@ describe('base reporter', () => {
       journey: j1,
       status: 'failed',
       error,
-      step: step('s1', async () => {}),
+      step: s1,
       start: 0,
       end: 1,
     });
@@ -79,5 +93,32 @@ describe('base reporter', () => {
     const fd = fs.openSync(dest, 'r');
     const buffer = fs.readFileSync(fd);
     expect(buffer.toString()).toMatchSnapshot();
+  });
+
+  it('writes the output to a file', async () => {
+    const filepath = join(__dirname, '../../tmp', 'junit.xml');
+    process.env.SYNTHETICS_JUNIT_FILE = filepath;
+    runner.emit('journey:start', {
+      journey: j1,
+      params: {},
+      timestamp,
+    });
+    runner.emit('step:end', {
+      journey: j1,
+      status: 'skipped',
+      step: s1,
+      start: 0,
+      end: 1,
+    });
+    runner.emit('journey:end', {
+      journey: j1,
+      start: 0,
+      status: 'failed',
+    });
+    runner.emit('end', 'done');
+    stream.end();
+    expect(fs.readFileSync(filepath, 'utf-8')).toMatchSnapshot();
+    fs.unlinkSync(filepath);
+    process.env.SYNTHETICS_JUNIT_FILE = '';
   });
 });

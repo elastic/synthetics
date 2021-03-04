@@ -23,6 +23,8 @@
  *
  */
 
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
 import { formatError, indent, now } from '../helpers';
 import BaseReporter from './base';
 
@@ -136,7 +138,16 @@ export default class JUnitReporter extends BaseReporter {
         children: [...journeyMap.values()],
       };
       const output = serializeEntries(root).join('\n');
-      this.write(output);
+      /**
+       * write the xml output to a file if specified via env flag
+       */
+      const fileName = process.env['SYNTHETICS_JUNIT_FILE'];
+      if (fileName) {
+        mkdirSync(dirname(fileName), { recursive: true });
+        writeFileSync(fileName, output);
+      } else {
+        this.write(output);
+      }
     });
   }
 }
