@@ -24,4 +24,3 @@ echo "✅ Setup completed successfully. Running e2e tests..."
 # run e2e tests journey
 ##################################################
 SYNTHETICS_JUNIT_FILE='junit.xml' npx @elastic/synthetics uptime.journey.ts --reporter junit
-errorLevel=$?
