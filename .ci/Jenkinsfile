@@ -216,6 +216,7 @@ pipeline {
           expression { return params.release }
         }
       }
+      agent { label 'ubuntu-18 && immutable' }
       stages {
         stage('Notify') {
           options { skipDefaultCheckout() }
