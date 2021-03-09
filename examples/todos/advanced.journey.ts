@@ -7,7 +7,7 @@ import {
   destroyTaskStep,
 } from './helpers';
 
-journey('basic addition and completion of single task', async ({ page }) => {
+journey('addition and completion of single task', async ({ page }) => {
   const testText = "Don't put salt in your eyes";
 
   loadAppStep(page);
@@ -18,7 +18,7 @@ journey('basic addition and completion of single task', async ({ page }) => {
   assertTaskListSizeStep(page, 0);
 });
 
-journey('adding and removing a few tasks', async ({ page }) => {
+journey('adding and removing multiple tasks', async ({ page }) => {
   const testTasks = ['Task 1', 'Task 2', 'Task 3'];
 
   loadAppStep(page);

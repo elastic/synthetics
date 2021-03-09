@@ -1,10 +1,9 @@
-import { step } from '@elastic/synthetics';
+import { step, Page } from '@elastic/synthetics';
 import * as assert from 'assert';
 import { join } from 'path';
-import { Page } from 'playwright-core';
 
 export const loadAppStep = (page: Page) => {
-  step('go to app', async () => {
+  step('launch app', async () => {
     const path = 'file://' + join(__dirname, 'app', 'index.html');
     await page.goto(path);
   });
