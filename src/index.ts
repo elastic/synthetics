@@ -55,3 +55,13 @@ export async function run(options: RunOptions) {
 }
 
 export { beforeAll, afterAll, journey, step, before, after } from './core';
+/**
+ * Export all the driver related types to be consumed
+ * and used by suites
+ */
+export type {
+  Page,
+  ChromiumBrowser,
+  ChromiumBrowserContext,
+  CDPSession,
+} from 'playwright-chromium';
