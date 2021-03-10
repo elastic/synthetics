@@ -2,16 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.1-alpha11 (2021-03-10)
+
+### Features
+
+- Expose driver type information from the agent [#239](https://github.com/elastic/synthetics/pull/239)
+
+Exposing the types allows developers to import the driver type information
+directly from the synthetics package instead of using via playwright specific
+packages which would result in inconsistent types (version mismatch or
+browser specific types).
+
 ## v0.0.1-alpha10 (2021-03-04)
 
 ### Features
 
-- Move all the ECS specific fields under `root_fields`
-  [#164](https://github.com/elastic/synthetics/issues/164)
-- Add support for Junit reporter
-  [#149](https://github.com/elastic/synthetics/issues/149)
-- Expose status field for `step/end` and `journey/end`
-  [#230](https://github.com/elastic/synthetics/issues/230)
+- Move all the ECS specific fields under `root_fields` [#164](https://github.com/elastic/synthetics/issues/164)
+- Add support for Junit reporter [#149](https://github.com/elastic/synthetics/issues/149)
+- Expose status field for `step/end` and `journey/end` [#230](https://github.com/elastic/synthetics/issues/230)
 
 ### Bug fixes
 
