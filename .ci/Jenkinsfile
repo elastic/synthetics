@@ -242,10 +242,9 @@ pipeline {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
                     sh(script: 'npm run clean', label: 'clean release')
                     sh(script: 'npm ci', label: 'prepare the ci environment')
-                    sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version')
+                    setEnvVar('VERSION', sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version', returnStdout: true).trim())
                     gitPush()
                     gitPush(args: '--tags')
-                    setEnvVar('VERSION', sh(script: "npm view ${env.NPM_PACKAGE} version", returnStdout: true).trim())
                     log(level: 'INFO', text: "Version to be published '${env.VERSION}'")
                     withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
                       sh(script: "npm publish --otp=${env.TOTP_CODE} --tag alpha", label: 'publish to NPM')
