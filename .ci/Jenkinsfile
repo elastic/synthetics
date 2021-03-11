@@ -242,7 +242,7 @@ pipeline {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
                     sh(script: 'npm run clean', label: 'clean release')
                     sh(script: 'npm ci', label: 'prepare the ci environment')
-                    etEnvVar('VERSION', sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version', returnStdout: true).trim())
+                    setEnvVar('VERSION', sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version', returnStdout: true).trim())
                     gitPush()
                     gitPush(args: '--tags')
                     log(level: 'INFO', text: "Version to be published '${env.VERSION}'")
