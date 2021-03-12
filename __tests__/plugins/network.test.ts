@@ -94,7 +94,7 @@ describe('network', () => {
     const netinfo = await network.stop();
     expect(netinfo[0]).toMatchObject({
       resourceSize: 10,
-      transferSize: 110,
+      transferSize: expect.any(Number),
     });
     await Gatherer.dispose(driver);
   });
