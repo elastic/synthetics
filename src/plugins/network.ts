@@ -50,16 +50,21 @@ export class NetworkManager {
       'Network.requestWillBeSentExtraInfo',
       this._onRequestWillBeSentExtraInfo.bind(this)
     );
+    client.on('Network.dataReceived', this._onDataReceived.bind(this));
     client.on('Network.responseReceived', this._onResponseReceived.bind(this));
     client.on('Network.loadingFinished', this._onLoadingFinished.bind(this));
     client.on('Network.loadingFailed', this._onLoadingFailed.bind(this));
+  }
+
+  _findNetworkRecord(requestId: string) {
+    return this.waterfallMap.get(requestId);
   }
 
   _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
     const { requestId, request, timestamp, type, loaderId } = event;
     const { url, method } = request;
     const isNavigationRequest = requestId == loaderId && type === 'Document';
-    const record = this.waterfallMap.get(requestId);
+    const record = this._findNetworkRecord(requestId);
     /**
      * On redirects, another `requestWillBeSent` event will be fired for the
      * same requestId. We calculate the timings for the redirect request using
@@ -86,7 +91,7 @@ export class NetworkManager {
           })
         );
       }
-      const redirectedRecord = this.waterfallMap.get(requestId);
+      const redirectedRecord = this._findNetworkRecord(requestId);
       /**
        * Rewrite the map with new redirect id to not reset
        * the redirect request with original request
@@ -112,6 +117,8 @@ export class NetworkManager {
       loadEndTime: -1,
       responseReceivedTime: -1,
       response: null,
+      resourceSize: 0,
+      transferSize: 0,
       timings: null,
     });
   }
@@ -120,7 +127,7 @@ export class NetworkManager {
     event: Protocol.Network.requestWillBeSentExtraInfoPayload
   ) {
     const { requestId, headers } = event;
-    const record = this.waterfallMap.get(requestId);
+    const record = this._findNetworkRecord(requestId);
     if (!record) {
       return;
     }
@@ -133,9 +140,19 @@ export class NetworkManager {
     };
   }
 
+  _onDataReceived(event: Protocol.Network.dataReceivedPayload) {
+    const { requestId, dataLength, encodedDataLength } = event;
+    const record = this._findNetworkRecord(requestId);
+    if (!record) {
+      return;
+    }
+    record.resourceSize += dataLength;
+    if (encodedDataLength >= 0) record.transferSize += encodedDataLength;
+  }
+
   _onResponseReceived(event: Protocol.Network.responseReceivedPayload) {
     const { requestId, response, timestamp } = event;
-    const record = this.waterfallMap.get(requestId);
+    const record = this._findNetworkRecord(requestId);
     if (!record) {
       return;
     }
@@ -143,17 +160,20 @@ export class NetworkManager {
       status: response.status,
       response,
       responseReceivedTime: timestamp,
+      transferSize: response.encodedDataLength,
     });
   }
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {
     const { requestId, timestamp, encodedDataLength } = event;
-    const record = this.waterfallMap.get(requestId);
+    const record = this._findNetworkRecord(requestId);
     if (!record) {
       return;
     }
-    if (record.response) {
-      record.response.encodedDataLength = encodedDataLength;
+    if (encodedDataLength >= 0) {
+      record.transferSize = encodedDataLength;
+      record.response &&
+        (record.response.encodedDataLength = encodedDataLength);
     }
     record.loadEndTime = timestamp;
     record.timings = this.calculateTimings(record);
@@ -161,7 +181,7 @@ export class NetworkManager {
 
   _onLoadingFailed(event: Protocol.Network.loadingFailedPayload) {
     const { requestId, timestamp } = event;
-    const record = this.waterfallMap.get(requestId);
+    const record = this._findNetworkRecord(requestId);
     if (!record) {
       return;
     }

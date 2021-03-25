@@ -83,6 +83,22 @@ describe('network', () => {
     await Gatherer.dispose(driver);
   });
 
+  it('measure resource and transfer size', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager();
+    await network.start(driver.client);
+    server.route('/route1', (_, res) => {
+      res.end('A'.repeat(10));
+    });
+    await driver.page.goto(server.PREFIX + '/route1');
+    const netinfo = await network.stop();
+    expect(netinfo[0]).toMatchObject({
+      resourceSize: 10,
+      transferSize: expect.any(Number),
+    });
+    await Gatherer.dispose(driver);
+  });
+
   describe('waterfall timing calculation', () => {
     const getEvent = () => {
       return {
@@ -108,6 +124,7 @@ describe('network', () => {
         responseReceivedTime: 2,
       };
     };
+
     it('calculate timings for a request event', () => {
       const network = new NetworkManager();
       const record = getEvent();

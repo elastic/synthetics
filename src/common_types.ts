@@ -59,6 +59,8 @@ export type NetworkInfo = {
   loadEndTime: number;
   responseReceivedTime: number;
   status: number;
+  resourceSize: number;
+  transferSize: number;
   timings?: {
     blocked: number;
     queueing: number;
