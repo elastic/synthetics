@@ -38,23 +38,32 @@ describe('network', () => {
   });
 
   it('should capture network info', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
     await network.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
     const netinfo = await network.stop();
     expect(netinfo.length).toBeGreaterThan(0);
-    expect(netinfo[0].timings).toMatchObject({
-      dns: expect.any(Number),
-      total: expect.any(Number),
-      wait: expect.any(Number),
-      receive: expect.any(Number),
+    expect(netinfo[0]).toMatchObject({
+      isNavigationRequest: true,
+      step: null,
+      timestamp: expect.any(Number),
+      url: server.TEST_PAGE,
+      request: expect.any(Object),
+      response: expect.any(Object),
+      type: 'Document',
+      method: 'GET',
+      requestSentTime: expect.any(Number),
+      status: 200,
+      loadEndTime: expect.any(Number),
+      responseReceivedTime: expect.any(Number),
+      timings: expect.any(Object),
     });
     await Gatherer.dispose(driver);
   });
 
   it('produce distinct events for redirects', async () => {
-    const driver = await Gatherer.setupDriver(true, wsEndpoint);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
     await network.start(driver.client);
     /**
@@ -72,5 +81,107 @@ describe('network', () => {
     expect(netinfo[1].status).toBe(302);
     expect(netinfo[2].status).toBe(200);
     await Gatherer.dispose(driver);
+  });
+
+  it('measure resource and transfer size', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager();
+    await network.start(driver.client);
+    server.route('/route1', (_, res) => {
+      res.end('A'.repeat(10));
+    });
+    await driver.page.goto(server.PREFIX + '/route1');
+    const netinfo = await network.stop();
+    expect(netinfo[0]).toMatchObject({
+      resourceSize: 10,
+      transferSize: expect.any(Number),
+    });
+    await Gatherer.dispose(driver);
+  });
+
+  describe('waterfall timing calculation', () => {
+    const getEvent = () => {
+      return {
+        response: {
+          // requestTime is in seconds, rest of the timing.* is in milliseconds
+          timing: {
+            requestTime: 1,
+            proxyStart: -1,
+            proxyEnd: -1,
+            dnsStart: 0.1,
+            dnsEnd: 26,
+            connectStart: 26,
+            connectEnd: 92.669,
+            sslStart: 40,
+            sslEnd: 92,
+            sendStart: 94,
+            sendEnd: 95,
+            receiveHeadersEnd: 2350,
+          },
+        },
+        requestSentTime: 1,
+        loadEndTime: 3,
+        responseReceivedTime: 2,
+      };
+    };
+
+    it('calculate timings for a request event', () => {
+      const network = new NetworkManager();
+      const record = getEvent();
+      const timings = network.calculateTimings(record as any);
+      expect(timings).toEqual({
+        blocked: 0.09999999999998899,
+        queueing: -1,
+        proxy: -1,
+        dns: 25.900000000000034,
+        ssl: 52.00000000000004,
+        connect: 66.66899999999987,
+        send: 0.9999999999998899,
+        wait: 905,
+        receive: 1000,
+        total: 2000,
+      });
+    });
+
+    it('when some resource timing data is unavailable', () => {
+      const network = new NetworkManager();
+      const record = getEvent();
+      Object.assign(record.response.timing, {
+        connectEnd: -1,
+        dnsStart: -1,
+      });
+      const timings = network.calculateTimings(record as any);
+      expect(timings).toEqual({
+        blocked: 26.00000000000002,
+        connect: -1,
+        dns: -1,
+        proxy: -1,
+        queueing: -1,
+        receive: 1000,
+        send: 0.9999999999998899,
+        ssl: 52.00000000000004,
+        total: 2000,
+        wait: 905,
+      });
+    });
+
+    it('when complete resource timing is not available', () => {
+      const network = new NetworkManager();
+      const record = getEvent();
+      record.response.timing = null;
+      const timings = network.calculateTimings(record as any);
+      expect(timings).toEqual({
+        blocked: 1000,
+        connect: -1,
+        dns: -1,
+        proxy: -1,
+        queueing: -1,
+        receive: 1000,
+        send: -1,
+        ssl: -1,
+        total: 2000,
+        wait: -1,
+      });
+    });
   });
 });

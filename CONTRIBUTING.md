@@ -98,6 +98,17 @@ npm run watch
 npm run test
 ```
 
+### pre-commit
+
+This project uses [pre-commit](https://pre-commit.com/) so, after installing it, please install the already configured pre-commit hooks we support, to enable pre-commit in your local git repository:
+
+```shell
+$ pre-commit install
+pre-commit installed at .git/hooks/pre-commit
+```
+
+To understand more about the hooks we use, please take a look at pre-commit's [configuration file](./.pre-commit-config.yml).
+
 ### Testing
 
 This project currently has both unit and integration tests.
@@ -126,6 +137,8 @@ heartbeat locally
 
 **NOTE: This project is currently in Alpha phase**
 
+#### Manually
+
 If you have access to publish the package to NPM, the process is as follows:
 
 1. Be sure you have checked out the `master` branch and have pulled the latest changes
@@ -134,6 +147,21 @@ If you have access to publish the package to NPM, the process is as follows:
 1. Push commits and tags upstream with `git push upstream master && git push upstream --tags`
 1. Publish to NPM using with `npm publish --tag alpha`
 1. Mark the last published alpha tags as latest using `npm dist-tag add @elastic/synthetics@<$VERSION> latest`
+
+#### CI based
+
+The release process is also automated in the way any specific commit from the master branch can be potentially released, for such it's required the below steps:
+
+1. Login to apm-ci.elastic.co
+1. Go to the [master](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/) pipeline.
+1. Click on `Build with parameters` with the below checkbox:
+  * `release` to be selected.
+  * other checkboxes should be left as default.
+1. Click on `Build`.
+1. Wait for an email or slack message to confirm the release is ready to be approved, it might take roughly 20 minutes.
+1. Click on the URL from the email or slack.
+1. Click on approve or abort.
+1. Then you can go to the `https://www.npmjs.com/package/@elastic/synthetics` to validate that the bundles have been published.
 
 ## CI
 

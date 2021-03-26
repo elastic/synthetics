@@ -1,3 +1,4 @@
+[![Build Status](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/badge/icon)](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/)
 # Experimental Synthetics Agent
 
 Synthetic Monitoring with Real Browsers.

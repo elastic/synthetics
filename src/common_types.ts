@@ -25,11 +25,11 @@
 
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
-import { program } from 'commander';
+import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
+export type Reporters = keyof typeof reporters;
 
 export type FilmStrip = {
   snapshot: string;
@@ -42,17 +42,25 @@ export type DefaultPluginOutput = {
   timestamp: number;
 };
 
+export type BrowserInfo = {
+  name: string;
+  version: string;
+};
+
 export type NetworkInfo = {
   url: string;
+  browser: BrowserInfo;
   method: string;
   type: string;
   request: Protocol.Network.Request;
-  response: Protocol.Network.Response;
+  response?: Protocol.Network.Response;
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
   responseReceivedTime: number;
   status: number;
+  resourceSize: number;
+  transferSize: number;
   timings?: {
     blocked: number;
     queueing: number;
@@ -67,9 +75,7 @@ export type NetworkInfo = {
   };
 } & DefaultPluginOutput;
 
-type CommandType = typeof program.Command;
-
-export interface CliArgs extends CommandType {
+export type CliArgs = {
   environment?: string;
   outfd?: number;
   headless?: boolean;
@@ -80,10 +86,13 @@ export interface CliArgs extends CommandType {
   journeyName?: string;
   network?: boolean;
   pauseOnError?: boolean;
-  reporter?: string;
+  reporter?: Reporters;
   wsEndpoint?: string;
   sandbox?: boolean;
   json?: boolean;
+  pattern?: string;
+  inline: boolean;
+  require: string[];
   debug?: boolean;
   suiteParams?: string;
-}
+};

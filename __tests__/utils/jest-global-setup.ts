@@ -30,18 +30,21 @@ module.exports = async () => {
   if (wsEndpoint) {
     return new Promise((resolve, reject) => {
       console.log(`\nRunning BrowserService ${wsEndpoint}`);
-      const process = spawn('node', ['./dist/browser-service.js']);
-      (global as any).__browserServiceProcess = process;
-      process.stdout.on('data', data => {
+      const browserServiceProcess = spawn(
+        'node',
+        ['./dist/run-browser-service.js'],
+        { env: { ...process.env, DEBUG: 'true' } }
+      );
+      (global as any).__browserServiceProcess = browserServiceProcess;
+      browserServiceProcess.stdout.on('data', data => {
         if (data.indexOf('Listening on port: 9322') >= 0) {
-          console.log(`${data}`);
-          resolve(process);
+          resolve(browserServiceProcess);
         }
       });
 
-      process.stderr.on('data', data => {
+      browserServiceProcess.stderr.on('data', data => {
         const message = `BrowserService: ${data}`;
-        process.kill();
+        browserServiceProcess.kill();
         reject(message);
       });
     });

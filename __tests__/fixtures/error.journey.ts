@@ -23,12 +23,10 @@
  *
  */
 
-import BaseReporter from './base';
-import JSONReporter from './json';
-import JUnitReporter from './junit';
+import { journey, step } from '../../';
 
-export const reporters = {
-  default: BaseReporter,
-  json: JSONReporter,
-  junit: JUnitReporter,
-};
+journey('error journey', async ({}) => {
+  step('throw error', async () => {
+    throw new Error('boom');
+  });
+});

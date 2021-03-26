@@ -23,12 +23,28 @@
  *
  */
 
-import BaseReporter from './base';
-import JSONReporter from './json';
-import JUnitReporter from './junit';
+import { BrowserService } from '../../src/core/browser-service';
+import { Gatherer } from '../../src/core/gatherer';
+import { Server } from '../utils/server';
 
-export const reporters = {
-  default: BaseReporter,
-  json: JSONReporter,
-  junit: JUnitReporter,
-};
+describe('BrowserService', () => {
+  let browserService: BrowserService;
+  let server: Server;
+  beforeAll(async () => {
+    server = await Server.create();
+    browserService = new BrowserService({ port: 9323 });
+    browserService.init();
+  });
+  afterAll(async () => {
+    await server.close();
+    await browserService.dispose();
+  });
+
+  it('should create browser pages', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint: 'ws://localhost:9323',
+    });
+    await driver.page.goto(server.TEST_PAGE);
+    await Gatherer.dispose(driver);
+  });
+});

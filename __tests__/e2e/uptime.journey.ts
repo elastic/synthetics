@@ -26,28 +26,30 @@
 import { beforeAll, journey, step } from '@elastic/synthetics';
 import axios from 'axios';
 
-
-beforeAll(async ()=> {
+beforeAll(async () => {
   await waitForElasticSearch();
   await waitForSyntheticsData();
   await waitForKibana();
-})
+});
 
 journey('E2e test synthetics', async ({ page }) => {
-
-  async function refreshUptimeApp(){
-    while(!await page.$('div.euiBasicTable')){
-      await page.click('[data-test-subj=superDatePickerApplyTimeButton]');
-      await page.waitForTimeout(30*1000);
+  async function refreshUptimeApp() {
+    while (!(await page.$('div.euiBasicTable'))) {
+      await page.click('[data-test-subj=superDatePickerApplyTimeButton]', {
+        timeout: 60 * 1000,
+      });
     }
   }
 
   step('Go to kibana uptime app', async () => {
-    await page.goto('http://localhost:5601/app/uptime');
+    await page.goto('http://localhost:5620/app/uptime');
+    await page.waitForTimeout(30 * 1000);
   });
 
   step('Check if there is table data', async () => {
-    await page.click('[data-test-subj=uptimeOverviewPage]');
+    await page.click('[data-test-subj=uptimeOverviewPage]', {
+      timeout: 60 * 1000,
+    });
     await refreshUptimeApp();
     await page.click('div.euiBasicTable', { timeout: 60 * 1000 });
   });
@@ -61,63 +63,61 @@ journey('E2e test synthetics', async ({ page }) => {
   });
 });
 
-
-
-async function waitForSyntheticsData(){
+async function waitForSyntheticsData() {
   console.log('Waiting for Synthetics to send data to ES for test monitor');
   let status = false;
 
-  while (!status){
+  while (!status) {
     try {
-      const { data } = await axios.post('http://localhost:9200/heartbeat-*/_search',{
-        "query": {
-          "bool": {
-            "filter": [
-              {
-                "term": {
-                  "monitor.id": "my-monitor"
-                }
-              },
-              {
-                "exists": {
-                  "field": "summary"
-                }
-              }
-            ]
-          }
+      const { data } = await axios.post(
+        'http://localhost:9220/heartbeat-*/_search',
+        {
+          query: {
+            bool: {
+              filter: [
+                {
+                  term: {
+                    'monitor.id': 'my-monitor',
+                  },
+                },
+                {
+                  exists: {
+                    field: 'summary',
+                  },
+                },
+              ],
+            },
+          },
         }
-      });
+      );
 
       // we want some data in uptime app
       status = data?.hits.total.value >= 2;
-    }
-    catch (e) {}
+    } catch (e) {}
   }
 }
 
-async function waitForElasticSearch(){
+async function waitForElasticSearch() {
   console.log('Waiting for Elastic Search  to start');
   let esStatus = false;
 
-  while (!esStatus){
+  while (!esStatus) {
     try {
-      const { data } = await axios.get('http://localhost:9200/_cluster/health');
-      esStatus = data?.status !=='red';
-    }
-    catch (e) {}
+      const { data } = await axios.get('http://localhost:9220/_cluster/health');
+      esStatus = data?.status !== 'red';
+    } catch (e) {}
   }
 }
 
-async function waitForKibana(){
+async function waitForKibana() {
   console.log('Waiting for kibana server to start');
 
   let esStatus = false;
 
-  while (!esStatus){
+  while (!esStatus) {
     try {
-      const { data } = await axios.get('http://localhost:5601/api/status');
-      esStatus = data?.status.overall.state ==='green';
-    }
-    catch (e) {}
+      const { data } = await axios.get('http://localhost:5620/api/status');
+      esStatus = data?.status.overall.state === 'green';
+    } catch (e) {}
   }
 }

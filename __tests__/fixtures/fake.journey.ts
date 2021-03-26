@@ -23,12 +23,8 @@
  *
  */
 
-import BaseReporter from './base';
-import JSONReporter from './json';
-import JUnitReporter from './junit';
+import { journey, step } from '../../dist';
 
-export const reporters = {
-  default: BaseReporter,
-  json: JSONReporter,
-  junit: JUnitReporter,
-};
+journey('fake journey', async ({}) => {
+  step('step1', async () => {});
+});

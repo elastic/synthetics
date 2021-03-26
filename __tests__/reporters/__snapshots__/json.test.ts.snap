@@ -1,12 +1,218 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`json reporter formats network fields in ECS format 1`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "headers": Object {
+        "accept_encoding": "gzip, deflate, br",
+        "method": "GET",
+        "path": "/",
+        "upgrade_insecure_requests": "1",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+      },
+      "initial_priority": "VeryHigh",
+      "method": "GET",
+      "mixed_content_type": "none",
+      "referrer": undefined,
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "url": "https://vigneshh.in/",
+    },
+    "response": Object {
+      "body": Object {
+        "bytes": 3329,
+      },
+      "connection_id": 12,
+      "connection_reused": false,
+      "encoded_data_length": 3329,
+      "from_disk_cache": false,
+      "from_prefetch_cache": false,
+      "from_service_worker": false,
+      "mime_type": "text/html",
+      "protocol": "h2",
+      "remote_i_p_address": "[2606:4700:3035::ac43:83e0]",
+      "remote_port": 443,
+      "response_time": 1612482095476.922,
+      "security_details": Object {
+        "certificate_id": 0,
+        "certificate_transparency_compliance": "unknown",
+        "cipher": "AES_128_GCM",
+        "issuer": "Cloudflare Inc ECC CA-3",
+        "key_exchange": "",
+        "key_exchange_group": "X25519",
+        "protocol": "TLS 1.3",
+        "san_list": Array [
+          [Function],
+        ],
+        "signed_certificate_timestamp_list": Array [],
+        "subject_name": "sni.cloudflaressl.com",
+        "valid_from": 1595980800,
+        "valid_to": 1627560000,
+      },
+      "security_state": "secure",
+      "status": 200,
+      "status_code": 200,
+      "status_text": "",
+      "url": "https://vigneshh.in/",
+    },
+    "version": 2,
+  },
+  "tls": Object {
+    "cipher": "AES_128_GCM_X25519",
+    "server": Object {
+      "x509": Object {
+        "issuer": Object {
+          "common_name": "Cloudflare Inc ECC CA-3",
+        },
+        "not_after": "2021-07-29T12:00:00.000Z",
+        "not_before": "2020-07-29T00:00:00.000Z",
+        "subject": Object {
+          "common_name": "sni.cloudflaressl.com",
+        },
+      },
+    },
+    "version": "1.3",
+    "version_protocol": "tls",
+  },
+  "url": "https://vigneshh.in/",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
+}
+`;
+
+exports[`json reporter formats network fields in ECS format 2`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "headers": Object {
+        "referer": "https://vigneshh.in/",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+      },
+      "initial_priority": "Low",
+      "method": "GET",
+      "mixed_content_type": "none",
+      "referrer": "https://vigneshh.in/",
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "url": "https://vigneshh.in/static/main.js",
+    },
+    "response": Object {
+      "body": Object {
+        "bytes": 425,
+      },
+      "connection_id": 12,
+      "connection_reused": true,
+      "encoded_data_length": 425,
+      "from_disk_cache": false,
+      "from_prefetch_cache": false,
+      "from_service_worker": false,
+      "headers": Object {},
+      "mime_type": "application/javascript",
+      "protocol": "h2",
+      "remote_i_p_address": "[2606:4700:3035::ac43:83e0]",
+      "remote_port": 443,
+      "response_time": 1612482095622.864,
+      "security_details": Object {
+        "certificate_id": 0,
+        "certificate_transparency_compliance": "unknown",
+        "cipher": "AES_128_GCM",
+        "issuer": "Cloudflare Inc ECC CA-3",
+        "key_exchange": "",
+        "key_exchange_group": "X25519",
+        "protocol": "TLS 1.3",
+        "san_list": Array [
+          [Function],
+        ],
+        "signed_certificate_timestamp_list": Array [],
+        "subject_name": "sni.cloudflaressl.com",
+        "valid_from": 1595980800,
+        "valid_to": 1627560000,
+      },
+      "security_state": "secure",
+      "status": 200,
+      "status_code": 200,
+      "status_text": "",
+      "url": "https://vigneshh.in/static/main.js",
+    },
+    "version": 2,
+  },
+  "tls": Object {
+    "cipher": "AES_128_GCM_X25519",
+    "server": Object {
+      "x509": Object {
+        "issuer": Object {
+          "common_name": "Cloudflare Inc ECC CA-3",
+        },
+        "not_after": "2021-07-29T12:00:00.000Z",
+        "not_before": "2020-07-29T00:00:00.000Z",
+        "subject": Object {
+          "common_name": "sni.cloudflaressl.com",
+        },
+      },
+    },
+    "version": "1.3",
+    "version_protocol": "tls",
+  },
+  "url": "https://vigneshh.in/static/main.js",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
+}
+`;
+
+exports[`json reporter formats network fields in ECS format 3`] = `
+Object {
+  "http": Object {
+    "request": Object {
+      "body": Object {
+        "bytes": 0,
+        "content": "",
+      },
+      "has_post_data": true,
+      "headers": Object {
+        "content_type": "text/plain",
+        "referer": "https://vigneshh.in/",
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+      },
+      "initial_priority": "High",
+      "method": "POST",
+      "mixed_content_type": "none",
+      "referrer": "https://vigneshh.in/",
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "url": "https://www.google-analytics.com/",
+    },
+    "response": undefined,
+    "version": undefined,
+  },
+  "tls": undefined,
+  "url": "https://www.google-analytics.com/",
+  "user_agent": Object {
+    "name": "HeadlessChrome",
+    "original": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36",
+    "version": "90.0.4392.0",
+  },
+}
+`;
+
 exports[`json reporter writes each step as NDJSON to the FD 1`] = `
-"{\\"type\\":\\"journey/register\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/start\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"params\\":{}},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"step/screenshot\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"step/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"start\\":0,\\"end\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"request\\":{},\\"response\\":{},\\"is_navigation_request\\":true},\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/filmstrips\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"index\\":0,\\"startTime\\":392583.998697,\\"ts\\":392583998697},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
-{\\"type\\":\\"journey/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"payload\\":{\\"start\\":0,\\"end\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
+"{\\"type\\":\\"journey/register\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/start\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"params\\":{},\\"source\\":\\"async () => { }\\"},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"step/screenshot\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"step/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"step\\":{\\"name\\":\\"s1\\",\\"index\\":1,\\"status\\":\\"succeeded\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"source\\":\\"async () => { }\\",\\"start\\":0,\\"end\\":10,\\"url\\":\\"dummy\\",\\"status\\":\\"succeeded\\"},\\"url\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/network_info\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"user_agent\\":{},\\"http\\":{\\"request\\":{\\"body\\":{\\"bytes\\":0,\\"content\\":\\"\\"}}},\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"request\\":{},\\"is_navigation_request\\":true,\\"browser\\":{}},\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/filmstrips\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"index\\":0,\\"startTime\\":392583.998697,\\"ts\\":392583998697},\\"blob\\":\\"dummy\\",\\"package_version\\":\\"0.0.1\\"}
+{\\"type\\":\\"journey/end\\",\\"@timestamp\\":1600300800000000,\\"journey\\":{\\"name\\":\\"j1\\",\\"id\\":\\"j1\\",\\"status\\":\\"succeeded\\"},\\"root_fields\\":{\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"start\\":0,\\"end\\":11,\\"status\\":\\"succeeded\\"},\\"package_version\\":\\"0.0.1\\"}
 "
 `;

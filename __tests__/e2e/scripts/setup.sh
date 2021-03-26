@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -xe
+set -e
 
 # variables
 
@@ -33,4 +33,4 @@ echo "" # newline
 echo "${bold}Starting elasticsearch , kibana and synthetics docker${normal}"
 echo "" # newline
 
-STACK_VERSION=7.10.0 docker-compose --file docker-compose.yml up --remove-orphans > ${TMP_DIR}/docker-logs.log 2>&1 &
+STACK_VERSION=8.0.0-SNAPSHOT SYNTHETICS_VERSION=8.0.0 docker-compose --file docker-compose.yml up --remove-orphans > ${TMP_DIR}/docker-logs.log 2>&1 &

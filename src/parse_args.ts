@@ -24,7 +24,11 @@
  */
 
 import { program } from 'commander';
-import { CliArgs } from './common_types';
+import { reporters } from './reporters';
+
+const availableReporters = Object.keys(reporters)
+  .map(r => String(r))
+  .join();
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -34,6 +38,10 @@ program
   .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
+  .option(
+    '--reporter <reporter>',
+    `output repoter format, can be one of ${availableReporters}`
+  )
   .option('-d, --debug', 'print debug logs info')
   .option(
     '--pattern <pattern>',
@@ -42,6 +50,11 @@ program
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
+  .option('--sandbox', 'enable chromium sandboxing')
+  .option(
+    '--ws-endpoint <endpoint>',
+    'Browser WebSocket endpoint to connect to'
+  )
   .option(
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
@@ -56,19 +69,11 @@ program
   )
   .option('--journey-name <name>', 'only run the journey with the given name')
   .option(
-    '--ws-endpoint <endpoint>',
-    'Browser WebSocket endpoint to connect to'
-  )
-  .option(
     '--outfd <fd>',
     'specify a file descriptor for logs. Default is stdout',
     parseInt
   )
-  .option('--no-sandbox', 'disable chromium sandbox')
   .version(version)
   .description('Run synthetic tests');
 
-export const parseArgs = () => {
-  program.parse(process.argv);
-  return (program as unknown) as CliArgs;
-};
+export default program.parse(process.argv);

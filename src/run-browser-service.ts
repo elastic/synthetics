@@ -23,12 +23,16 @@
  *
  */
 
-import BaseReporter from './base';
-import JSONReporter from './json';
-import JUnitReporter from './junit';
+import { BrowserService } from './core/browser-service';
 
-export const reporters = {
-  default: BaseReporter,
-  json: JSONReporter,
-  junit: JUnitReporter,
+const browserService = new BrowserService();
+browserService.init();
+
+const exitFn = async () => {
+  await browserService.dispose();
+  process.exit(0);
 };
+
+process.on('SIGTERM', exitFn);
+process.on('SIGINT', exitFn);
+process.on('uncaughtException', exitFn);
