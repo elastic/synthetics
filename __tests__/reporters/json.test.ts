@@ -177,4 +177,12 @@ describe('json reporter', () => {
     );
     expect(journeyEnd.error).toEqual(helpers.formatError(myErr));
   });
+
+  it('captures number of journeys as metadata event', async () => {
+    runner.emit('start', {
+      numJourneys: 10,
+    });
+
+    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+  });
 });
