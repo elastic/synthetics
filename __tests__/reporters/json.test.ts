@@ -46,6 +46,19 @@ describe('json reporter', () => {
   let stream;
   let runner: Runner;
   const timestamp = 1600300800000000;
+  const originalProcess = global.process;
+
+  beforeAll(() => {
+    // Mocking the process in node environment
+    global.process = {
+      ...originalProcess,
+      platform: 'darwin',
+    };
+  });
+
+  afterAll(() => {
+    global.process = originalProcess;
+  });
 
   beforeEach(() => {
     runner = new Runner();
@@ -83,13 +96,6 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
-    // Mocking the process in node environment
-    const originalProcess = global.process;
-    global.process = {
-      ...originalProcess,
-      platform: 'darwin',
-    };
-
     runner.emit('journey:register', {
       journey: j1,
     });
@@ -129,7 +135,6 @@ describe('json reporter', () => {
       ],
     });
     runner.emit('end', 'done');
-    global.process = originalProcess;
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
