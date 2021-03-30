@@ -35,6 +35,7 @@ import { Metrics } from '../plugins';
 const { version, name } = require('../../package.json');
 
 type OutputType =
+  | 'synthetics/metadata'
   | 'journey/register'
   | 'journey/start'
   | 'step/screenshot'
@@ -59,7 +60,7 @@ type Payload = {
 
 type OutputFields = {
   type: OutputType;
-  journey: Journey;
+  journey?: Journey;
   timestamp?: number;
   url?: string;
   step?: Partial<Step>;
@@ -167,8 +168,51 @@ export function formatNetworkFields(network: NetworkInfo) {
   };
 }
 
+function journeyInfo(
+  journey: OutputFields['journey'],
+  type: OutputFields['type'],
+  status: Payload['status']
+) {
+  if (!journey) {
+    return;
+  }
+  return {
+    name: journey.name,
+    id: journey.id,
+    status: type === 'journey/end' ? status : undefined,
+  };
+}
+
+function stepInfo(
+  step: OutputFields['step'],
+  type: OutputFields['type'],
+  status: Payload['status']
+) {
+  if (!step) {
+    return;
+  }
+  return {
+    name: step.name,
+    index: step.index,
+    status: type === 'step/end' ? status : undefined,
+  };
+}
+
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
+    /**
+     * report the number of journeys that exists on a suite which
+     * could be used for better sharding
+     */
+    this.runner.on('start', ({ numJourneys }) => {
+      this.writeJSON({
+        type: 'synthetics/metadata',
+        root_fields: {
+          num_journeys: numJourneys,
+        },
+      });
+    });
+
     this.runner.on('journey:register', ({ journey }) => {
       this.writeJSON({
         type: 'journey/register',
@@ -309,18 +353,8 @@ export default class JSONReporter extends BaseReporter {
     this.write({
       type,
       '@timestamp': timestamp || getTimestamp(),
-      journey: {
-        name: journey.name,
-        id: journey.id,
-        status: type === 'journey/end' ? payload.status : undefined,
-      },
-      step: step
-        ? {
-            name: step.name,
-            index: step.index,
-            status: type === 'step/end' ? payload.status : undefined,
-          }
-        : undefined,
+      journey: journeyInfo(journey, type, payload?.status),
+      step: stepInfo(step, type, payload?.status),
       root_fields: { ...(root_fields || {}), ...getMetadata() },
       payload,
       blob,
