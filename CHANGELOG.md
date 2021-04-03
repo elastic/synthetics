@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.1-alpha12 (2021-03-31)
+
+### Features
+
+- Record transfer size and resource size for all network events
+  [#220](https://github.com/elastic/synthetics/issues/220)
+- Report the number of journeys as part of the new `synthetics/metadata` event
+  which would be used by heartbeat eventually for sharding [#247](https://github.com/elastic/synthetics/pull/247)
+
 ## v0.0.1-alpha11 (2021-03-10)
 
 ### Features
