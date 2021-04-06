@@ -31,8 +31,9 @@ import { getTimestamp } from '../helpers';
 
 export class NetworkManager {
   private _browser: BrowserInfo;
+  private _InflightRequestMap = new Map<string, NetworkInfo>();
+  results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
-  waterfallMap = new Map<string, NetworkInfo>();
 
   async start(client: CDPSession) {
     const { product } = await client.send('Browser.getVersion');
@@ -57,7 +58,7 @@ export class NetworkManager {
   }
 
   _findNetworkRecord(requestId: string) {
-    return this.waterfallMap.get(requestId);
+    return this._InflightRequestMap.get(requestId);
   }
 
   _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
@@ -96,14 +97,14 @@ export class NetworkManager {
        * Rewrite the map with new redirect id to not reset
        * the redirect request with original request
        */
-      this.waterfallMap.delete(requestId);
-      this.waterfallMap.set(
+      this._InflightRequestMap.delete(requestId);
+      this._InflightRequestMap.set(
         `redirect:${timestamp}:${requestId}`,
         redirectedRecord
       );
     }
 
-    this.waterfallMap.set(requestId, {
+    this._InflightRequestMap.set(requestId, {
       browser: this._browser,
       step: this._currentStep,
       timestamp: getTimestamp(),
@@ -166,28 +167,36 @@ export class NetworkManager {
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {
     const { requestId, timestamp, encodedDataLength } = event;
+    this._requestCompleted(requestId, timestamp, encodedDataLength);
+  }
+
+  _onLoadingFailed(event: Protocol.Network.loadingFailedPayload) {
+    const { requestId, timestamp } = event;
+    this._requestCompleted(requestId, timestamp);
+  }
+
+  _requestCompleted(
+    requestId: string,
+    endTime: number,
+    encodedDataLength?: number
+  ) {
     const record = this._findNetworkRecord(requestId);
     if (!record) {
       return;
     }
     if (encodedDataLength >= 0) {
       record.transferSize = encodedDataLength;
-      record.response &&
-        (record.response.encodedDataLength = encodedDataLength);
     }
-    record.loadEndTime = timestamp;
+    record.loadEndTime = endTime;
     record.timings = this.calculateTimings(record);
+    this.results.push(record);
+    /**
+     * When there is DNS failure, browsers keeps retrying requests which
+     * might result in incorrect timings so we get remove them to measure only once
+     */
+    this._InflightRequestMap.delete(requestId);
   }
 
-  _onLoadingFailed(event: Protocol.Network.loadingFailedPayload) {
-    const { requestId, timestamp } = event;
-    const record = this._findNetworkRecord(requestId);
-    if (!record) {
-      return;
-    }
-    record.loadEndTime = timestamp;
-    record.timings = this.calculateTimings(record);
-  }
   /**
    * Account for missing response received event and also adjust the
    * response received event based on when first byte event was recorded
@@ -218,12 +227,6 @@ export class NetworkManager {
    * https://github.com/ChromeDevTools/devtools-frontend/blob/7f5478d8ceb7586f23f4073ab5c2085dac1ec26a/front_end/network/RequestTimingView.js#L98-L193
    */
   calculateTimings(record: NetworkInfo) {
-    const {
-      response,
-      requestSentTime,
-      loadEndTime,
-      responseReceivedTime,
-    } = record;
     const result: NetworkInfo['timings'] = {
       blocked: -1,
       queueing: -1,
@@ -236,9 +239,17 @@ export class NetworkManager {
       receive: -1,
       total: -1,
     };
-    if (response == null) {
-      return result;
-    }
+    const { requestSentTime, loadEndTime, responseReceivedTime } = record;
+
+    /**
+     * Handle when request failed and no responseReceived event was
+     * fired for that particular request
+     * Eg: connection refused by remote host
+     */
+    const response = record.response || {
+      timing: null,
+      fromServiceWorker: false,
+    };
 
     const toMilliseconds = (time: number) => (time === -1 ? -1 : time * 1000);
     const calculateDiffInMs = (
@@ -292,6 +303,11 @@ export class NetworkManager {
       calculateDiffInMs('total', start, end);
       calculateDiffInMs('blocked', start, middle);
       calculateDiffInMs('receive', middle, end);
+      // Check if the request is blocked/stalled for the whole timeframe and
+      // calculate timings appropriately for that request
+      if (!isFinite(result['blocked'])) {
+        result['blocked'] = result['total'];
+      }
       return result;
     }
     calculateDiffInMs(
@@ -338,6 +354,6 @@ export class NetworkManager {
   }
 
   stop() {
-    return [...this.waterfallMap.values()];
+    return this.results;
   }
 }
