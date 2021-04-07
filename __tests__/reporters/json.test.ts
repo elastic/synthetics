@@ -140,9 +140,13 @@ describe('json reporter', () => {
 
   it('formats network fields in ECS format', async () => {
     for (const network of NETWORK_INFO) {
-      expect(
-        snakeCaseKeys(formatNetworkFields(network as any))
-      ).toMatchSnapshot();
+      const event = formatNetworkFields(network as any);
+      const ecsKeys = Object.keys(event.ecs);
+      const duplicates = Object.keys(event.payload).some(key =>
+        ecsKeys.includes(key)
+      );
+      expect(duplicates).toBe(false);
+      expect(snakeCaseKeys(event)).toMatchSnapshot();
     }
   });
 
