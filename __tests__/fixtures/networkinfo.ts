@@ -23,7 +23,9 @@
  *
  */
 
-export const NETWORK_INFO = [
+import { NetworkInfo } from '../../src/common_types';
+
+export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
   {
     browser: { name: 'HeadlessChrome', version: '90.0.4392.0' },
     step: {
@@ -58,6 +60,7 @@ export const NETWORK_INFO = [
     responseReceivedTime: 2355505.4514,
     response: {
       url: 'https://vigneshh.in/',
+      headers: {},
       status: 200,
       statusText: '',
       mimeType: 'text/html',
@@ -79,7 +82,7 @@ export const NETWORK_INFO = [
         cipher: 'AES_128_GCM',
         certificateId: 0,
         subjectName: 'sni.cloudflaressl.com',
-        sanList: [Array],
+        sanList: [],
         issuer: 'Cloudflare Inc ECC CA-3',
         validFrom: 1595980800,
         validTo: 1627560000,
@@ -87,6 +90,8 @@ export const NETWORK_INFO = [
         certificateTransparencyCompliance: 'unknown',
       },
     },
+    transferSize: 3392,
+    resourceSize: 7634,
     timings: {
       blocked: 2.080999780446291,
       queueing: 2.145999576896429,
@@ -151,7 +156,7 @@ export const NETWORK_INFO = [
         cipher: 'AES_128_GCM',
         certificateId: 0,
         subjectName: 'sni.cloudflaressl.com',
-        sanList: [Array],
+        sanList: [],
         issuer: 'Cloudflare Inc ECC CA-3',
         validFrom: 1595980800,
         validTo: 1627560000,

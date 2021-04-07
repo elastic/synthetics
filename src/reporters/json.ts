@@ -151,7 +151,7 @@ function formatTLS(tls: Protocol.Network.SecurityDetails) {
 
 export function formatNetworkFields(network: NetworkInfo) {
   const { request, response, url, browser } = network;
-  return {
+  const ecs = {
     // URL would be parsed and mapped by heartbeat
     url,
     user_agent: {
@@ -166,6 +166,26 @@ export function formatNetworkFields(network: NetworkInfo) {
     },
     tls: formatTLS(response?.securityDetails),
   };
+
+  const pickItems: Array<keyof NetworkInfo> = [
+    'browser',
+    'status',
+    'method',
+    'type',
+    'isNavigationRequest',
+    'requestSentTime',
+    'responseReceivedTime',
+    'loadEndTime',
+    'transferSize',
+    'resourceSize',
+    'timings',
+  ];
+  const payload: Partial<NetworkInfo> = pickItems.reduce((acc, value) => {
+    network[value] && (acc[value] = network[value]);
+    return acc;
+  }, {});
+
+  return { ecs, payload };
 }
 
 function journeyInfo(
@@ -282,13 +302,14 @@ export default class JSONReporter extends BaseReporter {
       }) => {
         if (networkinfo) {
           networkinfo.forEach(ni => {
+            const { ecs, payload } = formatNetworkFields(ni);
             this.writeJSON({
               type: 'journey/network_info',
               journey,
               timestamp: ni.timestamp,
-              root_fields: snakeCaseKeys(formatNetworkFields(ni)),
+              root_fields: snakeCaseKeys(ecs),
               step: ni.step,
-              payload: snakeCaseKeys(ni),
+              payload: snakeCaseKeys(payload),
             });
           });
         }
