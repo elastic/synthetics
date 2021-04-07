@@ -37,6 +37,8 @@ describe('network', () => {
     await server.close();
   });
 
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   it('should capture network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
@@ -97,6 +99,69 @@ describe('network', () => {
       transferSize: expect.any(Number),
     });
     await Gatherer.dispose(driver);
+  });
+
+  it('timings for aborted requests', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager();
+    await network.start(driver.client);
+
+    const delayTime = 20;
+    server.route('/delay100', async (req, res) => {
+      await delay(delayTime);
+      res.destroy();
+    });
+    server.route('/index', async (_, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end(`<script src=${server.PREFIX}/delay100 />`);
+    });
+
+    await driver.page.goto(server.PREFIX + '/index');
+    await Gatherer.dispose(driver);
+    const netinfo = await network.stop();
+    expect(netinfo.length).toBe(2);
+    expect(netinfo[1]).toMatchObject({
+      url: `${server.PREFIX}/delay100`,
+      status: 0,
+      response: null,
+      timings: expect.any(Object),
+    });
+    expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);
+    expect(netinfo[1].timings.total).toEqual(netinfo[1].timings.blocked);
+  });
+
+  it('timings for chunked response', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager();
+    await network.start(driver.client);
+
+    const delayTime = 100;
+    server.route('/chunked', async (req, res) => {
+      res.writeHead(200, {
+        'content-type': 'application/javascript',
+      });
+      res.write('a');
+      await delay(delayTime);
+      res.write('b');
+      await delay(delayTime);
+      return res.end('c');
+    });
+    server.route('/index', async (_, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end(`<script src=${server.PREFIX}/chunked />`);
+    });
+
+    await driver.page.goto(server.PREFIX + '/index');
+    await Gatherer.dispose(driver);
+    const netinfo = await network.stop();
+    expect(netinfo.length).toBe(2);
+    expect(netinfo[1]).toMatchObject({
+      url: `${server.PREFIX}/chunked`,
+      status: 200,
+      response: expect.any(Object),
+      timings: expect.any(Object),
+    });
+    expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);
   });
 
   describe('waterfall timing calculation', () => {
