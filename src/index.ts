@@ -65,3 +65,9 @@ export type {
   ChromiumBrowserContext,
   CDPSession,
 } from 'playwright-chromium';
+
+/**
+ * Export the types necessary to write custom reporters
+ */
+export type { default as Runner } from './core/runner';
+export type { Reporter, ReporterOptions } from './reporters';

@@ -23,14 +23,13 @@
  *
  */
 
-import BaseReporter from './base';
-import JSONReporter from './json';
-import JUnitReporter from './junit';
-import Reporter, { ReporterOptions } from './reporter';
+import Runner from '../core/runner';
 
-export { Reporter, ReporterOptions };
-export const reporters = {
-  default: BaseReporter,
-  json: JSONReporter,
-  junit: JUnitReporter,
+export type ReporterOptions = {
+  fd?: number;
+  colors?: boolean;
 };
+
+export default interface Reporter {
+  new (runner: Runner, options: ReporterOptions): any;
+}
