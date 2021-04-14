@@ -33,11 +33,7 @@ import {
   findPWLogsIndexes,
   rewriteErrorStack,
 } from '../helpers';
-
-export type ReporterOptions = {
-  fd?: number;
-  colors?: boolean;
-};
+import { ReporterOptions } from './reporter';
 
 function renderError(error) {
   let output = '';

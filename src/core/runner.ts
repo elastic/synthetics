@@ -26,7 +26,7 @@
 import { EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
-import { reporters } from '../reporters';
+import { reporters, Reporter } from '../reporters';
 import { getMonotonicTime, getTimestamp, runParallel } from '../helpers';
 import {
   StatusValue,
@@ -42,9 +42,16 @@ import { log } from './logger';
 
 export type RunOptions = Omit<
   CliArgs,
-  'debug' | 'json' | 'pattern' | 'inline' | 'require' | 'suiteParams'
+  | 'debug'
+  | 'json'
+  | 'pattern'
+  | 'inline'
+  | 'require'
+  | 'suiteParams'
+  | 'reporter'
 > & {
   params?: RunParamaters;
+  reporter?: CliArgs['reporter'] | Reporter;
 };
 
 type RunParamaters = Record<string, unknown>;
@@ -301,7 +308,10 @@ export default class Runner {
     /**
      * Set up the corresponding reporter and fallback
      */
-    const Reporter = reporters[reporter] || reporters['default'];
+    const Reporter =
+      typeof reporter === 'function'
+        ? reporter
+        : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
     this.emit('start', { numJourneys: this.journeys.length });
     await this.runBeforeAllHook();

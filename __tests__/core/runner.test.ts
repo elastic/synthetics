@@ -309,4 +309,54 @@ describe('runner', () => {
       'afterAll2',
     ]);
   });
+
+  it('run - supports custom reporters', async () => {
+    let reporter;
+    class Reporter {
+      messages: string[] = [];
+
+      constructor(
+        public readonly runner: Runner,
+        public readonly options: any
+      ) {
+        reporter = this;
+
+        this.runner.on('start', ({ numJourneys }) => {
+          this.messages.push(`numJourneys ${numJourneys}`);
+        });
+        this.runner.on('journey:start', ({ journey }) => {
+          this.messages.push(`journey:start ${journey.name}`);
+        });
+        this.runner.on('journey:end', ({ journey }) => {
+          this.messages.push(`journey:end ${journey.name}`);
+        });
+        this.runner.on('end', () => {
+          this.messages.push(`end`);
+        });
+      }
+    }
+
+    runner.addJourney(new Journey({ name: 'foo' }, noop));
+    const result = await runner.run({
+      reporter: Reporter,
+      wsEndpoint,
+      outfd: fs.openSync(dest, 'w'),
+    });
+
+    expect(result).toEqual({
+      foo: {
+        status: 'succeeded',
+      },
+    });
+    expect(reporter?.messages).toEqual([
+      'numJourneys 1',
+      'journey:start foo',
+      'journey:end foo',
+      'end',
+    ]);
+    expect(reporter.runner).toBeInstanceOf(Runner);
+    expect(reporter.options).toEqual({
+      fd: expect.any(Number),
+    });
+  });
 });
