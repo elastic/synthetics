@@ -343,26 +343,20 @@ describe('runner', () => {
       outfd: fs.openSync(dest, 'w'),
     });
 
-    expect(result).toMatchInlineSnapshot(`
-      Object {
-        "foo": Object {
-          "status": "succeeded",
-        },
-      }
-    `);
-    expect(reporter?.messages).toMatchInlineSnapshot(`
-      Array [
-        "numJourneys 1",
-        "journey:start foo",
-        "journey:end foo",
-        "end",
-      ]
-    `);
+    expect(result).toEqual({
+      foo: {
+        status: 'succeeded',
+      },
+    });
+    expect(reporter?.messages).toEqual([
+      'numJourneys 1',
+      'journey:start foo',
+      'journey:end foo',
+      'end',
+    ]);
     expect(reporter.runner).toBeInstanceOf(Runner);
-    expect(reporter.options).toMatchInlineSnapshot(`
-      Object {
-        "fd": 26,
-      }
-    `);
+    expect(reporter.options).toEqual({
+      fd: expect.any(Number),
+    });
   });
 });
