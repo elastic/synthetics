@@ -1,12 +1,16 @@
 ---
 seccomp.enabled: false
 heartbeat.config.monitors:
-  path: "${path.config}/monitors.d/*.yml"
+  path: '${path.config}/monitors.d/*.yml'
   reload.enabled: false
   reload.period: 5s
 
-heartbeat.synthetic_suites:
-- name: Todos
+heartbeat.monitors:
   # SUITES_DIR is an environment var provided by the docker container
-  path: "${SUITES_DIR}/todos"
-  schedule: "@every 1m"
+  - type: browser
+    id: todos
+    name: Todos
+    schedule: '@every 1m'
+    source:
+      local:
+        path: '${SUITES_DIR}/todos'

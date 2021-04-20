@@ -44,13 +44,13 @@ services:
     networks:
       - elastic
   synthetic:
-    image: docker.elastic.co/experimental/synthetics:${SYNTHETICS_VERSION}-synthetics
+    image: docker.elastic.co/beats/heartbeat:8.0.0-SNAPSHOT
     container_name: synthetics
     depends_on:
       - elasticsearch
     volumes:
       - ../../examples/docker/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro
-      - ../../:/opt/elastic-synthetics:rw
+      - ../../:/opt/elastic-synthetics:ro
     security_opt:
       - seccomp=../../examples/docker/seccomp_profile.json
     environment:
