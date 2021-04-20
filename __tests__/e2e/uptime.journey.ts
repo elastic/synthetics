@@ -43,7 +43,6 @@ journey('E2e test synthetics', async ({ page }) => {
 
   step('Go to kibana uptime app', async () => {
     await page.goto('http://localhost:5620/app/uptime');
-    await page.waitForTimeout(30 * 1000);
   });
 
   step('Check if there is table data', async () => {
@@ -55,7 +54,7 @@ journey('E2e test synthetics', async ({ page }) => {
   });
 
   step('Click on my monitor', async () => {
-    await page.click('[data-test-subj=monitor-page-link-my-monitor]');
+    await page.click('[data-test-subj=monitor-page-link-my-monitor-inline]');
   });
 
   step('It navigates to details page', async () => {
@@ -77,7 +76,7 @@ async function waitForSyntheticsData() {
               filter: [
                 {
                   term: {
-                    'monitor.id': 'my-monitor',
+                    'monitor.id': 'my-monitor-inline',
                   },
                 },
                 {
