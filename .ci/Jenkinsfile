@@ -12,8 +12,6 @@ pipeline {
     DOCKER_REGISTRY = 'docker.elastic.co'
     NODE_DOCKER_IMAGE = "${env.DOCKER_REGISTRY}/observability-ci/node-cypress:latest"
     SECCOMP_FILE = "${env.WORKSPACE}/${env.BASE_DIR}/.ci/seccomp_profile.json"
-    DOCKER_IMG = "${env.DOCKER_REGISTRY}/observability-ci/synthetics"
-    DOCKER_IMG_PUBLIC = "${env.DOCKER_REGISTRY}/experimental/synthetics"
     NPMRC_SECRET = 'secret/jenkins-ci/npmjs/elasticmachine'
     TOTP_SECRET = 'totp/code/npmjs-elasticmachine'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
@@ -149,62 +147,6 @@ pipeline {
         }
       }
     }
-    /**
-     Publish Docker images.
-     */
-    stage('Publish Docker image'){
-      options {
-        timeout(15)
-      }
-      matrix {
-        agent { label 'ubuntu-18 && immutable' }
-        axes {
-          axis {
-            name 'STACK_VERSION'
-            values '8.0.0-synthetics', '7.10.0-synthetics', '7.11.0-synthetics'
-          }
-        }
-        stages {
-          stage('package'){
-            steps {
-              withGithubNotify(context: 'Package') {
-                cleanup()
-                withNodeEnv(){
-                  dir("${BASE_DIR}"){
-                    sh(label: 'Build',script: 'npm run build')
-                    sh(label: 'Pack',script: 'npm pack')
-                  }
-                }
-              }
-            }
-          }
-          stage('observability-ci'){
-            environment {
-              DOCKER_IMG_TAG = "${env.DOCKER_IMG}:${env.GIT_BASE_COMMIT}-${env.STACK_VERSION}"
-              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG}:${env.BRANCH_NAME}-${env.STACK_VERSION}"
-            }
-            steps {
-              withGithubNotify(context: "push ${DOCKER_IMG_TAG_BRANCH}") {
-                pushDockerImage()
-              }
-            }
-          }
-          stage('experimental'){
-            when {
-              branch 'master'
-            }
-            environment {
-              DOCKER_IMG_TAG_BRANCH = "${env.DOCKER_IMG_PUBLIC}:${env.STACK_VERSION}"
-            }
-            steps {
-              withGithubNotify(context: "push ${DOCKER_IMG_TAG_BRANCH}") {
-                pushDockerImage()
-              }
-            }
-          }
-        }
-      }
-    }
     stage('Release') {
       options {
         skipDefaultCheckout()
@@ -314,31 +256,6 @@ def withNodeEnv(Map args=[:], Closure body){
     def node_version = readFile(file: '.nvm-node-version').trim()
     withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){
       body()
-    }
-  }
-}
-
-def pushDockerImage(){
-  dir("${BASE_DIR}"){
-    dockerLogin(secret: "${env.DOCKERELASTIC_SECRET}",
-      registry: "${env.DOCKER_REGISTRY}")
-    sh(label: 'Build Docker image',
-      script: """docker build \
-        -t ${env.DOCKER_IMG_TAG} \
-        -t ${env.DOCKER_IMG_TAG_BRANCH} \
-        --build-arg STACK_VERSION=${env.STACK_VERSION} \
-        --label BRANCH_NAME=${env.BRANCH_NAME} \
-        --label GIT_SHA=${env.GIT_BASE_COMMIT} \
-        --label TIMESTAMP=\$(date +%Y-%m-%d_%H:%M) \
-        .
-    """)
-    retryWithSleep(retries: 3, seconds: 5, backoff: true){
-      if(env.DOCKER_IMG_TAG){
-        sh(label: 'Push Docker image sha',
-          script: "docker push ${env.DOCKER_IMG_TAG}")
-      }
-      sh(label: 'Push Docker image name',
-        script: "docker push ${env.DOCKER_IMG_TAG_BRANCH}")
     }
   }
 }
