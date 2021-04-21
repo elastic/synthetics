@@ -193,7 +193,12 @@ export default class Runner {
       data.url = driver.page.url();
       if (screenshots) {
         await driver.page.waitForLoadState('load');
-        data.screenshot = (await driver.page.screenshot()).toString('base64');
+        data.screenshot = (
+          await driver.page.screenshot({
+            type: 'jpeg',
+            quality: 80,
+          })
+        ).toString('base64');
       }
     }
     log(`Runner: end step (${step.name})`);
