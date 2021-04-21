@@ -1,26 +1,22 @@
 ---
-seccomp.enabled: false
-heartbeat.config.monitors:
-  path: "${path.config}/monitors.d/*.yml"
-  reload.enabled: false
-  reload.period: 5s
-
-heartbeat.synthetic_suites:
-- name: Todos
-  path: "/opt/elastic-synthetics/examples/todos"
-  schedule: "@every 1m"
-
-processors:
-
 heartbeat.monitors:
-- type: browser
-  id: my-monitor
-  name: My Monitor
-  schedule: "@every 1m"
-  script: |-
-    step("load homepage", async () => {
-        await page.goto('https://www.elastic.co');
-    });
-    step("hover over products menu", async () => {
-        await page.hover('css=[data-nav-item=products]');
-    });
+  - type: browser
+    id: my-monitor
+    name: My Monitor
+    schedule: '@every 1m'
+    source:
+      inline:
+        script: |-
+          step("load homepage", async () => {
+              await page.goto('https://www.elastic.co');
+          });
+          step("hover over products menu", async () => {
+              await page.hover('css=[data-nav-item=products]');
+          });
+  - type: browser
+    id: todos
+    name: Todos
+    schedule: '@every 1m'
+    source:
+      local:
+        path: '/opt/elastic-synthetics/examples/todos'

@@ -1,13 +1,10 @@
-# This Dockerfile illustrates the usage of synthetics in an air gapped environment, where 
+# This Dockerfile illustrates the usage of synthetics in an air gapped environment, where
 # public internet access is not available. In this situation you'll want to create
 # a custom image using our official docker image as a base.
 
 # Use our synthetics image as a base.
 ARG STACK_VERSION=latest
-FROM docker.elastic.co/experimental/synthetics:${STACK_VERSION}-synthetics
-# Use the line below if you're using a custom base image, usually only for
-# developers
-#FROM heartbeat-synthetics-local
+FROM docker.elastic.co/beats/heartbeat:${STACK_VERSION}
 
 # This flag variable will prevent heartbeat from running `npm i` or
 # similar commands that depend on an internet connection.

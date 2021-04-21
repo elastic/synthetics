@@ -4,4 +4,4 @@
 
 # You'll want to run this in an environment with internet access so that NPM deps can be installed,
 # then, take the resultant image and transfer that to your air gapped network.
-docker build --build-arg STACK_VERSION=7.10.0 -t my-custom-heartbeat .
+docker build --build-arg STACK_VERSION=7.12.0 -t my-custom-heartbeat .

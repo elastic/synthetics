@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-VERSION=${1:-7.10.0}
-if [[ ${VERSION} =~ ^[0-9] ]]; then
-	IMAGE="docker.elastic.co/experimental/synthetics:${VERSION}-synthetics"
-else
-	IMAGE=${VERSION}
-fi
+VERSION=${1:-8.0.0-SNAPSHOT}
+IMAGE="docker.elastic.co/beats/heartbeat:${VERSION}"
 echo "Using image ${IMAGE}"
 docker run \
   -it \

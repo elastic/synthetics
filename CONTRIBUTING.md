@@ -129,8 +129,8 @@ integration. Follow the below steps to invoke the synthetics agent using
 heartbeat locally
 
 1. `cd /examples/docker`
-2. `./pull-latest.sh` - Pulls the latest heartbeat images
-3. `./run-build-local.sh $HEARTBEAT_ARGS` - Runs the locally built heartbeat image with the
+2. `./pull-latest.sh` - Pulls the latest heartbeat image
+3. `./run.sh $HEARTBEAT_ARGS` - Run the heartbeat image with the
    synthetic tests configured in `heartbeat.docker.yml` file.
 
 ### Releasing
@@ -155,8 +155,10 @@ The release process is also automated in the way any specific commit from the ma
 1. Login to apm-ci.elastic.co
 1. Go to the [master](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/) pipeline.
 1. Click on `Build with parameters` with the below checkbox:
-  * `release` to be selected.
-  * other checkboxes should be left as default.
+
+- `release` to be selected.
+- other checkboxes should be left as default.
+
 1. Click on `Build`.
 1. Wait for an email or slack message to confirm the release is ready to be approved, it might take roughly 20 minutes.
 1. Click on the URL from the email or slack.
