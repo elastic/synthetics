@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.1-alpha14 (2021-04-14)
+
+### Features
+
+- Add support for custom reporters for the Synthetics runner
+  [#254](https://github.com/elastic/synthetics/issues/254)
+
+## v0.0.1-alpha13 (2021-04-08)
+
+### Features
+
+- Remove duplicate payload fields and keep the network fields under ECS
+  [#252](https://github.com/elastic/synthetics/issues/252)
+
+### Bug fixes
+
+- Measure the network timings for aborted and inflight network requests
+  correctly[#251](https://github.com/elastic/synthetics/pull/251)
+
 ## v0.0.1-alpha12 (2021-03-31)
 
 ### Features
