@@ -41,7 +41,7 @@ export type JourneyCallback = (options: {
   browser: Browser;
   client: CDPSession;
   params: Record<string, any>;
-}) => Promise<void>;
+}) => void;
 
 export class Journey {
   name: string;

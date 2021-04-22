@@ -36,8 +36,8 @@ describe('junit reporter', () => {
   let runner: Runner;
   let stream;
   const timestamp = 1600300800000000;
-  const j1 = journey('j1', async () => {});
-  const s1 = step('s1', async () => {});
+  const j1 = journey('j1', () => {});
+  const s1 = step('s1', () => {});
 
   beforeAll(() => {
     runner = new Runner();
@@ -75,7 +75,7 @@ describe('junit reporter', () => {
     runner.emit('step:end', {
       journey: j1,
       status: 'skipped',
-      step: step('s2', async () => {}),
+      step: step('s2', () => {}),
       start: 0,
       end: 1,
     });

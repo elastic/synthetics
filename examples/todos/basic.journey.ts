@@ -2,7 +2,7 @@ import { journey, step } from '@elastic/synthetics';
 import { deepStrictEqual } from 'assert';
 import { join } from 'path';
 
-journey('check if title is present', async ({ page }) => {
+journey('check if title is present', ({ page }) => {
   step('launch app', async () => {
     const path = 'file://' + join(__dirname, 'app', 'index.html');
     await page.goto(path);
@@ -14,7 +14,7 @@ journey('check if title is present', async ({ page }) => {
   });
 });
 
-journey('check if input placeholder is correct', async ({ page }) => {
+journey('check if input placeholder is correct', ({ page }) => {
   step('launch app', async () => {
     const path = 'file://' + join(__dirname, 'app', 'index.html');
     await page.goto(path);

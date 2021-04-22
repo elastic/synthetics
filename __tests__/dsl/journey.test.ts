@@ -25,7 +25,7 @@
 
 import { Journey, Step } from '../../src/dsl';
 
-const noop = async () => {};
+const noop = () => {};
 describe('Journey', () => {
   it('add step to the journey', () => {
     const journey = new Journey({ name: 'j1' }, noop);

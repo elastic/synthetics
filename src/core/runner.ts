@@ -252,7 +252,7 @@ export default class Runner {
     return results;
   }
 
-  async registerJourney(journey: Journey, context: JourneyContext) {
+  registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
     const timestamp = getTimestamp();
     const { params } = context;
@@ -260,7 +260,7 @@ export default class Runner {
     /**
      * Load and register the steps for the current journey
      */
-    await journey.callback({ ...context.driver, params });
+    journey.callback({ ...context.driver, params });
   }
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
