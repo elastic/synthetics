@@ -68,6 +68,7 @@ type OutputFields = {
   root_fields?: Record<string, unknown>;
   payload?: Payload | NetworkInfo;
   blob?: string;
+  blob_mime?: string;
 };
 
 function getMetadata() {
@@ -268,6 +269,7 @@ export default class JSONReporter extends BaseReporter {
             journey,
             step,
             blob: screenshot,
+            blob_mime: 'image/jpeg',
           });
         }
         this.writeJSON({
@@ -369,6 +371,7 @@ export default class JSONReporter extends BaseReporter {
     error,
     payload,
     blob,
+    blob_mime,
     url,
   }: OutputFields) {
     this.write({
@@ -379,6 +382,7 @@ export default class JSONReporter extends BaseReporter {
       root_fields: { ...(root_fields || {}), ...getMetadata() },
       payload,
       blob,
+      blob_mime,
       error: formatError(error),
       url,
       package_version: version,

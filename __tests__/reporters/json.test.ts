@@ -194,4 +194,23 @@ describe('json reporter', () => {
 
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
+
+  it('captures screenshots blob and mime type', async () => {
+    const data = 'aaaaaaaaaaa';
+    runner.emit('step:end', {
+      journey: j1,
+      status: 'failed',
+      step: step('s2', () => {}),
+      screenshot: data,
+      start: 11,
+      end: 20,
+    });
+    const stepEnd = (await readAndCloseStreamJson()).find(
+      json => json.type == 'step/screenshot'
+    );
+    expect(stepEnd).toMatchObject({
+      blob: data,
+      blob_mime: 'image/jpeg',
+    });
+  });
 });
