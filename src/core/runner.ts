@@ -180,6 +180,18 @@ export default class Runner {
     log(`Runner: start step (${step.name})`);
     const { metrics, screenshots } = options;
     const { driver, pluginManager } = context;
+    /**
+     * URL needs to be the first navigation request of any step
+     * Listening for request solves the case where `about:blank` would be
+     * reported for failed navigations
+     */
+    const captureUrl = req => {
+      if (!data.url && req.isNavigationRequest()) {
+        data.url = req.url();
+      }
+      driver.page.off('request', captureUrl);
+    };
+    driver.page.on('request', captureUrl);
     try {
       pluginManager.onStep(step);
       await step.callback();
@@ -190,7 +202,7 @@ export default class Runner {
       data.status = 'failed';
       data.error = error;
     } finally {
-      data.url = driver.page.url();
+      data.url ??= driver.page.url();
       if (screenshots) {
         await driver.page.waitForLoadState('load');
         data.screenshot = (await driver.page.screenshot()).toString('base64');

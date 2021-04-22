@@ -189,6 +189,45 @@ describe('runner', () => {
     ]);
   });
 
+  it('run step - navigation failure', async () => {
+    const url = 'http://blah/';
+    const j1 = journey('j1', async ({ page }) => {
+      step('cannot resoslve url', async () => {
+        await page.goto(url);
+      });
+    });
+    const context = await Runner.createContext({});
+    await runner.registerJourney(j1, context);
+    const result = await runner.runSteps(j1, context, {});
+    await Gatherer.dispose(context.driver);
+    expect(result).toEqual([
+      {
+        status: 'failed',
+        url,
+        error: expect.any(Error),
+      },
+    ]);
+  });
+
+  it('run step - bad navigation', async () => {
+    const j1 = journey('j1', async ({ page }) => {
+      step('bad url', async () => {
+        await page.goto('blah');
+      });
+    });
+    const context = await Runner.createContext({});
+    await runner.registerJourney(j1, context);
+    const result = await runner.runSteps(j1, context, {});
+    await Gatherer.dispose(context.driver);
+    expect(result).toEqual([
+      {
+        status: 'failed',
+        url: 'about:blank',
+        error: expect.any(Error),
+      },
+    ]);
+  });
+
   it('run steps - accumulate results', async () => {
     const error = new Error('broken step 2');
     const j1 = journey('j1', async ({ page }) => {
