@@ -34,7 +34,7 @@ import { wsEndpoint } from '../utils/test-config';
 
 describe('runner', () => {
   let runner: Runner, server: Server;
-  const noop = async () => {};
+  const noop = () => {};
   const dest = generateTempPath();
   beforeEach(async () => {
     runner = new Runner();

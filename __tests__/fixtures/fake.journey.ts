@@ -23,8 +23,8 @@
  *
  */
 
-import { journey, step } from '../../dist';
+import { journey, step } from '../../';
 
-journey('fake journey', async ({}) => {
-  step('step1', async () => {});
+journey('fake journey', ({}) => {
+  step('step1', () => {});
 });

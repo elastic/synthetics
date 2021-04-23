@@ -25,8 +25,8 @@
 
 import { journey, step } from '../../';
 
-journey('error journey', async ({}) => {
-  step('throw error', async () => {
+journey('error journey', () => {
+  step('throw error', () => {
     throw new Error('boom');
   });
 });

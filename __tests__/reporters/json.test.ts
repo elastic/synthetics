@@ -42,7 +42,7 @@ jest.mock(
 
 describe('json reporter', () => {
   let dest: string;
-  const j1 = journey('j1', async () => {});
+  const j1 = journey('j1', () => {});
   let stream;
   let runner: Runner;
   const timestamp = 1600300800000000;
@@ -107,7 +107,7 @@ describe('json reporter', () => {
     runner.emit('step:end', {
       journey: j1,
       status: 'succeeded',
-      step: step('s1', async () => {}),
+      step: step('s1', () => {}),
       screenshot: 'dummy',
       url: 'dummy',
       start: 0,
@@ -156,7 +156,7 @@ describe('json reporter', () => {
     runner.emit('step:end', {
       journey: j1,
       status: 'failed',
-      step: step('s2', async () => {}),
+      step: step('s2', () => {}),
       screenshot: 'dummy2',
       url: 'dummy2',
       start: 11,

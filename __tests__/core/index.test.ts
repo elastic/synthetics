@@ -35,7 +35,7 @@ import {
 
 beforeEach(() => runner.reset());
 
-const noop = async () => {};
+const noop = () => {};
 const name = 'journey';
 
 it('add global hooks to runner', () => {
