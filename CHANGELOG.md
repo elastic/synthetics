@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.0 (2021-04-23)
+
+### Features
+
+- Default to JPEG images with quality 80 for individual step
+  screenshots[#233](https://github.com/elastic/synthetics/issues/233)
+
+### Bug fixes
+
+- Keep journey callback types to be synchronous to match with how steps are
+  executed synchronously[#256](https://github.com/elastic/synthetics/issues/256)
+- Report correct page URL on navigation
+  failures[#255](https://github.com/elastic/synthetics/issues/255)
+
+**NOTE: Playwright version is updated to 1.10.0**
+
 ## v0.0.1-alpha14 (2021-04-14)
 
 ### Features

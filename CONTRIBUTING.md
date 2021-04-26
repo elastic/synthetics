@@ -135,7 +135,7 @@ heartbeat locally
 
 ### Releasing
 
-**NOTE: This project is currently in Alpha phase**
+**NOTE: This project is currently in Beta phase**
 
 #### Manually
 
@@ -143,10 +143,10 @@ If you have access to publish the package to NPM, the process is as follows:
 
 1. Be sure you have checked out the `master` branch and have pulled the latest changes
 1. Run the tests to make sure everything is green
-1. Bump the alpha version by running `npm version prerelease --preid=alpha`
+1. Bump the beta version by running `npm version prerelease --preid=beta`
 1. Push commits and tags upstream with `git push upstream master && git push upstream --tags`
-1. Publish to NPM using with `npm publish --tag alpha`
-1. Mark the last published alpha tags as latest using `npm dist-tag add @elastic/synthetics@<$VERSION> latest`
+1. Publish to NPM using with `npm publish --tag beta`
+1. Mark the last published beta tags as latest using `npm dist-tag add @elastic/synthetics@<$VERSION> latest`
 
 #### CI based
 

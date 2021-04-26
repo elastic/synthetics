@@ -185,12 +185,12 @@ pipeline {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
                     sh(script: 'npm run clean', label: 'clean release')
                     sh(script: 'npm ci', label: 'prepare the ci environment')
-                    setEnvVar('VERSION', sh(script: 'npm version prerelease --preid=alpha', label: 'bump the alpha version', returnStdout: true).trim())
+                    setEnvVar('VERSION', sh(script: 'npm version prerelease --preid=beta', label: 'bump the beta version', returnStdout: true).trim())
                     gitPush()
                     gitPush(args: '--tags')
                     log(level: 'INFO', text: "Version to be published '${env.VERSION}'")
                     withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
-                      sh(script: "npm publish --otp=${env.TOTP_CODE} --tag alpha", label: 'publish to NPM')
+                      sh(script: "npm publish --otp=${env.TOTP_CODE} --tag beta", label: 'publish to NPM')
                     }
                     withTotpVault(secret: "${env.TOTP_SECRET}", code_var_name: 'TOTP_CODE'){
                       sh(script: "npm dist-tag --otp=${env.TOTP_CODE} add ${env.NPM_PACKAGE}@${env.VERSION} latest", label: 'retag latest')
