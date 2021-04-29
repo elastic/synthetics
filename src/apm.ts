@@ -23,26 +23,24 @@
  *
  */
 
-import { Location, VoidCallback } from '../common_types';
-import { startSpan, Span } from 'elastic-apm-node';
+import agent from 'elastic-apm-node';
 
-export class Step {
-  name: string;
-  index: number;
-  callback: VoidCallback;
-  location?: Location;
-  span: Span;
+agent.start({
+  serviceName: 'synthetics',
+  instrument: false,
+  metricsInterval: '0',
+  centralConfig: false,
+  captureSpanStackTraces: false,
+  serverUrl: '',
+  secretToken: '',
+});
 
-  constructor(
-    name: string,
-    index: number,
-    callback: VoidCallback,
-    location: Location
-  ) {
-    this.name = name;
-    this.index = index;
-    this.callback = callback;
-    this.location = location;
-    this.span = startSpan(`Step: ${this.name}`);
-  }
-}
+agent.addFilter(payload => {
+  console.log('Payload', payload);
+});
+
+process.on('exit', () => {
+  agent.flush(() => {
+    console.log('flushed');
+  });
+});

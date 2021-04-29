@@ -25,6 +25,7 @@
 
 import { runner } from './core';
 import { RunOptions } from './common_types';
+import './apm';
 
 export async function run(options: RunOptions) {
   return runner.run(options);

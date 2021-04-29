@@ -23,3 +23,21 @@ journey('check if input placeholder is correct', ({ page, params }) => {
     );
   });
 });
+
+journey('Synthetics + APM', ({ page }) => {
+  step('go to index page', async () => {
+    await page.goto('http://localhost:8080/index');
+    // make sure RUM request has been successfully sent to APM server
+    await page.waitForResponse(response =>
+      response.url().includes('/rum/events')
+    );
+  });
+
+  step('go to unknown page', async () => {
+    await page.goto('http://localhost:8080/unknown');
+    // make sure RUM request has been successfully sent to APM server
+    await page.waitForResponse(response =>
+      response.url().includes('/rum/events')
+    );
+  });
+});

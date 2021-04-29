@@ -132,6 +132,7 @@ export default class Runner extends EventEmitter {
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   hookError: Error | undefined;
   static screenshotPath = join(CACHE_PATH, 'screenshots');
+  traceparent: string;
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const driver = await Gatherer.setupDriver(options);
@@ -240,6 +241,18 @@ export default class Runner extends EventEmitter {
        * step level plugins
        */
       const traceEnabled = trace || filmstrips;
+      this.traceparent = step.span.traceparent;
+      const handler = (route, request) => {
+        console.log('traceparent', this.traceparent);
+        const headers = {
+          traceparent: this.traceparent,
+          ...request.headers(),
+        };
+        route.continue({
+          headers,
+        });
+      };
+      context.driver.page.route(/index|unknown/, handler);
       pluginManager.onStep(step);
       traceEnabled && (await pluginManager.start('trace'));
       // call the step definition
@@ -256,6 +269,7 @@ export default class Runner extends EventEmitter {
         const traceOutput = await pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
+      context.driver.page.unroute(/index|unknown/, handler);
     } catch (error) {
       data.status = 'failed';
       data.error = error;
@@ -309,6 +323,7 @@ export default class Runner extends EventEmitter {
       if (options.pauseOnError && data.error) {
         await new Promise(r => process.stdin.on('data', r));
       }
+      step.span.end();
       results.push(data);
     }
     return results;
@@ -353,6 +368,7 @@ export default class Runner extends EventEmitter {
     }
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
+    journey.transaction.end();
   }
 
   /**
@@ -380,6 +396,7 @@ export default class Runner extends EventEmitter {
     if (options.reporter === 'json') {
       await once(this, 'journey:end:reported');
     }
+    journey.transaction.end();
     return result;
   }
 

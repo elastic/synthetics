@@ -27,6 +27,7 @@ import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { startTransaction, Transaction } from 'elastic-apm-node';
 
 export type JourneyOptions = {
   name: string;
@@ -48,6 +49,7 @@ export class Journey {
   name: string;
   id?: string;
   tags?: string[];
+  transaction: Transaction;
   callback: JourneyCallback;
   location?: Location;
   steps: Step[] = [];
@@ -63,6 +65,7 @@ export class Journey {
     this.tags = options.tags;
     this.callback = callback;
     this.location = location;
+    this.transaction = startTransaction(`Journey: ${this.name}`);
   }
 
   addStep(name: string, callback: VoidCallback, location?: Location) {
