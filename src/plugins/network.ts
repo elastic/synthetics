@@ -64,6 +64,12 @@ export class NetworkManager {
   _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
     const { requestId, request, timestamp, type, loaderId } = event;
     const { url, method } = request;
+    /**
+     * Data URI should not show up as network requests
+     */
+    if (url.startsWith('data:')) {
+      return;
+    }
     const isNavigationRequest = requestId == loaderId && type === 'Document';
     const record = this._findNetworkRecord(requestId);
     /**

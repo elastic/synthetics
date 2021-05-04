@@ -64,6 +64,17 @@ describe('network', () => {
     await Gatherer.dispose(driver);
   });
 
+  it('not include data URL in network info', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager();
+    await network.start(driver.client);
+    await driver.page.goto('data:text/html,<title>Data URI test</title>');
+    const netinfo = await network.stop();
+    expect(await driver.page.content()).toContain('Data URI test');
+    expect(netinfo).toEqual([]);
+    await Gatherer.dispose(driver);
+  });
+
   it('produce distinct events for redirects', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager();
