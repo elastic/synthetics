@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.1 (2021-05-04)
+
+### Bug fixes
+
+- Exclude all data URI requests from network events [#267](https://github.com/elastic/synthetics/issues/267)
+
 ## v1.0.0-beta.0 (2021-04-23)
 
 ### Features
