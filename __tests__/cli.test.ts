@@ -68,6 +68,19 @@ describe('CLI', () => {
     });
     expect(await cli.exitCode).toBe(0);
   });
+
+  it('throw error on modifying params', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'params-error.journey.ts'),
+      '-j',
+    ]);
+    expect(await cli.exitCode).toBe(1);
+    const output = cli.output();
+    expect(JSON.parse(output).error).toMatchObject({
+      name: 'TypeError',
+      message: 'Cannot add property foo, object is not extensible',
+    });
+  });
 });
 
 class CLIMock {

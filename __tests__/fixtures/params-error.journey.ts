@@ -23,45 +23,11 @@
  *
  */
 
-import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
-import { Step } from './step';
-import { VoidCallback, HooksCallback, RunParamaters } from '../common_types';
+import { journey, step, before } from '../../src';
 
-export type JourneyOptions = {
-  name: string;
-  id?: string;
-};
-
-type HookType = 'before' | 'after';
-export type Hooks = Record<HookType, Array<HooksCallback>>;
-export type JourneyCallback = (options: {
-  page: Page;
-  context: BrowserContext;
-  browser: Browser;
-  client: CDPSession;
-  params: RunParamaters;
-}) => void;
-
-export class Journey {
-  name: string;
-  id?: string;
-  callback: JourneyCallback;
-  steps: Step[] = [];
-  hooks: Hooks = { before: [], after: [] };
-
-  constructor(options: JourneyOptions, callback: JourneyCallback) {
-    this.name = options.name;
-    this.id = options.id;
-    this.callback = callback;
-  }
-
-  addStep(name: string, callback: VoidCallback) {
-    const step = new Step(name, this.steps.length + 1, callback);
-    this.steps.push(step);
-    return step;
-  }
-
-  addHook(type: HookType, callback: HooksCallback) {
-    this.hooks[type].push(callback);
-  }
-}
+journey('journey 1', ({}) => {
+  before(({ params }) => {
+    params.foo = 'bar';
+  });
+  step('step1', () => {});
+});
