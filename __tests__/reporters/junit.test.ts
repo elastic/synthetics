@@ -55,7 +55,7 @@ describe('junit reporter', () => {
   it('writes the output to fd', async () => {
     runner.emit('journey:start', {
       journey: j1,
-      params: {},
+      params: { environment: 'testing' },
       timestamp,
     });
     const error = new Error('Boom');
@@ -100,7 +100,9 @@ describe('junit reporter', () => {
     process.env.SYNTHETICS_JUNIT_FILE = filepath;
     runner.emit('journey:start', {
       journey: j1,
-      params: {},
+      params: {
+        environment: 'testing',
+      },
       timestamp,
     });
     runner.emit('step:end', {

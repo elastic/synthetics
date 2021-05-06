@@ -51,6 +51,23 @@ describe('CLI', () => {
     });
     expect(await cli.exitCode).toBe(0);
   });
+
+  it('pass config to journey params', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--json',
+      '--config',
+      join(FIXTURES_DIR, 'synthetics.config.ts'),
+      '-e',
+      'testing',
+    ]);
+    await cli.waitFor('fake journey');
+    const output = cli.output();
+    expect(JSON.parse(output).payload).toMatchObject({
+      params: { url: 'non-dev', environment: 'testing' },
+    });
+    expect(await cli.exitCode).toBe(0);
+  });
 });
 
 class CLIMock {

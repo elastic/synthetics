@@ -128,6 +128,7 @@ describe('network', () => {
     });
 
     await driver.page.goto(server.PREFIX + '/index');
+    await driver.page.waitForLoadState();
     await Gatherer.dispose(driver);
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);

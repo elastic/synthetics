@@ -48,7 +48,7 @@ describe('base reporter', () => {
     const j1 = journey('j1', () => {});
     runner.emit('journey:start', {
       journey: j1,
-      params: {},
+      params: { environment: 'testing' },
       timestamp,
     });
     const error = {
