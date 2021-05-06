@@ -76,6 +76,7 @@ export type NetworkInfo = {
 } & DefaultPluginOutput;
 
 export type CliArgs = {
+  config?: string;
   environment?: string;
   outfd?: number;
   headless?: boolean;

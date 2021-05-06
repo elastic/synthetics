@@ -101,7 +101,7 @@ describe('json reporter', () => {
     });
     runner.emit('journey:start', {
       journey: j1,
-      params: {},
+      params: { environment: 'testing' },
       timestamp,
     });
     runner.emit('step:end', {

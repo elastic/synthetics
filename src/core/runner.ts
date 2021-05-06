@@ -49,12 +49,13 @@ export type RunOptions = Omit<
   | 'require'
   | 'suiteParams'
   | 'reporter'
+  | 'environment'
 > & {
   params?: RunParamaters;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
-type RunParamaters = Record<string, unknown>;
+type RunParamaters = { environment: string } & Record<string, unknown>;
 
 type BaseContext = {
   params?: RunParamaters;

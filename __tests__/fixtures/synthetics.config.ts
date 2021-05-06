@@ -23,46 +23,17 @@
  *
  */
 
-import { runner } from './core';
-import { RunOptions } from './core/runner';
-import { setLogger } from './core/logger';
-import sourceMapSupport from 'source-map-support';
-
-export async function run(options: RunOptions) {
-  /**
-   * Install source map support
-   */
-  sourceMapSupport.install({
-    environment: 'node',
-  });
-  /**
-   * set up logger with appropriate file descriptor
-   * to capture all the DEBUG logs when run through heartbeat
-   */
-  setLogger(options.outfd);
-
-  try {
-    return await runner.run(options);
-  } catch (e) {
-    console.error('Failed to run the test', e);
-    process.exit(1);
+module.exports = env => {
+  if (env === 'development') {
+    return {
+      params: {
+        url: 'dev',
+      },
+    };
   }
-}
-
-export { beforeAll, afterAll, journey, step, before, after } from './core';
-/**
- * Export all the driver related types to be consumed
- * and used by suites
- */
-export type {
-  Page,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  CDPSession,
-} from 'playwright-chromium';
-
-/**
- * Export the types necessary to write custom reporters
- */
-export type { default as Runner } from './core/runner';
-export type { Reporter, ReporterOptions } from './reporters';
+  return {
+    params: {
+      url: 'non-dev',
+    },
+  };
+};

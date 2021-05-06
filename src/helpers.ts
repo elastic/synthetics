@@ -26,7 +26,7 @@
 import { red, green, yellow, cyan } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
-import fs from 'fs';
+import fs, { statSync } from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 
@@ -109,8 +109,8 @@ export async function isDirectory(path) {
   return (await statAsync(path)).isDirectory();
 }
 
-export async function isFile(filePath) {
-  return fs.existsSync(filePath) && (await statAsync(filePath)).isFile();
+export function isFile(filePath) {
+  return fs.existsSync(filePath) && statSync(filePath).isFile();
 }
 
 /**
@@ -118,9 +118,9 @@ export async function isFile(filePath) {
  * package.json file to check if the user is invoking our script
  * from an NPM project.
  */
-export async function findPkgJsonByTraversing(resolvePath, cwd) {
+export function findPkgJsonByTraversing(resolvePath, cwd) {
   const packageJSON = resolve(resolvePath, 'package.json');
-  if (await isFile(packageJSON)) {
+  if (isFile(packageJSON)) {
     return packageJSON;
   }
   const parentDirectory = dirname(resolvePath);

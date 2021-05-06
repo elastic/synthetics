@@ -23,46 +23,38 @@
  *
  */
 
-import { runner } from './core';
-import { RunOptions } from './core/runner';
-import { setLogger } from './core/logger';
-import sourceMapSupport from 'source-map-support';
+import { join } from 'path';
+import { generateTempPath } from '../src/helpers';
+import { readConfig } from '../src/config';
 
-export async function run(options: RunOptions) {
-  /**
-   * Install source map support
-   */
-  sourceMapSupport.install({
-    environment: 'node',
+const FIXTURES_DIR = join(__dirname, 'fixtures');
+
+describe('Config', () => {
+  it('read config based on environment', async () => {
+    const configPath = join(FIXTURES_DIR, 'synthetics.config.ts');
+    expect(readConfig('development', configPath)).toEqual({
+      params: {
+        url: 'dev',
+      },
+    });
+    expect(readConfig('testing', configPath)).toEqual({
+      params: {
+        url: 'non-dev',
+      },
+    });
   });
-  /**
-   * set up logger with appropriate file descriptor
-   * to capture all the DEBUG logs when run through heartbeat
-   */
-  setLogger(options.outfd);
 
-  try {
-    return await runner.run(options);
-  } catch (e) {
-    console.error('Failed to run the test', e);
-    process.exit(1);
-  }
-}
+  it('throw error when config does not exist', async () => {
+    const tempPath = generateTempPath();
+    function getConfig() {
+      readConfig('development', tempPath);
+    }
+    expect(getConfig).toThrowError(
+      new Error('Synthetics config file does not exist: ' + tempPath)
+    );
+  });
 
-export { beforeAll, afterAll, journey, step, before, after } from './core';
-/**
- * Export all the driver related types to be consumed
- * and used by suites
- */
-export type {
-  Page,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  CDPSession,
-} from 'playwright-chromium';
-
-/**
- * Export the types necessary to write custom reporters
- */
-export type { default as Runner } from './core/runner';
-export type { Reporter, ReporterOptions } from './reporters';
+  it('recursively look for configs and exit', async () => {
+    expect(readConfig('development')).toEqual({});
+  });
+});

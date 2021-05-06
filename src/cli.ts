@@ -38,6 +38,7 @@ import {
   totalist,
 } from './helpers';
 import { run } from './';
+import { readConfig } from './config';
 
 const options = program.opts() as CliArgs;
 const resolvedCwd = cwd();
@@ -101,7 +102,7 @@ async function prepareSuites(inputs: string[]) {
      * Validate for package.json file before running
      * the suites
      */
-    await findPkgJsonByTraversing(absPath, resolvedCwd);
+    findPkgJsonByTraversing(absPath, resolvedCwd);
     if (await isDirectory(absPath)) {
       await totalist(absPath, (rel, abs) => {
         if (pattern.test(rel) && !ignored.test(rel)) {
@@ -158,13 +159,22 @@ async function prepareSuites(inputs: string[]) {
   }
 
   /**
+   * Use the NODE_ENV variable to control the environment if its not explicity
+   * passed from either CLI or through the API
+   */
+  const environment = options.environment || process.env['NODE_ENV'];
+  /**
+   * Validate and handle configs
+   */
+  const config = readConfig(environment, options.config);
+  const params = config.params || JSON.parse(options.suiteParams);
+  /**
    * use JSON reporter if json flag is enabled
    */
   const reporter = options.json ? 'json' : options.reporter;
 
   const results = await run({
-    params: JSON.parse(options.suiteParams),
-    environment: options.environment,
+    params: Object.freeze({ ...params, environment }),
     reporter,
     headless: options.headless,
     screenshots: options.screenshots,
