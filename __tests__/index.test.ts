@@ -61,8 +61,9 @@ describe('Run', () => {
       .mockImplementation(() => Promise.resolve({}));
 
     const runParams: RunOptions = {
-      params: {},
-      environment: 'debug',
+      params: {
+        environment: 'debug',
+      },
       headless: false,
       screenshots: true,
       filmstrips: false,
