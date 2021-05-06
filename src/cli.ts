@@ -102,7 +102,7 @@ async function prepareSuites(inputs: string[]) {
      * Validate for package.json file before running
      * the suites
      */
-    await findPkgJsonByTraversing(absPath, resolvedCwd);
+    findPkgJsonByTraversing(absPath, resolvedCwd);
     if (await isDirectory(absPath)) {
       await totalist(absPath, (rel, abs) => {
         if (pattern.test(rel) && !ignored.test(rel)) {
@@ -166,10 +166,9 @@ async function prepareSuites(inputs: string[]) {
   /**
    * Validate and handle configs
    */
-  const config = await readConfig(options.config, environment);
+  const config = readConfig(environment, options.config);
   const params = config.params || JSON.parse(options.suiteParams);
-  console.log('params', params);
-  /**s
+  /**
    * use JSON reporter if json flag is enabled
    */
   const reporter = options.json ? 'json' : options.reporter;

@@ -23,25 +23,31 @@
  *
  */
 
-import { isAbsolute, resolve } from 'path';
+import { isAbsolute, resolve, dirname } from 'path';
 import { isFile } from './helpers';
 
-const CONFIG_FILE_NAME = 'synthetics.config.js';
+interface Config {
+  params?: Record<string, unknown>;
+}
 
-export async function readConfig(
-  config: string = CONFIG_FILE_NAME,
-  env: string
-): Promise<Record<string, unknown>> {
+export function readConfig(env: string, config?: string): Config {
   let options = {};
+  const cwd = process.cwd();
   /**
    * If config is passed via `--config` flag, try to resolve it relative to the
    * current working directory
-   *
-   * fallback to resolving `synthetics.config.js` by default
    */
-  const configPath = resolveConfigPath(config, process.cwd());
-  if (configPath) {
-    options = await readAndParseConfig(configPath);
+  console.log('config', config, typeof config);
+  if (typeof config === 'string') {
+    const configPath = resolveConfigPath(config, cwd);
+    options = readAndParseConfig(configPath);
+  } else {
+    /**
+     * resolve to `synthetics.config.js` and `synthetics.config.ts`
+     * recursively till root
+     */
+    const configPath = findSyntheticsConfig(cwd, cwd);
+    configPath && (options = readAndParseConfig(configPath));
   }
   if (typeof options === 'function') {
     options = options(env);
@@ -57,19 +63,41 @@ function resolveConfigPath(configPath: string, cwd: string) {
   if (isFile(absolutePath)) {
     return absolutePath;
   }
-  // TODO recursive traverse till root and resolve
-  return '';
+  throw new Error('Synthetics config file does not exist: ' + absolutePath);
 }
 
 function interopRequireDefault(obj: any) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
 
-async function readAndParseConfig(configPath) {
+function readAndParseConfig(configPath) {
   try {
+    /* eslint-disable @typescript-eslint/no-var-requires */
     const requiredModule = require(configPath);
     return interopRequireDefault(requiredModule).default;
   } catch (e) {
     throw new Error('Unable to read synthetics config: ' + configPath);
   }
+}
+
+function getConfigFile(ext: string) {
+  return 'synthetics.config' + ext;
+}
+
+function findSyntheticsConfig(resolvePath, cwd) {
+  const configPath = ['.js', '.ts']
+    .map(ext => resolve(resolvePath, getConfigFile(ext)))
+    .find(isFile);
+  if (configPath) {
+    return configPath;
+  }
+  const parentDirectory = dirname(resolvePath);
+  /**
+   * We are in the system root, so return empty path and fallback
+   * to empty suite params
+   */
+  if (resolvePath === parentDirectory) {
+    return '';
+  }
+  return findSyntheticsConfig(parentDirectory, cwd);
 }
