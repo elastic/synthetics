@@ -37,7 +37,6 @@ export function readConfig(env: string, config?: string): Config {
    * If config is passed via `--config` flag, try to resolve it relative to the
    * current working directory
    */
-  console.log('config', config, typeof config);
   if (typeof config === 'string') {
     const configPath = resolveConfigPath(config, cwd);
     options = readAndParseConfig(configPath);

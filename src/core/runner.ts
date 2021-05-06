@@ -55,7 +55,7 @@ export type RunOptions = Omit<
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
-type RunParamaters = Record<string, unknown>;
+type RunParamaters = { environment: string } & Record<string, unknown>;
 
 type BaseContext = {
   params?: RunParamaters;
