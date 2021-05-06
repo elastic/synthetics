@@ -49,6 +49,7 @@ export type RunOptions = Omit<
   | 'require'
   | 'suiteParams'
   | 'reporter'
+  | 'environment'
 > & {
   params?: RunParamaters;
   reporter?: CliArgs['reporter'] | Reporter;

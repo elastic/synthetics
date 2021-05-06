@@ -36,11 +36,6 @@ export async function run(options: RunOptions) {
     environment: 'node',
   });
   /**
-   * Use the NODE_ENV variable to control the environment if its not explicity
-   * passed from either CLI or through the API
-   */
-  options.environment = options.environment || process.env['NODE_ENV'];
-  /**
    * set up logger with appropriate file descriptor
    * to capture all the DEBUG logs when run through heartbeat
    */

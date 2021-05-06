@@ -38,6 +38,7 @@ import {
   totalist,
 } from './helpers';
 import { run } from './';
+import { readConfig } from './config';
 
 const options = program.opts() as CliArgs;
 const resolvedCwd = cwd();
@@ -158,13 +159,23 @@ async function prepareSuites(inputs: string[]) {
   }
 
   /**
+   * Use the NODE_ENV variable to control the environment if its not explicity
+   * passed from either CLI or through the API
+   */
+  const environment = options.environment || process.env['NODE_ENV'];
+  /**
+   * Validate and handle configs
+   */
+  const config = await readConfig(options.config, environment);
+  const params = config.params || JSON.parse(options.suiteParams);
+  console.log('params', params);
+  /**s
    * use JSON reporter if json flag is enabled
    */
   const reporter = options.json ? 'json' : options.reporter;
 
   const results = await run({
-    params: JSON.parse(options.suiteParams),
-    environment: options.environment,
+    params,
     reporter,
     headless: options.headless,
     screenshots: options.screenshots,

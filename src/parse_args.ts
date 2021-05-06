@@ -35,7 +35,11 @@ const { name, version } = require('../package.json');
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
-  .option('-s, --suite-params <jsonstring>', 'Variables', '{}')
+  .option(
+    '-c, --config <path>',
+    'configuration path (default: synthetics.config.js)'
+  )
+  .option('-s, --suite-params <jsonstring>', 'suite variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
   .option(
