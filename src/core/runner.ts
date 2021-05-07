@@ -33,7 +33,7 @@ import {
   FilmStrip,
   NetworkInfo,
   HooksCallback,
-  RunParamaters,
+  RunParams,
   CliArgs,
 } from '../common_types';
 import { BrowserMessage, PluginManager } from '../plugins';
@@ -52,12 +52,12 @@ export type RunOptions = Omit<
   | 'reporter'
   | 'environment'
 > & {
-  params?: RunParamaters;
+  params?: RunParams;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
 type BaseContext = {
-  params?: RunParamaters;
+  params?: RunParams;
   start: number;
   end?: number;
 };
@@ -93,7 +93,7 @@ interface Events {
   'journey:start': {
     journey: Journey;
     timestamp: number;
-    params: RunParamaters;
+    params: RunParams;
   };
   'journey:end': BaseContext &
     JourneyResult & {
@@ -149,22 +149,22 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
-  async runBeforeAllHook(params: RunParamaters) {
+  async runBeforeAllHook(params: RunParams) {
     log(`Runner: beforeAll hooks`);
     await runParallel(this.hooks.beforeAll, params);
   }
 
-  async runAfterAllHook(params: RunParamaters) {
+  async runAfterAllHook(params: RunParams) {
     log(`Runner: afterAll hooks`);
     await runParallel(this.hooks.afterAll, params);
   }
 
-  async runBeforeHook(journey: Journey, params: RunParamaters) {
+  async runBeforeHook(journey: Journey, params: RunParams) {
     log(`Runner: before hooks for (${journey.name})`);
     await runParallel(journey.hooks.before, params);
   }
 
-  async runAfterHook(journey: Journey, params: RunParamaters) {
+  async runAfterHook(journey: Journey, params: RunParams) {
     log(`Runner: after hooks for (${journey.name})`);
     await runParallel(journey.hooks.after, params);
   }

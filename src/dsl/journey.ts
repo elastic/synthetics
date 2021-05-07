@@ -25,7 +25,7 @@
 
 import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, RunParamaters } from '../common_types';
+import { VoidCallback, HooksCallback, RunParams } from '../common_types';
 
 export type JourneyOptions = {
   name: string;
@@ -39,7 +39,7 @@ export type JourneyCallback = (options: {
   context: BrowserContext;
   browser: Browser;
   client: CDPSession;
-  params: RunParamaters;
+  params: RunParams;
 }) => void;
 
 export class Journey {

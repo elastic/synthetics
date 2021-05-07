@@ -29,7 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs, { statSync } from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
-import { HooksCallback, RunParamaters } from './common_types';
+import { HooksCallback, RunParams } from './common_types';
 
 const statAsync = promisify(fs.lstat);
 const readAsync = promisify(fs.readdir);
@@ -95,7 +95,7 @@ export function now() {
  */
 export async function runParallel(
   callbacks: Array<HooksCallback>,
-  params: RunParamaters
+  params: RunParams
 ) {
   const promises = callbacks.map(cb => cb({ params }));
   return await Promise.all(promises);
