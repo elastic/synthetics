@@ -1,5 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`base reporter render hook errors without steps 1`] = `
+"
+Journey: j1
+   ---
+      stack: |-
+        Error: before hook failed
+   ---
+
+No tests found! (0 ms) 
+
+"
+`;
+
 exports[`base reporter writes each step to the FD 1`] = `
 "
 Journey: j1

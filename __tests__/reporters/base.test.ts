@@ -29,23 +29,36 @@
 process.env.NO_COLOR = '1';
 
 import fs from 'fs';
-import { runner, step, journey } from '../../src/core';
+import { step, journey } from '../../src/core';
+import Runner from '../../src/core/runner';
 import BaseReporter from '../../src/reporters/base';
 import * as helpers from '../../src/helpers';
 
 describe('base reporter', () => {
-  const dest = helpers.generateTempPath();
-  afterAll(() => {
+  let dest: string;
+  let stream;
+  let runner: Runner;
+  const timestamp = 1600300800000000;
+  const j1 = journey('j1', () => {});
+
+  beforeEach(() => {
+    runner = new Runner();
+    dest = helpers.generateTempPath();
+    stream = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
+    jest.spyOn(helpers, 'now').mockImplementation(() => 0);
+  });
+
+  afterEach(() => {
     fs.unlinkSync(dest);
+  });
+
+  afterAll(() => {
     process.env.NO_COLOR = '';
   });
 
   it('writes each step to the FD', async () => {
-    const timestamp = 1600300800000000;
-    jest.spyOn(helpers, 'now').mockImplementation(() => 0);
     const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
     runner.emit('start', { numJourneys: 1 });
-    const j1 = journey('j1', () => {});
     runner.emit('journey:start', {
       journey: j1,
       params: { environment: 'testing' },
@@ -71,8 +84,36 @@ describe('base reporter', () => {
      */
     stream.end();
     await new Promise(resolve => stream.once('finish', resolve));
-    const fd = fs.openSync(dest, 'r');
-    const buffer = fs.readFileSync(fd);
+    const buffer = fs.readFileSync(fs.openSync(dest, 'r'));
+    expect(buffer.toString()).toMatchSnapshot();
+  });
+
+  it('render hook errors without steps', async () => {
+    runner.emit('start', { numJourneys: 1 });
+    runner.emit('journey:start', {
+      journey: j1,
+      params: { environment: 'testing' },
+      timestamp,
+    });
+    const error = {
+      name: 'Error',
+      message: 'before hook failed',
+      stack: 'Error: before hook failed',
+    };
+    runner.emit('journey:end', {
+      journey: j1,
+      status: 'failed',
+      error,
+      start: 0,
+      end: 1,
+    });
+    runner.emit('end', 'done');
+    /**
+     * Close the underyling stream writing to FD to read all its contents
+     */
+    stream.end();
+    await new Promise(resolve => stream.once('finish', resolve));
+    const buffer = fs.readFileSync(fs.openSync(dest, 'r'));
     expect(buffer.toString()).toMatchSnapshot();
   });
 });
