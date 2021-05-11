@@ -38,12 +38,12 @@ describe('BrowserConsole', () => {
   });
 
   it('should capture browser console logs', async () => {
-    const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const browserConsole = new BrowserConsole(driver.page);
+    const { page } = await Gatherer.setupDriver({ wsEndpoint });
+    const browserConsole = new BrowserConsole(page);
     browserConsole.start();
-    await driver.page.goto(server.TEST_PAGE);
+    await page.goto(server.TEST_PAGE);
     browserConsole._currentStep = { name: 'step-name', index: 0 };
-    await driver.page.evaluate(() =>
+    await page.evaluate(() =>
       console.warn('test-message', 1, { test: 'test' })
     );
 
@@ -53,6 +53,6 @@ describe('BrowserConsole', () => {
     expect(testMessage.type).toEqual('warning');
     expect(testMessage.timestamp).toBeDefined();
     expect(testMessage.step).toEqual({ name: 'step-name', index: 0 });
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 });

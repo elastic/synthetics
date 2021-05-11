@@ -348,6 +348,7 @@ export default class Runner {
       const journeyResult = await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
     }
+    await Gatherer.stop();
     await this.runAfterAllHook();
     this.reset();
     this.emit('end', {});

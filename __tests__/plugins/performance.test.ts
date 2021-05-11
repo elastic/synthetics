@@ -59,6 +59,6 @@ describe('performance', () => {
       'JSHeapTotalSize',
     ]);
     await performance.stop();
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 });

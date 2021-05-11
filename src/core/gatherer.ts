@@ -46,26 +46,25 @@ export type Driver = {
  * related capabilities for the runner to run all journeys
  */
 export class Gatherer {
+  static browser: ChromiumBrowser;
+
   static async setupDriver(options: RunOptions): Promise<Driver> {
-    let browser: ChromiumBrowser;
-    const { wsEndpoint, headless, sandbox = false } = options;
-    if (wsEndpoint) {
-      log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
-      browser = await chromium.connect({ wsEndpoint });
-    } else {
-      log('Gatherer: launching chrome');
-      if (!sandbox) {
-        log('Gatherer: chromium sandboxing is disabled');
+    if (Gatherer.browser == null) {
+      const { wsEndpoint, headless, sandbox = false } = options;
+      if (wsEndpoint) {
+        log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
+        Gatherer.browser = await chromium.connect({ wsEndpoint });
+      } else {
+        Gatherer.browser = await chromium.launch({
+          headless,
+          chromiumSandbox: sandbox,
+        });
       }
-      browser = await chromium.launch({
-        headless,
-        chromiumSandbox: sandbox,
-      });
     }
-    const context = await browser.newContext();
+    const context = await Gatherer.browser.newContext();
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
-    return { browser, context, page, client };
+    return { browser: Gatherer.browser, context, page, client };
   }
 
   /**
@@ -84,6 +83,13 @@ export class Gatherer {
   }
 
   static async dispose(driver: Driver) {
-    await driver.browser.close();
+    await driver.context.close();
+  }
+
+  static async stop() {
+    if (Gatherer.browser) {
+      await Gatherer.browser.close();
+      Gatherer.browser = null;
+    }
   }
 }
