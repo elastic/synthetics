@@ -45,21 +45,18 @@
     "snakecase-keys": "^3.2.1",
     "sonic-boom": "^1.3.0",
     "source-map-support": "^0.5.19",
-    "totalist": "^2.0.0",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3"
   },
   "devDependencies": {
     "@types/jest": "^26.0.19",
     "@types/node": "^14.14.14",
-    "@types/yargs": "^15.0.12",
     "@typescript-eslint/eslint-plugin": "^3.10.1",
     "@typescript-eslint/parser": "^3.10.1",
     "eslint": "^7.15.0",
     "husky": "^4.3.6",
     "jest": "^26.6.3",
     "lint-staged": "^10.5.3",
-    "nodemon": "^2.0.6",
     "prettier": "^2.2.1",
     "ts-jest": "^26.4.4"
   }
