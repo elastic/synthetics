@@ -61,7 +61,7 @@ describe('network', () => {
       responseReceivedTime: expect.any(Number),
       timings: expect.any(Object),
     });
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 
   it('not include data URL in network info', async () => {
@@ -72,7 +72,7 @@ describe('network', () => {
     const netinfo = await network.stop();
     expect(await driver.page.content()).toContain('Data URI test');
     expect(netinfo).toEqual([]);
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 
   it('produce distinct events for redirects', async () => {
@@ -93,7 +93,7 @@ describe('network', () => {
     expect(netinfo[0].status).toBe(302);
     expect(netinfo[1].status).toBe(302);
     expect(netinfo[2].status).toBe(200);
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 
   it('measure resource and transfer size', async () => {
@@ -109,7 +109,7 @@ describe('network', () => {
       resourceSize: 10,
       transferSize: expect.any(Number),
     });
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 
   it('timings for aborted requests', async () => {
@@ -129,7 +129,7 @@ describe('network', () => {
 
     await driver.page.goto(server.PREFIX + '/index');
     await driver.page.waitForLoadState();
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
@@ -163,8 +163,9 @@ describe('network', () => {
       res.end(`<script src=${server.PREFIX}/chunked />`);
     });
 
+    await driver.page.waitForLoadState();
     await driver.page.goto(server.PREFIX + '/index');
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({

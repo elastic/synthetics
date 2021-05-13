@@ -31,10 +31,18 @@ import { wsEndpoint } from '../utils/test-config';
 jest.mock('../../src/plugins/network');
 
 describe('Gatherer', () => {
-  it('boot and dispose driver', async () => {
+  it('boot and close browser', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     expect(typeof driver.page.goto).toBe('function');
+    await Gatherer.stop();
+  });
+
+  it('setup and dispose driver', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
     await Gatherer.dispose(driver);
+    expect(Gatherer.browser).toBeDefined();
+    await Gatherer.stop();
+    expect(Gatherer.browser).toBeNull();
   });
 
   it('begin recording based on flags', async () => {
@@ -45,6 +53,6 @@ describe('Gatherer', () => {
     expect(pluginManager).toBeInstanceOf(PluginManager);
     const network = pluginManager.get(NetworkManager);
     expect(network.start).toHaveBeenCalled();
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
   });
 });

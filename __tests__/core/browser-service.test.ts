@@ -41,10 +41,10 @@ describe('BrowserService', () => {
   });
 
   it('should create browser pages', async () => {
-    const driver = await Gatherer.setupDriver({
+    const { page } = await Gatherer.setupDriver({
       wsEndpoint: 'ws://localhost:9323',
     });
-    await driver.page.goto(server.TEST_PAGE);
-    await Gatherer.dispose(driver);
+    await page.goto(server.TEST_PAGE);
+    await Gatherer.stop();
   });
 });

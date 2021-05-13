@@ -48,7 +48,7 @@ describe('tracing', () => {
      */
     await driver.page.waitForTimeout(100);
     const events = await tracer.stop(driver.client);
-    await Gatherer.dispose(driver);
+    await Gatherer.stop();
     const filmstrips = filterFilmstrips(events);
     expect(filmstrips.length).toBeGreaterThan(0);
     expect(filmstrips[0]).toMatchObject({

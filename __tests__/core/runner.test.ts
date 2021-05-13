@@ -157,7 +157,7 @@ describe('runner', () => {
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
-    await Gatherer.dispose(context.driver);
+    await Gatherer.stop();
     expect(result).toEqual([
       {
         status: 'succeeded',
@@ -178,7 +178,7 @@ describe('runner', () => {
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
-    await Gatherer.dispose(context.driver);
+    await Gatherer.stop();
     expect(result).toEqual([
       {
         status: 'failed',
@@ -199,7 +199,7 @@ describe('runner', () => {
     const context = await Runner.createContext({});
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, {});
-    await Gatherer.dispose(context.driver);
+    await Gatherer.stop();
     expect(result).toEqual([
       {
         status: 'failed',
@@ -218,7 +218,7 @@ describe('runner', () => {
     const context = await Runner.createContext({});
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, {});
-    await Gatherer.dispose(context.driver);
+    await Gatherer.stop();
     expect(result).toEqual([
       {
         status: 'failed',
@@ -242,7 +242,7 @@ describe('runner', () => {
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const [step1, step2] = await runner.runSteps(j1, context, runOptions);
-    await Gatherer.dispose(context.driver);
+    await Gatherer.stop();
     expect(step1).toEqual({
       status: 'succeeded',
       url: server.TEST_PAGE,
