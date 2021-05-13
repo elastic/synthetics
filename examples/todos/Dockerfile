@@ -17,6 +17,12 @@ ENV ELASTIC_SYNTHETICS_OFFLINE=true
 # to do in this manner.
 COPY heartbeat.docker.yml /usr/share/heartbeat/heartbeat.yml
 
+# Uncomment the lines below to add custom cert/CA to CA store if needed
+#COPY elasticsearch-ca.pem /usr/share/pki/ca-trust-source/anchors/
+#USER root
+#RUN /usr/bin/update-ca-trust
+#USER heartbeat
+
 RUN mkdir -p $SUITES_DIR/todos
 # Copy your custom synthetics tests into a folder on the image
 COPY . $SUITES_DIR/todos/
