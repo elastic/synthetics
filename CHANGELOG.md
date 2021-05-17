@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.2 (2021-05-17)
+
+### Features
+
+- Allow dynamic suite parameters configuration via `synthetics.config.{js|ts}`
+  [#270](https://github.com/elastic/synthetics/issues/270)
+
+### Performance Improvements
+
+- Improve execution time of test suites by spawning journeys in isolated context
+  instead of launcing browser for each run [#274](https://github.com/elastic/synthetics/issues/274)
+
 ## v1.0.0-beta.1 (2021-05-04)
 
 ### Bug fixes
