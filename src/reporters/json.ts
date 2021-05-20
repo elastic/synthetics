@@ -387,8 +387,10 @@ export default class JSONReporter extends BaseReporter {
     blob,
     blob_mime,
     url,
+    _id: id,
   }: OutputFields) {
     this.write({
+      _id: id,
       type,
       '@timestamp': timestamp || getTimestamp(),
       journey: journeyInfo(journey, type, payload?.status),
