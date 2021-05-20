@@ -39,6 +39,8 @@ import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
+import sharp from 'sharp';
+import { createHash } from 'crypto';
 
 export type RunOptions = Omit<
   CliArgs,
@@ -68,12 +70,26 @@ type JourneyContext = BaseContext & {
   pluginManager: PluginManager;
 };
 
+export type ScreenshotRef = {
+  width: number;
+  height: number;
+  blockWidth: number;
+  blockHeight: number;
+  blocks: Array<{
+    hash: string;
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }>;
+};
+
 type StepResult = {
   status: StatusValue;
   url?: string;
   metrics?: Metrics;
   error?: Error;
-  screenshot?: string;
+  screenshotRef?: ScreenshotRef;
 };
 
 type JourneyResult = {
@@ -110,6 +126,7 @@ interface Events {
     journey: Journey;
     step: Step;
   };
+  'screenshot:block': { hash: string; blob: string; blob_mime: string };
   end: unknown;
 }
 
@@ -146,8 +163,8 @@ export default class Runner {
     this.eventEmitter.emit(e, v);
   }
 
-  on<K extends keyof Events>(e: K, cb: (v: Events[K]) => void) {
-    this.eventEmitter.on(e, cb);
+  async on<K extends keyof Events>(e: K, cb: (v: Events[K]) => void) {
+    await this.eventEmitter.on(e, cb);
   }
 
   async runBeforeAllHook() {
@@ -192,7 +209,7 @@ export default class Runner {
       }
       driver.page.off('request', captureUrl);
     };
-    driver.page.on('request', captureUrl);
+    await driver.page.on('request', captureUrl);
     try {
       pluginManager.onStep(step);
       await step.callback();
@@ -206,16 +223,58 @@ export default class Runner {
       data.url ??= driver.page.url();
       if (screenshots) {
         await driver.page.waitForLoadState('load');
-        data.screenshot = (
-          await driver.page.screenshot({
-            type: 'jpeg',
-            quality: 80,
-          })
-        ).toString('base64');
+        const screenshot = await driver.page.screenshot({
+          type: 'png',
+        });
+        data.screenshotRef = await this.processScreenshot(screenshot);
       }
     }
     log(`Runner: end step (${step.name})`);
     return data;
+  }
+
+  private async processScreenshot(screenshot: Buffer): Promise<ScreenshotRef> {
+    const img = sharp(screenshot);
+    const meta = await img.metadata();
+    // Chop image into blocks
+    const divisions = 8;
+    const blockWidth = meta.width / divisions;
+    const blockHeight = meta.height / divisions;
+    const screenshotRef: ScreenshotRef = {
+      width: meta.width,
+      height: meta.height,
+      blockWidth,
+      blockHeight,
+      blocks: [],
+    };
+
+    for (let row = 0; row < divisions; row++) {
+      const top = row * blockHeight;
+      for (let col = 0; col < divisions; col++) {
+        const left = col * blockWidth;
+        const buf = await img
+          .extract({ top, left, width: blockWidth, height: blockHeight })
+          .toFormat(sharp.format.webp)
+          .toBuffer();
+        const hash = createHash('sha1').update(buf).digest('hex');
+
+        this.emit('screenshot:block', {
+          hash,
+          blob: buf.toString('base64'),
+          blob_mime: 'image/webp',
+        });
+
+        screenshotRef.blocks.push({
+          hash,
+          top,
+          left,
+          width: blockWidth,
+          height: blockHeight,
+        });
+      }
+    }
+
+    return screenshotRef;
   }
 
   async runSteps(
@@ -266,11 +325,8 @@ export default class Runner {
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
     const { pluginManager, start, params, status, error } = result;
-    const {
-      filmstrips,
-      networkinfo,
-      browserconsole,
-    } = await pluginManager.output();
+    const { filmstrips, networkinfo, browserconsole } =
+      await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,

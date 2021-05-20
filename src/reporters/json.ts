@@ -30,6 +30,7 @@ import snakeCaseKeys from 'snakecase-keys';
 import { NetworkInfo, StatusValue } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Metrics } from '../plugins';
+import { ScreenshotRef } from '../core/runner';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -39,6 +40,7 @@ type OutputType =
   | 'journey/register'
   | 'journey/start'
   | 'step/screenshot'
+  | 'screenshot/block'
   | 'step/end'
   | 'journey/network_info'
   | 'journey/filmstrips'
@@ -56,9 +58,20 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
+  screenshot_ref?: ScreenshotRef;
+  //screenshot opts
+  location?: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  };
+  width?: number;
+  height?: number;
 };
 
 type OutputFields = {
+  _id?: string;
   type: OutputType;
   journey?: Journey;
   timestamp?: number;
@@ -250,28 +263,28 @@ export default class JSONReporter extends BaseReporter {
       });
     });
 
+    this.runner.on('screenshot:block', ({ hash, blob, blob_mime }) => {
+      this.writeJSON({
+        type: 'screenshot/block',
+        _id: hash,
+        blob,
+        blob_mime,
+      });
+    });
+
     this.runner.on(
       'step:end',
-      ({
+      async ({
         journey,
         step,
         start,
         end,
         error,
-        screenshot,
+        screenshotRef,
         url,
         status,
         metrics,
       }) => {
-        if (screenshot) {
-          this.writeJSON({
-            type: 'step/screenshot',
-            journey,
-            step,
-            blob: screenshot,
-            blob_mime: 'image/jpeg',
-          });
-        }
         this.writeJSON({
           type: 'step/end',
           journey,
@@ -285,6 +298,7 @@ export default class JSONReporter extends BaseReporter {
             url,
             status,
             metrics,
+            screenshot_ref: screenshotRef,
           },
         });
       }
