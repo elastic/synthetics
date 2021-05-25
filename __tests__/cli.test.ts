@@ -64,7 +64,7 @@ describe('CLI', () => {
     await cli.waitFor('fake journey');
     const output = cli.output();
     expect(JSON.parse(output).payload).toMatchObject({
-      params: { url: 'non-dev', environment: 'testing' },
+      params: { url: 'non-dev' },
     });
     expect(await cli.exitCode).toBe(0);
   });

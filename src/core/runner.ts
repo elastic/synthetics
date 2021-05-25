@@ -33,8 +33,9 @@ import {
   FilmStrip,
   NetworkInfo,
   HooksCallback,
-  RunParams,
+  Params,
   CliArgs,
+  HooksArgs,
 } from '../common_types';
 import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -50,14 +51,13 @@ export type RunOptions = Omit<
   | 'require'
   | 'suiteParams'
   | 'reporter'
-  | 'environment'
 > & {
-  params?: RunParams;
+  params?: Params;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
 type BaseContext = {
-  params?: RunParams;
+  params?: Params;
   start: number;
   end?: number;
 };
@@ -93,7 +93,7 @@ interface Events {
   'journey:start': {
     journey: Journey;
     timestamp: number;
-    params: RunParams;
+    params: Params;
   };
   'journey:end': BaseContext &
     JourneyResult & {
@@ -149,24 +149,24 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
-  async runBeforeAllHook(params: RunParams) {
+  async runBeforeAllHook(args: HooksArgs) {
     log(`Runner: beforeAll hooks`);
-    await runParallel(this.hooks.beforeAll, params);
+    await runParallel(this.hooks.beforeAll, args);
   }
 
-  async runAfterAllHook(params: RunParams) {
+  async runAfterAllHook(args: HooksArgs) {
     log(`Runner: afterAll hooks`);
-    await runParallel(this.hooks.afterAll, params);
+    await runParallel(this.hooks.afterAll, args);
   }
 
-  async runBeforeHook(journey: Journey, params: RunParams) {
+  async runBeforeHook(journey: Journey, args: HooksArgs) {
     log(`Runner: before hooks for (${journey.name})`);
-    await runParallel(journey.hooks.before, params);
+    await runParallel(journey.hooks.before, args);
   }
 
-  async runAfterHook(journey: Journey, params: RunParams) {
+  async runAfterHook(journey: Journey, args: HooksArgs) {
     log(`Runner: after hooks for (${journey.name})`);
-    await runParallel(journey.hooks.after, params);
+    await runParallel(journey.hooks.after, args);
   }
 
   async runStep(
@@ -288,7 +288,11 @@ export default class Runner {
     const context = await Runner.createContext(options);
     try {
       this.registerJourney(journey, context);
-      await this.runBeforeHook(journey, options.params);
+      const hookArgs = {
+        env: options.environment,
+        params: options.params,
+      };
+      await this.runBeforeHook(journey, hookArgs);
       const stepResults = await this.runSteps(journey, context, options);
       /**
        * Mark journey as failed if any intermediate step fails
@@ -299,7 +303,7 @@ export default class Runner {
           result.error = stepResult.error;
         }
       }
-      await this.runAfterHook(journey, options.params);
+      await this.runAfterHook(journey, hookArgs);
     } catch (e) {
       result.status = 'failed';
       result.error = e;
@@ -328,7 +332,10 @@ export default class Runner {
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
     this.emit('start', { numJourneys: this.journeys.length });
-    await this.runBeforeAllHook(options.params);
+    await this.runBeforeAllHook({
+      env: options.environment,
+      params: options.params,
+    });
     for (const journey of this.journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
@@ -345,7 +352,10 @@ export default class Runner {
       result[journey.name] = journeyResult;
     }
     await Gatherer.stop();
-    await this.runAfterAllHook(options.params);
+    await this.runAfterAllHook({
+      env: options.environment,
+      params: options.params,
+    });
     this.reset();
     this.emit('end', {});
     return result;

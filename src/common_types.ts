@@ -28,13 +28,14 @@ import { Step } from './dsl';
 import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-export type HooksCallback = (args: { params: RunParams }) => void;
+export type Params = Record<string, unknown>;
+export type HooksArgs = {
+  env: string;
+  params: Params;
+};
+export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
-
-export type RunParams = {
-  environment: string;
-} & Record<string, unknown>;
 
 export type FilmStrip = {
   snapshot: string;
