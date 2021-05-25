@@ -108,16 +108,31 @@ export default class BaseReporter {
       result[status]++;
     });
 
+    this.runner.on('journey:end', ({ error }) => {
+      const { failed, succeeded, skipped } = result;
+      const total = failed + succeeded + skipped;
+
+      /**
+       * Render the error on the terminal only when no steps could
+       * be executed which means the error happened in one of the hooks
+       */
+      if (total === 0 && error) {
+        this.write(renderError(error));
+      }
+    });
+
     this.runner.on('end', () => {
       const { failed, succeeded, skipped } = result;
       const total = failed + succeeded + skipped;
 
+      let message = '\n';
       if (total === 0) {
-        this.write('No tests found!');
+        message = 'No tests found!';
+        message += ` (${renderDuration(now())} ms) \n`;
+        this.write(message);
         return;
       }
 
-      let message = '\n';
       message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
       message += failed > 0 ? red(` ${failed} failed`) : '';
       message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
