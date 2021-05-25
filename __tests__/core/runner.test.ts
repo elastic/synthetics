@@ -351,8 +351,8 @@ describe('runner', () => {
 
   it('run - expose params in all hooks', async () => {
     const result = [];
-    runner.addHook('beforeAll', ({ params }) =>
-      result.push({ name: 'beforeAll', params })
+    runner.addHook('beforeAll', ({ params, env }) =>
+      result.push({ name: 'beforeAll', params, env })
     );
     runner.addHook('afterAll', ({ params }) =>
       result.push({ name: 'afterAll', params })
@@ -361,27 +361,28 @@ describe('runner', () => {
     j1.addHook('before', ({ params }) => {
       result.push({ name: 'before', params });
     });
-    j1.addHook('after', ({ params }) => {
-      result.push({ name: 'after', params });
+    j1.addHook('after', ({ params, env }) => {
+      result.push({ name: 'after', params, env });
     });
     j1.addStep('s1', () => result.push('step1'));
     runner.addJourney(j1);
 
-    const suiteParams = {
-      environment: 'testing',
+    const params = {
+      url: 'http://local.dev',
     };
     await runner.run({
       wsEndpoint,
-      params: suiteParams,
+      params,
+      environment: 'testing',
       outfd: fs.openSync(dest, 'w'),
     });
 
     expect(result).toEqual([
-      { name: 'beforeAll', params: suiteParams },
-      { name: 'before', params: suiteParams },
+      { name: 'beforeAll', params, env: 'testing' },
+      { name: 'before', params },
       'step1',
-      { name: 'after', params: suiteParams },
-      { name: 'afterAll', params: suiteParams },
+      { name: 'after', params, env: 'testing' },
+      { name: 'afterAll', params },
     ]);
   });
 
