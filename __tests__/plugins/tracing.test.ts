@@ -42,11 +42,7 @@ describe('tracing', () => {
     const tracer = new Tracing();
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
-    /**
-     * Introduce a delay to make sure there are enough
-     * trace events
-     */
-    await driver.page.waitForTimeout(100);
+    await driver.page.waitForLoadState();
     const { filmstrips, experience } = await tracer.stop(driver.client);
     await Gatherer.stop();
     expect(filmstrips.length).toBeGreaterThan(0);
