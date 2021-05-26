@@ -27,7 +27,13 @@ import { EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
-import { getMonotonicTime, getTimestamp, runParallel } from '../helpers';
+import {
+  CACHE_PATH,
+  getMonotonicTime,
+  getTimestamp,
+  now,
+  runParallel,
+} from '../helpers';
 import {
   StatusValue,
   FilmStrip,
@@ -41,6 +47,8 @@ import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
+import { mkdirSync, rmdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 export type RunOptions = Omit<
   CliArgs,
@@ -72,7 +80,6 @@ type StepResult = {
   url?: string;
   metrics?: Metrics;
   error?: Error;
-  screenshot?: string;
 };
 
 type JourneyResult = {
@@ -118,6 +125,7 @@ export default class Runner {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
+  screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const start = getMonotonicTime();
@@ -205,12 +213,17 @@ export default class Runner {
       data.url ??= driver.page.url();
       if (screenshots) {
         await driver.page.waitForLoadState('load');
-        data.screenshot = (
-          await driver.page.screenshot({
-            type: 'jpeg',
-            quality: 80,
+        const buffer = await driver.page.screenshot({
+          type: 'png',
+        });
+        const fileName = now().toString() + '.json';
+        writeFileSync(
+          join(this.screenshotPath, fileName),
+          JSON.stringify({
+            step,
+            data: buffer.toString('base64'),
           })
-        ).toString('base64');
+        );
       }
     }
     log(`Runner: end step (${step.name})`);
@@ -315,14 +328,8 @@ export default class Runner {
     return result;
   }
 
-  async run(options: RunOptions) {
-    const result: RunResult = {};
-    if (this.active) {
-      return result;
-    }
-    this.active = true;
-    log(`Runner: run ${this.journeys.length} journeys`);
-    const { reporter, journeyName, outfd } = options;
+  init(options: RunOptions) {
+    const { reporter, outfd } = options;
     /**
      * Set up the corresponding reporter and fallback
      */
@@ -331,16 +338,32 @@ export default class Runner {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
+
     this.emit('start', { numJourneys: this.journeys.length });
+    /**
+     * Set up the directory for caching screenshots
+     */
+    mkdirSync(this.screenshotPath, { recursive: true });
+  }
+
+  async run(options: RunOptions) {
+    const result: RunResult = {};
+    if (this.active) {
+      return result;
+    }
+    this.active = true;
+    log(`Runner: run ${this.journeys.length} journeys`);
+    this.init(options);
     await this.runBeforeAllHook({
       env: options.environment,
       params: options.params,
     });
     for (const journey of this.journeys) {
+      const { dryRun, journeyName } = options;
       /**
        * Used by heartbeat to gather all registered journeys
        */
-      if (options.dryRun) {
+      if (dryRun) {
         this.emit('journey:register', { journey });
         continue;
       }
@@ -350,19 +373,23 @@ export default class Runner {
       }
       const journeyResult = await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
+      await Gatherer.stop();
     }
-    await Gatherer.stop();
     await this.runAfterAllHook({
       env: options.environment,
       params: options.params,
     });
     this.reset();
-    this.emit('end', {});
     return result;
   }
 
   reset() {
-    log('Runner: reset');
+    /**
+     * Clear all cache data stored for post processing by
+     * the current synthetic agent run
+     */
+    // this.emit('end', {});
+    rmdirSync(CACHE_PATH, { recursive: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;

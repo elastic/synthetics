@@ -229,3 +229,6 @@ export function formatError(error: Error) {
     stack: rewriteErrorStack(stack, indexes),
   };
 }
+
+const cwd = process.cwd();
+export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
