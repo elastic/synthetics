@@ -279,7 +279,7 @@ async function processScreenshot(screenshot: Buffer) {
       const left = col * blockWidth;
       const buf = await img
         .extract({ top, left, width: blockWidth, height: blockHeight })
-        .toFormat(sharp.format.webp)
+        .webp({ quality: 80 })
         .toBuffer();
 
       const hash = createHash('sha1').update(buf).digest('hex');
@@ -298,8 +298,7 @@ async function processScreenshot(screenshot: Buffer) {
   return { blocks, reference, blob_mime: 'image/webp' };
 }
 
-async function gatherScreenshots() {
-  const screenshotsPath = join(CACHE_PATH, 'screenshots');
+async function gatherScreenshots(screenshotsPath: string) {
   const screenshots: Array<ScreenshotOutput> = [];
   await totalist(screenshotsPath, async (_, absPath) => {
     const content = readFileSync(absPath, 'utf8');
@@ -377,7 +376,9 @@ export default class JSONReporter extends BaseReporter {
         status,
         error,
       }) => {
-        const screenshots = await gatherScreenshots();
+        const screenshots = await gatherScreenshots(
+          join(CACHE_PATH, 'screenshots')
+        );
         if (screenshots.length > 0) {
           screenshots.forEach(({ blocks, reference, step, blob_mime }) => {
             for (let i = 0; i < blocks.length; i++) {

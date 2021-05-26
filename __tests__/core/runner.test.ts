@@ -153,7 +153,7 @@ describe('runner', () => {
         await page.goto(server.TEST_PAGE);
       });
     });
-    const runOptions = { metrics: true, screenshots: true };
+    const runOptions = { metrics: true };
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
@@ -162,7 +162,6 @@ describe('runner', () => {
       {
         status: 'succeeded',
         metrics: expect.any(Object),
-        screenshot: expect.any(String),
         url: server.TEST_PAGE,
       },
     ]);
@@ -174,7 +173,7 @@ describe('runner', () => {
         await (page as any).clickkkkkk();
       });
     });
-    const runOptions = { screenshots: true };
+    const runOptions = {};
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
@@ -184,7 +183,6 @@ describe('runner', () => {
         status: 'failed',
         url: 'about:blank',
         error: expect.any(Error),
-        screenshot: expect.any(String),
       },
     ]);
   });
@@ -238,7 +236,7 @@ describe('runner', () => {
         throw error;
       });
     });
-    const runOptions = { screenshots: true };
+    const runOptions = {};
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const [step1, step2] = await runner.runSteps(j1, context, runOptions);
@@ -246,13 +244,11 @@ describe('runner', () => {
     expect(step1).toEqual({
       status: 'succeeded',
       url: server.TEST_PAGE,
-      screenshot: expect.any(String),
     });
     expect(step2).toEqual({
       status: 'failed',
       url: server.TEST_PAGE,
       error,
-      screenshot: expect.any(String),
     });
   });
 

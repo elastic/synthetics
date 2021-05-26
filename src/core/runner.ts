@@ -338,7 +338,6 @@ export default class Runner {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
-
     this.emit('start', { numJourneys: this.journeys.length });
     /**
      * Set up the directory for caching screenshots
@@ -388,10 +387,10 @@ export default class Runner {
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    // this.emit('end', {});
     rmdirSync(CACHE_PATH, { recursive: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;
+    this.emit('end', {});
   }
 }
