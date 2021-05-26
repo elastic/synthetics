@@ -28,6 +28,12 @@ import { Step } from './dsl';
 import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
+export type Params = Record<string, unknown>;
+export type HooksArgs = {
+  env: string;
+  params: Params;
+};
+export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 

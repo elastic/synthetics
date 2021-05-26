@@ -32,8 +32,10 @@ import {
   StatusValue,
   FilmStrip,
   NetworkInfo,
-  VoidCallback,
+  HooksCallback,
+  Params,
   CliArgs,
+  HooksArgs,
 } from '../common_types';
 import { BrowserMessage, PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -49,16 +51,13 @@ export type RunOptions = Omit<
   | 'require'
   | 'suiteParams'
   | 'reporter'
-  | 'environment'
 > & {
-  params?: RunParamaters;
+  params?: Params;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
-type RunParamaters = { environment: string } & Record<string, unknown>;
-
 type BaseContext = {
-  params?: RunParamaters;
+  params?: Params;
   start: number;
   end?: number;
 };
@@ -84,7 +83,7 @@ type JourneyResult = {
 type RunResult = Record<string, JourneyResult>;
 
 type HookType = 'beforeAll' | 'afterAll';
-export type SuiteHooks = Record<HookType, Array<VoidCallback>>;
+export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
 interface Events {
   start: { numJourneys: number };
@@ -94,7 +93,7 @@ interface Events {
   'journey:start': {
     journey: Journey;
     timestamp: number;
-    params: RunParamaters;
+    params: Params;
   };
   'journey:end': BaseContext &
     JourneyResult & {
@@ -132,7 +131,7 @@ export default class Runner {
     };
   }
 
-  addHook(type: HookType, callback: VoidCallback) {
+  addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
 
@@ -150,24 +149,24 @@ export default class Runner {
     this.eventEmitter.on(e, cb);
   }
 
-  async runBeforeAllHook() {
+  async runBeforeAllHook(args: HooksArgs) {
     log(`Runner: beforeAll hooks`);
-    await runParallel(this.hooks.beforeAll);
+    await runParallel(this.hooks.beforeAll, args);
   }
 
-  async runAfterAllHook() {
+  async runAfterAllHook(args: HooksArgs) {
     log(`Runner: afterAll hooks`);
-    await runParallel(this.hooks.afterAll);
+    await runParallel(this.hooks.afterAll, args);
   }
 
-  async runBeforeHook(journey: Journey) {
+  async runBeforeHook(journey: Journey, args: HooksArgs) {
     log(`Runner: before hooks for (${journey.name})`);
-    await runParallel(journey.hooks.before);
+    await runParallel(journey.hooks.before, args);
   }
 
-  async runAfterHook(journey: Journey) {
+  async runAfterHook(journey: Journey, args: HooksArgs) {
     log(`Runner: after hooks for (${journey.name})`);
-    await runParallel(journey.hooks.after);
+    await runParallel(journey.hooks.after, args);
   }
 
   async runStep(
@@ -266,11 +265,8 @@ export default class Runner {
 
   async endJourney(journey, result: JourneyContext & JourneyResult) {
     const { pluginManager, start, params, status, error } = result;
-    const {
-      filmstrips,
-      networkinfo,
-      browserconsole,
-    } = await pluginManager.output();
+    const { filmstrips, networkinfo, browserconsole } =
+      await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,
@@ -292,7 +288,11 @@ export default class Runner {
     const context = await Runner.createContext(options);
     try {
       this.registerJourney(journey, context);
-      await this.runBeforeHook(journey);
+      const hookArgs = {
+        env: options.environment,
+        params: options.params,
+      };
+      await this.runBeforeHook(journey, hookArgs);
       const stepResults = await this.runSteps(journey, context, options);
       /**
        * Mark journey as failed if any intermediate step fails
@@ -303,7 +303,7 @@ export default class Runner {
           result.error = stepResult.error;
         }
       }
-      await this.runAfterHook(journey);
+      await this.runAfterHook(journey, hookArgs);
     } catch (e) {
       result.status = 'failed';
       result.error = e;
@@ -332,7 +332,10 @@ export default class Runner {
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
     this.emit('start', { numJourneys: this.journeys.length });
-    await this.runBeforeAllHook();
+    await this.runBeforeAllHook({
+      env: options.environment,
+      params: options.params,
+    });
     for (const journey of this.journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
@@ -349,7 +352,10 @@ export default class Runner {
       result[journey.name] = journeyResult;
     }
     await Gatherer.stop();
-    await this.runAfterAllHook();
+    await this.runAfterAllHook({
+      env: options.environment,
+      params: options.params,
+    });
     this.reset();
     this.emit('end', {});
     return result;

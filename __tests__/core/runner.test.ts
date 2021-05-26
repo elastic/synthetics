@@ -349,6 +349,43 @@ describe('runner', () => {
     ]);
   });
 
+  it('run - expose params in all hooks', async () => {
+    const result = [];
+    runner.addHook('beforeAll', ({ params, env }) =>
+      result.push({ name: 'beforeAll', params, env })
+    );
+    runner.addHook('afterAll', ({ params }) =>
+      result.push({ name: 'afterAll', params })
+    );
+    const j1 = new Journey({ name: 'j1' }, noop);
+    j1.addHook('before', ({ params }) => {
+      result.push({ name: 'before', params });
+    });
+    j1.addHook('after', ({ params, env }) => {
+      result.push({ name: 'after', params, env });
+    });
+    j1.addStep('s1', () => result.push('step1'));
+    runner.addJourney(j1);
+
+    const params = {
+      url: 'http://local.dev',
+    };
+    await runner.run({
+      wsEndpoint,
+      params,
+      environment: 'testing',
+      outfd: fs.openSync(dest, 'w'),
+    });
+
+    expect(result).toEqual([
+      { name: 'beforeAll', params, env: 'testing' },
+      { name: 'before', params },
+      'step1',
+      { name: 'after', params, env: 'testing' },
+      { name: 'afterAll', params },
+    ]);
+  });
+
   it('run - supports custom reporters', async () => {
     let reporter;
     class Reporter {

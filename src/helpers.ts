@@ -29,6 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs, { statSync } from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
+import { HooksArgs, HooksCallback } from './common_types';
 
 const statAsync = promisify(fs.lstat);
 const readAsync = promisify(fs.readdir);
@@ -90,10 +91,13 @@ export function now() {
 }
 
 /**
- * Execute all the callbacks in parallel using Promise.all
+ * Execute all the hooks callbacks in parallel using Promise.all
  */
-export async function runParallel(callbacks) {
-  const promises = callbacks.map(cb => cb());
+export async function runParallel(
+  callbacks: Array<HooksCallback>,
+  args: HooksArgs
+) {
+  const promises = callbacks.map(cb => cb(args));
   return await Promise.all(promises);
 }
 

@@ -174,7 +174,8 @@ async function prepareSuites(inputs: string[]) {
   const reporter = options.json ? 'json' : options.reporter;
 
   const results = await run({
-    params: Object.freeze({ ...params, environment }),
+    params: Object.freeze(params),
+    environment,
     reporter,
     headless: options.headless,
     screenshots: options.screenshots,

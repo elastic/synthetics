@@ -61,12 +61,25 @@ describe('CLI', () => {
       '-e',
       'testing',
     ]);
-    await cli.waitFor('fake journey');
+    await cli.waitFor('journey/start');
     const output = cli.output();
-    expect(JSON.parse(output).payload).toMatchObject({
-      params: { url: 'non-dev', environment: 'testing' },
-    });
     expect(await cli.exitCode).toBe(0);
+    expect(JSON.parse(output).payload).toMatchObject({
+      params: { url: 'non-dev' },
+    });
+  });
+
+  it('throw error on modifying params', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'params-error.journey.ts'),
+      '-j',
+    ]);
+    expect(await cli.exitCode).toBe(1);
+    const output = cli.output();
+    expect(JSON.parse(output).error).toMatchObject({
+      name: 'TypeError',
+      message: 'Cannot add property foo, object is not extensible',
+    });
   });
 });
 
