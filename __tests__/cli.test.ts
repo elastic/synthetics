@@ -61,12 +61,12 @@ describe('CLI', () => {
       '-e',
       'testing',
     ]);
-    await cli.waitFor('fake journey');
+    await cli.waitFor('journey/start');
     const output = cli.output();
+    expect(await cli.exitCode).toBe(0);
     expect(JSON.parse(output).payload).toMatchObject({
       params: { url: 'non-dev' },
     });
-    expect(await cli.exitCode).toBe(0);
   });
 
   it('throw error on modifying params', async () => {
