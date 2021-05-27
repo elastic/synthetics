@@ -73,8 +73,6 @@ type JourneyContext = BaseContext & {
 export type ScreenshotRef = {
   width: number;
   height: number;
-  blockWidth: number;
-  blockHeight: number;
   blocks: Array<{
     hash: string;
     top: number;
@@ -192,7 +190,7 @@ export default class Runner {
     context: JourneyContext,
     options: RunOptions
   ): Promise<StepResult> {
-    const data: StepResult = {
+    const stepResult: StepResult = {
       status: 'succeeded',
     };
     log(`Runner: start step (${step.name})`);
@@ -204,8 +202,8 @@ export default class Runner {
      * reported for failed navigations
      */
     const captureUrl = req => {
-      if (!data.url && req.isNavigationRequest()) {
-        data.url = req.url();
+      if (!stepResult.url && req.isNavigationRequest()) {
+        stepResult.url = req.url();
       }
       driver.page.off('request', captureUrl);
     };
@@ -214,23 +212,25 @@ export default class Runner {
       pluginManager.onStep(step);
       await step.callback();
       if (metrics) {
-        data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
+        stepResult.metrics = await pluginManager
+          .get(PerformanceManager)
+          .getMetrics();
       }
     } catch (error) {
-      data.status = 'failed';
-      data.error = error;
+      stepResult.status = 'failed';
+      stepResult.error = error;
     } finally {
-      data.url ??= driver.page.url();
+      stepResult.url ??= driver.page.url();
       if (screenshots) {
         await driver.page.waitForLoadState('load');
         const screenshot = await driver.page.screenshot({
           type: 'png',
         });
-        data.screenshotRef = await this.processScreenshot(screenshot);
+        stepResult.screenshotRef = await this.processScreenshot(screenshot);
       }
     }
     log(`Runner: end step (${step.name})`);
-    return data;
+    return stepResult;
   }
 
   private async processScreenshot(screenshot: Buffer): Promise<ScreenshotRef> {
@@ -243,8 +243,6 @@ export default class Runner {
     const screenshotRef: ScreenshotRef = {
       width: meta.width,
       height: meta.height,
-      blockWidth,
-      blockHeight,
       blocks: [],
     };
 
@@ -287,27 +285,27 @@ export default class Runner {
     for (const step of journey.steps) {
       const start = getMonotonicTime();
       this.emit('step:start', { journey, step });
-      let data: StepResult = { status: 'succeeded' };
+      let stepResult: StepResult = { status: 'succeeded' };
       if (skipStep) {
-        data.status = 'skipped';
+        stepResult.status = 'skipped';
       } else {
-        data = await this.runStep(step, context, options);
+        stepResult = await this.runStep(step, context, options);
         /**
          * skip next steps if the previous step returns error
          */
-        if (data.error) skipStep = true;
+        if (stepResult.error) skipStep = true;
       }
       this.emit('step:end', {
         journey,
         step,
         start,
         end: getMonotonicTime(),
-        ...data,
+        ...stepResult,
       });
-      if (options.pauseOnError && data.error) {
+      if (options.pauseOnError && stepResult.error) {
         await new Promise(r => process.stdin.on('data', r));
       }
-      results.push(data);
+      results.push(stepResult);
     }
     return results;
   }
