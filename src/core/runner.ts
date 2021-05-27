@@ -216,6 +216,11 @@ export default class Runner {
         const buffer = await driver.page.screenshot({
           type: 'png',
         });
+        /**
+         * Write the screenshot image buffer with additional details (step
+         * information) which could be extracted at the end of
+         * each journey without impacting the step timing information
+         */
         const fileName = now().toString() + '.json';
         writeFileSync(
           join(this.screenshotPath, fileName),

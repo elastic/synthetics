@@ -23,7 +23,7 @@
  *
  */
 
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
@@ -287,6 +287,12 @@ async function processScreenshot(screenshot: Buffer) {
         blob: buf.toString('base64'),
         id: hash,
       });
+      /**
+       * We dont write the width, height of individual blocks on the
+       * reference as we use similar sized blocks for each extraction,
+       * we would need to send the width and height here if we decide to
+       * go with dynamic block extraction.
+       */
       reference.blocks.push({
         hash,
         top,
@@ -298,17 +304,24 @@ async function processScreenshot(screenshot: Buffer) {
   return { blocks, reference, blob_mime: 'image/webp' };
 }
 
+/**
+ * Get all the screenshots from the cached screenshot location
+ * at the end of each journey and construct equally sized blocks out
+ * of the individual screenshot image.
+ */
 async function gatherScreenshots(screenshotsPath: string) {
   const screenshots: Array<ScreenshotOutput> = [];
-  await totalist(screenshotsPath, async (_, absPath) => {
-    const content = readFileSync(absPath, 'utf8');
-    const { step, data } = JSON.parse(content);
-    const result = await processScreenshot(Buffer.from(data, 'base64'));
-    screenshots.push({
-      step,
-      ...result,
+  if (existsSync(CACHE_PATH)) {
+    await totalist(screenshotsPath, async (_, absPath) => {
+      const content = readFileSync(absPath, 'utf8');
+      const { step, data } = JSON.parse(content);
+      const result = await processScreenshot(Buffer.from(data, 'base64'));
+      screenshots.push({
+        step,
+        ...result,
+      });
     });
-  });
+  }
   return screenshots;
 }
 

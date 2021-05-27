@@ -108,7 +108,6 @@ describe('json reporter', () => {
       journey: j1,
       status: 'succeeded',
       step: step('s1', () => {}),
-      screenshot: 'dummy',
       url: 'dummy',
       start: 0,
       end: 10,
@@ -157,7 +156,6 @@ describe('json reporter', () => {
       journey: j1,
       status: 'failed',
       step: step('s2', () => {}),
-      screenshot: 'dummy2',
       url: 'dummy2',
       start: 11,
       end: 20,
@@ -201,7 +199,6 @@ describe('json reporter', () => {
       journey: j1,
       status: 'failed',
       step: step('s2', () => {}),
-      screenshot: data,
       start: 11,
       end: 20,
     });
