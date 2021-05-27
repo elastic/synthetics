@@ -476,6 +476,7 @@ export default class JSONReporter extends BaseReporter {
   // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured
   // stuff in there
   writeJSON({
+    _id,
     journey,
     type,
     timestamp,
@@ -489,6 +490,7 @@ export default class JSONReporter extends BaseReporter {
   }: OutputFields) {
     this.write({
       type,
+      _id,
       '@timestamp': timestamp || getTimestamp(),
       journey: journeyInfo(journey, type, payload?.status),
       step: stepInfo(step, type, payload?.status),

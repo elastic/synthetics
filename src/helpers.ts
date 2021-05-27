@@ -231,4 +231,9 @@ export function formatError(error: Error) {
 }
 
 const cwd = process.cwd();
+/**
+ * Synthetics cache path that is based on the process id to make sure
+ * each process does not modify the caching layer used by other process
+ * once we move to executing journeys in parallel
+ */
 export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
