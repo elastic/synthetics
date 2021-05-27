@@ -203,6 +203,13 @@ describe('json reporter', () => {
     expect(await gatherScreenshots(nonExistDir)).toEqual([]);
   });
 
+  it('idempotent on constructing screenshots blocks', async () => {
+    const screenshotsDir = join(FIXTURES_DIR, 'screenshots');
+    const screenshot1 = await gatherScreenshots(screenshotsDir);
+    const screenshot2 = await gatherScreenshots(screenshotsDir);
+    expect(screenshot1).toEqual(screenshot2);
+  });
+
   it('write screenshot block & reference docs', async () => {
     const sourceDir = join(FIXTURES_DIR, 'screenshots');
     const destDir = join(helpers.CACHE_PATH, 'screenshots');

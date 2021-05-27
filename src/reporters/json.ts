@@ -49,7 +49,7 @@ type OutputType =
   | 'journey/register'
   | 'journey/start'
   | 'screenshot/block'
-  | 'step/screenshot_reference'
+  | 'step/screenshot_ref'
   | 'step/end'
   | 'journey/network_info'
   | 'journey/filmstrips'
@@ -67,7 +67,6 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
-  screenshot_ref?: ScreenshotReference;
 };
 
 type OutputFields = {
@@ -92,12 +91,12 @@ type ScreenshotBlob = {
 type ScreenshotReference = {
   width: number;
   height: number;
-  blockWidth: number;
-  blockHeight: number;
   blocks: Array<{
     hash: string;
     top: number;
     left: number;
+    width: number;
+    height: number;
   }>;
 };
 
@@ -273,8 +272,6 @@ async function processScreenshot(screenshot: Buffer) {
   const reference: ScreenshotReference = {
     width,
     height,
-    blockWidth,
-    blockHeight,
     blocks: [],
   };
   const blocks: Array<ScreenshotBlob> = [];
@@ -303,6 +300,8 @@ async function processScreenshot(screenshot: Buffer) {
         hash,
         top,
         left,
+        width: blockWidth,
+        height: blockHeight,
       });
     }
   }
@@ -409,12 +408,11 @@ export default class JSONReporter extends BaseReporter {
                 blob_mime,
               });
             }
-
             this.writeJSON({
-              type: 'step/screenshot_reference',
+              type: 'step/screenshot_ref',
               journey,
               step,
-              payload: {
+              root_fields: {
                 screenshot_ref: reference,
               },
             });
