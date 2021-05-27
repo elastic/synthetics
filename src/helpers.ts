@@ -26,7 +26,7 @@
 import { red, green, yellow, cyan } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
-import fs, { statSync } from 'fs';
+import fs from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 import { HooksArgs, HooksCallback } from './common_types';
@@ -109,12 +109,12 @@ export function isDepInstalled(dep) {
   }
 }
 
-export async function isDirectory(path) {
-  return (await statAsync(path)).isDirectory();
+export function isDirectory(path) {
+  return fs.existsSync(path) && fs.statSync(path).isDirectory();
 }
 
 export function isFile(filePath) {
-  return fs.existsSync(filePath) && statSync(filePath).isFile();
+  return fs.existsSync(filePath) && fs.statSync(filePath).isFile();
 }
 
 /**

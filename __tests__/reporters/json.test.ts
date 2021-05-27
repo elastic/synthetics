@@ -23,10 +23,14 @@
  *
  */
 
-import fs from 'fs';
+import fs, { mkdirSync } from 'fs';
+import { join } from 'path';
 import snakeCaseKeys from 'snakecase-keys';
 import { step, journey } from '../../src/core';
-import JSONReporter, { formatNetworkFields } from '../../src/reporters/json';
+import JSONReporter, {
+  formatNetworkFields,
+  gatherScreenshots,
+} from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
@@ -47,6 +51,7 @@ describe('json reporter', () => {
   let runner: Runner;
   const timestamp = 1600300800000000;
   const originalProcess = global.process;
+  const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
   beforeAll(() => {
     // Mocking the process in node environment
@@ -75,7 +80,7 @@ describe('json reporter', () => {
     /**
      * Close the underlying stream writing to FD to read all the contents
      */
-    stream.end();
+    stream.once('drain', () => stream.end());
     await new Promise(resolve => stream.once('finish', resolve));
     const fd = fs.openSync(dest, 'r');
     const buffer = fs.readFileSync(fd, 'utf-8');
@@ -193,21 +198,25 @@ describe('json reporter', () => {
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
-  it('captures screenshots blob and mime type', async () => {
-    const data = 'aaaaaaaaaaa';
-    runner.emit('step:end', {
-      journey: j1,
-      status: 'failed',
-      step: step('s2', () => {}),
-      start: 11,
-      end: 20,
-    });
-    const stepEnd = (await readAndCloseStreamJson()).find(
-      json => json.type == 'step/screenshot'
+  it('return empty if screeshot dir doesnt exist', async () => {
+    const nonExistDir = join(FIXTURES_DIR, 'blah');
+    expect(await gatherScreenshots(nonExistDir)).toEqual([]);
+  });
+
+  it('write screenshot block & reference docs', async () => {
+    const sourceDir = join(FIXTURES_DIR, 'screenshots');
+    const destDir = join(helpers.CACHE_PATH, 'screenshots');
+    mkdirSync(destDir, { recursive: true });
+    fs.copyFileSync(
+      join(sourceDir, 'content.json'),
+      join(destDir, 'content.json')
     );
-    expect(stepEnd).toMatchObject({
-      blob: data,
-      blob_mime: 'image/jpeg',
+    runner.emit('journey:end', {
+      journey: j1,
+      start: 0,
+      status: 'failed',
     });
+    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+    fs.rmdirSync(destDir, { recursive: true });
   });
 });

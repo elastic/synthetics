@@ -69,26 +69,6 @@ export default class BaseReporter {
     this.runner.on('end', () => this.stream.flush());
   }
 
-  // close() {
-  //   if (this.fd <= 2) {
-  //     /**
-  //      * For stdout/stderr we destroy stream once data is written and run
-  //      * it as the last listener giving enough room for
-  //      * other reporters to write to stream
-  //      */
-  //     // setImmediate(() => this.stream.end());
-  //     this.stream.flush();
-  //   } else {
-  //     /**
-  //      * If the user has passed a custom FD we don't close the FD, but we do flush it
-  //      * to give them more control. This is important because FDs should only be closed
-  //      * once, and the primary use case for custom FDs is being called by heartbeat, which
-  //      * closes the FD after the process exits
-  //      */
-  //     this.stream.flush();
-  //   }
-  // }
-
   _registerListeners() {
     const result = {
       succeeded: 0,

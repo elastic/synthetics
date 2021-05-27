@@ -23,12 +23,18 @@
  *
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
 import BaseReporter from './base';
-import { formatError, getTimestamp, CACHE_PATH, totalist } from '../helpers';
+import {
+  formatError,
+  getTimestamp,
+  CACHE_PATH,
+  totalist,
+  isDirectory,
+} from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import { NetworkInfo, StatusValue } from '../common_types';
@@ -309,9 +315,9 @@ async function processScreenshot(screenshot: Buffer) {
  * at the end of each journey and construct equally sized blocks out
  * of the individual screenshot image.
  */
-async function gatherScreenshots(screenshotsPath: string) {
+export async function gatherScreenshots(screenshotsPath: string) {
   const screenshots: Array<ScreenshotOutput> = [];
-  if (existsSync(CACHE_PATH)) {
+  if (isDirectory(screenshotsPath)) {
     await totalist(screenshotsPath, async (_, absPath) => {
       const content = readFileSync(absPath, 'utf8');
       const { step, data } = JSON.parse(content);

@@ -103,7 +103,7 @@ async function prepareSuites(inputs: string[]) {
      * the suites
      */
     findPkgJsonByTraversing(absPath, resolvedCwd);
-    if (await isDirectory(absPath)) {
+    if (isDirectory(absPath)) {
       await totalist(absPath, (rel, abs) => {
         if (pattern.test(rel) && !ignored.test(rel)) {
           addSuite(abs);

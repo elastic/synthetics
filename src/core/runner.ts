@@ -119,9 +119,13 @@ interface Events {
   end: unknown;
 }
 
-export default class Runner {
+export default interface Runner {
+  on<K extends keyof Events>(name: K, listener: (v: Events[K]) => void): this;
+  emit<K extends keyof Events>(event: K, args: Events[K]): boolean;
+}
+
+export default class Runner extends EventEmitter {
   active = false;
-  eventEmitter = new EventEmitter();
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
@@ -146,15 +150,6 @@ export default class Runner {
   addJourney(journey: Journey) {
     this.journeys.push(journey);
     this.currentJourney = journey;
-  }
-
-  emit<K extends keyof Events>(e: K, v: Events[K]) {
-    log(`Runner: emit> ${e}`);
-    this.eventEmitter.emit(e, v);
-  }
-
-  on<K extends keyof Events>(e: K, cb: (v: Events[K]) => void) {
-    this.eventEmitter.on(e, cb);
   }
 
   async runBeforeAllHook(args: HooksArgs) {
