@@ -177,16 +177,7 @@ async function prepareSuites(inputs: string[]) {
     params: Object.freeze(params),
     environment,
     reporter,
-    headless: options.headless,
-    screenshots: options.screenshots,
-    dryRun: options.dryRun,
-    journeyName: options.journeyName,
-    network: options.network,
-    pauseOnError: options.pauseOnError,
-    outfd: options.outfd,
-    metrics: options.metrics,
-    sandbox: options.sandbox,
-    trace: options.trace,
+    ...options,
   });
 
   /**

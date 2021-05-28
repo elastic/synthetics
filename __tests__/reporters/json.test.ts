@@ -120,9 +120,9 @@ describe('json reporter', () => {
       end: 11,
       filmstrips: [
         {
-          snapshot: 'dummy',
-          ts: 392583998697,
-          startTime: 392583.998697,
+          blob: 'dummy',
+          mime: 'image/jpeg',
+          start: 392583.998697,
         },
       ],
       networkinfo: [
@@ -136,15 +136,13 @@ describe('json reporter', () => {
       experience: [
         {
           name: 'navigationStart',
-          ts: 3065705158085,
           type: 'mark',
-          startTime: 3065705.158085,
+          start: 3065705.158085,
         },
         {
           name: 'firstContentfulPaint',
-          ts: 3065705560142,
           type: 'mark',
-          startTime: 3065705.560142,
+          start: 3065705.560142,
         },
       ],
     });

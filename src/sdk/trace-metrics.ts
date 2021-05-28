@@ -52,14 +52,14 @@ export class UserTimings {
       /**
        * user timing mark events falls under `R` and i or I
        * measure events starts with `b` and ends with `e`
+       * Doc - https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit#heading=h.puwqg050lyuy
        */
       const phase = ph.toLowerCase();
       if (phase === 'r' || phase === 'i') {
         userTimings.push({
           name,
-          ts,
           type: 'mark',
-          startTime: convertTraceTimestamp(ts),
+          start: convertTraceTimestamp(ts),
         });
       } else if (phase === 'b') {
         measuresMap.set(name, ts);
@@ -67,11 +67,9 @@ export class UserTimings {
         const startTime = measuresMap.get(name);
         userTimings.push({
           name,
-          ts,
           type: 'measure',
-          startTime: convertTraceTimestamp(startTime),
-          endTime: convertTraceTimestamp(ts),
-          duration: ts - startTime,
+          start: convertTraceTimestamp(startTime),
+          end: convertTraceTimestamp(ts),
         });
       }
     }
@@ -87,9 +85,8 @@ export class ExperienceMetrics {
 
     return {
       name: name || event.name,
-      ts: event.ts,
       type: 'mark',
-      startTime: convertTraceTimestamp(event.ts),
+      start: convertTraceTimestamp(event.ts),
     };
   }
 
@@ -106,6 +103,12 @@ export class ExperienceMetrics {
 
     experienceMetrics.push(this.buildMetric(timeOriginEvt));
     experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt));
+    /**
+     * lcpInvalidated - Denotes when all of the LCP events that comes from the
+     * current trace are invalidated. Happens if the previous LCP candidates were
+     * suppressed by another event coming later during the page load
+     * More info - https://github.com/WICG/largest-contentful-paint/#the-last-candidate
+     */
     !lcpInvalidated &&
       experienceMetrics.push(
         this.buildMetric(largestContentfulPaintEvt, 'largestContentfulPaint')
@@ -155,24 +158,41 @@ export class CumulativeLayoutShift {
     return {
       name: this.type,
       score: score,
-      ts: event.ts,
       exists: true,
-      startTime: convertTraceTimestamp(event.ts),
+      start: convertTraceTimestamp(event.ts),
     };
   }
 }
 
 export class Filmstrips {
+  static filterExcesssiveScreenshots(events: Array<TraceEvent>) {
+    const screenshotEvents = events.filter(
+      evt => evt.name === 'Screenshot' && evt.args?.snapshot
+    );
+    const screenshotTimestamps = screenshotEvents.map(event => event.ts);
+
+    let lastScreenshotTs = -Infinity;
+    return screenshotEvents.filter(evt => {
+      const timeSinceLastScreenshot = evt.ts - lastScreenshotTs;
+      const nextScreenshotTs = screenshotTimestamps.find(ts => ts > evt.ts);
+      const timeUntilNextScreenshot = nextScreenshotTs
+        ? nextScreenshotTs - evt.ts
+        : Infinity;
+      const threshold = 500 * 1000; // Throttle to ~2fps
+      // Keep the frame if it's been more than 500ms since the last frame we kept or the next frame won't happen for at least 500ms
+      const shouldKeep =
+        timeUntilNextScreenshot > threshold ||
+        timeSinceLastScreenshot > threshold;
+      if (shouldKeep) lastScreenshotTs = evt.ts;
+      return shouldKeep;
+    });
+  }
+
   static compute(traceEvents: Array<TraceEvent>): Array<Filmstrip> {
-    return traceEvents
-      .filter(event => {
-        const { args, name } = event;
-        return name === 'Screenshot' && args?.snapshot;
-      })
-      .map(event => ({
-        snapshot: `data:image/jpeg;base64,${event.args.snapshot}`,
-        ts: event.ts,
-        startTime: convertTraceTimestamp(event.ts),
-      }));
+    return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
+      blob: event.args.snapshot,
+      mime: 'image/jpeg',
+      start: convertTraceTimestamp(event.ts),
+    }));
   }
 }

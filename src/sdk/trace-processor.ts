@@ -26,7 +26,6 @@
 import LighthouseTraceProcessor from './lh-trace-processor';
 import {
   ExperienceMetrics,
-  Filmstrips,
   CumulativeLayoutShift,
   UserTimings,
 } from './trace-metrics';
@@ -81,6 +80,10 @@ export type LHTrace = {
 /**
  * Extends the lighthouse trace processor which extracts all the meaningful trace
  * events in chronological order from the tab's process
+ *
+ * We extend Lighthouse Processor instead of calling it directy as we want to control
+ * what is the interest event for Navigation start and also in future we want to measure
+ * metrics based on multiple navigations instead of a single navigation.
  */
 export class TraceProcessor extends LighthouseTraceProcessor {
   static _isNavigationStartOfInterest(event) {
@@ -99,13 +102,11 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     };
     const trace: LHTrace = super.computeTraceOfTab({ traceEvents }, options);
     const userTiming = UserTimings.compute(trace);
-    const filmstrips = Filmstrips.compute(traceEvents);
     const experience = ExperienceMetrics.compute(trace);
     const layoutShift = CumulativeLayoutShift.compute(trace);
 
     return {
       userTiming,
-      filmstrips,
       experience,
       layoutShift,
     };

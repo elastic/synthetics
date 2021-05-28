@@ -38,10 +38,9 @@ export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 
 export type TraceOutput = {
-  ts: number;
   name?: string;
-  startTime: number;
-  endTime?: number;
+  start: number;
+  end?: number;
 };
 
 export type UserTiming = TraceOutput & {
@@ -51,15 +50,15 @@ export type UserTiming = TraceOutput & {
 };
 
 export type Filmstrip = TraceOutput & {
-  snapshot: string;
+  blob: string;
+  mime: string;
 };
 
 export type LayoutShift = {
   exists: boolean;
   score: number;
   name: string;
-  ts?: number;
-  startTime?: number;
+  start?: number;
 };
 
 export type DefaultPluginOutput = {
@@ -121,6 +120,7 @@ export type CliArgs = {
   headless?: boolean;
   screenshots?: boolean;
   metrics?: boolean;
+  filmstrips?: boolean;
   trace?: boolean;
   dryRun?: boolean;
   journeyName?: string;

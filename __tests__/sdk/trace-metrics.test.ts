@@ -41,23 +41,19 @@ describe('Trace metrics', () => {
     expect(metrics).toMatchInlineSnapshot(`
       Array [
         Object {
-          "duration": 1212635,
-          "endTime": 3069485.988748,
+          "end": 3069485.988748,
           "name": "Next.js-before-hydration",
-          "startTime": 3069484.776113,
-          "ts": 3069485988748,
+          "start": 3069484.776113,
           "type": "measure",
         },
         Object {
           "name": "beforeRender",
-          "startTime": 3069485.988763,
-          "ts": 3069485988763,
+          "start": 3069485.988763,
           "type": "mark",
         },
         Object {
           "name": "afterHydrate",
-          "startTime": 3069486.106274,
-          "ts": 3069486106274,
+          "start": 3069486.106274,
           "type": "mark",
         },
       ]
@@ -92,27 +88,24 @@ describe('Trace metrics', () => {
     expect(metrics).toEqual([
       {
         name: 'firstContentfulPaint',
-        ts: 8,
         type: 'mark',
-        startTime: 0.000008,
+        start: 0.000008,
       },
       {
         name: 'largestContentfulPaint',
-        ts: 20,
         type: 'mark',
-        startTime: 0.00002,
+        start: 0.00002,
       },
       {
         name: 'domContentLoadedEventEnd',
-        ts: 10,
         type: 'mark',
-        startTime: 0.00001,
+        start: 0.00001,
       },
     ]);
   });
 
   function makeTrace(events) {
-    const shiftEvents = events.map(data => {
+    const shiftEvents = events.map(event => {
       return {
         name: 'LayoutShift',
         cat: 'loading',
@@ -120,8 +113,8 @@ describe('Trace metrics', () => {
         args: {
           data: {
             is_main_frame: true,
-            had_recent_input: data.had_recent_input,
-            score: data.score,
+            had_recent_input: event.had_recent_input,
+            score: event.score,
           },
         },
       };
@@ -141,8 +134,7 @@ describe('Trace metrics', () => {
       name: 'LayoutShift',
       score: 3,
       exists: true,
-      ts: 15,
-      startTime: 0.000015,
+      start: 0.000015,
     });
 
     mainThreadEvents = makeTrace([
@@ -155,8 +147,7 @@ describe('Trace metrics', () => {
       name: 'LayoutShift',
       score: 4,
       exists: true,
-      ts: 15,
-      startTime: 0.000015,
+      start: 0.000015,
     });
   });
 
@@ -174,6 +165,10 @@ describe('Trace metrics', () => {
     const events = traceEvents.concat(FILMSTRIP_EVENTS as any);
     const metrics = Filmstrips.compute(events as any);
     expect(metrics.length).toBe(1);
-    expect(metrics[0].snapshot).toContain('data:image/jpeg;base64');
+    expect(metrics[0]).toEqual({
+      blob: expect.any(String),
+      mime: 'image/jpeg',
+      start: 3086640.09036,
+    });
   });
 });

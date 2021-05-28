@@ -333,12 +333,10 @@ export default class JSONReporter extends BaseReporter {
               journey,
               payload: {
                 index,
-                ...{
-                  startTime: strip.startTime,
-                  ts: strip.ts,
-                },
+                start: strip.start,
               },
-              blob: strip.snapshot,
+              blob: strip.blob,
+              blob_mime: strip.mime,
             });
           });
         }

@@ -32,10 +32,7 @@ describe('Trace processor', () => {
     const output = TraceProcessor.computeTrace(traceEvents as any);
     expect(output).toEqual({
       userTiming: [],
-      filmstrips: [],
-      experience: [
-        { name: 'navigationStart', ts: 0, type: 'mark', startTime: 0 },
-      ],
+      experience: [{ name: 'navigationStart', type: 'mark', start: 0 }],
       layoutShift: { name: 'LayoutShift', score: 0, exists: false },
     });
   });

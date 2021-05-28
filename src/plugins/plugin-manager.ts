@@ -29,20 +29,21 @@ import {
   NetworkManager,
   PerformanceManager,
   Tracing,
+  TraceOptions,
 } from './';
 import { Driver } from '../core/gatherer';
 import { Step } from '../dsl';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-
 type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type PluginOptions = TraceOptions;
 
 export class PluginManager {
   protected plugins = new Map<string, Plugin>();
 
   constructor(private driver: Driver) {}
 
-  async start(type: PluginType) {
+  async start(type: PluginType, options?: PluginOptions) {
     let instance: Plugin;
     switch (type) {
       case 'network':
@@ -50,7 +51,7 @@ export class PluginManager {
         await instance.start(this.driver.client);
         break;
       case 'trace':
-        instance = new Tracing();
+        instance = new Tracing(options);
         await instance.start(this.driver.client);
         break;
       case 'performance':
@@ -78,15 +79,19 @@ export class PluginManager {
 
   async output(): Promise<PluginOutput> {
     const data: PluginOutput = {};
-    for (const [, plugin] of this.plugins) {
-      if (plugin instanceof NetworkManager) {
-        data.networkinfo = plugin.stop();
-      } else if (plugin instanceof Tracing) {
-        const result = await plugin.stop(this.driver.client);
-        Object.assign(data, { ...result });
-      } else if (plugin instanceof BrowserConsole) {
-        data.browserconsole = plugin.stop();
+    try {
+      for (const [, plugin] of this.plugins) {
+        if (plugin instanceof NetworkManager) {
+          data.networkinfo = plugin.stop();
+        } else if (plugin instanceof Tracing) {
+          const result = await plugin.stop(this.driver.client);
+          Object.assign(data, { ...result });
+        } else if (plugin instanceof BrowserConsole) {
+          data.browserconsole = plugin.stop();
+        }
       }
+    } catch (e) {
+      console.error('Error capturing data', e.message);
     }
     return data;
   }

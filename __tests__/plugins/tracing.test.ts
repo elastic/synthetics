@@ -39,7 +39,7 @@ describe('tracing', () => {
 
   it('should capture filmstrips', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const tracer = new Tracing();
+    const tracer = new Tracing({ filmstrips: true, trace: true });
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
     await driver.page.waitForLoadState();
@@ -47,16 +47,15 @@ describe('tracing', () => {
     await Gatherer.stop();
     expect(filmstrips.length).toBeGreaterThan(0);
     expect(filmstrips[0]).toMatchObject({
-      snapshot: expect.any(String),
-      ts: expect.any(Number),
-      startTime: expect.any(Number),
+      blob: expect.any(String),
+      mime: 'image/jpeg',
+      start: expect.any(Number),
     });
     expect(experience.length).toBeGreaterThan(0);
     expect(experience[0]).toMatchObject({
       name: 'navigationStart',
-      ts: expect.any(Number),
       type: 'mark',
-      startTime: expect.any(Number),
+      start: expect.any(Number),
     });
   });
 });
