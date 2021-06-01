@@ -52,6 +52,20 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
+  it('enables rich events on `--rich-events` flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--rich-events',
+    ]);
+    await cli.waitFor('fake journey');
+    const output = cli.output();
+    expect(JSON.parse(output).journey).toEqual({
+      id: 'fake journey',
+      name: 'fake journey',
+    });
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('pass config to journey params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
