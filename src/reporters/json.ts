@@ -351,9 +351,9 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, userTiming);
-        this.writeMetrics(journey, layoutShift);
-        this.writeMetrics(journey, experience);
+        this.writeMetrics(journey, 'user_timing', userTiming);
+        this.writeMetrics(journey, 'layout_shift', layoutShift);
+        this.writeMetrics(journey, 'experience', experience);
 
         this.writeJSON({
           type: 'journey/end',
@@ -371,6 +371,7 @@ export default class JSONReporter extends BaseReporter {
 
   writeMetrics(
     journey: Journey,
+    type: string,
     events: Array<UserTiming> | Array<Filmstrip> | LayoutShift
   ) {
     const metrics = Array.isArray(events) ? events : [events];
@@ -379,7 +380,11 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON({
           type: 'journey/metrics',
           journey,
-          payload: { ...event },
+          root_fields: {
+            browser: {
+              [type]: event,
+            },
+          },
         });
     });
   }
