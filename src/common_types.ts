@@ -135,4 +135,5 @@ export type CliArgs = {
   require: string[];
   debug?: boolean;
   suiteParams?: string;
+  richEvents?: true;
 };

@@ -29,8 +29,7 @@ import { stdin, cwd } from 'process';
 import { resolve } from 'path';
 import { step, journey } from './core';
 import { log } from './core/logger';
-import program from './parse_args';
-import { CliArgs } from './common_types';
+import program, { options } from './parse_args';
 import {
   findPkgJsonByTraversing,
   isDepInstalled,
@@ -40,7 +39,6 @@ import {
 import { run } from './';
 import { readConfig } from './config';
 
-const options = program.opts() as CliArgs;
 const resolvedCwd = cwd();
 /**
  * Set debug based on DEBUG ENV and -d flags
