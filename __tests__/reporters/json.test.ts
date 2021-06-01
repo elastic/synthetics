@@ -120,9 +120,9 @@ describe('json reporter', () => {
       end: 11,
       filmstrips: [
         {
-          snapshot: 'dummy',
-          ts: 392583998697,
-          startTime: 392583.998697,
+          blob: 'dummy',
+          mime: 'image/jpeg',
+          start: 392583.998697,
         },
       ],
       networkinfo: [
@@ -132,6 +132,18 @@ describe('json reporter', () => {
           isNavigationRequest: true,
           browser: {},
         } as any,
+      ],
+      experience: [
+        {
+          name: 'navigationStart',
+          type: 'mark',
+          start: 3065705.158085,
+        },
+        {
+          name: 'firstContentfulPaint',
+          type: 'mark',
+          start: 3065705.560142,
+        },
       ],
     });
     runner.emit('end', 'done');

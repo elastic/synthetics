@@ -23,44 +23,51 @@
  *
  */
 
-import { Page } from 'playwright-chromium';
-import { BrowserMessage } from '../common_types';
-import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
+const pid = 1000;
+const tid = 2000;
+const frame = 'A1'.repeat(16);
 
-const defaultMessageLimit = 1000;
+export function createTestTrace() {
+  const timeOrigin = 0;
+  const traceEvents = [
+    {
+      name: 'navigationStart',
+      ts: timeOrigin,
+      pid,
+      tid,
+      ph: 'R',
+      cat: 'blink.user_timing',
+      args: {
+        frame,
+        data: { documentLoaderURL: '' },
+      },
+    },
+    {
+      name: 'TracingStartedInBrowser',
+      ts: timeOrigin,
+      pid,
+      tid,
+      ph: 'I',
+      cat: 'disabled-by-default-devtools.timeline',
+      args: {
+        data: {
+          frameTreeNodeId: 6,
+          persistentIds: true,
+          frames: [{ frame, url: 'about:blank', name: '', processId: pid }],
+        },
+      },
+      s: 't',
+    },
+    {
+      name: 'thread_name',
+      ts: timeOrigin,
+      pid,
+      tid,
+      ph: 'M',
+      cat: '__metadata',
+      args: { name: 'CrRendererMain' },
+    },
+  ];
 
-export class BrowserConsole {
-  private messages: BrowserMessage[] = [];
-  _currentStep: Partial<Step> = null;
-
-  private consoleEventListener = msg => {
-    if (!this._currentStep) {
-      return;
-    }
-    const type = msg.type();
-    if (type === 'error' || type === 'warning') {
-      const { name, index } = this._currentStep;
-      this.messages.push({
-        timestamp: getTimestamp(),
-        text: msg.text(),
-        type,
-        step: { name, index },
-      });
-      if (this.messages.length > defaultMessageLimit) {
-        this.messages.splice(0, 1);
-      }
-    }
-  };
-
-  constructor(private page: Page) {}
-
-  start() {
-    this.page.on('console', this.consoleEventListener);
-  }
-
-  stop() {
-    this.page.off('console', this.consoleEventListener);
-    return this.messages;
-  }
+  return { traceEvents };
 }

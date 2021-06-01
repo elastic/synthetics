@@ -23,44 +23,37 @@
  *
  */
 
-import { Page } from 'playwright-chromium';
-import { BrowserMessage } from '../common_types';
-import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
-
-const defaultMessageLimit = 1000;
-
-export class BrowserConsole {
-  private messages: BrowserMessage[] = [];
-  _currentStep: Partial<Step> = null;
-
-  private consoleEventListener = msg => {
-    if (!this._currentStep) {
-      return;
-    }
-    const type = msg.type();
-    if (type === 'error' || type === 'warning') {
-      const { name, index } = this._currentStep;
-      this.messages.push({
-        timestamp: getTimestamp(),
-        text: msg.text(),
-        type,
-        step: { name, index },
-      });
-      if (this.messages.length > defaultMessageLimit) {
-        this.messages.splice(0, 1);
-      }
-    }
-  };
-
-  constructor(private page: Page) {}
-
-  start() {
-    this.page.on('console', this.consoleEventListener);
-  }
-
-  stop() {
-    this.page.off('console', this.consoleEventListener);
-    return this.messages;
-  }
-}
+export const USER_TIMING_EVENTS = [
+  {
+    args: {},
+    cat: 'blink.user_timing',
+    id: '0x5e78023a',
+    name: 'Next.js-before-hydration',
+    ph: 'b',
+    scope: 'blink.user_timing',
+    ts: 3069484776113,
+  },
+  {
+    args: {},
+    cat: 'blink.user_timing',
+    id: '0x5e78023a',
+    name: 'Next.js-before-hydration',
+    ph: 'e',
+    scope: 'blink.user_timing',
+    ts: 3069485988748,
+  },
+  {
+    args: {},
+    cat: 'blink.user_timing',
+    name: 'beforeRender',
+    ph: 'R',
+    ts: 3069485988763,
+  },
+  {
+    args: {},
+    cat: 'blink.user_timing',
+    name: 'afterHydrate',
+    ph: 'R',
+    ts: 3069486106274,
+  },
+];

@@ -163,8 +163,8 @@ describe('network', () => {
       res.end(`<script src=${server.PREFIX}/chunked />`);
     });
 
-    await driver.page.waitForLoadState();
     await driver.page.goto(server.PREFIX + '/index');
+    await driver.page.waitForLoadState();
     await Gatherer.stop();
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);
