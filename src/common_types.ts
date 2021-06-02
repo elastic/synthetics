@@ -114,6 +114,7 @@ export type PluginOutput = {
 };
 
 export type CliArgs = {
+  capabilities: ['trace', 'filmstrips', 'metrics'];
   config?: string;
   environment?: string;
   outfd?: number;
@@ -135,5 +136,5 @@ export type CliArgs = {
   require: string[];
   debug?: boolean;
   suiteParams?: string;
-  richEvents?: true;
+  richEvents?: boolean;
 };
