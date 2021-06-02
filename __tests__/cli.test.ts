@@ -108,6 +108,20 @@ describe('CLI', () => {
     expect(output.payload.metrics).toBeDefined();
     expect(await cli.exitCode).toBe(0);
   });
+
+  it('show warn for unknown capabilities flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '-j',
+      '--capabilities',
+      'unknown',
+    ]);
+    try {
+      await cli.exitCode;
+    } catch (e) {
+      expect(e.message).toMatch('Missing capability unknown');
+    }
+  });
 });
 
 class CLIMock {

@@ -29,7 +29,6 @@ import { reporters } from './reporters';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
-const allowedCapabilities = ['trace', 'filmstrips', 'metrics'];
 
 program
   .name(`npx ${name}`)
@@ -56,11 +55,9 @@ program
   .option('--no-headless', 'run browser in headful mode')
   .option('--sandbox', 'enable chromium sandboxing')
   .option('--rich-events', 'Mimics a heartbeat run')
-  .addOption(
-    new Option(
-      '--capabilities <features...>',
-      'Enable capabiltiites through feature flags'
-    ).choices(allowedCapabilities)
+  .option(
+    '--capabilities <features...>',
+    'Enable capabiltiites through feature flags'
   )
   .option('--screenshots', 'take screenshot for each step')
   .option('--network', 'capture network information for all journeys')
@@ -99,13 +96,20 @@ if (options.richEvents) {
 }
 
 if (options.capabilities) {
+  const supportedCapabilities = ['trace', 'filmstrips', 'metrics'];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    */
-  for (const flags of options.capabilities) {
-    options[flags] = true;
+  for (const flag of options.capabilities) {
+    if (supportedCapabilities.includes(flag)) {
+      options[flag] = true;
+    } else {
+      console.warn(
+        `Missing capability ${flag}, current supported capabilities are ${supportedCapabilities.join()}`
+      );
+    }
   }
 }
 
