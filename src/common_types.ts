@@ -114,7 +114,7 @@ export type PluginOutput = {
 };
 
 export type CliArgs = {
-  capabilities: ['trace', 'filmstrips', 'metrics'];
+  capabilities?: ['trace', 'filmstrips', 'metrics'];
   config?: string;
   environment?: string;
   outfd?: number;
