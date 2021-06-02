@@ -56,8 +56,8 @@ program
   .option('--sandbox', 'enable chromium sandboxing')
   .option('--rich-events', 'Mimics a heartbeat run')
   .option(
-    '--capabilities <features...>',
-    'Enable capabiltiites through feature flags'
+    '--capability <features...>',
+    'Enable capabilities through feature flags'
   )
   .option('--screenshots', 'take screenshot for each step')
   .option('--network', 'capture network information for all journeys')
@@ -95,19 +95,21 @@ if (options.richEvents) {
   options.network = true;
 }
 
-if (options.capabilities) {
+if (options.capability) {
   const supportedCapabilities = ['trace', 'filmstrips', 'metrics'];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    */
-  for (const flag of options.capabilities) {
+  for (const flag of options.capability) {
     if (supportedCapabilities.includes(flag)) {
       options[flag] = true;
     } else {
       console.warn(
-        `Missing capability ${flag}, current supported capabilities are ${supportedCapabilities.join()}`
+        `Missing capability "${flag}", current supported capabilities are ${supportedCapabilities.join(
+          ''
+        )}`
       );
     }
   }

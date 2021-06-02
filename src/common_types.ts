@@ -114,7 +114,7 @@ export type PluginOutput = {
 };
 
 export type CliArgs = {
-  capabilities?: Array<string>;
+  capability?: Array<string>;
   config?: string;
   environment?: string;
   outfd?: number;

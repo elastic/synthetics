@@ -96,11 +96,11 @@ describe('CLI', () => {
     });
   });
 
-  it('support capabilities flag', async () => {
+  it('support capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'example.journey.ts'),
       '-j',
-      '--capabilities',
+      '--capability',
       'metrics',
     ]);
     await cli.waitFor('step/end');
@@ -109,17 +109,17 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
-  it('show warn for unknown capabilities flag', async () => {
+  it('show warn for unknown capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
       '-j',
-      '--capabilities',
+      '--capability',
       'unknown',
     ]);
     try {
       await cli.exitCode;
     } catch (e) {
-      expect(e.message).toMatch('Missing capability unknown');
+      expect(e.message).toMatch('Missing capability "unknown"');
     }
   });
 });

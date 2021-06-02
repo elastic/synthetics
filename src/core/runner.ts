@@ -51,7 +51,7 @@ export type RunOptions = Omit<
   | 'suiteParams'
   | 'reporter'
   | 'richEvents'
-  | 'capabilities'
+  | 'capability'
 > & {
   params?: Params;
   reporter?: CliArgs['reporter'] | Reporter;
