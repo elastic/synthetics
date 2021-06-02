@@ -23,7 +23,7 @@
  *
  */
 
-import { EventEmitter } from 'events';
+import { once, EventEmitter } from 'events';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -109,6 +109,7 @@ interface Events {
       networkinfo?: Array<NetworkInfo>;
       browserconsole?: Array<BrowserMessage>;
     };
+  'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
   'step:end': StepResult & {
     start: number;
@@ -276,7 +277,11 @@ export default class Runner extends EventEmitter {
     journey.callback({ ...context.driver, params });
   }
 
-  async endJourney(journey, result: JourneyContext & JourneyResult) {
+  async endJourney(
+    journey,
+    result: JourneyContext & JourneyResult,
+    options: RunOptions
+  ) {
     const { pluginManager, start, params, status, error } = result;
     const { filmstrips, networkinfo, browserconsole } =
       await pluginManager.output();
@@ -291,6 +296,13 @@ export default class Runner extends EventEmitter {
       networkinfo,
       browserconsole: status == 'failed' ? browserconsole : null,
     });
+    /**
+     * Wait for the all the reported events to be consumed aschronously
+     * by reporter.
+     */
+    if (options.reporter == 'json') {
+      await once(this, 'journey:end:reported');
+    }
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
@@ -321,7 +333,7 @@ export default class Runner extends EventEmitter {
       result.status = 'failed';
       result.error = e;
     } finally {
-      await this.endJourney(journey, { ...context, ...result });
+      await this.endJourney(journey, { ...context, ...result }, options);
       await Gatherer.dispose(context.driver);
     }
     log(`Runner: end journey (${journey.name})`);

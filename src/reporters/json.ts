@@ -470,6 +470,7 @@ export default class JSONReporter extends BaseReporter {
             status,
           },
         });
+        this.runner.emit('journey:end:reported', {});
       }
     );
   }
