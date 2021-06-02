@@ -87,6 +87,7 @@ export type CliArgs = {
   outfd?: number;
   headless?: boolean;
   screenshots?: boolean;
+  ssblocks?: boolean;
   metrics?: boolean;
   filmstrips?: boolean;
   dryRun?: boolean;

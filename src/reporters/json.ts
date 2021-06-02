@@ -50,6 +50,7 @@ type OutputType =
   | 'journey/start'
   | 'screenshot/block'
   | 'step/screenshot_ref'
+  | 'step/screenshot'
   | 'step/end'
   | 'journey/network_info'
   | 'journey/filmstrips'
@@ -255,7 +256,7 @@ function stepInfo(
   };
 }
 
-async function processScreenshot(screenshot: Buffer) {
+export async function getScreenshotBlocks(screenshot: Buffer) {
   const img = sharp(screenshot, { sequentialRead: true });
   const { width, height } = await img.metadata();
   /**
@@ -282,7 +283,7 @@ async function processScreenshot(screenshot: Buffer) {
       const left = col * blockWidth;
       const buf = await img
         .extract({ top, left, width: blockWidth, height: blockHeight })
-        .webp({ quality: 80 })
+        .jpeg()
         .toBuffer();
 
       const hash = createHash('sha1').update(buf).digest('hex');
@@ -306,7 +307,7 @@ async function processScreenshot(screenshot: Buffer) {
     }
   }
 
-  return { blocks, reference, blob_mime: 'image/webp' };
+  return { blocks, reference, blob_mime: 'image/jpeg' };
 }
 
 /**
@@ -314,17 +315,20 @@ async function processScreenshot(screenshot: Buffer) {
  * at the end of each journey and construct equally sized blocks out
  * of the individual screenshot image.
  */
-export async function gatherScreenshots(screenshotsPath: string) {
+export async function gatherScreenshots(
+  screenshotsPath: string,
+  callback: (step: Step, data: string) => Promise<void>
+) {
   const screenshots: Array<ScreenshotOutput> = [];
   if (isDirectory(screenshotsPath)) {
     await totalist(screenshotsPath, async (_, absPath) => {
-      const content = readFileSync(absPath, 'utf8');
-      const { step, data } = JSON.parse(content);
-      const result = await processScreenshot(Buffer.from(data, 'base64'));
-      screenshots.push({
-        step,
-        ...result,
-      });
+      try {
+        const content = readFileSync(absPath, 'utf8');
+        const { step, data } = JSON.parse(content);
+        await callback(step, data);
+      } catch (_) {
+        // TODO: capture progarammatic synthetic errors under different type
+      }
     });
   }
   return screenshots;
@@ -393,31 +397,42 @@ export default class JSONReporter extends BaseReporter {
         browserconsole,
         status,
         error,
+        ssblocks,
       }) => {
-        const screenshots = await gatherScreenshots(
-          join(CACHE_PATH, 'screenshots')
-        );
-        if (screenshots.length > 0) {
-          screenshots.forEach(({ blocks, reference, step, blob_mime }) => {
-            for (let i = 0; i < blocks.length; i++) {
-              const block = blocks[i];
+        await gatherScreenshots(
+          join(CACHE_PATH, 'screenshots'),
+          async (step, data) => {
+            if (ssblocks) {
+              const { blob_mime, blocks, reference } =
+                await getScreenshotBlocks(Buffer.from(data, 'base64'));
+              for (let i = 0; i < blocks.length; i++) {
+                const block = blocks[i];
+                this.writeJSON({
+                  type: 'screenshot/block',
+                  _id: block.id,
+                  blob: block.blob,
+                  blob_mime,
+                });
+              }
               this.writeJSON({
-                type: 'screenshot/block',
-                _id: block.id,
-                blob: block.blob,
-                blob_mime,
+                type: 'step/screenshot_ref',
+                journey,
+                step,
+                root_fields: {
+                  screenshot_ref: reference,
+                },
+              });
+            } else {
+              this.writeJSON({
+                type: 'step/screenshot',
+                journey,
+                step,
+                blob: data,
+                blob_mime: 'image/jpeg',
               });
             }
-            this.writeJSON({
-              type: 'step/screenshot_ref',
-              journey,
-              step,
-              root_fields: {
-                screenshot_ref: reference,
-              },
-            });
-          });
-        }
+          }
+        );
 
         if (networkinfo) {
           networkinfo.forEach(ni => {

@@ -108,6 +108,7 @@ interface Events {
       filmstrips?: Array<FilmStrip>;
       networkinfo?: Array<NetworkInfo>;
       browserconsole?: Array<BrowserMessage>;
+      ssblocks?: boolean;
     };
   'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
@@ -210,7 +211,8 @@ export default class Runner extends EventEmitter {
       if (screenshots) {
         await driver.page.waitForLoadState('load');
         const buffer = await driver.page.screenshot({
-          type: 'png',
+          type: 'jpeg',
+          quality: 80,
         });
         /**
          * Write the screenshot image buffer with additional details (step
@@ -292,6 +294,7 @@ export default class Runner extends EventEmitter {
       params,
       start,
       end: getMonotonicTime(),
+      ssblocks: options.ssblocks,
       filmstrips,
       networkinfo,
       browserconsole: status == 'failed' ? browserconsole : null,

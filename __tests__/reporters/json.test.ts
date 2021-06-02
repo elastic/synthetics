@@ -30,6 +30,7 @@ import { step, journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
   gatherScreenshots,
+  getScreenshotBlocks,
 } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
@@ -198,16 +199,53 @@ describe('json reporter', () => {
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
-  it('return empty if screeshot dir doesnt exist', async () => {
+  it('return empty when dir doesnt exists', async () => {
     const nonExistDir = join(FIXTURES_DIR, 'blah');
-    expect(await gatherScreenshots(nonExistDir)).toEqual([]);
+    const callback = jest.fn();
+    await gatherScreenshots(nonExistDir, callback);
+    expect(callback).not.toHaveBeenCalled();
   });
 
   it('idempotent on constructing screenshots blocks', async () => {
     const screenshotsDir = join(FIXTURES_DIR, 'screenshots');
-    const screenshot1 = await gatherScreenshots(screenshotsDir);
-    const screenshot2 = await gatherScreenshots(screenshotsDir);
+    const collectScreenshots = async () => {
+      const screenshots = [];
+      await gatherScreenshots(screenshotsDir, async (_, data) => {
+        const result = await getScreenshotBlocks(Buffer.from(data, 'base64'));
+        screenshots.push(result);
+      });
+    };
+    const screenshot1 = await collectScreenshots();
+    const screenshot2 = await collectScreenshots();
     expect(screenshot1).toEqual(screenshot2);
+  });
+
+  it('write screenshot blob data', async () => {
+    const sourceDir = join(FIXTURES_DIR, 'screenshots');
+    const destDir = join(helpers.CACHE_PATH, 'screenshots');
+    mkdirSync(destDir, { recursive: true });
+    fs.copyFileSync(
+      join(sourceDir, 'content.json'),
+      join(destDir, 'content.json')
+    );
+    runner.emit('journey:end', {
+      journey: j1,
+      start: 0,
+      status: 'failed',
+      ssblocks: false,
+    });
+    const stepEnd = (await readAndCloseStreamJson()).find(
+      json => json.type == 'step/screenshot'
+    );
+    expect(stepEnd).toMatchObject({
+      step: {
+        name: 'launch app',
+        index: 1,
+      },
+      blob: expect.any(String),
+      blob_mime: 'image/jpeg',
+    });
+    fs.rmdirSync(destDir, { recursive: true });
   });
 
   it('write screenshot block & reference docs', async () => {
@@ -222,6 +260,7 @@ describe('json reporter', () => {
       journey: j1,
       start: 0,
       status: 'failed',
+      ssblocks: true,
     });
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
     fs.rmdirSync(destDir, { recursive: true });
