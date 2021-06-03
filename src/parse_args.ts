@@ -24,6 +24,7 @@
  */
 
 import { program } from 'commander';
+import { CliArgs } from './common_types';
 import { reporters } from './reporters';
 
 const availableReporters = Object.keys(reporters)
@@ -55,6 +56,7 @@ program
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
   .option('--sandbox', 'enable chromium sandboxing')
+  .option('--rich-events', 'Mimics a heartbeat run')
   .option(
     '--ws-endpoint <endpoint>',
     'Browser WebSocket endpoint to connect to'
@@ -65,6 +67,7 @@ program
   )
   .option('--screenshots', 'take screenshot for each step')
   .option('--filmstrips', 'record detailed filmstrip info for all journeys')
+  .option('--trace', 'record chrome trace events for all journeys')
   .option('--network', 'capture network information for all journeys')
   .option('--metrics', 'capture performance metrics for each step')
   .option(
@@ -80,4 +83,18 @@ program
   .version(version)
   .description('Run synthetic tests');
 
-export default program.parse(process.argv);
+const command = program.parse(process.argv);
+const options = command.opts() as CliArgs;
+
+/**
+ * Group all events that can be consumed by heartbeat and
+ * eventually by the Synthetics UI.
+ */
+if (options.richEvents) {
+  options.reporter = options.reporter ?? 'json';
+  options.screenshots = true;
+  options.network = true;
+}
+
+export { options };
+export default command;

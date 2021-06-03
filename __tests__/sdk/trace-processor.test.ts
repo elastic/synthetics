@@ -23,44 +23,17 @@
  *
  */
 
-import { Page } from 'playwright-chromium';
-import { BrowserMessage } from '../common_types';
-import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
+import { TraceProcessor } from '../../src/sdk/trace-processor';
+import { createTestTrace } from '../utils/create-test-trace';
 
-const defaultMessageLimit = 1000;
-
-export class BrowserConsole {
-  private messages: BrowserMessage[] = [];
-  _currentStep: Partial<Step> = null;
-
-  private consoleEventListener = msg => {
-    if (!this._currentStep) {
-      return;
-    }
-    const type = msg.type();
-    if (type === 'error' || type === 'warning') {
-      const { name, index } = this._currentStep;
-      this.messages.push({
-        timestamp: getTimestamp(),
-        text: msg.text(),
-        type,
-        step: { name, index },
-      });
-      if (this.messages.length > defaultMessageLimit) {
-        this.messages.splice(0, 1);
-      }
-    }
-  };
-
-  constructor(private page: Page) {}
-
-  start() {
-    this.page.on('console', this.consoleEventListener);
-  }
-
-  stop() {
-    this.page.off('console', this.consoleEventListener);
-    return this.messages;
-  }
-}
+describe('Trace processor', () => {
+  it('computes trace of the tab', () => {
+    const { traceEvents } = createTestTrace();
+    const output = TraceProcessor.computeTrace(traceEvents as any);
+    expect(output).toEqual({
+      userTiming: [],
+      experience: [{ name: 'navigationStart', type: 'mark', start: 0 }],
+      layoutShift: { name: 'LayoutShift', score: 0, exists: false },
+    });
+  });
+});

@@ -37,10 +37,28 @@ export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 
-export type FilmStrip = {
-  snapshot: string;
-  ts: number;
-  startTime: number;
+export type TraceOutput = {
+  name?: string;
+  start: number;
+  end?: number;
+};
+
+export type UserTiming = TraceOutput & {
+  name: string;
+  type: string;
+  duration?: number;
+};
+
+export type Filmstrip = TraceOutput & {
+  blob: string;
+  mime: string;
+};
+
+export type LayoutShift = {
+  exists: boolean;
+  score: number;
+  name: string;
+  start?: number;
 };
 
 export type DefaultPluginOutput = {
@@ -81,6 +99,20 @@ export type NetworkInfo = {
   };
 } & DefaultPluginOutput;
 
+export type BrowserMessage = {
+  text: string;
+  type: string;
+} & DefaultPluginOutput;
+
+export type PluginOutput = {
+  filmstrips?: Array<Filmstrip>;
+  userTiming?: Array<UserTiming>;
+  experience?: Array<UserTiming>;
+  networkinfo?: Array<NetworkInfo>;
+  browserconsole?: Array<BrowserMessage>;
+  layoutShift?: LayoutShift;
+};
+
 export type CliArgs = {
   config?: string;
   environment?: string;
@@ -90,6 +122,7 @@ export type CliArgs = {
   ssblocks?: boolean;
   metrics?: boolean;
   filmstrips?: boolean;
+  trace?: boolean;
   dryRun?: boolean;
   journeyName?: string;
   network?: boolean;
@@ -103,4 +136,5 @@ export type CliArgs = {
   require: string[];
   debug?: boolean;
   suiteParams?: string;
+  richEvents?: true;
 };

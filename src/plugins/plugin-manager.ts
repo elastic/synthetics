@@ -23,34 +23,27 @@
  *
  */
 
-import { NetworkInfo, FilmStrip } from '../common_types';
+import { PluginOutput } from '../common_types';
 import {
   BrowserConsole,
-  BrowserMessage,
   NetworkManager,
   PerformanceManager,
   Tracing,
-  filterFilmstrips,
+  TraceOptions,
 } from './';
 import { Driver } from '../core/gatherer';
 import { Step } from '../dsl';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-
-type PluginOutput = {
-  filmstrips?: Array<FilmStrip>;
-  networkinfo?: Array<NetworkInfo>;
-  browserconsole?: Array<BrowserMessage>;
-};
-
 type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type PluginOptions = TraceOptions;
 
 export class PluginManager {
   protected plugins = new Map<string, Plugin>();
 
   constructor(private driver: Driver) {}
 
-  async start(type: PluginType) {
+  async start(type: PluginType, options?: PluginOptions) {
     let instance: Plugin;
     switch (type) {
       case 'network':
@@ -58,7 +51,7 @@ export class PluginManager {
         await instance.start(this.driver.client);
         break;
       case 'trace':
-        instance = new Tracing();
+        instance = new Tracing(options);
         await instance.start(this.driver.client);
         break;
       case 'performance':
@@ -85,20 +78,20 @@ export class PluginManager {
   }
 
   async output(): Promise<PluginOutput> {
-    const data = {
-      filmstrips: [],
-      networkinfo: [],
-      browserconsole: null,
-    };
-    for (const [, plugin] of this.plugins) {
-      if (plugin instanceof NetworkManager) {
-        data.networkinfo = plugin.stop();
-      } else if (plugin instanceof Tracing) {
-        const result = await plugin.stop(this.driver.client);
-        data.filmstrips = filterFilmstrips(result);
-      } else if (plugin instanceof BrowserConsole) {
-        data.browserconsole = plugin.stop();
+    const data: PluginOutput = {};
+    try {
+      for (const [, plugin] of this.plugins) {
+        if (plugin instanceof NetworkManager) {
+          data.networkinfo = plugin.stop();
+        } else if (plugin instanceof Tracing) {
+          const result = await plugin.stop(this.driver.client);
+          Object.assign(data, { ...result });
+        } else if (plugin instanceof BrowserConsole) {
+          data.browserconsole = plugin.stop();
+        }
       }
+    } catch (e) {
+      console.error('Error capturing data', e.message);
     }
     return data;
   }

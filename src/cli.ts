@@ -29,8 +29,7 @@ import { stdin, cwd } from 'process';
 import { resolve } from 'path';
 import { step, journey } from './core';
 import { log } from './core/logger';
-import program from './parse_args';
-import { CliArgs } from './common_types';
+import program, { options } from './parse_args';
 import {
   findPkgJsonByTraversing,
   isDepInstalled,
@@ -40,7 +39,6 @@ import {
 import { run } from './';
 import { readConfig } from './config';
 
-const options = program.opts() as CliArgs;
 const resolvedCwd = cwd();
 /**
  * Set debug based on DEBUG ENV and -d flags
@@ -177,15 +175,7 @@ async function prepareSuites(inputs: string[]) {
     params: Object.freeze(params),
     environment,
     reporter,
-    headless: options.headless,
-    screenshots: options.screenshots,
-    dryRun: options.dryRun,
-    journeyName: options.journeyName,
-    network: options.network,
-    pauseOnError: options.pauseOnError,
-    outfd: options.outfd,
-    metrics: options.metrics,
-    sandbox: options.sandbox,
+    ...options,
   });
 
   /**
