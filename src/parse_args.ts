@@ -96,11 +96,12 @@ if (options.richEvents) {
 }
 
 if (options.capability) {
-  const supportedCapabilities = ['trace', 'filmstrips', 'metrics'];
+  const supportedCapabilities = ['trace', 'filmstrips', 'metrics', 'ssblocks'];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
+   * ssblocks - Dedupes the screenshots in to blocks to save storage space
    */
   for (const flag of options.capability) {
     if (supportedCapabilities.includes(flag)) {
@@ -108,7 +109,7 @@ if (options.capability) {
     } else {
       console.warn(
         `Missing capability "${flag}", current supported capabilities are ${supportedCapabilities.join(
-          ''
+          ', '
         )}`
       );
     }
