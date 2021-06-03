@@ -23,16 +23,13 @@
  *
  */
 
-import { program } from 'commander';
+import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
 
-const availableReporters = Object.keys(reporters)
-  .map(r => String(r))
-  .join();
-
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
+
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
@@ -43,9 +40,10 @@ program
   .option('-s, --suite-params <jsonstring>', 'suite variables', '{}')
   .option('-e, --environment <envname>', 'e.g. production', 'development')
   .option('-j, --json', 'output newline delimited JSON')
-  .option(
-    '--reporter <reporter>',
-    `output repoter format, can be one of ${availableReporters}`
+  .addOption(
+    new Option('--reporter <value>', `output repoter format`).choices(
+      Object.keys(reporters)
+    )
   )
   .option('-d, --debug', 'print debug logs info')
   .option(
@@ -58,18 +56,11 @@ program
   .option('--sandbox', 'enable chromium sandboxing')
   .option('--rich-events', 'Mimics a heartbeat run')
   .option(
-    '--ws-endpoint <endpoint>',
-    'Browser WebSocket endpoint to connect to'
-  )
-  .option(
-    '--pause-on-error',
-    'pause on error until a keypress is made in the console. Useful during development'
+    '--capability <features...>',
+    'Enable capabilities through feature flags'
   )
   .option('--screenshots', 'take screenshot for each step')
-  .option('--filmstrips', 'record detailed filmstrip info for all journeys')
-  .option('--trace', 'record chrome trace events for all journeys')
   .option('--network', 'capture network information for all journeys')
-  .option('--metrics', 'capture performance metrics for each step')
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
@@ -79,6 +70,14 @@ program
     '--outfd <fd>',
     'specify a file descriptor for logs. Default is stdout',
     parseInt
+  )
+  .option(
+    '--ws-endpoint <endpoint>',
+    'Browser WebSocket endpoint to connect to'
+  )
+  .option(
+    '--pause-on-error',
+    'pause on error until a keypress is made in the console. Useful during development'
   )
   .version(version)
   .description('Run synthetic tests');
@@ -94,6 +93,26 @@ if (options.richEvents) {
   options.reporter = options.reporter ?? 'json';
   options.screenshots = true;
   options.network = true;
+}
+
+if (options.capability) {
+  const supportedCapabilities = ['trace', 'filmstrips', 'metrics'];
+  /**
+   * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
+   * filmstrips - record detailed filmstrips for all journeys
+   * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
+   */
+  for (const flag of options.capability) {
+    if (supportedCapabilities.includes(flag)) {
+      options[flag] = true;
+    } else {
+      console.warn(
+        `Missing capability "${flag}", current supported capabilities are ${supportedCapabilities.join(
+          ''
+        )}`
+      );
+    }
+  }
 }
 
 export { options };
