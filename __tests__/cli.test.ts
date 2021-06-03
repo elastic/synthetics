@@ -95,6 +95,33 @@ describe('CLI', () => {
       message: 'Cannot add property foo, object is not extensible',
     });
   });
+
+  it('support capability flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'example.journey.ts'),
+      '-j',
+      '--capability',
+      'metrics',
+    ]);
+    await cli.waitFor('step/end');
+    const output = JSON.parse(cli.output());
+    expect(output.payload.metrics).toBeDefined();
+    expect(await cli.exitCode).toBe(0);
+  });
+
+  it('show warn for unknown capability flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '-j',
+      '--capability',
+      'unknown',
+    ]);
+    try {
+      await cli.exitCode;
+    } catch (e) {
+      expect(e.message).toMatch('Missing capability "unknown"');
+    }
+  });
 });
 
 class CLIMock {
