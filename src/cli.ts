@@ -27,6 +27,7 @@
 
 import { stdin, cwd } from 'process';
 import { resolve } from 'path';
+import merge from 'deepmerge';
 import { step, journey } from './core';
 import { log } from './core/logger';
 import program, { options } from './parse_args';
@@ -165,7 +166,7 @@ async function prepareSuites(inputs: string[]) {
    * Validate and handle configs
    */
   const config = readConfig(environment, options.config);
-  const params = config.params || JSON.parse(options.suiteParams);
+  const params = merge(config.params, JSON.parse(options.suiteParams));
   /**
    * use JSON reporter if json flag is enabled
    */
