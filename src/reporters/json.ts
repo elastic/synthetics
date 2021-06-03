@@ -23,8 +23,18 @@
  *
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import sharp from 'sharp';
+import { createHash } from 'crypto';
 import BaseReporter from './base';
-import { formatError, getTimestamp } from '../helpers';
+import {
+  formatError,
+  getTimestamp,
+  CACHE_PATH,
+  totalist,
+  isDirectory,
+} from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
@@ -44,6 +54,8 @@ type OutputType =
   | 'synthetics/metadata'
   | 'journey/register'
   | 'journey/start'
+  | 'screenshot/block'
+  | 'step/screenshot_ref'
   | 'step/screenshot'
   | 'step/end'
   | 'journey/network_info'
@@ -67,6 +79,7 @@ type Payload = {
 
 type OutputFields = {
   type: OutputType;
+  _id?: string;
   journey?: Journey;
   timestamp?: number;
   url?: string;
@@ -76,6 +89,30 @@ type OutputFields = {
   payload?: Payload | NetworkInfo;
   blob?: string;
   blob_mime?: string;
+};
+
+type ScreenshotBlob = {
+  blob: string;
+  id: string;
+};
+
+type ScreenshotReference = {
+  width: number;
+  height: number;
+  blocks: Array<{
+    hash: string;
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }>;
+};
+
+type ScreenshotOutput = {
+  step: Step;
+  blob_mime: string;
+  blocks: Array<ScreenshotBlob>;
+  reference: ScreenshotReference;
 };
 
 function getMetadata() {
@@ -226,6 +263,84 @@ function stepInfo(
   };
 }
 
+export async function getScreenshotBlocks(screenshot: Buffer) {
+  const img = sharp(screenshot, { sequentialRead: true });
+  const { width, height } = await img.metadata();
+  /**
+   * Chop the screenshot image (1280*720) which is the default
+   * viewport size in to 64 equal blocks for a given image
+   * which can be acheived by keeping the division to 8
+   *
+   * Changing division to 16 would yield us 256 smaller blocks, but it is not
+   * optimal for caching in the ES and proved out to be bad, so we stick to 8
+   */
+  const divisions = 8;
+  const blockWidth = width / divisions;
+  const blockHeight = height / divisions;
+  const reference: ScreenshotReference = {
+    width,
+    height,
+    blocks: [],
+  };
+  const blocks: Array<ScreenshotBlob> = [];
+
+  for (let row = 0; row < divisions; row++) {
+    const top = row * blockHeight;
+    for (let col = 0; col < divisions; col++) {
+      const left = col * blockWidth;
+      const buf = await img
+        .extract({ top, left, width: blockWidth, height: blockHeight })
+        .jpeg()
+        .toBuffer();
+
+      const hash = createHash('sha1').update(buf).digest('hex');
+      blocks.push({
+        blob: buf.toString('base64'),
+        id: hash,
+      });
+      /**
+       * We dont write the width, height of individual blocks on the
+       * reference as we use similar sized blocks for each extraction,
+       * we would need to send the width and height here if we decide to
+       * go with dynamic block extraction.
+       */
+      reference.blocks.push({
+        hash,
+        top,
+        left,
+        width: blockWidth,
+        height: blockHeight,
+      });
+    }
+  }
+
+  return { blocks, reference, blob_mime: 'image/jpeg' };
+}
+
+/**
+ * Get all the screenshots from the cached screenshot location
+ * at the end of each journey and construct equally sized blocks out
+ * of the individual screenshot image.
+ */
+export async function gatherScreenshots(
+  screenshotsPath: string,
+  callback: (step: Step, data: string) => Promise<void>
+) {
+  const screenshots: Array<ScreenshotOutput> = [];
+  if (isDirectory(screenshotsPath)) {
+    await totalist(screenshotsPath, async (_, absPath) => {
+      try {
+        const content = readFileSync(absPath, 'utf8');
+        const { step, data } = JSON.parse(content);
+        await callback(step, data);
+      } catch (_) {
+        // TODO: capture progarammatic synthetic errors under different type
+      }
+    });
+  }
+  return screenshots;
+}
+
 export default class JSONReporter extends BaseReporter {
   _registerListeners() {
     /**
@@ -259,26 +374,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({
-        journey,
-        step,
-        start,
-        end,
-        error,
-        screenshot,
-        url,
-        status,
-        metrics,
-      }) => {
-        if (screenshot) {
-          this.writeJSON({
-            type: 'step/screenshot',
-            journey,
-            step,
-            blob: screenshot,
-            blob_mime: 'image/jpeg',
-          });
-        }
+      ({ journey, step, start, end, error, url, status, metrics }) => {
         this.writeJSON({
           type: 'step/end',
           journey,
@@ -299,7 +395,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'journey:end',
-      ({
+      async ({
         journey,
         start,
         end,
@@ -311,7 +407,43 @@ export default class JSONReporter extends BaseReporter {
         layoutShift,
         status,
         error,
+        ssblocks,
       }) => {
+        await gatherScreenshots(
+          join(CACHE_PATH, 'screenshots'),
+          async (step, data) => {
+            if (ssblocks) {
+              const { blob_mime, blocks, reference } =
+                await getScreenshotBlocks(Buffer.from(data, 'base64'));
+              for (let i = 0; i < blocks.length; i++) {
+                const block = blocks[i];
+                this.writeJSON({
+                  type: 'screenshot/block',
+                  _id: block.id,
+                  blob: block.blob,
+                  blob_mime,
+                });
+              }
+              this.writeJSON({
+                type: 'step/screenshot_ref',
+                journey,
+                step,
+                root_fields: {
+                  screenshot_ref: reference,
+                },
+              });
+            } else {
+              this.writeJSON({
+                type: 'step/screenshot',
+                journey,
+                step,
+                blob: data,
+                blob_mime: 'image/jpeg',
+              });
+            }
+          }
+        );
+
         if (networkinfo) {
           networkinfo.forEach(ni => {
             const { ecs, payload } = formatNetworkFields(ni);
@@ -365,6 +497,7 @@ export default class JSONReporter extends BaseReporter {
             status,
           },
         });
+        this.runner.emit('journey:end:reported', {});
       }
     );
   }
@@ -395,6 +528,7 @@ export default class JSONReporter extends BaseReporter {
   // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured
   // stuff in there
   writeJSON({
+    _id,
     journey,
     type,
     timestamp,
@@ -408,6 +542,7 @@ export default class JSONReporter extends BaseReporter {
   }: OutputFields) {
     this.write({
       type,
+      _id,
       '@timestamp': timestamp || getTimestamp(),
       journey: journeyInfo(journey, type, payload?.status),
       step: stepInfo(step, type, payload?.status),

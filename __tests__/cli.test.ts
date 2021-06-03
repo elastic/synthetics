@@ -76,8 +76,8 @@ describe('CLI', () => {
       'testing',
     ]);
     await cli.waitFor('journey/start');
-    const output = cli.output();
     expect(await cli.exitCode).toBe(0);
+    const output = cli.output();
     expect(JSON.parse(output).payload).toMatchObject({
       params: { url: 'non-dev' },
     });
