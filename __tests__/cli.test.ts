@@ -83,6 +83,23 @@ describe('CLI', () => {
     });
   });
 
+  it('suite params wins over config params', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--json',
+      '--config',
+      join(FIXTURES_DIR, 'synthetics.config.ts'),
+      '-s',
+      '{"url": "suite-url"}',
+    ]);
+    await cli.waitFor('journey/start');
+    const output = cli.output();
+    expect(await cli.exitCode).toBe(0);
+    expect(JSON.parse(output).payload).toMatchObject({
+      params: { url: 'suite-url' },
+    });
+  });
+
   it('throw error on modifying params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'params-error.journey.ts'),
