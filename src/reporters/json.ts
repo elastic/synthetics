@@ -244,6 +244,7 @@ function journeyInfo(
   return {
     name: journey.name,
     id: journey.id,
+    tag: journey.tag,
     status: type === 'journey/end' ? status : undefined,
   };
 }
