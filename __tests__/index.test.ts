@@ -70,7 +70,7 @@ describe('Run', () => {
       filmstrips: false,
       trace: false,
       dryRun: true,
-      journeyName: 'There and Back Again',
+      match: 'check*',
       network: true,
       pauseOnError: true,
       reporter: 'json',
