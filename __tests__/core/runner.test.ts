@@ -265,16 +265,51 @@ describe('runner', () => {
     });
   });
 
-  it('run api - only runs specified journeyName', async () => {
+  it('run api - match journey name explict', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     runner.addJourney(new Journey({ name: 'j2' }, noop));
-    const result = await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
-      journeyName: 'j2',
-    });
-    expect(result).toEqual({
+    expect(
+      await runner.run({
+        wsEndpoint,
+        outfd: fs.openSync(dest, 'w'),
+        match: 'j2',
+      })
+    ).toEqual({
       j2: { status: 'succeeded' },
+    });
+  });
+
+  it('run api - match journey name globs', async () => {
+    runner.addJourney(new Journey({ name: 'j1' }, noop));
+    runner.addJourney(new Journey({ name: 'j2' }, noop));
+    expect(
+      await runner.run({
+        wsEndpoint,
+        outfd: fs.openSync(dest, 'w'),
+        match: 'j*',
+      })
+    ).toEqual({
+      j1: { status: 'succeeded' },
+      j2: { status: 'succeeded' },
+    });
+  });
+
+  it('run api - match journey tags globs', async () => {
+    runner.addJourney(new Journey({ name: 'j1', tag: 'foo' }, noop));
+    runner.addJourney(new Journey({ name: 'j2', tag: 'bar' }, noop));
+    runner.addJourney(new Journey({ name: 'j3', tag: 'foo:test' }, noop));
+    runner.addJourney(new Journey({ name: 'j4', tag: 'baz' }, noop));
+    runner.addJourney(new Journey({ name: 'h1', tag: 'foo' }, noop));
+    expect(
+      await runner.run({
+        wsEndpoint,
+        outfd: fs.openSync(dest, 'w'),
+        tags: ['foo*'],
+        match: 'j*',
+      })
+    ).toEqual({
+      j1: { status: 'succeeded' },
+      j3: { status: 'succeeded' },
     });
   });
 

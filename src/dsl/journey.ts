@@ -24,12 +24,14 @@
  */
 
 import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
+import { contains, isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params } from '../common_types';
 
 export type JourneyOptions = {
   name: string;
   id?: string;
+  tag?: string;
 };
 
 type HookType = 'before' | 'after';
@@ -45,6 +47,7 @@ export type JourneyCallback = (options: {
 export class Journey {
   name: string;
   id?: string;
+  tag?: string;
   callback: JourneyCallback;
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
@@ -52,6 +55,7 @@ export class Journey {
   constructor(options: JourneyOptions, callback: JourneyCallback) {
     this.name = options.name;
     this.id = options.id;
+    this.tag = options.tag;
     this.callback = callback;
   }
 
@@ -63,5 +67,11 @@ export class Journey {
 
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
+  }
+
+  isMatch(namePattern = '**', tagsPattern = ['**']) {
+    return (
+      contains(this.name, namePattern) && isMatch(this.tag || '**', tagsPattern)
+    );
   }
 }
