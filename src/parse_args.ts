@@ -66,8 +66,8 @@ program
     "don't actually execute anything, report only registered journeys"
   )
   .option(
-    '--match <name>',
-    'run only journeys with a name that matches the glob'
+    '--match <name...>',
+    'run only journeys with a name or tags that matches the glob'
   )
   .option(
     '--tags <name...>',

@@ -204,7 +204,7 @@ describe('json reporter', () => {
   });
 
   it('writes full journey info if present', async () => {
-    const journeyOpts = { name: 'name', id: 'id', tag: 'tag' };
+    const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
     runner.emit('journey:end', {
       journey: journey(journeyOpts, () => {}),
       start: 0,

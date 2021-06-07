@@ -272,44 +272,76 @@ describe('runner', () => {
       await runner.run({
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
-        match: 'j2',
+        match: ['j2'],
       })
     ).toEqual({
       j2: { status: 'succeeded' },
     });
   });
 
-  it('run api - match journey name globs', async () => {
+  it('run api - match journey name and tag globs', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
-    runner.addJourney(new Journey({ name: 'j2' }, noop));
+    runner.addJourney(new Journey({ name: 'tagj2', tags: ['j2'] }, noop));
     expect(
       await runner.run({
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
-        match: 'j*',
+        match: ['j*'],
       })
     ).toEqual({
       j1: { status: 'succeeded' },
-      j2: { status: 'succeeded' },
+      tagj2: { status: 'succeeded' },
     });
   });
 
-  it('run api - match journey tags globs', async () => {
-    runner.addJourney(new Journey({ name: 'j1', tag: 'foo' }, noop));
-    runner.addJourney(new Journey({ name: 'j2', tag: 'bar' }, noop));
-    runner.addJourney(new Journey({ name: 'j3', tag: 'foo:test' }, noop));
-    runner.addJourney(new Journey({ name: 'j4', tag: 'baz' }, noop));
-    runner.addJourney(new Journey({ name: 'h1', tag: 'foo' }, noop));
+  it('run api - prefer tags glob matching', async () => {
+    runner.addJourney(new Journey({ name: 'j1', tags: ['foo'] }, noop));
+    runner.addJourney(new Journey({ name: 'j2', tags: ['bar'] }, noop));
+    runner.addJourney(new Journey({ name: 'j3', tags: ['foo:test'] }, noop));
+    runner.addJourney(new Journey({ name: 'j4', tags: ['baz'] }, noop));
+    runner.addJourney(new Journey({ name: 'j5', tags: ['foo'] }, noop));
     expect(
       await runner.run({
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
         tags: ['foo*'],
-        match: 'j*',
+        match: ['j*'],
       })
     ).toEqual({
       j1: { status: 'succeeded' },
       j3: { status: 'succeeded' },
+      j5: { status: 'succeeded' },
+    });
+  });
+
+  it('run api - support multiple tags', async () => {
+    runner.addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
+    runner.addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
+    runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
+    expect(
+      await runner.run({
+        wsEndpoint,
+        outfd: fs.openSync(dest, 'w'),
+        tags: ['hello:b*'],
+      })
+    ).toEqual({
+      j2: { status: 'succeeded' },
+      j3: { status: 'succeeded' },
+    });
+  });
+
+  it('run api - support negation tags', async () => {
+    runner.addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
+    runner.addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
+    runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
+    expect(
+      await runner.run({
+        wsEndpoint,
+        outfd: fs.openSync(dest, 'w'),
+        tags: ['!hello:b*'],
+      })
+    ).toEqual({
+      j1: { status: 'succeeded' },
     });
   });
 

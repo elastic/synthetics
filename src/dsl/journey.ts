@@ -24,14 +24,14 @@
  */
 
 import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
-import { contains, isMatch } from 'micromatch';
+import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params } from '../common_types';
 
 export type JourneyOptions = {
   name: string;
   id?: string;
-  tag?: string;
+  tags?: string[];
 };
 
 type HookType = 'before' | 'after';
@@ -47,7 +47,7 @@ export type JourneyCallback = (options: {
 export class Journey {
   name: string;
   id?: string;
-  tag?: string;
+  tags?: string[];
   callback: JourneyCallback;
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
@@ -55,7 +55,7 @@ export class Journey {
   constructor(options: JourneyOptions, callback: JourneyCallback) {
     this.name = options.name;
     this.id = options.id;
-    this.tag = options.tag;
+    this.tags = options.tags;
     this.callback = callback;
   }
 
@@ -68,10 +68,23 @@ export class Journey {
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
+  /**
+   * Matches journeys based on the provided args. Proitize tags over match
+   * - tags pattern that matches only tags
+   * - match pattern that matches both name and tags
+   */
+  isMatch(matchPattern, tagsPattern) {
+    if (tagsPattern) {
+      return this.tagsMatch(tagsPattern);
+    }
+    if (matchPattern) {
+      return isMatch(this.name, matchPattern) || this.tagsMatch(matchPattern);
+    }
+    return true;
+  }
 
-  isMatch(namePattern = '**', tagsPattern = ['**']) {
-    return (
-      contains(this.name, namePattern) && isMatch(this.tag || '**', tagsPattern)
-    );
+  tagsMatch(pattern) {
+    const matchess = micromatch(this.tags || ['*'], pattern);
+    return matchess.length > 0;
   }
 }
