@@ -73,7 +73,7 @@ export class Journey {
    * - tags pattern that matches only tags
    * - match pattern that matches both name and tags
    */
-  isMatch(matchPattern, tagsPattern) {
+  isMatch(matchPattern: string, tagsPattern: Array<string>) {
     if (tagsPattern) {
       return this.tagsMatch(tagsPattern);
     }

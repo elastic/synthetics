@@ -133,7 +133,7 @@ export type CliArgs = {
   json?: boolean;
   pattern?: string;
   inline: boolean;
-  match?: Array<string>;
+  match?: string;
   tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;

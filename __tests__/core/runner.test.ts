@@ -272,7 +272,7 @@ describe('runner', () => {
       await runner.run({
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
-        match: ['j2'],
+        match: 'j2',
       })
     ).toEqual({
       j2: { status: 'succeeded' },
@@ -286,7 +286,7 @@ describe('runner', () => {
       await runner.run({
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
-        match: ['j*'],
+        match: 'j*',
       })
     ).toEqual({
       j1: { status: 'succeeded' },
@@ -305,7 +305,7 @@ describe('runner', () => {
         wsEndpoint,
         outfd: fs.openSync(dest, 'w'),
         tags: ['foo*'],
-        match: ['j*'],
+        match: 'j*',
       })
     ).toEqual({
       j1: { status: 'succeeded' },
