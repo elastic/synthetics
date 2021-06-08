@@ -386,7 +386,7 @@ export default class JSONReporter extends BaseReporter {
           step: {
             ...step,
             duration: {
-              us: end - start,
+              us: Math.trunc((end - start) * 1e6),
             },
           },
           url,
