@@ -24,6 +24,8 @@
  */
 
 import { once, EventEmitter } from 'events';
+import { join } from 'path';
+import { mkdirSync, rmdirSync, writeFileSync } from 'fs';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -46,8 +48,6 @@ import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
-import { mkdirSync, rmdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
 
 export type RunOptions = Omit<
   CliArgs,
@@ -369,8 +369,8 @@ export default class Runner extends EventEmitter {
       env: options.environment,
       params: options.params,
     });
+    const { dryRun, match, tags } = options;
     for (const journey of this.journeys) {
-      const { dryRun, journeyName } = options;
       /**
        * Used by heartbeat to gather all registered journeys
        */
@@ -378,8 +378,7 @@ export default class Runner extends EventEmitter {
         this.emit('journey:register', { journey });
         continue;
       }
-      // TODO: Replace functionality with journey.only
-      if (journeyName && journey.name != journeyName) {
+      if (!journey.isMatch(match, tags)) {
         continue;
       }
       const journeyResult = await this.runJourney(journey, options);

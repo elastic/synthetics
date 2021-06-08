@@ -125,7 +125,6 @@ export type CliArgs = {
   filmstrips?: boolean;
   trace?: boolean;
   dryRun?: boolean;
-  journeyName?: string;
   network?: boolean;
   pauseOnError?: boolean;
   reporter?: Reporters;
@@ -134,6 +133,8 @@ export type CliArgs = {
   json?: boolean;
   pattern?: string;
   inline: boolean;
+  match?: string;
+  tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;
   suiteParams?: string;

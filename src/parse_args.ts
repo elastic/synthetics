@@ -65,7 +65,14 @@ program
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
   )
-  .option('--journey-name <name>', 'only run the journey with the given name')
+  .option(
+    '--match <name>',
+    'run only journeys with a name or tags that matches the glob'
+  )
+  .option(
+    '--tags <name...>',
+    'run only journeys with the given tag(s), or globs'
+  )
   .option(
     '--outfd <fd>',
     'specify a file descriptor for logs. Default is stdout',

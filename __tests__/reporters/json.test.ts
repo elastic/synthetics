@@ -203,6 +203,21 @@ describe('json reporter', () => {
     expect(journeyEnd.error).toEqual(helpers.formatError(myErr));
   });
 
+  it('writes full journey info if present', async () => {
+    const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
+    runner.emit('journey:end', {
+      journey: journey(journeyOpts, () => {}),
+      start: 0,
+      end: 1,
+      status: 'skipped',
+    });
+
+    const journeyEnd = (await readAndCloseStreamJson()).find(
+      json => json.type == 'journey/end'
+    );
+    expect(journeyEnd.journey).toEqual({ ...journeyOpts, status: 'skipped' });
+  });
+
   it('captures number of journeys as metadata event', async () => {
     runner.emit('start', {
       numJourneys: 10,
