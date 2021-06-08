@@ -380,11 +380,14 @@ export default class JSONReporter extends BaseReporter {
           journey,
           step,
           url,
+          root_fields: {
+            duration: {
+              us: end - start,
+            },
+          },
           error,
           payload: {
             source: step.callback.toString(),
-            start,
-            end,
             url,
             status,
             metrics,
