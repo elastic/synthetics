@@ -23,43 +23,44 @@
  *
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { readFileSync } = require('fs');
+import { journey, step, expect } from '../../';
 
-const LICENSE = readFileSync('./LICENSE', 'utf-8');
-const LICENSE_HEADER =
-  '/**\n' +
-  LICENSE.split('\n')
-    .map(line => ` *${line ? ` ${line}` : ''}`)
-    .join('\n') +
-  '\n */';
+declare global {
+  namespace synthetics {
+    interface Matchers<R> {
+      toBeWithinRange(a: number, b: number): R;
+    }
+  }
+}
 
-module.exports = {
-  env: {
-    es6: true,
-    node: true,
+expect.extend({
+  toBeWithinRange(received, floor, ceiling) {
+    const pass = received >= floor && received <= ceiling;
+    if (pass) {
+      return {
+        message: () =>
+          `expected ${received} not to be within range ${floor} - ${ceiling}`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () =>
+          `expected ${received} to be within range ${floor} - ${ceiling}`,
+        pass: false,
+      };
+    }
   },
-  parserOptions: {
-    ecmaVersion: 2018,
-    sourceType: 'module',
-  },
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
-  extends: ['plugin:@typescript-eslint/recommended'],
-  rules: {
-    '@typescript-eslint/no-unused-vars': 2,
-    '@typescript-eslint/explicit-function-return-type': 0,
-    '@typescript-eslint/no-empty-function': 0,
-    '@typescript-eslint/explicit-module-boundary-types': 0,
-    '@typescript-eslint/no-explicit-any': 0,
-    '@typescript-eslint/member-delimiter-style': 0,
-    '@typescript-eslint/ban-ts-comment': 0,
-    '@typescript-eslint/no-namespace': 0,
-    'require-license-header': [
-      'error',
-      {
-        license: LICENSE_HEADER,
-      },
-    ],
-  },
-};
+});
+
+journey('expect journey', ({}) => {
+  step('exports work', () => {
+    expect(100).toBe(100);
+    expect([1, 2, 3]).toEqual(expect.arrayContaining([1, 2, 3]));
+    expect({ foo: 'bar' }).toMatchObject({ foo: 'bar' });
+  });
+
+  step('extends work', () => {
+    expect(100).toBeWithinRange(90, 120);
+    expect(101).not.toBeWithinRange(0, 100);
+  });
+});

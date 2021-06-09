@@ -49,7 +49,11 @@ export async function run(options: RunOptions) {
   }
 }
 
+/**
+ * Export all core module functions
+ */
 export { beforeAll, afterAll, journey, step, before, after } from './core';
+export { expect } from './core/expect';
 /**
  * Export all the driver related types to be consumed
  * and used by suites
