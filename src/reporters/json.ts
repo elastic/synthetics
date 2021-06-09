@@ -83,7 +83,11 @@ type OutputFields = {
   journey?: Journey;
   timestamp?: number;
   url?: string;
-  step?: Partial<Step>;
+  step?: Partial<Step> & {
+    duration?: {
+      us: number;
+    };
+  };
   error?: Error;
   root_fields?: Record<string, unknown>;
   payload?: Payload | NetworkInfo;
@@ -261,6 +265,7 @@ function stepInfo(
     name: step.name,
     index: step.index,
     status: type === 'step/end' ? status : undefined,
+    duration: step.duration,
   };
 }
 
@@ -379,13 +384,16 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON({
           type: 'step/end',
           journey,
-          step,
+          step: {
+            ...step,
+            duration: {
+              us: Math.trunc((end - start) * 1e6),
+            },
+          },
           url,
           error,
           payload: {
             source: step.callback.toString(),
-            start,
-            end,
             url,
             status,
             metrics,
