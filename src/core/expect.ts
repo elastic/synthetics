@@ -23,47 +23,39 @@
  *
  */
 
-import { runner } from './core';
-import { RunOptions } from './core/runner';
-import { setLogger } from './core/logger';
-import sourceMapSupport from 'source-map-support';
+import expectLib from 'expect';
+import type expectTypes from 'expect';
+import type {
+  ExpectedAssertionsErrors,
+  AsymmetricMatcher,
+  MatcherState,
+} from 'expect/build/types';
 
-export async function run(options: RunOptions) {
-  /**
-   * Install source map support
-   */
-  sourceMapSupport.install({
-    environment: 'node',
-  });
-  /**
-   * set up logger with appropriate file descriptor
-   * to capture all the DEBUG logs when run through heartbeat
-   */
-  setLogger(options.outfd);
+export declare type Expect = {
+  <T = unknown>(actual: T): Matchers<T>;
+  // copied from expect types
+  assertions(arg0: number): void;
+  extend(arg0: any): void;
+  extractExpectedAssertionsErrors: () => ExpectedAssertionsErrors;
+  getState(): MatcherState;
+  hasAssertions(): void;
+  setState(state: Partial<MatcherState>): void;
+  any(expectedObject: any): AsymmetricMatcher;
+  anything(): AsymmetricMatcher;
+  arrayContaining(sample: Array<unknown>): AsymmetricMatcher;
+  objectContaining(sample: Record<string, unknown>): AsymmetricMatcher;
+  stringContaining(expected: string): AsymmetricMatcher;
+  stringMatching(expected: string | RegExp): AsymmetricMatcher;
+};
 
-  try {
-    return await runner.run(options);
-  } catch (e) {
-    console.error('Failed to run the test', e);
-    process.exit(1);
-  }
+/**
+ * Override matchers from expect in our synthetic namespace to
+ * reduuce support for spy and snapshot matchers
+ */
+export interface Matchers<R> extends expectTypes.Matchers<R> {
+  not: Matchers<R>;
+  resolves: Matchers<Promise<R>>;
+  rejects: Matchers<Promise<R>>;
 }
 
-export { beforeAll, afterAll, journey, step, before, after } from './core';
-export * from './core/expect';
-/**
- * Export all the driver related types to be consumed
- * and used by suites
- */
-export type {
-  Page,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  CDPSession,
-} from 'playwright-chromium';
-
-/**
- * Export the types necessary to write custom reporters
- */
-export type { default as Runner } from './core/runner';
-export type { Reporter, ReporterOptions } from './reporters';
+export const expect: Expect = expectLib;
