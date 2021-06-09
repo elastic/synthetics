@@ -23,7 +23,7 @@
  *
  */
 
-import expectLibrary from 'expect';
+import expectLib from 'expect';
 import type {
   AsymmetricMatcher,
   MatcherState,
@@ -184,4 +184,4 @@ declare global {
   }
 }
 
-export const expect: Expect = expectLibrary;
+export const expect: Expect = expectLib;

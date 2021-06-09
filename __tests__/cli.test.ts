@@ -139,6 +139,14 @@ describe('CLI', () => {
       expect(e.message).toMatch('Missing capability "unknown"');
     }
   });
+
+  it('run expect assetions with type check', async () => {
+    // flag turns on type checking
+    process.env['TS_NODE_TYPE_CHECK'] = 'true';
+    const cli = new CLIMock([join(FIXTURES_DIR, 'expect.journey.ts')]);
+    expect(await cli.exitCode).toBe(0);
+    process.env['TS_NODE_TYPE_CHECK'] = 'false';
+  });
 });
 
 class CLIMock {
