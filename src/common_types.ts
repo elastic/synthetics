@@ -38,27 +38,26 @@ export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 
 export type TraceOutput = {
-  name?: string;
+  name: string;
   start: number;
+  type: string;
   end?: number;
 };
 
-export type UserTiming = TraceOutput & {
-  name: string;
-  type: string;
-  duration?: number;
+export type PerfMetrics = {
+  fcp: number;
+  lcp: number;
+  cls: number;
+  load: number;
+  dcl: number;
 };
 
-export type Filmstrip = TraceOutput & {
+export type Filmstrip = {
+  relative_trace: {
+    start: number;
+  };
   blob: string;
   mime: string;
-};
-
-export type LayoutShift = {
-  exists: boolean;
-  score: number;
-  name: string;
-  start?: number;
 };
 
 export type DefaultPluginOutput = {
@@ -106,11 +105,11 @@ export type BrowserMessage = {
 
 export type PluginOutput = {
   filmstrips?: Array<Filmstrip>;
-  userTiming?: Array<UserTiming>;
-  experience?: Array<UserTiming>;
+  userTiming?: Array<TraceOutput>;
+  experience?: Array<TraceOutput>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
-  layoutShift?: LayoutShift;
+  metrics?: Partial<PerfMetrics>;
 };
 
 export type CliArgs = {

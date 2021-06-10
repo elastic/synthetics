@@ -38,11 +38,10 @@ import {
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
-  Filmstrip,
-  LayoutShift,
   NetworkInfo,
-  UserTiming,
+  TraceOutput,
   StatusValue,
+  PerfMetrics,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Metrics } from '../plugins';
@@ -413,7 +412,7 @@ export default class JSONReporter extends BaseReporter {
         browserconsole,
         userTiming,
         experience,
-        layoutShift,
+        metrics,
         status,
         error,
         ssblocks,
@@ -472,9 +471,11 @@ export default class JSONReporter extends BaseReporter {
             this.writeJSON({
               type: 'journey/filmstrips',
               journey,
-              payload: {
-                index,
-                start: strip.start,
+              payload: { index },
+              root_fields: {
+                browser: {
+                  relative_trace: strip.relative_trace,
+                },
               },
               blob: strip.blob,
               blob_mime: strip.mime,
@@ -492,9 +493,12 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, 'user_timing', userTiming);
-        this.writeMetrics(journey, 'layout_shift', layoutShift);
-        this.writeMetrics(journey, 'experience', experience);
+        this.writeMetrics(
+          journey,
+          'relative_trace',
+          experience.concat(...userTiming)
+        );
+        this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({
           type: 'journey/end',
@@ -514,7 +518,7 @@ export default class JSONReporter extends BaseReporter {
   writeMetrics(
     journey: Journey,
     type: string,
-    events: Array<UserTiming> | Array<Filmstrip> | LayoutShift
+    events: Array<TraceOutput> | Partial<PerfMetrics>
   ) {
     const metrics = Array.isArray(events) ? events : [events];
     metrics.forEach(event => {

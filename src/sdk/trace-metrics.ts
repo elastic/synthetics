@@ -23,7 +23,7 @@
  *
  */
 
-import { Filmstrip, LayoutShift, UserTiming } from '../common_types';
+import { Filmstrip, TraceOutput, PerfMetrics } from '../common_types';
 import { convertTraceTimestamp } from '../helpers';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
@@ -31,7 +31,7 @@ export class UserTimings {
   static compute(trace: LHTrace) {
     const { processEvents } = trace;
     const measuresMap = new Map();
-    const userTimings: Array<UserTiming> = [];
+    const userTimings: Array<TraceOutput> = [];
 
     for (const event of processEvents) {
       const { name, ph, ts, args } = event;
@@ -78,11 +78,19 @@ export class UserTimings {
 }
 
 export class ExperienceMetrics {
-  static buildMetric(event: TraceEvent, name?: string) {
+  static navigationStart = null;
+  static metrics: Partial<PerfMetrics> = {};
+  static buildMetric(event: TraceEvent, shortName?: string, name?: string) {
     if (!event) {
       return;
     }
-
+    /**
+     * Calculate metrics relative to the origin event
+     */
+    if (this.navigationStart) {
+      this.metrics[shortName] =
+        (convertTraceTimestamp(event.ts) - this.navigationStart) * 1000;
+    }
     return {
       name: name || event.name,
       type: 'mark',
@@ -91,7 +99,7 @@ export class ExperienceMetrics {
   }
 
   static compute(trace: LHTrace) {
-    const experienceMetrics: Array<UserTiming> = [];
+    const experienceMetrics: Array<TraceOutput> = [];
     const {
       domContentLoadedEvt,
       firstContentfulPaintEvt,
@@ -101,8 +109,10 @@ export class ExperienceMetrics {
       lcpInvalidated,
     } = trace;
 
-    experienceMetrics.push(this.buildMetric(timeOriginEvt));
-    experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt));
+    const navigationStartEvent = this.buildMetric(timeOriginEvt, 'ns');
+    this.navigationStart = navigationStartEvent.start;
+    experienceMetrics.push(navigationStartEvent);
+    experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt, 'fcp'));
     /**
      * lcpInvalidated - Denotes when all of the LCP events that comes from the
      * current trace are invalidated. Happens if the previous LCP candidates were
@@ -111,12 +121,19 @@ export class ExperienceMetrics {
      */
     !lcpInvalidated &&
       experienceMetrics.push(
-        this.buildMetric(largestContentfulPaintEvt, 'largestContentfulPaint')
+        this.buildMetric(
+          largestContentfulPaintEvt,
+          'lcp',
+          'largestContentfulPaint'
+        )
       );
-    experienceMetrics.push(this.buildMetric(domContentLoadedEvt));
-    experienceMetrics.push(this.buildMetric(loadEvt));
+    experienceMetrics.push(this.buildMetric(domContentLoadedEvt, 'dcl'));
+    experienceMetrics.push(this.buildMetric(loadEvt, 'load'));
 
-    return experienceMetrics.filter(b => Boolean(b));
+    return {
+      metrics: this.metrics,
+      traces: experienceMetrics.filter(b => Boolean(b)),
+    };
   }
 }
 
@@ -147,19 +164,12 @@ export class CumulativeLayoutShift {
     return { score: clsScore, event: finalLayoutShiftEvent };
   }
 
-  static compute(trace: LHTrace): LayoutShift {
+  static compute(trace: LHTrace) {
     const events = trace.mainThreadEvents;
-    const { score, event } = this.computeCLSValue(events);
+    const { score } = this.computeCLSValue(events);
 
-    const metric = { name: this.type, score, exists: false };
-    if (!event) {
-      return metric;
-    }
     return {
-      name: this.type,
-      score: score,
-      exists: true,
-      start: convertTraceTimestamp(event.ts),
+      cls: score,
     };
   }
 }
@@ -192,7 +202,9 @@ export class Filmstrips {
     return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
       blob: event.args.snapshot,
       mime: 'image/jpeg',
-      start: convertTraceTimestamp(event.ts),
+      relative_trace: {
+        start: convertTraceTimestamp(event.ts),
+      },
     }));
   }
 }
