@@ -63,6 +63,7 @@ export class NetworkManager {
 
   _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
     const { requestId, request, timestamp, type, loaderId } = event;
+    console.log('Request', timestamp);
     const { url, method } = request;
     /**
      * Data URI should not show up as network requests

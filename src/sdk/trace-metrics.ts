@@ -24,7 +24,7 @@
  */
 
 import { Filmstrip, TraceOutput, PerfMetrics } from '../common_types';
-import { convertTraceTimestamp } from '../helpers';
+import { convertToMonotonicTime } from '../helpers';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
 export class UserTimings {
@@ -59,7 +59,7 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'mark',
-          start: convertTraceTimestamp(ts),
+          start: convertToMonotonicTime(ts),
         });
       } else if (phase === 'b') {
         measuresMap.set(name, ts);
@@ -68,8 +68,8 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'measure',
-          start: convertTraceTimestamp(startTime),
-          end: convertTraceTimestamp(ts),
+          start: convertToMonotonicTime(startTime),
+          end: convertToMonotonicTime(ts),
         });
       }
     }
@@ -78,7 +78,7 @@ export class UserTimings {
 }
 
 export class ExperienceMetrics {
-  static navigationStart = null;
+  static originMonotonicTime = null;
   static metrics: Partial<PerfMetrics> = {};
 
   static buildMetric(event: TraceEvent, shortName?: string, name?: string) {
@@ -86,16 +86,16 @@ export class ExperienceMetrics {
       return;
     }
     /**
-     * Calculate metrics relative to the origin event
+     * Calculate metrics relative to the origin event in milliseconds
      */
-    if (this.navigationStart) {
+    if (this.originMonotonicTime) {
       this.metrics[shortName] =
-        (convertTraceTimestamp(event.ts) - this.navigationStart) * 1000;
+        (convertToMonotonicTime(event.ts) - this.originMonotonicTime) * 1000;
     }
     return {
       name: name || event.name,
       type: 'mark',
-      start: convertTraceTimestamp(event.ts),
+      start: convertToMonotonicTime(event.ts),
     };
   }
 
@@ -112,7 +112,7 @@ export class ExperienceMetrics {
 
     const navigationStartEvent = this.buildMetric(timeOriginEvt);
     if (navigationStartEvent) {
-      this.navigationStart = navigationStartEvent.start;
+      this.originMonotonicTime = navigationStartEvent.start;
     }
     experienceMetrics.push(navigationStartEvent);
     experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt, 'fcp'));
@@ -140,7 +140,7 @@ export class ExperienceMetrics {
   }
 
   static reset() {
-    this.navigationStart = null;
+    this.originMonotonicTime = null;
     this.metrics = {};
   }
 }
@@ -208,7 +208,7 @@ export class Filmstrips {
     return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
       blob: event.args.snapshot,
       mime: 'image/jpeg',
-      start: convertTraceTimestamp(event.ts),
+      start: convertToMonotonicTime(event.ts),
     }));
   }
 }

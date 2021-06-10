@@ -39,8 +39,8 @@ export type Reporters = keyof typeof reporters;
 
 export type TraceOutput = {
   name: string;
-  start: number;
   type: string;
+  start: number;
   end?: number;
 };
 

@@ -32,7 +32,7 @@ import {
   generateTempPath,
   rewriteErrorStack,
   findPWLogsIndexes,
-  convertTraceTimestamp,
+  convertToMonotonicTime,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -52,7 +52,7 @@ it('get monotonic clock time', () => {
 
 it('convert trace timestamp to internal time', () => {
   const traceTimestamp = 392583998697;
-  const elapsedTime = convertTraceTimestamp(traceTimestamp);
+  const elapsedTime = convertToMonotonicTime(traceTimestamp);
   expect(elapsedTime).toBe(392583.998697);
 });
 
