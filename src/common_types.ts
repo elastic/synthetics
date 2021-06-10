@@ -44,12 +44,18 @@ export type TraceOutput = {
   end?: number;
 };
 
+type MetricDuration = {
+  duration: {
+    us: number;
+  };
+};
+
 export type PerfMetrics = {
-  fcp: number;
-  lcp: number;
+  fcp: MetricDuration;
+  lcp: MetricDuration;
+  dcl: MetricDuration;
+  load: MetricDuration;
   cls: number;
-  load: number;
-  dcl: number;
 };
 
 export type Filmstrip = {
@@ -107,7 +113,7 @@ export type PluginOutput = {
   experience?: Array<TraceOutput>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
-  metrics?: Partial<PerfMetrics>;
+  metrics?: PerfMetrics;
 };
 
 export type CliArgs = {

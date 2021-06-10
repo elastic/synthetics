@@ -93,7 +93,11 @@ describe('Trace metrics', () => {
       largestContentfulPaintEvt,
     } as any);
 
-    expect(metrics).toEqual({ fcp: 3, lcp: 15, dcl: 20 });
+    expect(metrics).toEqual({
+      fcp: { duration: { us: 3000 } },
+      lcp: { duration: { us: 15000 } },
+      dcl: { duration: { us: 20000 } },
+    });
     expect(traces).toEqual([
       { name: 'navigationStart', type: 'mark', start: 0.005 },
       { name: 'firstContentfulPaint', type: 'mark', start: 0.008 },

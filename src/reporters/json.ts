@@ -34,6 +34,7 @@ import {
   CACHE_PATH,
   totalist,
   isDirectory,
+  getDurationInUs,
 } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
@@ -386,7 +387,7 @@ export default class JSONReporter extends BaseReporter {
           step: {
             ...step,
             duration: {
-              us: Math.trunc((end - start) * 1e6),
+              us: getDurationInUs(end - start),
             },
           },
           url,
@@ -513,7 +514,7 @@ export default class JSONReporter extends BaseReporter {
   writeMetrics(
     journey: Journey,
     type: string,
-    events: Array<TraceOutput> | Partial<PerfMetrics>
+    events: Array<TraceOutput> | PerfMetrics
   ) {
     const metrics = Array.isArray(events) ? events : [events];
     metrics.forEach(event => {

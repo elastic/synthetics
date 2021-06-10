@@ -24,7 +24,7 @@
  */
 
 import { Filmstrip, TraceOutput, PerfMetrics } from '../common_types';
-import { convertToMonotonicTime } from '../helpers';
+import { convertToMonotonicTime, getDurationInUs } from '../helpers';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
 export class UserTimings {
@@ -78,7 +78,7 @@ export class UserTimings {
 }
 
 export class ExperienceMetrics {
-  static originMonotonicTime = null;
+  static monotonicNavStartTime = null;
   static metrics: Partial<PerfMetrics> = {};
 
   static buildMetric(event: TraceEvent, shortName?: string, name?: string) {
@@ -86,11 +86,16 @@ export class ExperienceMetrics {
       return;
     }
     /**
-     * Calculate metrics relative to the origin event in milliseconds
+     * Calculate metrics relative to the origin event in microseconds
      */
-    if (this.originMonotonicTime) {
-      this.metrics[shortName] =
-        (convertToMonotonicTime(event.ts) - this.originMonotonicTime) * 1000;
+    if (this.monotonicNavStartTime) {
+      this.metrics[shortName] = {
+        duration: {
+          us: getDurationInUs(
+            convertToMonotonicTime(event.ts) - this.monotonicNavStartTime
+          ),
+        },
+      };
     }
     return {
       name: name || event.name,
@@ -112,7 +117,7 @@ export class ExperienceMetrics {
 
     const navigationStartEvent = this.buildMetric(timeOriginEvt);
     if (navigationStartEvent) {
-      this.originMonotonicTime = navigationStartEvent.start;
+      this.monotonicNavStartTime = navigationStartEvent.start;
     }
     experienceMetrics.push(navigationStartEvent);
     experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt, 'fcp'));
@@ -140,7 +145,7 @@ export class ExperienceMetrics {
   }
 
   static reset() {
-    this.originMonotonicTime = null;
+    this.monotonicNavStartTime = null;
     this.metrics = {};
   }
 }

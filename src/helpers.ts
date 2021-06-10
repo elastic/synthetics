@@ -236,3 +236,7 @@ const cwd = process.cwd();
  * once we move to executing journeys in parallel
  */
 export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
+
+export function getDurationInUs(duration: number) {
+  return Math.trunc(duration * 1e6);
+}

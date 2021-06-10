@@ -151,9 +151,10 @@ describe('json reporter', () => {
         },
       ],
       metrics: {
-        lcp: 200,
-        fcp: 100,
-        dcl: 300,
+        lcp: { duration: { us: 200 } },
+        fcp: { duration: { us: 100 } },
+        dcl: { duration: { us: 300 } },
+        load: { duration: { us: 400 } },
         cls: 0.123,
       },
     });
