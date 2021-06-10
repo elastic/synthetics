@@ -33,7 +33,7 @@ describe('Trace processor', () => {
     expect(output).toEqual({
       userTiming: [],
       experience: [{ name: 'navigationStart', type: 'mark', start: 0 }],
-      layoutShift: { name: 'LayoutShift', score: 0, exists: false },
+      metrics: { cls: 0 },
     });
   });
 });

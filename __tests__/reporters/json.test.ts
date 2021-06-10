@@ -150,6 +150,12 @@ describe('json reporter', () => {
           start: 3065705.560142,
         },
       ],
+      metrics: {
+        lcp: 200,
+        fcp: 100,
+        dcl: 300,
+        cls: 0.123,
+      },
     });
     runner.emit('end', 'done');
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();

@@ -80,6 +80,7 @@ export class UserTimings {
 export class ExperienceMetrics {
   static navigationStart = null;
   static metrics: Partial<PerfMetrics> = {};
+
   static buildMetric(event: TraceEvent, shortName?: string, name?: string) {
     if (!event) {
       return;
@@ -109,8 +110,10 @@ export class ExperienceMetrics {
       lcpInvalidated,
     } = trace;
 
-    const navigationStartEvent = this.buildMetric(timeOriginEvt, 'ns');
-    this.navigationStart = navigationStartEvent.start;
+    const navigationStartEvent = this.buildMetric(timeOriginEvt);
+    if (navigationStartEvent) {
+      this.navigationStart = navigationStartEvent.start;
+    }
     experienceMetrics.push(navigationStartEvent);
     experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt, 'fcp'));
     /**
@@ -135,14 +138,17 @@ export class ExperienceMetrics {
       traces: experienceMetrics.filter(b => Boolean(b)),
     };
   }
+
+  static reset() {
+    this.navigationStart = null;
+    this.metrics = {};
+  }
 }
 
 export class CumulativeLayoutShift {
-  static type = 'LayoutShift';
-
   static computeCLSValue(events: Array<TraceEvent>) {
     const layoutShiftEvents = events.filter(
-      event => event.name === this.type && event.args?.data.is_main_frame
+      event => event.name === 'LayoutShift' && event.args?.data.is_main_frame
     );
     // Chromium will set `had_recent_input` if there was recent user input, which
     // skips shift events from contributing to CLS. This results in the first few shift
@@ -202,9 +208,7 @@ export class Filmstrips {
     return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
       blob: event.args.snapshot,
       mime: 'image/jpeg',
-      relative_trace: {
-        start: convertTraceTimestamp(event.ts),
-      },
+      start: convertTraceTimestamp(event.ts),
     }));
   }
 }

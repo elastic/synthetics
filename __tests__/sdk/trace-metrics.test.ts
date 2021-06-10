@@ -60,48 +60,63 @@ describe('Trace metrics', () => {
     `);
   });
 
-  it('compute user experience metrics', () => {
-    const domContentLoadedEvt = {
-      name: 'domContentLoadedEventEnd',
-      ts: 10,
-      ph: 'R',
-      cat: 'blink.user_timing,rail',
-    };
-    const firstContentfulPaintEvt = {
-      name: 'firstContentfulPaint',
-      ts: 8,
-      ph: 'R',
-      cat: 'loading,rail,devtools.timeline',
-    };
-    const largestContentfulPaintEvt = {
-      name: 'largestContentfulPaint::Candidate',
-      ts: 20,
-      ph: 'R',
-      cat: 'loading,rail,devtools.timeline',
-    };
-    const metrics = ExperienceMetrics.compute({
+  const domContentLoadedEvt = {
+    name: 'domContentLoadedEventEnd',
+    ts: 25000,
+    ph: 'R',
+    cat: 'blink.user_timing,rail',
+  };
+  const firstContentfulPaintEvt = {
+    name: 'firstContentfulPaint',
+    ts: 8000,
+    ph: 'R',
+    cat: 'loading,rail,devtools.timeline',
+  };
+  const largestContentfulPaintEvt = {
+    name: 'largestContentfulPaint::Candidate',
+    ts: 20000,
+    ph: 'R',
+    cat: 'loading,rail,devtools.timeline',
+  };
+  const timeOriginEvt = {
+    name: 'navigationStart',
+    ts: 5000,
+    ph: 'R',
+    cat: 'loading,rail,devtools.timeline',
+  };
+
+  it('compute user experience trace and metrics', () => {
+    const { metrics, traces } = ExperienceMetrics.compute({
+      domContentLoadedEvt,
+      timeOriginEvt,
+      firstContentfulPaintEvt,
+      largestContentfulPaintEvt,
+    } as any);
+
+    expect(metrics).toEqual({ fcp: 3, lcp: 15, dcl: 20 });
+    expect(traces).toEqual([
+      { name: 'navigationStart', type: 'mark', start: 0.005 },
+      { name: 'firstContentfulPaint', type: 'mark', start: 0.008 },
+      { name: 'largestContentfulPaint', type: 'mark', start: 0.02 },
+      { name: 'domContentLoadedEventEnd', type: 'mark', start: 0.025 },
+    ]);
+    ExperienceMetrics.reset();
+  });
+
+  it('only compute trace when time origin is not present', () => {
+    const { metrics, traces } = ExperienceMetrics.compute({
       domContentLoadedEvt,
       firstContentfulPaintEvt,
       largestContentfulPaintEvt,
     } as any);
 
-    expect(metrics).toEqual([
-      {
-        name: 'firstContentfulPaint',
-        type: 'mark',
-        start: 0.000008,
-      },
-      {
-        name: 'largestContentfulPaint',
-        type: 'mark',
-        start: 0.00002,
-      },
-      {
-        name: 'domContentLoadedEventEnd',
-        type: 'mark',
-        start: 0.00001,
-      },
+    expect(metrics).toEqual({});
+    expect(traces).toEqual([
+      { name: 'firstContentfulPaint', type: 'mark', start: 0.008 },
+      { name: 'largestContentfulPaint', type: 'mark', start: 0.02 },
+      { name: 'domContentLoadedEventEnd', type: 'mark', start: 0.025 },
     ]);
+    ExperienceMetrics.reset();
   });
 
   function makeTrace(events) {
@@ -131,10 +146,7 @@ describe('Trace metrics', () => {
       { score: 1, had_recent_input: true },
     ]);
     expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
-      name: 'LayoutShift',
-      score: 3,
-      exists: true,
-      start: 0.000015,
+      cls: 3,
     });
 
     mainThreadEvents = makeTrace([
@@ -144,10 +156,7 @@ describe('Trace metrics', () => {
       { score: 1, had_recent_input: false },
     ]);
     expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
-      name: 'LayoutShift',
-      score: 4,
-      exists: true,
-      start: 0.000015,
+      cls: 4,
     });
   });
 
@@ -155,9 +164,7 @@ describe('Trace metrics', () => {
     expect(
       CumulativeLayoutShift.compute({ mainThreadEvents: traceEvents } as any)
     ).toEqual({
-      name: 'LayoutShift',
-      score: 0,
-      exists: false,
+      cls: 0,
     });
   });
 

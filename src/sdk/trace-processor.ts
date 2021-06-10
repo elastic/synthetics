@@ -103,7 +103,9 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     const trace: LHTrace = super.computeTraceOfTab({ traceEvents }, options);
     const userTiming = UserTimings.compute(trace);
     const { traces, metrics } = ExperienceMetrics.compute(trace);
+    ExperienceMetrics.reset();
     const layoutShift = CumulativeLayoutShift.compute(trace);
+
     return {
       userTiming,
       experience: traces,

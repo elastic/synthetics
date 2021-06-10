@@ -473,9 +473,7 @@ export default class JSONReporter extends BaseReporter {
               journey,
               payload: { index },
               root_fields: {
-                browser: {
-                  relative_trace: strip.relative_trace,
-                },
+                browser: { relative_trace: { start: strip.start } },
               },
               blob: strip.blob,
               blob_mime: strip.mime,
@@ -493,11 +491,8 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(
-          journey,
-          'relative_trace',
-          experience.concat(...userTiming)
-        );
+        this.writeMetrics(journey, 'relative_trace', userTiming);
+        this.writeMetrics(journey, 'relative_trace', experience);
         this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({

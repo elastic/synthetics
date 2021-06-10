@@ -53,9 +53,7 @@ export type PerfMetrics = {
 };
 
 export type Filmstrip = {
-  relative_trace: {
-    start: number;
-  };
+  start: number;
   blob: string;
   mime: string;
 };
