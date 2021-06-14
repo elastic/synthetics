@@ -49,13 +49,13 @@ describe('tracing', () => {
     expect(filmstrips[0]).toMatchObject({
       blob: expect.any(String),
       mime: 'image/jpeg',
-      start: expect.any(Number),
+      start: { us: expect.any(Number) },
     });
     expect(experience.length).toBeGreaterThan(0);
     expect(experience[0]).toMatchObject({
       name: 'navigationStart',
       type: 'mark',
-      start: expect.any(Number),
+      start: { us: expect.any(Number) },
     });
   });
 });
