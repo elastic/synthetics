@@ -155,6 +155,14 @@ describe('json reporter', () => {
             us: 3065705560142,
           },
         },
+        {
+          name: 'layoutShift',
+          type: 'mark',
+          start: {
+            us: 463045197179,
+          },
+          score: 0.19932291666666668,
+        },
       ],
       metrics: {
         lcp: { us: 200 },
