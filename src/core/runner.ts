@@ -31,7 +31,7 @@ import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
   CACHE_PATH,
-  getMonotonicTime,
+  monotonicTimeInSeconds,
   getTimestamp,
   now,
   runParallel,
@@ -133,7 +133,7 @@ export default class Runner extends EventEmitter {
   screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const start = getMonotonicTime();
+    const start = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
     const pluginManager = await Gatherer.beginRecording(driver, options);
     return {
@@ -240,7 +240,7 @@ export default class Runner extends EventEmitter {
     const results: Array<StepResult> = [];
     let skipStep = false;
     for (const step of journey.steps) {
-      const start = getMonotonicTime();
+      const start = monotonicTimeInSeconds();
       this.emit('step:start', { journey, step });
       let data: StepResult = { status: 'succeeded' };
       if (skipStep) {
@@ -256,7 +256,7 @@ export default class Runner extends EventEmitter {
         journey,
         step,
         start,
-        end: getMonotonicTime(),
+        end: monotonicTimeInSeconds(),
         ...data,
       });
       if (options.pauseOnError && data.error) {
@@ -291,7 +291,7 @@ export default class Runner extends EventEmitter {
       error,
       params,
       start,
-      end: getMonotonicTime(),
+      end: monotonicTimeInSeconds(),
       ssblocks: options.ssblocks,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],

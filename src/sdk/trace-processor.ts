@@ -23,6 +23,7 @@
  *
  */
 
+import { PerfMetrics } from '../common_types';
 import LighthouseTraceProcessor from './lh-trace-processor';
 import {
   ExperienceMetrics,
@@ -59,6 +60,8 @@ export type TraceEvent = {
   /**
    * Platform specific monotonic non decreasing clock time
    * https://source.chromium.org/chromium/chromium/src/+/master:base/time/time.h;l=936;bpv=0;bpt=0
+   *
+   * The tracing clock timestamp of the event. The timestamps are provided at microsecond granularity.
    */
   ts: number;
 };
@@ -66,6 +69,17 @@ export type TraceEvent = {
 /**
  * Exported data from Lighthouse trace processor
  */
+type LHTraceTime = {
+  timeOrigin: number;
+  firstPaint: number;
+  firstContentfulPaint: number;
+  largestContentfulPaint: number;
+  largestContentfulPaintAllFrames: number;
+  domContentLoaded: number;
+  load: number;
+  traceEnd: number;
+};
+
 export type LHTrace = {
   domContentLoadedEvt: TraceEvent;
   firstContentfulPaintEvt: TraceEvent;
@@ -75,6 +89,8 @@ export type LHTrace = {
   lcpInvalidated: boolean;
   processEvents: Array<TraceEvent>;
   mainThreadEvents: Array<TraceEvent>;
+  timestamps: Partial<LHTraceTime>;
+  timings: Partial<LHTraceTime>;
 };
 
 /**
@@ -100,15 +116,16 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     const options = {
       timeOriginDeterminationMethod: 'lastNavigationStart',
     };
-    const trace: LHTrace = super.computeTraceOfTab({ traceEvents }, options);
+    const trace = super.computeTraceOfTab({ traceEvents }, options);
     const userTiming = UserTimings.compute(trace);
-    const experience = ExperienceMetrics.compute(trace);
+    const { traces, metrics } = ExperienceMetrics.compute(trace);
     const layoutShift = CumulativeLayoutShift.compute(trace);
+    const perfMetrics: Partial<PerfMetrics> = { ...layoutShift, ...metrics };
 
     return {
       userTiming,
-      experience,
-      layoutShift,
+      experience: traces,
+      metrics: perfMetrics,
     };
   }
 }

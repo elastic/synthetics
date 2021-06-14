@@ -53,25 +53,26 @@ export function generateTempPath() {
 }
 
 /**
- * We internally use the clock timing similar to the
- * chrome devtools protocol network events for
- * journey and step start/end fields to make
- * querying in the UI easier
+ * Get Monotonically increasing time in seconds since
+ * an arbitrary point in the past.
+ *
+ * We internally use the monotonically increasing clock timing
+ * similar to the chrome devtools protocol network events for
+ * journey,step start/end fields to make querying in the UI easier
  */
-export function getMonotonicTime() {
+export function monotonicTimeInSeconds() {
   const hrTime = process.hrtime(); // [seconds, nanoseconds]
   return hrTime[0] * 1 + hrTime[1] / 1e9;
 }
 
 /**
- * Converts the trace events timestamp field from the
- * format -  hrTime[0] * 1e6 + Math.round(hrTime[1] / 1000) to
- * the internal timestamp similar to other event types (journey, step, etc)
+ * Converts the trace events timestamp field from microsecond
+ * resolution to monotonic seconds timestamp similar to other event types (journey, step, etc)
  * Reference - https://github.com/samccone/chrome-trace-event/blob/d45bc8af3b5c53a3adfa2c5fc107b4fae054f579/lib/trace-event.ts#L21-L22
  *
  * Tested and verified on both Darwin and Linux
  */
-export function convertTraceTimestamp(ts: number) {
+export function microSecsToSeconds(ts: number) {
   return ts / 1e6;
 }
 
@@ -237,3 +238,7 @@ const cwd = process.cwd();
  * once we move to executing journeys in parallel
  */
 export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
+
+export function getDurationInUs(duration: number) {
+  return Math.trunc(duration * 1e6);
+}

@@ -127,7 +127,9 @@ describe('json reporter', () => {
         {
           blob: 'dummy',
           mime: 'image/jpeg',
-          start: 392583.998697,
+          start: {
+            us: 392583998697,
+          },
         },
       ],
       networkinfo: [
@@ -142,14 +144,25 @@ describe('json reporter', () => {
         {
           name: 'navigationStart',
           type: 'mark',
-          start: 3065705.158085,
+          start: {
+            us: 3065705158085,
+          },
         },
         {
           name: 'firstContentfulPaint',
           type: 'mark',
-          start: 3065705.560142,
+          start: {
+            us: 3065705560142,
+          },
         },
       ],
+      metrics: {
+        lcp: { us: 200 },
+        fcp: { us: 100 },
+        dcl: { us: 300 },
+        load: { us: 400 },
+        cls: 0.123,
+      },
     });
     runner.emit('end', 'done');
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
