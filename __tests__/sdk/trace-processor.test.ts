@@ -31,8 +31,7 @@ describe('Trace processor', () => {
     const { traceEvents } = createTestTrace();
     const output = TraceProcessor.computeTrace(traceEvents as any);
     expect(output).toEqual({
-      userTiming: [],
-      experience: [],
+      traces: [],
       metrics: { cls: 0 },
     });
   });

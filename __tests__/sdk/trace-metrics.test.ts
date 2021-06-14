@@ -108,42 +108,78 @@ describe('Trace metrics', () => {
           data: {
             is_main_frame: true,
             had_recent_input: event.had_recent_input,
-            score: event.score,
+            weighted_score_delta: event.score,
           },
         },
       };
     });
-    return traceEvents.concat(shiftEvents);
+    return shiftEvents;
   }
 
   it('computes layout shift', () => {
-    let mainThreadEvents = makeTrace([
+    let frameTreeEvents = makeTrace([
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: true },
     ]);
-    expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
+    const layoutEvent = {
+      name: 'layoutShift',
+      type: 'mark',
+      start: { us: 15 },
+      score: 1,
+    };
+    expect(CumulativeLayoutShift.compute({ frameTreeEvents } as any)).toEqual({
       cls: 3,
+      traces: [layoutEvent, layoutEvent, layoutEvent],
     });
 
-    mainThreadEvents = makeTrace([
+    frameTreeEvents = makeTrace([
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: false },
     ]);
-    expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
+    expect(
+      CumulativeLayoutShift.compute({ frameTreeEvents } as any)
+    ).toMatchObject({
       cls: 4,
     });
   });
 
-  it('returns zero when no layout shift is present ', () => {
+  it('computes cls with session window', () => {
     expect(
-      CumulativeLayoutShift.compute({ mainThreadEvents: traceEvents } as any)
+      CumulativeLayoutShift.compute({ frameTreeEvents: traceEvents } as any)
+    ).toEqual({
+      cls: 0.40969618055555557,
+      traces: [
+        {
+          name: 'layoutShift',
+          score: 0.19932291666666668,
+          start: {
+            us: 463045197179,
+          },
+          type: 'mark',
+        },
+        {
+          name: 'layoutShift',
+          score: 0.21037326388888888,
+          start: {
+            us: 463047103153,
+          },
+          type: 'mark',
+        },
+      ],
+    });
+  });
+
+  it('cls to 0 when no events found', () => {
+    expect(
+      CumulativeLayoutShift.compute({ frameTreeEvents: [] } as any)
     ).toEqual({
       cls: 0,
+      traces: [],
     });
   });
 

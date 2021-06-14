@@ -140,7 +140,7 @@ describe('json reporter', () => {
           browser: {},
         } as any,
       ],
-      experience: [
+      traces: [
         {
           name: 'navigationStart',
           type: 'mark',
