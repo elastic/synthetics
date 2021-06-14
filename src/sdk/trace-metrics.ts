@@ -23,8 +23,7 @@
  *
  */
 
-import { Filmstrip, TraceOutput, PerfMetrics } from '../common_types';
-import { convertToMonotonicTime, getDurationInUs } from '../helpers';
+import { Filmstrip, TraceOutput } from '../common_types';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
 export class UserTimings {
@@ -59,7 +58,9 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'mark',
-          start: convertToMonotonicTime(ts),
+          start: {
+            us: ts,
+          },
         });
       } else if (phase === 'b') {
         measuresMap.set(name, ts);
@@ -68,8 +69,12 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'measure',
-          start: convertToMonotonicTime(startTime),
-          end: convertToMonotonicTime(ts),
+          start: {
+            us: startTime,
+          },
+          end: {
+            us: ts,
+          },
         });
       }
     }
@@ -78,49 +83,27 @@ export class UserTimings {
 }
 
 export class ExperienceMetrics {
-  static monotonicNavStartTime = null;
-  static metrics: Partial<PerfMetrics> = {};
-
-  static buildMetric(event: TraceEvent, shortName?: string, name?: string) {
-    if (!event) {
+  static buildMetric(name: string, timestamp?: number) {
+    if (!timestamp) {
       return;
     }
-    /**
-     * Calculate metrics relative to the origin event in microseconds
-     */
-    if (this.monotonicNavStartTime) {
-      this.metrics[shortName] = {
-        duration: {
-          us: getDurationInUs(
-            convertToMonotonicTime(event.ts) - this.monotonicNavStartTime
-          ),
-        },
-      };
-    }
     return {
-      name: name || event.name,
+      name,
       type: 'mark',
-      start: convertToMonotonicTime(event.ts),
+      start: {
+        us: timestamp,
+      },
     };
   }
 
   static compute(trace: LHTrace) {
-    const experienceMetrics: Array<TraceOutput> = [];
-    const {
-      domContentLoadedEvt,
-      firstContentfulPaintEvt,
-      largestContentfulPaintEvt,
-      loadEvt,
-      timeOriginEvt,
-      lcpInvalidated,
-    } = trace;
+    const traces: Array<TraceOutput> = [];
+    const { timestamps, timings, lcpInvalidated } = trace;
 
-    const navigationStartEvent = this.buildMetric(timeOriginEvt);
-    if (navigationStartEvent) {
-      this.monotonicNavStartTime = navigationStartEvent.start;
-    }
-    experienceMetrics.push(navigationStartEvent);
-    experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt, 'fcp'));
+    traces.push(this.buildMetric('navigationStart', timestamps.timeOrigin));
+    traces.push(
+      this.buildMetric('firstContentfulPaint', timestamps.firstContentfulPaint)
+    );
     /**
      * lcpInvalidated - Denotes when all of the LCP events that comes from the
      * current trace are invalidated. Happens if the previous LCP candidates were
@@ -128,25 +111,44 @@ export class ExperienceMetrics {
      * More info - https://github.com/WICG/largest-contentful-paint/#the-last-candidate
      */
     !lcpInvalidated &&
-      experienceMetrics.push(
+      traces.push(
         this.buildMetric(
-          largestContentfulPaintEvt,
-          'lcp',
-          'largestContentfulPaint'
+          'largestContentfulPaint',
+          timestamps.largestContentfulPaint
         )
       );
-    experienceMetrics.push(this.buildMetric(domContentLoadedEvt, 'dcl'));
-    experienceMetrics.push(this.buildMetric(loadEvt, 'load'));
+    traces.push(
+      this.buildMetric('domContentLoaded', timestamps.domContentLoaded)
+    );
+    traces.push(this.buildMetric('loadEvent', timestamps.load));
+
+    /**
+     * Lighthouse tracer extracts these metrics in milliseconds resolution,
+     * we convert them to microseconds resolution to keep them in sync with
+     * other timings
+     */
+    const millisToMicros = (value?: number) =>
+      value ? value * 1000 : undefined;
+    const keys = [
+      'firstContentfulPaint',
+      'largestContentfulPaint',
+      'domContentLoaded',
+      'load',
+    ];
+    const values = ['fcp', 'lcp', 'dcl', 'load'];
+    const metrics = {};
+
+    for (let i = 0; i < keys.length; i++) {
+      const microSecs = millisToMicros(timings[keys[i]]);
+      if (microSecs) {
+        metrics[values[i]] = { us: microSecs };
+      }
+    }
 
     return {
-      metrics: this.metrics,
-      traces: experienceMetrics.filter(b => Boolean(b)),
+      metrics,
+      traces: traces.filter(b => Boolean(b)),
     };
-  }
-
-  static reset() {
-    this.monotonicNavStartTime = null;
-    this.metrics = {};
   }
 }
 
@@ -213,7 +215,9 @@ export class Filmstrips {
     return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
       blob: event.args.snapshot,
       mime: 'image/jpeg',
-      start: convertToMonotonicTime(event.ts),
+      start: {
+        us: event.ts,
+      },
     }));
   }
 }

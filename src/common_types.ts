@@ -40,14 +40,12 @@ export type Reporters = keyof typeof reporters;
 export type TraceOutput = {
   name: string;
   type: string;
-  start: number;
-  end?: number;
+  start: MetricDuration;
+  end?: MetricDuration;
 };
 
 type MetricDuration = {
-  duration: {
-    us: number;
-  };
+  us: number;
 };
 
 export type PerfMetrics = {
@@ -59,7 +57,7 @@ export type PerfMetrics = {
 };
 
 export type Filmstrip = {
-  start: number;
+  start: MetricDuration;
   blob: string;
   mime: string;
 };

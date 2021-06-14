@@ -41,86 +41,61 @@ describe('Trace metrics', () => {
     expect(metrics).toMatchInlineSnapshot(`
       Array [
         Object {
-          "end": 3069485.988748,
+          "end": Object {
+            "us": 3069485988748,
+          },
           "name": "Next.js-before-hydration",
-          "start": 3069484.776113,
+          "start": Object {
+            "us": 3069484776113,
+          },
           "type": "measure",
         },
         Object {
           "name": "beforeRender",
-          "start": 3069485.988763,
+          "start": Object {
+            "us": 3069485988763,
+          },
           "type": "mark",
         },
         Object {
           "name": "afterHydrate",
-          "start": 3069486.106274,
+          "start": Object {
+            "us": 3069486106274,
+          },
           "type": "mark",
         },
       ]
     `);
   });
 
-  const domContentLoadedEvt = {
-    name: 'domContentLoadedEventEnd',
-    ts: 25000,
-    ph: 'R',
-    cat: 'blink.user_timing,rail',
-  };
-  const firstContentfulPaintEvt = {
-    name: 'firstContentfulPaint',
-    ts: 8000,
-    ph: 'R',
-    cat: 'loading,rail,devtools.timeline',
-  };
-  const largestContentfulPaintEvt = {
-    name: 'largestContentfulPaint::Candidate',
-    ts: 20000,
-    ph: 'R',
-    cat: 'loading,rail,devtools.timeline',
-  };
-  const timeOriginEvt = {
-    name: 'navigationStart',
-    ts: 5000,
-    ph: 'R',
-    cat: 'loading,rail,devtools.timeline',
-  };
-
   it('compute user experience trace and metrics', () => {
+    const timings = {
+      firstContentfulPaint: 3,
+      largestContentfulPaint: 15,
+      domContentLoaded: 20,
+    };
+    const timestamps = {
+      timeOrigin: 5000,
+      firstContentfulPaint: 8000,
+      largestContentfulPaint: 20000,
+      domContentLoaded: 25000,
+    };
     const { metrics, traces } = ExperienceMetrics.compute({
-      domContentLoadedEvt,
-      timeOriginEvt,
-      firstContentfulPaintEvt,
-      largestContentfulPaintEvt,
+      timestamps,
+      timings,
     } as any);
 
     expect(metrics).toEqual({
-      fcp: { duration: { us: 3000 } },
-      lcp: { duration: { us: 15000 } },
-      dcl: { duration: { us: 20000 } },
+      fcp: { us: 3000 },
+      lcp: { us: 15000 },
+      dcl: { us: 20000 },
     });
     expect(traces).toEqual([
-      { name: 'navigationStart', type: 'mark', start: 0.005 },
-      { name: 'firstContentfulPaint', type: 'mark', start: 0.008 },
-      { name: 'largestContentfulPaint', type: 'mark', start: 0.02 },
-      { name: 'domContentLoadedEventEnd', type: 'mark', start: 0.025 },
+      { name: 'navigationStart', type: 'mark', start: { us: 5000 } },
+      { name: 'firstContentfulPaint', type: 'mark', start: { us: 8000 } },
+      { name: 'largestContentfulPaint', type: 'mark', start: { us: 20000 } },
+      { name: 'domContentLoaded', type: 'mark', start: { us: 25000 } },
     ]);
-    ExperienceMetrics.reset();
-  });
-
-  it('only compute trace when time origin is not present', () => {
-    const { metrics, traces } = ExperienceMetrics.compute({
-      domContentLoadedEvt,
-      firstContentfulPaintEvt,
-      largestContentfulPaintEvt,
-    } as any);
-
-    expect(metrics).toEqual({});
-    expect(traces).toEqual([
-      { name: 'firstContentfulPaint', type: 'mark', start: 0.008 },
-      { name: 'largestContentfulPaint', type: 'mark', start: 0.02 },
-      { name: 'domContentLoadedEventEnd', type: 'mark', start: 0.025 },
-    ]);
-    ExperienceMetrics.reset();
   });
 
   function makeTrace(events) {
@@ -179,7 +154,9 @@ describe('Trace metrics', () => {
     expect(metrics[0]).toEqual({
       blob: expect.any(String),
       mime: 'image/jpeg',
-      start: 3086640.09036,
+      start: {
+        us: 3086640090360,
+      },
     });
   });
 });

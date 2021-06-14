@@ -14,17 +14,17 @@ journey('check if title is present', ({ page }) => {
   });
 });
 
-journey('check if input placeholder is correct', ({ page }) => {
-  step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
-  });
+// journey('check if input placeholder is correct', ({ page }) => {
+//   step('launch app', async () => {
+//     const path = 'file://' + join(__dirname, 'app', 'index.html');
+//     await page.goto(path);
+//   });
 
-  step('assert placeholder value', async () => {
-    const input = await page.$('input.new-todo');
-    deepStrictEqual(
-      await input.getAttribute('placeholder'),
-      'What needs to be done?'
-    );
-  });
-});
+//   step('assert placeholder value', async () => {
+//     const input = await page.$('input.new-todo');
+//     deepStrictEqual(
+//       await input.getAttribute('placeholder'),
+//       'What needs to be done?'
+//     );
+//   });
+// });

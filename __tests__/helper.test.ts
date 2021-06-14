@@ -26,13 +26,13 @@
 import { cwd } from 'process';
 import {
   indent,
-  getMonotonicTime,
+  monotonicTimeInSeconds,
   formatError,
   findPkgJsonByTraversing,
   generateTempPath,
   rewriteErrorStack,
   findPWLogsIndexes,
-  convertToMonotonicTime,
+  microSecsToSeconds,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -46,13 +46,13 @@ it('get monotonic clock time', () => {
   jest.spyOn(process, 'hrtime').mockImplementation(() => {
     return [392583, 998697551];
   });
-  const elapsedTime = getMonotonicTime();
+  const elapsedTime = monotonicTimeInSeconds();
   expect(elapsedTime).toBe(392583.998697551);
 });
 
 it('convert trace timestamp to internal time', () => {
   const traceTimestamp = 392583998697;
-  const elapsedTime = convertToMonotonicTime(traceTimestamp);
+  const elapsedTime = microSecsToSeconds(traceTimestamp);
   expect(elapsedTime).toBe(392583.998697);
 });
 
