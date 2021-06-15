@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.3 (2021-06-15)
+
+### Features
+
+- Capture all core-vitals and user experience metrics like FPC, LCP, CLS, User
+  timing metrics, etc via chrome tracing [#194](https://github.com/elastic/synthetics/pull/194)
+- Split the captured screenshot from each step in to 64 blocks to optimzie
+  the storage when indexed the same block in Elaticsearch [#290](https://github.com/elastic/synthetics/pull/290)
+- Add support for filtering journeys by name and tags [#300](https://github.com/elastic/synthetics/issues/300)
+- Expose `expect` assetion method in the API [#201](https://github.com/elastic/synthetics/issues/201)
+- Update Cumulative Layout Shift(CLS) metric based on
+  `maximum session window with 1 second gap, capped at 5 seconds`
+  [#301](https://github.com/elastic/synthetics/issues/301)
+- Expose time taken to complete single step under
+  `step.duration.us` [#302](https://github.com/elastic/synthetics/issues/301)
+- Expose new capabilities via `--capability` through CLI
+  options [#295](https://github.com/elastic/synthetics/issues/295)
+- Add new flag `--rich-events` which mimicks heartbeat
+  behaviour [#289](https://github.com/elastic/synthetics/pull/289).
+- Expose suite parameters from CLI and config file to
+  all hooks and journeys callbacks[#272](https://github.com/elastic/synthetics/pull/272)
+
+### Bug fixes
+
+- Move all of the trace events like FCP, LCP, User timings under
+  `browser.relative_trace`[#303](https://github.com/elastic/synthetics/pulls/303)
+- Prioritize suite params from CLI over config file [#298](https://github.com/elastic/synthetics/pull/298)
+- Report errors from `before` and `after` hooks [#273](https://github.com/elastic/synthetics/pull/273)
+
 ## v1.0.0-beta.2 (2021-05-17)
 
 ### Features
