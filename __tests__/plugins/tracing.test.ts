@@ -43,7 +43,7 @@ describe('tracing', () => {
     await tracer.start(driver.client);
     await driver.page.goto(server.TEST_PAGE);
     await driver.page.waitForLoadState();
-    const { filmstrips, experience } = await tracer.stop(driver.client);
+    const { filmstrips, traces } = await tracer.stop(driver.client);
     await Gatherer.stop();
     expect(filmstrips.length).toBeGreaterThan(0);
     expect(filmstrips[0]).toMatchObject({
@@ -51,8 +51,8 @@ describe('tracing', () => {
       mime: 'image/jpeg',
       start: { us: expect.any(Number) },
     });
-    expect(experience.length).toBeGreaterThan(0);
-    expect(experience[0]).toMatchObject({
+    expect(traces.length).toBeGreaterThan(0);
+    expect(traces[0]).toMatchObject({
       name: 'navigationStart',
       type: 'mark',
       start: { us: expect.any(Number) },

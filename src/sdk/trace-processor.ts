@@ -55,6 +55,7 @@ export type TraceEvent = {
       is_main_frame: boolean;
       cumulative_score: number;
       score: number;
+      weighted_score_delta: number;
     } & Record<string, unknown>;
   };
   /**
@@ -89,6 +90,7 @@ export type LHTrace = {
   lcpInvalidated: boolean;
   processEvents: Array<TraceEvent>;
   mainThreadEvents: Array<TraceEvent>;
+  frameTreeEvents: Array<TraceEvent>;
   timestamps: Partial<LHTraceTime>;
   timings: Partial<LHTraceTime>;
 };
@@ -118,13 +120,12 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     };
     const trace = super.computeTraceOfTab({ traceEvents }, options);
     const userTiming = UserTimings.compute(trace);
-    const { traces, metrics } = ExperienceMetrics.compute(trace);
-    const layoutShift = CumulativeLayoutShift.compute(trace);
-    const perfMetrics: Partial<PerfMetrics> = { ...layoutShift, ...metrics };
+    const { traces: expTraces, metrics } = ExperienceMetrics.compute(trace);
+    const { cls, traces: layoutTraces } = CumulativeLayoutShift.compute(trace);
+    const perfMetrics: Partial<PerfMetrics> = { cls, ...metrics };
 
     return {
-      userTiming,
-      experience: traces,
+      traces: userTiming.concat(expTraces, layoutTraces),
       metrics: perfMetrics,
     };
   }

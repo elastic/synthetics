@@ -42,6 +42,7 @@ export type TraceOutput = {
   type: string;
   start: MetricDuration;
   end?: MetricDuration;
+  score?: number;
 };
 
 type MetricDuration = {
@@ -107,10 +108,9 @@ export type BrowserMessage = {
 
 export type PluginOutput = {
   filmstrips?: Array<Filmstrip>;
-  userTiming?: Array<TraceOutput>;
-  experience?: Array<TraceOutput>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
+  traces?: Array<TraceOutput>;
   metrics?: PerfMetrics;
 };
 

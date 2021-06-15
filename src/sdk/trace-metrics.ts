@@ -153,36 +153,96 @@ export class ExperienceMetrics {
 }
 
 export class CumulativeLayoutShift {
-  static computeCLSValue(events: Array<TraceEvent>) {
-    const layoutShiftEvents = events.filter(
-      event => event.name === 'LayoutShift' && event.args?.data.is_main_frame
-    );
+  static getLayoutShiftEvents(traceEvents: Array<TraceEvent>) {
+    const layoutShiftEvents = [];
     // Chromium will set `had_recent_input` if there was recent user input, which
     // skips shift events from contributing to CLS. This results in the first few shift
     // events having `had_recent_input` set to true, so ignore it for those events.
-    // See https://bugs.chromium.org/p/chromium/issues/detail?id=1094974.
+    // See https://crbug.com/1094974
     let ignoreHadRecentInput = true;
-    let finalLayoutShiftEvent;
-    let clsScore = 0;
-    for (const event of layoutShiftEvents) {
+
+    for (const event of traceEvents) {
+      // weighted_score_delta was added in chrome 90 - https://crbug.com/1173139
+      if (
+        event.name !== 'LayoutShift' ||
+        !event.args?.data.is_main_frame ||
+        !event.args?.data.weighted_score_delta
+      ) {
+        continue;
+      }
+
       if (event.args.data.had_recent_input) {
         if (!ignoreHadRecentInput) continue;
       } else {
         ignoreHadRecentInput = false;
       }
-      clsScore += event.args.data.score;
-      finalLayoutShiftEvent = event;
+
+      layoutShiftEvents.push({
+        ts: event.ts,
+        weightedScore: event.args.data.weighted_score_delta,
+      });
     }
 
-    return { score: clsScore, event: finalLayoutShiftEvent };
+    return layoutShiftEvents;
+  }
+
+  /**
+   * Calculate cumulative layout shift per sesion window where each session
+   * windows lasts for 5 seconds since the last layoutShift event and has 1 second
+   * gap between them. Return the maximum score between all windows.
+   * More details - https://web.dev/evolving-cls/
+   */
+  static calculateScore(layoutShiftEvents) {
+    const gapMicroseconds = 1_000_000; // 1 seconds gap
+    const limitMicroseconds = 5_000_000; // 5 seconds window
+    let maxScore = 0;
+    let currentScore = 0;
+    let firstTimestamp = Number.NEGATIVE_INFINITY;
+    let prevTimestamp = Number.NEGATIVE_INFINITY;
+
+    for (const event of layoutShiftEvents) {
+      const currTimestamp = event.ts;
+      /**
+       * Two cases
+       * - When the next layout shift event happened after the session window of
+       * 5 seconds.
+       * - When the next and previous layout shift event has a gap of 1 second
+       *
+       * Then consider the layout shift event as the start of
+       * the current session window and reset the cumulative score.
+       */
+      if (
+        currTimestamp - firstTimestamp > limitMicroseconds ||
+        currTimestamp - prevTimestamp > gapMicroseconds
+      ) {
+        firstTimestamp = currTimestamp;
+        currentScore = 0;
+      }
+      prevTimestamp = currTimestamp;
+      currentScore += event.weightedScore;
+      maxScore = Math.max(maxScore, currentScore);
+    }
+
+    return maxScore;
   }
 
   static compute(trace: LHTrace) {
-    const events = trace.mainThreadEvents;
-    const { score } = this.computeCLSValue(events);
+    const layoutShiftEvents = this.getLayoutShiftEvents(trace.frameTreeEvents);
+    const traces: Array<TraceOutput> = layoutShiftEvents.map(event => {
+      return {
+        name: 'layoutShift',
+        type: 'mark',
+        start: {
+          us: event.ts,
+        },
+        score: event.weightedScore,
+      };
+    });
+    const cumulativeLayoutShiftScore = this.calculateScore(layoutShiftEvents);
 
     return {
-      cls: score,
+      cls: cumulativeLayoutShiftScore,
+      traces,
     };
   }
 }

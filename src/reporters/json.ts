@@ -411,8 +411,7 @@ export default class JSONReporter extends BaseReporter {
         filmstrips,
         networkinfo,
         browserconsole,
-        userTiming,
-        experience,
+        traces,
         metrics,
         status,
         error,
@@ -492,8 +491,7 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, 'relative_trace', userTiming);
-        this.writeMetrics(journey, 'relative_trace', experience);
+        this.writeMetrics(journey, 'relative_trace', traces);
         this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({
