@@ -152,7 +152,7 @@ describe('Trace metrics', () => {
     expect(
       CumulativeLayoutShift.compute({ frameTreeEvents: traceEvents } as any)
     ).toEqual({
-      cls: 0.40969618055555557,
+      cls: 0.21037326388888888,
       traces: [
         {
           name: 'layoutShift',
@@ -172,6 +172,32 @@ describe('Trace metrics', () => {
         },
       ],
     });
+  });
+
+  it('calculate cls score with simulated sessions', () => {
+    // events with single session
+    let events = [
+      { ts: 0, weightedScore: 1 },
+      { ts: 1_000_000, weightedScore: 1 },
+      { ts: 2_000_000, weightedScore: 1 },
+    ];
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(3);
+    // 4 more events within the 1 second intervals
+    events = events.concat([
+      { ts: 6_000_000, weightedScore: 1 },
+      { ts: 7_000_000, weightedScore: 1 },
+      { ts: 8_000_000, weightedScore: 1 },
+      { ts: 9_000_000, weightedScore: 1 },
+    ]);
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(4);
+    // use previous max with new events having more gaps
+    events = events.concat([
+      { ts: 11_000_000, weightedScore: 1 },
+      { ts: 13_000_000, weightedScore: 1 },
+      { ts: 15_000_000, weightedScore: 1 },
+      { ts: 17_000_000, weightedScore: 1 },
+    ]);
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(4);
   });
 
   it('cls to 0 when no events found', () => {

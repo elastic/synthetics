@@ -193,21 +193,32 @@ export class CumulativeLayoutShift {
    * More details - https://web.dev/evolving-cls/
    */
   static calculateScore(layoutShiftEvents) {
-    const gapMicroseconds = 1_000_000;
-    const limitMicroseconds = 5_000_000;
+    const gapMicroseconds = 1_000_000; // 1 seconds gap
+    const limitMicroseconds = 5_000_000; // 5 seconds window
     let maxScore = 0;
     let currentScore = 0;
     let firstTimestamp = Number.NEGATIVE_INFINITY;
     let prevTimestamp = Number.NEGATIVE_INFINITY;
 
     for (const event of layoutShiftEvents) {
+      const currTimestamp = event.ts;
+      /**
+       * Two cases
+       * - When the next layout shift event happened after the session window of
+       * 5 seconds.
+       * - When the next and previous layout shift event has a gap of 1 second
+       *
+       * Then consider the layout shift event as the start of
+       * the current session window and reset the cumulative score.
+       */
       if (
-        event.ts - firstTimestamp > limitMicroseconds ||
-        event.ts - prevTimestamp > gapMicroseconds
+        currTimestamp - firstTimestamp > limitMicroseconds ||
+        currTimestamp - prevTimestamp > gapMicroseconds
       ) {
-        firstTimestamp = event.ts;
+        firstTimestamp = currTimestamp;
+        currentScore = 0;
       }
-      prevTimestamp = event.ts;
+      prevTimestamp = currTimestamp;
       currentScore += event.weightedScore;
       maxScore = Math.max(maxScore, currentScore);
     }
