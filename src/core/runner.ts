@@ -144,6 +144,31 @@ export default class Runner extends EventEmitter {
     };
   }
 
+  async captureScreenshot(page: Driver['page'], step: Step) {
+    await page.waitForLoadState('load');
+    const buffer = await page
+      .screenshot({
+        type: 'jpeg',
+        quality: 80,
+      })
+      .catch(() => {});
+    /**
+     * Write the screenshot image buffer with additional details (step
+     * information) which could be extracted at the end of
+     * each journey without impacting the step timing information
+     */
+    if (buffer) {
+      const fileName = now().toString() + '.json';
+      writeFileSync(
+        join(this.screenshotPath, fileName),
+        JSON.stringify({
+          step,
+          data: buffer.toString('base64'),
+        })
+      );
+    }
+  }
+
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
@@ -207,29 +232,8 @@ export default class Runner extends EventEmitter {
       data.error = error;
     } finally {
       data.url ??= driver.page.url();
-      if (screenshots !== 'off') {
-        await driver.page.waitForLoadState('load');
-        const buffer = await driver.page
-          .screenshot({
-            type: 'jpeg',
-            quality: 80,
-          })
-          .catch(() => {});
-        /**
-         * Write the screenshot image buffer with additional details (step
-         * information) which could be extracted at the end of
-         * each journey without impacting the step timing information
-         */
-        if (buffer) {
-          const fileName = now().toString() + '.json';
-          writeFileSync(
-            join(this.screenshotPath, fileName),
-            JSON.stringify({
-              step,
-              data: buffer.toString('base64'),
-            })
-          );
-        }
+      if (screenshots && screenshots !== 'off') {
+        await this.captureScreenshot(driver.page, step);
       }
     }
     log(`Runner: end step (${step.name})`);

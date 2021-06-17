@@ -426,25 +426,7 @@ export default class JSONReporter extends BaseReporter {
             join(CACHE_PATH, 'screenshots'),
             async (step, data) => {
               if (ssblocks) {
-                const { blob_mime, blocks, reference } =
-                  await getScreenshotBlocks(Buffer.from(data, 'base64'));
-                for (let i = 0; i < blocks.length; i++) {
-                  const block = blocks[i];
-                  this.writeJSON({
-                    type: 'screenshot/block',
-                    _id: block.id,
-                    blob: block.blob,
-                    blob_mime,
-                  });
-                }
-                this.writeJSON({
-                  type: 'step/screenshot_ref',
-                  journey,
-                  step,
-                  root_fields: {
-                    screenshot_ref: reference,
-                  },
-                });
+                await this.writeScreenshotBlocks(journey, step, data);
               } else {
                 this.writeJSON({
                   type: 'step/screenshot',
@@ -513,6 +495,29 @@ export default class JSONReporter extends BaseReporter {
         process.nextTick(() => this.runner.emit('journey:end:reported', {}));
       }
     );
+  }
+
+  async writeScreenshotBlocks(journey: Journey, step: Step, data: string) {
+    const { blob_mime, blocks, reference } = await getScreenshotBlocks(
+      Buffer.from(data, 'base64')
+    );
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      this.writeJSON({
+        type: 'screenshot/block',
+        _id: block.id,
+        blob: block.blob,
+        blob_mime,
+      });
+    }
+    this.writeJSON({
+      type: 'step/screenshot_ref',
+      journey,
+      step,
+      root_fields: {
+        screenshot_ref: reference,
+      },
+    });
   }
 
   writeMetrics(

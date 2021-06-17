@@ -64,7 +64,6 @@ program
       .choices(['on', 'off', 'only-on-failure'])
       .default('on')
   )
-  .option('--screenshots [flag]', 'take screenshot for each step')
   .option('--network', 'capture network information for all journeys')
   .option(
     '--dry-run',
