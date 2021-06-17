@@ -114,13 +114,15 @@ export type PluginOutput = {
   metrics?: PerfMetrics;
 };
 
+export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
+
 export type CliArgs = {
   capability?: Array<string>;
   config?: string;
   environment?: string;
   outfd?: number;
   headless?: boolean;
-  screenshots?: boolean;
+  screenshots?: ScreenshotOptions;
   ssblocks?: boolean;
   metrics?: boolean;
   filmstrips?: boolean;

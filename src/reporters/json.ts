@@ -415,42 +415,48 @@ export default class JSONReporter extends BaseReporter {
         metrics,
         status,
         error,
-        ssblocks,
+        options,
       }) => {
-        await gatherScreenshots(
-          join(CACHE_PATH, 'screenshots'),
-          async (step, data) => {
-            if (ssblocks) {
-              const { blob_mime, blocks, reference } =
-                await getScreenshotBlocks(Buffer.from(data, 'base64'));
-              for (let i = 0; i < blocks.length; i++) {
-                const block = blocks[i];
+        const { ssblocks, screenshots } = options;
+        const writeScreenshots =
+          screenshots === 'on' ||
+          (screenshots === 'only-on-failure' && status === 'failed');
+        if (writeScreenshots) {
+          await gatherScreenshots(
+            join(CACHE_PATH, 'screenshots'),
+            async (step, data) => {
+              if (ssblocks) {
+                const { blob_mime, blocks, reference } =
+                  await getScreenshotBlocks(Buffer.from(data, 'base64'));
+                for (let i = 0; i < blocks.length; i++) {
+                  const block = blocks[i];
+                  this.writeJSON({
+                    type: 'screenshot/block',
+                    _id: block.id,
+                    blob: block.blob,
+                    blob_mime,
+                  });
+                }
                 this.writeJSON({
-                  type: 'screenshot/block',
-                  _id: block.id,
-                  blob: block.blob,
-                  blob_mime,
+                  type: 'step/screenshot_ref',
+                  journey,
+                  step,
+                  root_fields: {
+                    screenshot_ref: reference,
+                  },
+                });
+              } else {
+                this.writeJSON({
+                  type: 'step/screenshot',
+                  journey,
+                  step,
+                  blob: data,
+                  blob_mime: 'image/jpeg',
                 });
               }
-              this.writeJSON({
-                type: 'step/screenshot_ref',
-                journey,
-                step,
-                root_fields: {
-                  screenshot_ref: reference,
-                },
-              });
-            } else {
-              this.writeJSON({
-                type: 'step/screenshot',
-                journey,
-                step,
-                blob: data,
-                blob_mime: 'image/jpeg',
-              });
             }
-          }
-        );
+          );
+        }
 
         if (networkinfo) {
           networkinfo.forEach(ni => {
@@ -504,7 +510,7 @@ export default class JSONReporter extends BaseReporter {
             status,
           },
         });
-        this.runner.emit('journey:end:reported', {});
+        process.nextTick(() => this.runner.emit('journey:end:reported', {}));
       }
     );
   }
