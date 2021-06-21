@@ -383,8 +383,8 @@ export default class Runner extends EventEmitter {
       }
       const journeyResult = await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
-      await Gatherer.stop();
     }
+    await Gatherer.stop();
     await this.runAfterAllHook({
       env: options.environment,
       params: options.params,
