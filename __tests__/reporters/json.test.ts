@@ -300,10 +300,10 @@ describe('json reporter', () => {
         screenshots: 'on',
         ssblocks: false,
       });
-      const stepEnd = (await readAndCloseStreamJson()).find(
+      const screenshotJson = (await readAndCloseStreamJson()).find(
         json => json.type == 'step/screenshot'
       );
-      expect(stepEnd).toMatchObject({
+      expect(screenshotJson).toMatchObject({
         step: {
           name: 'launch app',
           index: 1,
@@ -328,20 +328,20 @@ describe('json reporter', () => {
         },
         'succeeded'
       );
-      const stepEnd = (await readAndCloseStreamJson()).find(
+      const screenshotJson = (await readAndCloseStreamJson()).find(
         json => json.type == 'step/screenshot'
       );
-      expect(stepEnd).not.toBeDefined();
+      expect(screenshotJson).not.toBeDefined();
     });
 
     it('write on only-on-failure for failed journey', async () => {
       emitEnd({
         screenshots: 'only-on-failure',
       });
-      const stepEnd = (await readAndCloseStreamJson()).find(
+      const screenshotJson = (await readAndCloseStreamJson()).find(
         json => json.type == 'step/screenshot'
       );
-      expect(stepEnd).toMatchObject({
+      expect(screenshotJson).toMatchObject({
         step: {
           name: 'launch app',
           index: 1,
