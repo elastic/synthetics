@@ -1,5 +1,4 @@
-import { journey, step } from '@elastic/synthetics';
-import { deepStrictEqual } from 'assert';
+import { journey, step, expect } from '@elastic/synthetics';
 import { join } from 'path';
 
 journey('check if title is present', ({ page }) => {
@@ -10,7 +9,7 @@ journey('check if title is present', ({ page }) => {
 
   step('assert title', async () => {
     const header = await page.$('h1');
-    deepStrictEqual(await header.textContent(), 'todos');
+    expect(await header.textContent()).toBe('todos');
   });
 });
 
@@ -22,8 +21,7 @@ journey('check if input placeholder is correct', ({ page }) => {
 
   step('assert placeholder value', async () => {
     const input = await page.$('input.new-todo');
-    deepStrictEqual(
-      await input.getAttribute('placeholder'),
+    expect(await input.getAttribute('placeholder')).toBe(
       'What needs to be done?'
     );
   });
