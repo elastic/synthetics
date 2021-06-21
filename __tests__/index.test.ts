@@ -66,7 +66,7 @@ describe('Run', () => {
         foo: 'bar',
       },
       headless: false,
-      screenshots: true,
+      screenshots: 'on',
       filmstrips: false,
       trace: false,
       dryRun: true,

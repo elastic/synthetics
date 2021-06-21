@@ -59,7 +59,11 @@ program
     '--capability <features...>',
     'Enable capabilities through feature flags'
   )
-  .option('--screenshots', 'take screenshot for each step')
+  .addOption(
+    new Option('--screenshots [flag]', 'take screenshots at end of each step')
+      .choices(['on', 'off', 'only-on-failure'])
+      .default('on')
+  )
   .option('--network', 'capture network information for all journeys')
   .option(
     '--dry-run',
@@ -98,7 +102,7 @@ const options = command.opts() as CliArgs;
  */
 if (options.richEvents) {
   options.reporter = options.reporter ?? 'json';
-  options.screenshots = true;
+  options.screenshots = 'on';
   options.network = true;
 }
 

@@ -107,7 +107,7 @@ interface Events {
     JourneyResult &
     PluginOutput & {
       journey: Journey;
-      ssblocks?: boolean;
+      options: RunOptions;
     };
   'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
@@ -142,6 +142,31 @@ export default class Runner extends EventEmitter {
       driver,
       pluginManager,
     };
+  }
+
+  async captureScreenshot(page: Driver['page'], step: Step) {
+    await page.waitForLoadState('load');
+    const buffer = await page
+      .screenshot({
+        type: 'jpeg',
+        quality: 80,
+      })
+      .catch(() => {});
+    /**
+     * Write the screenshot image buffer with additional details (step
+     * information) which could be extracted at the end of
+     * each journey without impacting the step timing information
+     */
+    if (buffer) {
+      const fileName = now().toString() + '.json';
+      writeFileSync(
+        join(this.screenshotPath, fileName),
+        JSON.stringify({
+          step,
+          data: buffer.toString('base64'),
+        })
+      );
+    }
   }
 
   addHook(type: HookType, callback: HooksCallback) {
@@ -207,25 +232,8 @@ export default class Runner extends EventEmitter {
       data.error = error;
     } finally {
       data.url ??= driver.page.url();
-      if (screenshots) {
-        await driver.page.waitForLoadState('load');
-        const buffer = await driver.page.screenshot({
-          type: 'jpeg',
-          quality: 80,
-        });
-        /**
-         * Write the screenshot image buffer with additional details (step
-         * information) which could be extracted at the end of
-         * each journey without impacting the step timing information
-         */
-        const fileName = now().toString() + '.json';
-        writeFileSync(
-          join(this.screenshotPath, fileName),
-          JSON.stringify({
-            step,
-            data: buffer.toString('base64'),
-          })
-        );
+      if (screenshots && screenshots !== 'off') {
+        await this.captureScreenshot(driver.page, step);
       }
     }
     log(`Runner: end step (${step.name})`);
@@ -292,7 +300,7 @@ export default class Runner extends EventEmitter {
       params,
       start,
       end: monotonicTimeInSeconds(),
-      ssblocks: options.ssblocks,
+      options,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
     });
@@ -300,7 +308,7 @@ export default class Runner extends EventEmitter {
      * Wait for the all the reported events to be consumed aschronously
      * by reporter.
      */
-    if (options.reporter == 'json') {
+    if (options.reporter === 'json') {
       await once(this, 'journey:end:reported');
     }
   }

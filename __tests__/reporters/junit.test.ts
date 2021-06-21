@@ -83,6 +83,7 @@ describe('junit reporter', () => {
       journey: j1,
       start: 0,
       status: 'failed',
+      options: {},
     });
     runner.emit('end', 'done');
     /**
@@ -116,6 +117,7 @@ describe('junit reporter', () => {
       journey: j1,
       start: 0,
       status: 'failed',
+      options: {},
     });
     runner.emit('end', 'done');
     stream.end();
