@@ -41,8 +41,8 @@ describe('Trace metrics', () => {
     expect(metrics).toMatchInlineSnapshot(`
       Array [
         Object {
-          "end": Object {
-            "us": 3069485988748,
+          "duration": Object {
+            "us": 1212635,
           },
           "name": "Next.js-before-hydration",
           "start": Object {
