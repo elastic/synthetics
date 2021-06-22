@@ -147,6 +147,21 @@ describe('runner', () => {
     });
   });
 
+  it('run journey - failed on beforeAll', async () => {
+    const error = new Error('Broken beforeAll hook');
+    runner.addHook('beforeAll', () => {
+      throw error;
+    });
+    runner.addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
+    const result = await runner.run({
+      wsEndpoint,
+      outfd: fs.openSync(dest, 'w'),
+    });
+    expect(result).toEqual({
+      j1: { status: 'failed', error },
+    });
+  });
+
   it('run step', async () => {
     const j1 = journey('j1', async ({ page }) => {
       step('step1', async () => {

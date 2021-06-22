@@ -332,7 +332,6 @@ export async function gatherScreenshots(
   screenshotsPath: string,
   callback: (step: Step, data: string) => Promise<void>
 ) {
-  const screenshots: Array<ScreenshotOutput> = [];
   if (isDirectory(screenshotsPath)) {
     await totalist(screenshotsPath, async (_, absPath) => {
       try {
@@ -344,7 +343,6 @@ export async function gatherScreenshots(
       }
     });
   }
-  return screenshots;
 }
 
 export default class JSONReporter extends BaseReporter {
@@ -425,6 +423,9 @@ export default class JSONReporter extends BaseReporter {
           await gatherScreenshots(
             join(CACHE_PATH, 'screenshots'),
             async (step, data) => {
+              if (!data) {
+                return;
+              }
               if (ssblocks) {
                 await this.writeScreenshotBlocks(journey, step, data);
               } else {
