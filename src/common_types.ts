@@ -41,7 +41,7 @@ export type TraceOutput = {
   name: string;
   type: string;
   start: MetricDuration;
-  end?: MetricDuration;
+  duration?: MetricDuration;
   score?: number;
 };
 

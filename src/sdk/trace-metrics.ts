@@ -72,8 +72,8 @@ export class UserTimings {
           start: {
             us: startTime,
           },
-          end: {
-            us: ts,
+          duration: {
+            us: ts - startTime,
           },
         });
       }
