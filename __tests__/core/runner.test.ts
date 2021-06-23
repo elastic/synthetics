@@ -153,12 +153,14 @@ describe('runner', () => {
       throw error;
     });
     runner.addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
+    runner.addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
     const result = await runner.run({
       wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
     });
     expect(result).toEqual({
       j1: { status: 'failed', error },
+      j2: { status: 'failed', error },
     });
   });
 
