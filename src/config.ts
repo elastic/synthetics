@@ -24,13 +24,10 @@
  */
 
 import { isAbsolute, resolve, dirname } from 'path';
+import { SyntheticsConfig } from './common_types';
 import { isFile } from './helpers';
 
-interface Config {
-  params?: Record<string, unknown>;
-}
-
-export function readConfig(env: string, config?: string): Config {
+export function readConfig(env: string, config?: string): SyntheticsConfig {
   let options = {};
   const cwd = process.cwd();
   /**

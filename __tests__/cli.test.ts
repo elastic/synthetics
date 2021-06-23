@@ -76,10 +76,25 @@ describe('CLI', () => {
       'testing',
     ]);
     await cli.waitFor('journey/start');
-    expect(await cli.exitCode).toBe(0);
     const output = cli.output();
+    expect(await cli.exitCode).toBe(0);
     expect(JSON.parse(output).payload).toMatchObject({
       params: { url: 'non-dev' },
+    });
+  });
+
+  it('pass playwright options to runner', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+      '--json',
+      '--config',
+      join(FIXTURES_DIR, 'synthetics.config.ts'),
+    ]);
+    await cli.waitFor('step/end');
+    const output = cli.output();
+    expect(await cli.exitCode).toBe(0);
+    expect(JSON.parse(output).step).toMatchObject({
+      status: 'succeeded',
     });
   });
 

@@ -43,6 +43,7 @@ import {
   PluginOutput,
   CliArgs,
   HooksArgs,
+  PlaywrightOptions,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -60,8 +61,11 @@ export type RunOptions = Omit<
   | 'reporter'
   | 'richEvents'
   | 'capability'
+  | 'sandbox'
+  | 'headless'
 > & {
   params?: Params;
+  playwrightOptions?: PlaywrightOptions;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 

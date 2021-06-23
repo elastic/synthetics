@@ -49,19 +49,16 @@ export class Gatherer {
   static browser: ChromiumBrowser;
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
+    const { wsEndpoint, playwrightOptions } = options;
     if (Gatherer.browser == null) {
-      const { wsEndpoint, headless, sandbox = false } = options;
       if (wsEndpoint) {
         log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
         Gatherer.browser = await chromium.connect({ wsEndpoint });
       } else {
-        Gatherer.browser = await chromium.launch({
-          headless,
-          chromiumSandbox: sandbox,
-        });
+        Gatherer.browser = await chromium.launch(playwrightOptions);
       }
     }
-    const context = await Gatherer.browser.newContext();
+    const context = await Gatherer.browser.newContext(playwrightOptions);
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     return { browser: Gatherer.browser, context, page, client };
