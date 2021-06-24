@@ -119,7 +119,6 @@ export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 export type CliArgs = {
   capability?: Array<string>;
   config?: string;
-  environment?: string;
   outfd?: number;
   headless?: boolean;
   screenshots?: ScreenshotOptions;

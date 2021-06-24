@@ -158,10 +158,9 @@ async function prepareSuites(inputs: string[]) {
   }
 
   /**
-   * Use the NODE_ENV variable to control the environment if its not explicity
-   * passed from either CLI or through the API
+   * Use the NODE_ENV variable to control the environment
    */
-  const environment = options.environment || process.env['NODE_ENV'];
+  const environment = process.env['NODE_ENV'] || 'development';
   /**
    * Validate and handle configs
    */
