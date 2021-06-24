@@ -64,6 +64,7 @@ export type RunOptions = Omit<
   | 'sandbox'
   | 'headless'
 > & {
+  environment?: string;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   reporter?: CliArgs['reporter'] | Reporter;
@@ -135,6 +136,7 @@ export default class Runner extends EventEmitter {
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   screenshotPath = join(CACHE_PATH, 'screenshots');
+  hookError: Error | undefined;
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const start = monotonicTimeInSeconds();
@@ -295,13 +297,12 @@ export default class Runner extends EventEmitter {
     result: JourneyContext & JourneyResult,
     options: RunOptions
   ) {
-    const { pluginManager, start, params, status, error } = result;
+    const { pluginManager, start, status, error } = result;
     const pluginOutput = await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,
       error,
-      params,
       start,
       end: monotonicTimeInSeconds(),
       options,
@@ -315,6 +316,33 @@ export default class Runner extends EventEmitter {
     if (options.reporter === 'json') {
       await once(this, 'journey:end:reported');
     }
+  }
+
+  /**
+   * Simulate a journey run to capture errors in the beforeAll hook
+   */
+  async runFakeJourney(journey: Journey, options: RunOptions) {
+    const start = monotonicTimeInSeconds();
+    this.emit('journey:start', {
+      journey,
+      timestamp: getTimestamp(),
+      params: options.params,
+    });
+    const result: JourneyResult = {
+      status: 'failed',
+      error: this.hookError,
+    };
+    this.emit('journey:end', {
+      journey,
+      start,
+      options,
+      end: monotonicTimeInSeconds(),
+      ...result,
+    });
+    if (options.reporter === 'json') {
+      await once(this, 'journey:end:reported');
+    }
+    return result;
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
@@ -380,7 +408,8 @@ export default class Runner extends EventEmitter {
     await this.runBeforeAllHook({
       env: options.environment,
       params: options.params,
-    });
+    }).catch(e => (this.hookError = e));
+
     const { dryRun, match, tags } = options;
     for (const journey of this.journeys) {
       /**
@@ -393,7 +422,9 @@ export default class Runner extends EventEmitter {
       if (!journey.isMatch(match, tags)) {
         continue;
       }
-      const journeyResult = await this.runJourney(journey, options);
+      const journeyResult: JourneyResult = this.hookError
+        ? await this.runFakeJourney(journey, options)
+        : await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
     }
     await Gatherer.stop();

@@ -66,21 +66,29 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
-  it('pass config to journey params', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--json',
-      '--config',
-      join(FIXTURES_DIR, 'synthetics.config.ts'),
-      '-e',
-      'testing',
-    ]);
-    await cli.waitFor('journey/start');
-    const output = cli.output();
-    expect(await cli.exitCode).toBe(0);
-    expect(JSON.parse(output).payload).toMatchObject({
+  it('pass dynamic config to journey params', async () => {
+    // jest by default sets NODE_ENV to `test`
+    const original = process.env['NODE_ENV'];
+    const output = async () => {
+      const cli = new CLIMock([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--json',
+        '--config',
+        join(FIXTURES_DIR, 'synthetics.config.ts'),
+      ]);
+      await cli.waitFor('journey/start');
+      expect(await cli.exitCode).toBe(0);
+      return cli.output();
+    };
+
+    expect(JSON.parse(await output()).payload).toMatchObject({
       params: { url: 'non-dev' },
     });
+    process.env['NODE_ENV'] = 'development';
+    expect(JSON.parse(await output()).payload).toMatchObject({
+      params: { url: 'dev' },
+    });
+    process.env['NODE_ENV'] = original;
   });
 
   it('pass playwright options to runner', async () => {
