@@ -61,6 +61,7 @@ export type RunOptions = Omit<
   | 'richEvents'
   | 'capability'
 > & {
+  environment?: string;
   params?: Params;
   reporter?: CliArgs['reporter'] | Reporter;
 };
