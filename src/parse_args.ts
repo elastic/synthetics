@@ -38,7 +38,6 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option('-s, --suite-params <jsonstring>', 'suite variables', '{}')
-  .option('-j, --json', 'output newline delimited JSON')
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
@@ -63,7 +62,6 @@ program
       .choices(['on', 'off', 'only-on-failure'])
       .default('on')
   )
-  .option('--network', 'capture network information for all journeys')
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
@@ -101,14 +99,21 @@ const options = command.opts() as CliArgs;
  */
 if (options.richEvents) {
   options.reporter = options.reporter ?? 'json';
-  options.screenshots = 'on';
+  options.ssblocks = true;
   options.network = true;
 }
 
 if (options.capability) {
-  const supportedCapabilities = ['trace', 'filmstrips', 'metrics', 'ssblocks'];
+  const supportedCapabilities = [
+    'trace',
+    'network',
+    'filmstrips',
+    'metrics',
+    'ssblocks',
+  ];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
+   * network - capture network information for all journeys
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    * ssblocks - Dedupes the screenshots in to blocks to save storage space
