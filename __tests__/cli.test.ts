@@ -42,20 +42,10 @@ describe('CLI', () => {
   });
 
   it('produce json output via --json flag', async () => {
-    const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), '--json']);
-    await cli.waitFor('fake journey');
-    const output = cli.output();
-    expect(JSON.parse(output).journey).toEqual({
-      id: 'fake journey',
-      name: 'fake journey',
-    });
-    expect(await cli.exitCode).toBe(0);
-  });
-
-  it('enables rich events on `--rich-events` flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--rich-events',
+      '--reporter',
+      'json',
     ]);
     await cli.waitFor('fake journey');
     const output = cli.output();
@@ -66,13 +56,52 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
+  it('mimick heartbeat with `--rich-events` flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--rich-events',
+    ]);
+    await cli.waitFor('journey/end');
+    const screenshotRef = cli
+      .buffer()
+      .map(data => JSON.parse(data))
+      .find(({ type }) => type === 'step/screenshot_ref');
+
+    expect(screenshotRef).toMatchObject({
+      journey: {
+        id: 'fake journey',
+        name: 'fake journey',
+      },
+      root_fields: expect.any(Object),
+    });
+
+    expect(await cli.exitCode).toBe(0);
+  });
+
+  it('override screenshots with `--rich-events` flag', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--rich-events',
+      '--screenshots',
+      'off',
+    ]);
+    await cli.waitFor('journey/end');
+    const screenshots = cli
+      .buffer()
+      .map(data => JSON.parse(data))
+      .find(({ type }) => type === 'step/screenshot_ref');
+    expect(screenshots).not.toBeDefined();
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('pass dynamic config to journey params', async () => {
     // jest by default sets NODE_ENV to `test`
     const original = process.env['NODE_ENV'];
     const output = async () => {
       const cli = new CLIMock([
         join(FIXTURES_DIR, 'fake.journey.ts'),
-        '--json',
+        '--reporter',
+        'json',
         '--config',
         join(FIXTURES_DIR, 'synthetics.config.ts'),
       ]);
@@ -94,7 +123,8 @@ describe('CLI', () => {
   it('suite params wins over config params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--json',
+      '--reporter',
+      'json',
       '--config',
       join(FIXTURES_DIR, 'synthetics.config.ts'),
       '-s',
@@ -111,7 +141,8 @@ describe('CLI', () => {
   it('throw error on modifying params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'params-error.journey.ts'),
-      '-j',
+      '--reporter',
+      'json',
     ]);
     expect(await cli.exitCode).toBe(1);
     const output = cli.output();
@@ -124,7 +155,8 @@ describe('CLI', () => {
   it('support capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'example.journey.ts'),
-      '-j',
+      '--reporter',
+      'json',
       '--capability',
       'metrics',
     ]);
@@ -137,7 +169,8 @@ describe('CLI', () => {
   it('show warn for unknown capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
-      '-j',
+      '--reporter',
+      'json',
       '--capability',
       'unknown',
     ]);
@@ -159,13 +192,13 @@ describe('CLI', () => {
 
 class CLIMock {
   private process: ChildProcess;
-  private data: string;
+  private data = '';
+  private chunks: Array<string> = [];
   private waitForText: string;
   private waitForPromise: () => void;
   exitCode: Promise<number>;
 
   constructor(args: string[]) {
-    this.data = '';
     this.process = spawn(
       'node',
       [join(__dirname, '..', 'dist', 'cli.js'), ...args],
@@ -176,6 +209,7 @@ class CLIMock {
     );
     const dataListener = data => {
       this.data = data.toString();
+      this.chunks.push(...this.data.split('\n').filter(Boolean));
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);
         this.waitForPromise();
@@ -196,5 +230,9 @@ class CLIMock {
 
   output() {
     return this.data;
+  }
+
+  buffer() {
+    return this.chunks;
   }
 }
