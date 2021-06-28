@@ -25,7 +25,7 @@
 
 import { once, EventEmitter } from 'events';
 import { join } from 'path';
-import { mkdirSync, rmdirSync, writeFileSync } from 'fs';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -33,8 +33,8 @@ import {
   CACHE_PATH,
   monotonicTimeInSeconds,
   getTimestamp,
-  now,
   runParallel,
+  generateUniqueId,
 } from '../helpers';
 import {
   StatusValue,
@@ -131,13 +131,18 @@ export default class Runner extends EventEmitter {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
-  screenshotPath = join(CACHE_PATH, 'screenshots');
   hookError: Error | undefined;
+  static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
     const start = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
     const pluginManager = await Gatherer.beginRecording(driver, options);
+    /**
+     * For each journey we create the screenshots folder for
+     * caching all screenshots and clear them at end of each journey
+     */
+    await mkdir(this.screenshotPath, { recursive: true });
     return {
       start,
       params: options.params,
@@ -160,9 +165,9 @@ export default class Runner extends EventEmitter {
      * each journey without impacting the step timing information
      */
     if (buffer) {
-      const fileName = now().toString() + '.json';
-      writeFileSync(
-        join(this.screenshotPath, fileName),
+      const fileName = `${generateUniqueId()}.json`;
+      await writeFile(
+        join(Runner.screenshotPath, fileName),
         JSON.stringify({
           step,
           data: buffer.toString('base64'),
@@ -312,6 +317,8 @@ export default class Runner extends EventEmitter {
     if (options.reporter === 'json') {
       await once(this, 'journey:end:reported');
     }
+    // clear screenshots cache after each journey
+    await rm(Runner.screenshotPath, { recursive: true, force: true });
   }
 
   /**
@@ -376,7 +383,7 @@ export default class Runner extends EventEmitter {
     return result;
   }
 
-  init(options: RunOptions) {
+  async init(options: RunOptions) {
     const { reporter, outfd } = options;
     /**
      * Set up the corresponding reporter and fallback
@@ -390,7 +397,7 @@ export default class Runner extends EventEmitter {
     /**
      * Set up the directory for caching screenshots
      */
-    mkdirSync(this.screenshotPath, { recursive: true });
+    await mkdir(CACHE_PATH, { recursive: true });
   }
 
   async run(options: RunOptions) {
@@ -428,16 +435,16 @@ export default class Runner extends EventEmitter {
       env: options.environment,
       params: options.params,
     });
-    this.reset();
+    await this.reset();
     return result;
   }
 
-  reset() {
+  async reset() {
     /**
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    rmdirSync(CACHE_PATH, { recursive: true });
+    await rm(CACHE_PATH, { recursive: true, force: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;

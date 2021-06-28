@@ -33,7 +33,7 @@ import {
   afterAll,
 } from '../../src/core/index';
 
-beforeEach(() => runner.reset());
+beforeEach(async () => await runner.reset());
 
 const noop = () => {};
 const name = 'journey';
