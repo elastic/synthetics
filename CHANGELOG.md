@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.4 (2021-06-28)
+
+### Breaking Changes
+
+- Remove -e from CLI args and use `NODE_ENV` for controlling the
+  environment [#318](https://github.com/elastic/synthetics/pull/318)
+
+### Features
+
+- Add new screenshots options - `on|off|only-on-failure` to manage capturing
+  the step screenshots [#311](https://github.com/elastic/synthetics/pull/311)
+- Enable screenshot deduplication feature by default when the agent is invoked
+  via Heartbeat [#322](https://github.com/elastic/synthetics/pull/322)
+
+### Bug fixes
+
+- Avoid creating duplicate screenshot JSON docs for each journey
+  [#320](https://github.com/elastic/synthetics/pull/320)
+- Associate `beforeAll` hook errors across all journeys
+  [#316](https://github.com/elastic/synthetics/pull/316)
+- Provide journey isolation via context [#314](https://github.com/elastic/synthetics/pull/314)
+
 ## v1.0.0-beta.3 (2021-06-15)
 
 ### Features
