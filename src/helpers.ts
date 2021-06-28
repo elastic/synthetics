@@ -48,12 +48,12 @@ export const symbols = {
   failed: red('✖'),
 };
 
-export function generateHash() {
-  return process.hrtime().toString().replace(',', '');
+export function generateUniqueId() {
+  return `${Date.now() + Math.floor(Math.random() * 1e13)}`;
 }
 
 export function generateTempPath() {
-  return join(os.tmpdir(), `synthetics-${generateHash()}`);
+  return join(os.tmpdir(), `synthetics-${generateUniqueId()}`);
 }
 
 /**

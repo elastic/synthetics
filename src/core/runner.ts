@@ -34,7 +34,7 @@ import {
   monotonicTimeInSeconds,
   getTimestamp,
   runParallel,
-  generateHash,
+  generateUniqueId,
 } from '../helpers';
 import {
   StatusValue,
@@ -165,7 +165,7 @@ export default class Runner extends EventEmitter {
      * each journey without impacting the step timing information
      */
     if (buffer) {
-      const fileName = `${generateHash()}.json`;
+      const fileName = `${generateUniqueId()}.json`;
       await writeFile(
         join(Runner.screenshotPath, fileName),
         JSON.stringify({
