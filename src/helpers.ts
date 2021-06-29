@@ -41,11 +41,16 @@ export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
 }
 
+/**
+ *  Disable unicode symbols for windows, the underlying
+ *  FS stream has a known issue in windows
+ */
+const NO_UTF8_SUPPORT = process.platform === 'win32';
 export const symbols = {
-  warning: yellow('⚠'),
+  warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
-  succeeded: green('✓'),
-  failed: red('✖'),
+  succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),
+  failed: red(NO_UTF8_SUPPORT ? 'x' : '✖'),
 };
 
 export function generateUniqueId() {
