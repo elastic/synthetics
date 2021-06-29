@@ -108,6 +108,9 @@ tmp
 # Vim temp files
 *.swp
 
+# VSCode config files
+.vscode
+
 __tests__/e2e/tmp/
 __tests__/e2e/junit.xml
 
