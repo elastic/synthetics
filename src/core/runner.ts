@@ -25,7 +25,6 @@
 
 import { once, EventEmitter } from 'events';
 import { join } from 'path';
-import { mkdir, rm, writeFile } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -35,6 +34,9 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
+  mkdirAsync,
+  rmAsync,
+  writeFileAsync,
 } from '../helpers';
 import {
   StatusValue,
@@ -146,7 +148,7 @@ export default class Runner extends EventEmitter {
      * For each journey we create the screenshots folder for
      * caching all screenshots and clear them at end of each journey
      */
-    await mkdir(this.screenshotPath, { recursive: true });
+    await mkdirAsync(this.screenshotPath, { recursive: true });
     return {
       start,
       params: options.params,
@@ -170,7 +172,7 @@ export default class Runner extends EventEmitter {
      */
     if (buffer) {
       const fileName = `${generateUniqueId()}.json`;
-      await writeFile(
+      await writeFileAsync(
         join(Runner.screenshotPath, fileName),
         JSON.stringify({
           step,
@@ -322,7 +324,7 @@ export default class Runner extends EventEmitter {
       await once(this, 'journey:end:reported');
     }
     // clear screenshots cache after each journey
-    await rm(Runner.screenshotPath, { recursive: true, force: true });
+    await rmAsync(Runner.screenshotPath, { recursive: true, force: true });
   }
 
   /**
@@ -401,7 +403,7 @@ export default class Runner extends EventEmitter {
     /**
      * Set up the directory for caching screenshots
      */
-    await mkdir(CACHE_PATH, { recursive: true });
+    await mkdirAsync(CACHE_PATH, { recursive: true });
   }
 
   async run(options: RunOptions) {
@@ -448,7 +450,7 @@ export default class Runner extends EventEmitter {
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    await rm(CACHE_PATH, { recursive: true, force: true });
+    await rmAsync(CACHE_PATH, { recursive: true, force: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;
