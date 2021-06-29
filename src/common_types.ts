@@ -23,12 +23,13 @@
  *
  */
 
+import { BrowserContextOptions, LaunchOptions } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
 import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-export type Params = Record<string, unknown>;
+export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
   params: Params;
@@ -141,4 +142,10 @@ export type CliArgs = {
   debug?: boolean;
   suiteParams?: string;
   richEvents?: boolean;
+};
+
+export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
+export type SyntheticsConfig = {
+  params?: Params;
+  playwrightOptions?: PlaywrightOptions;
 };

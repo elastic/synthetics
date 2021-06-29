@@ -120,6 +120,21 @@ describe('CLI', () => {
     process.env['NODE_ENV'] = original;
   });
 
+  it('pass playwright options to runner', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+      '--json',
+      '--config',
+      join(FIXTURES_DIR, 'synthetics.config.ts'),
+    ]);
+    await cli.waitFor('step/end');
+    const output = cli.output();
+    expect(await cli.exitCode).toBe(0);
+    expect(JSON.parse(output).step).toMatchObject({
+      status: 'succeeded',
+    });
+  });
+
   it('suite params wins over config params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),

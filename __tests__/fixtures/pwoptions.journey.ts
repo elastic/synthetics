@@ -23,20 +23,14 @@
  *
  */
 
-import { devices } from 'playwright-chromium';
-import type { SyntheticsConfig } from '../../src';
+import { journey, step, expect } from '../../dist';
 
-module.exports = env => {
-  const config: SyntheticsConfig = {
-    params: {
-      url: 'dev',
-    },
-    playwrightOptions: {
-      ...devices['Galaxy S9+'],
-    },
-  };
-  if (env !== 'development') {
-    config.params.url = 'non-dev';
-  }
-  return config;
-};
+journey('launch with viewport', ({ page }) => {
+  step('Ensure viewport width', () => {
+    expect(page.viewportSize()).toEqual({
+      height: 658,
+      width: 320,
+    });
+    expect(page.touchscreen).toBeDefined();
+  });
+});

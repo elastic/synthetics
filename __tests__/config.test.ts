@@ -24,6 +24,7 @@
  */
 
 import { join } from 'path';
+import { devices } from 'playwright-chromium';
 import { generateTempPath } from '../src/helpers';
 import { readConfig } from '../src/config';
 
@@ -36,8 +37,11 @@ describe('Config', () => {
       params: {
         url: 'dev',
       },
+      playwrightOptions: {
+        ...devices['Galaxy S9+'],
+      },
     });
-    expect(readConfig('testing', configPath)).toEqual({
+    expect(readConfig('testing', configPath)).toMatchObject({
       params: {
         url: 'non-dev',
       },

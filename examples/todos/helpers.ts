@@ -1,10 +1,9 @@
 import { step, Page, expect } from '@elastic/synthetics';
 import { join } from 'path';
 
-export const loadAppStep = (page: Page) => {
+export const loadAppStep = (page: Page, url: string) => {
   step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
+    await page.goto(url);
   });
 };
 

@@ -166,6 +166,10 @@ async function prepareSuites(inputs: string[]) {
    */
   const config = readConfig(environment, options.config);
   const params = merge(config.params, JSON.parse(options.suiteParams));
+  const playwrightOptions = merge(config.playwrightOptions, {
+    headless: options.headless,
+    chromiumSandbox: options.sandbox,
+  });
   /**
    * use JSON reporter if json flag is enabled
    */
@@ -175,6 +179,7 @@ async function prepareSuites(inputs: string[]) {
     params: Object.freeze(params),
     environment,
     reporter,
+    playwrightOptions,
     ...options,
   });
 

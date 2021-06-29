@@ -1,10 +1,9 @@
 import { journey, step, expect } from '@elastic/synthetics';
 import { join } from 'path';
 
-journey('check if title is present', ({ page }) => {
+journey('check if title is present', ({ page, params }) => {
   step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
+    await page.goto(params.url);
   });
 
   step('assert title', async () => {
@@ -13,10 +12,9 @@ journey('check if title is present', ({ page }) => {
   });
 });
 
-journey('check if input placeholder is correct', ({ page }) => {
+journey('check if input placeholder is correct', ({ page, params }) => {
   step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
+    await page.goto(params.url);
   });
 
   step('assert placeholder value', async () => {
