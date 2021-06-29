@@ -35,7 +35,7 @@ import {
   runParallel,
   generateUniqueId,
   mkdirAsync,
-  rmAsync,
+  rmdirAsync,
   writeFileAsync,
 } from '../helpers';
 import {
@@ -324,7 +324,7 @@ export default class Runner extends EventEmitter {
       await once(this, 'journey:end:reported');
     }
     // clear screenshots cache after each journey
-    await rmAsync(Runner.screenshotPath, { recursive: true, force: true });
+    await rmdirAsync(Runner.screenshotPath, { recursive: true });
   }
 
   /**
@@ -450,7 +450,7 @@ export default class Runner extends EventEmitter {
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    await rmAsync(CACHE_PATH, { recursive: true, force: true });
+    await rmdirAsync(CACHE_PATH, { recursive: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;

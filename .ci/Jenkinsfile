@@ -251,7 +251,12 @@ def withNodeEnv(Map args=[:], Closure body){
 
       export NVM_DIR="${HOME}/.nvm"
       [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
-      nvm install --lts
+
+      # install node version required by .nvmrc in BASE_DIR
+      cd "$BASE_DIR"
+      nvm install
+      cd -
+
       nvm version | head -n1 > .nvm-node-version
     ''')
     def node_version = readFile(file: '.nvm-node-version').trim()
