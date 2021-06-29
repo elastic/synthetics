@@ -66,5 +66,10 @@
     "prettier": "^2.2.1",
     "ts-jest": "^26.4.4",
     "rimraf": "^3.0.2"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": "12",
+    "npm": "6"
   }
 }
