@@ -41,11 +41,12 @@ export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
 }
 
+const NO_UTF8_SUPPORT = process.platform === 'win32' && !process.env.WT_SESSION;
 export const symbols = {
-  warning: yellow('⚠'),
+  warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
-  succeeded: green('✓'),
-  failed: red('✖'),
+  succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),
+  failed: red(NO_UTF8_SUPPORT ? 'x' : '✖'),
 };
 
 export function generateUniqueId() {
