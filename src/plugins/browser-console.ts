@@ -23,7 +23,7 @@
  *
  */
 
-import { Page, ConsoleMessage } from 'playwright-chromium';
+import { Page } from 'playwright-chromium';
 import { BrowserMessage } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
@@ -34,7 +34,7 @@ export class BrowserConsole {
   private messages: BrowserMessage[] = [];
   _currentStep: Partial<Step> = null;
 
-  private consoleEventListener = (msg: ConsoleMessage) => {
+  private consoleEventListener = msg => {
     if (!this._currentStep) {
       return;
     }
