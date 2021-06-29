@@ -123,7 +123,8 @@ describe('CLI', () => {
   it('pass playwright options to runner', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'pwoptions.journey.ts'),
-      '--json',
+      '--reporter',
+      'json',
       '--config',
       join(FIXTURES_DIR, 'synthetics.config.ts'),
     ]);
