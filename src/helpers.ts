@@ -31,8 +31,14 @@ import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 import { HooksArgs, HooksCallback } from './common_types';
 
-const statAsync = promisify(fs.lstat);
-const readAsync = promisify(fs.readdir);
+const lstatAsync = promisify(fs.lstat);
+const readdirAsync = promisify(fs.readdir);
+
+export const readFileAsync = promisify(fs.readFile);
+export const writeFileAsync = promisify(fs.writeFile);
+export const rmAsync = promisify(fs.rm);
+export const mkdirAsync = promisify(fs.mkdir);
+
 const SEPARATOR = '\n';
 
 export function noop() {}
@@ -159,11 +165,11 @@ export async function totalist(
   pre = ''
 ) {
   dir = resolve('.', dir);
-  await readAsync(dir).then(arr => {
+  await readdirAsync(dir).then(arr => {
     return Promise.all(
       arr.map(str => {
         const abs = join(dir, str);
-        return statAsync(abs).then(stats =>
+        return lstatAsync(abs).then(stats =>
           stats.isDirectory()
             ? totalist(abs, callback, join(pre, str))
             : callback(join(pre, str), abs)
