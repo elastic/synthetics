@@ -48,8 +48,8 @@ pipeline {
         retryWithSleep(retries: 3, seconds: 5, backoff: true) {
           dockerLogin(secret: "${DOCKERELASTIC_SECRET}",
                       registry: "${DOCKER_REGISTRY}")
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
+          dir("${BASE_DIR}"){
+            withNodeEnv(){
               sh(label: 'Download dependencies',script: 'npm install')
             }
           }
@@ -67,8 +67,8 @@ pipeline {
       steps {
         withGithubNotify(context: 'Linting') {
           cleanup()
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
+          dir("${BASE_DIR}"){
+            withNodeEnv(){
               sh(label: 'Checks linting',script: 'npm run-script lint')
               preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
             }
@@ -86,8 +86,8 @@ pipeline {
       steps {
         withGithubNotify(context: 'Build') {
           cleanup()
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
+          dir("${BASE_DIR}"){
+            withNodeEnv(){
               sh(label: 'Build',script: 'npm run build')
             }
           }
@@ -104,8 +104,8 @@ pipeline {
       steps {
         withGithubNotify(context: 'Test') {
           cleanup()
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
+          dir("${BASE_DIR}"){
+            withNodeEnv(){
               sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
               sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
             }
@@ -129,8 +129,8 @@ pipeline {
       steps {
         withGithubNotify(context: 'E2e Test') {
           cleanup()
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
+          dir("${BASE_DIR}"){
+            withNodeEnv(){
               sh(label: 'set permissions', script: '''
                 chmod -R ugo+rw examples
               ''')
@@ -179,8 +179,8 @@ pipeline {
           }
           steps {
             cleanup()
-            withNodeEnv(){
-              dir("${BASE_DIR}"){
+            dir("${BASE_DIR}"){
+              withNodeEnv(){
                 withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
                     sh(script: 'npm run clean', label: 'clean release')
