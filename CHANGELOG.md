@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.5 (2021-06-30)
+
+### Features
+
+- Add support for passing playwright context and browser options via
+  synthetics config [#317](https://github.com/elastic/synthetics/pull/317)
+
+### Bug fixes
+
+- Compability bug with FS apis on Node 12 [#328](https://github.com/elastic/synthetics/pull/328)
+- Add fallback symbols for non utf8 support in windows [#324](https://github.com/elastic/synthetics/pull/324)
+
 ## v1.0.0-beta.4 (2021-06-28)
 
 ### Breaking Changes
