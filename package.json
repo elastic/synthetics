@@ -11,6 +11,7 @@
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
+    "pkg": "npm run clean && npm run build && npm-pack-all",
     "test": "npm run test:unit && npm run test:browser-service",
     "test:unit": "jest",
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
@@ -63,6 +64,7 @@
     "husky": "^4.3.6",
     "jest": "^26.6.3",
     "lint-staged": "^10.5.3",
+    "npm-pack-all": "^1.12.7",
     "prettier": "^2.2.1",
     "ts-jest": "^26.4.4",
     "rimraf": "^3.0.2"
