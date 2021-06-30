@@ -67,6 +67,53 @@ export function createTestTrace() {
       cat: '__metadata',
       args: { name: 'CrRendererMain' },
     },
+    {
+      args: {
+        data: {
+          cumulative_score: 0.23466634114583335,
+          had_recent_input: false,
+          is_main_frame: true,
+          score: 0.19932291666666668,
+          weighted_score_delta: 0.19932291666666668,
+        },
+      },
+      cat: 'loading',
+      name: 'LayoutShift',
+      ph: 'I',
+      tid: 775,
+      ts: 463045197179,
+    },
+    {
+      args: {
+        data: {
+          cumulative_score: 1.1788216688368056,
+          had_recent_input: false,
+          is_main_frame: true,
+          score: 0.21037326388888888,
+          weighted_score_delta: 0.21037326388888888,
+        },
+      },
+      cat: 'loading',
+      name: 'LayoutShift',
+      ph: 'I',
+      tid: 775,
+      ts: 463047103153,
+    },
+    {
+      args: {
+        data: {
+          cumulative_score: 4.809793674045139,
+          had_recent_input: false,
+          score: 0.1991644965277778,
+          weighted_score_delta: 0.1991644965277778,
+        },
+      },
+      cat: 'loading',
+      name: 'LayoutShift',
+      ph: 'I',
+      tid: 775,
+      ts: 463052381097,
+    },
   ];
 
   return { traceEvents };

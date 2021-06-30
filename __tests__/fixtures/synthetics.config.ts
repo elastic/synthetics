@@ -23,17 +23,20 @@
  *
  */
 
+import { devices } from 'playwright-chromium';
+import type { SyntheticsConfig } from '../../src';
+
 module.exports = env => {
-  if (env === 'development') {
-    return {
-      params: {
-        url: 'dev',
-      },
-    };
-  }
-  return {
+  const config: SyntheticsConfig = {
     params: {
-      url: 'non-dev',
+      url: 'dev',
+    },
+    playwrightOptions: {
+      ...devices['Galaxy S9+'],
     },
   };
+  if (env !== 'development') {
+    config.params.url = 'non-dev';
+  }
+  return config;
 };

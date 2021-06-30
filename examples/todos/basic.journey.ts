@@ -1,29 +1,25 @@
-import { journey, step } from '@elastic/synthetics';
-import { deepStrictEqual } from 'assert';
+import { journey, step, expect } from '@elastic/synthetics';
 import { join } from 'path';
 
-journey('check if title is present', ({ page }) => {
+journey('check if title is present', ({ page, params }) => {
   step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
+    await page.goto(params.url);
   });
 
   step('assert title', async () => {
     const header = await page.$('h1');
-    deepStrictEqual(await header.textContent(), 'todos');
+    expect(await header.textContent()).toBe('todos');
   });
 });
 
-journey('check if input placeholder is correct', ({ page }) => {
+journey('check if input placeholder is correct', ({ page, params }) => {
   step('launch app', async () => {
-    const path = 'file://' + join(__dirname, 'app', 'index.html');
-    await page.goto(path);
+    await page.goto(params.url);
   });
 
   step('assert placeholder value', async () => {
     const input = await page.$('input.new-todo');
-    deepStrictEqual(
-      await input.getAttribute('placeholder'),
+    expect(await input.getAttribute('placeholder')).toBe(
       'What needs to be done?'
     );
   });

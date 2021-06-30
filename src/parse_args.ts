@@ -38,8 +38,6 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option('-s, --suite-params <jsonstring>', 'suite variables', '{}')
-  .option('-e, --environment <envname>', 'e.g. production', 'development')
-  .option('-j, --json', 'output newline delimited JSON')
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
@@ -53,14 +51,17 @@ program
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
-  .option('--sandbox', 'enable chromium sandboxing')
+  .option('--sandbox', 'enable chromium sandboxing', false)
   .option('--rich-events', 'Mimics a heartbeat run')
   .option(
     '--capability <features...>',
     'Enable capabilities through feature flags'
   )
-  .option('--screenshots', 'take screenshot for each step')
-  .option('--network', 'capture network information for all journeys')
+  .addOption(
+    new Option('--screenshots [flag]', 'take screenshots at end of each step')
+      .choices(['on', 'off', 'only-on-failure'])
+      .default('on')
+  )
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
@@ -98,14 +99,21 @@ const options = command.opts() as CliArgs;
  */
 if (options.richEvents) {
   options.reporter = options.reporter ?? 'json';
-  options.screenshots = true;
+  options.ssblocks = true;
   options.network = true;
 }
 
 if (options.capability) {
-  const supportedCapabilities = ['trace', 'filmstrips', 'metrics', 'ssblocks'];
+  const supportedCapabilities = [
+    'trace',
+    'network',
+    'filmstrips',
+    'metrics',
+    'ssblocks',
+  ];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
+   * network - capture network information for all journeys
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    * ssblocks - Dedupes the screenshots in to blocks to save storage space

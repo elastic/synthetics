@@ -23,12 +23,13 @@
  *
  */
 
+import { BrowserContextOptions, LaunchOptions } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
 import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-export type Params = Record<string, unknown>;
+export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
   params: Params;
@@ -38,27 +39,29 @@ export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
 
 export type TraceOutput = {
-  name?: string;
-  start: number;
-  end?: number;
-};
-
-export type UserTiming = TraceOutput & {
   name: string;
   type: string;
-  duration?: number;
+  start: MetricDuration;
+  duration?: MetricDuration;
+  score?: number;
 };
 
-export type Filmstrip = TraceOutput & {
+type MetricDuration = {
+  us: number;
+};
+
+export type PerfMetrics = {
+  fcp: MetricDuration;
+  lcp: MetricDuration;
+  dcl: MetricDuration;
+  load: MetricDuration;
+  cls: number;
+};
+
+export type Filmstrip = {
+  start: MetricDuration;
   blob: string;
   mime: string;
-};
-
-export type LayoutShift = {
-  exists: boolean;
-  score: number;
-  name: string;
-  start?: number;
 };
 
 export type DefaultPluginOutput = {
@@ -106,20 +109,20 @@ export type BrowserMessage = {
 
 export type PluginOutput = {
   filmstrips?: Array<Filmstrip>;
-  userTiming?: Array<UserTiming>;
-  experience?: Array<UserTiming>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
-  layoutShift?: LayoutShift;
+  traces?: Array<TraceOutput>;
+  metrics?: PerfMetrics;
 };
+
+export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
 export type CliArgs = {
   capability?: Array<string>;
   config?: string;
-  environment?: string;
   outfd?: number;
   headless?: boolean;
-  screenshots?: boolean;
+  screenshots?: ScreenshotOptions;
   ssblocks?: boolean;
   metrics?: boolean;
   filmstrips?: boolean;
@@ -139,4 +142,10 @@ export type CliArgs = {
   debug?: boolean;
   suiteParams?: string;
   richEvents?: boolean;
+};
+
+export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
+export type SyntheticsConfig = {
+  params?: Params;
+  playwrightOptions?: PlaywrightOptions;
 };

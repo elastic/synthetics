@@ -31,8 +31,14 @@ import { promisify } from 'util';
 import { performance } from 'perf_hooks';
 import { HooksArgs, HooksCallback } from './common_types';
 
-const statAsync = promisify(fs.lstat);
-const readAsync = promisify(fs.readdir);
+const lstatAsync = promisify(fs.lstat);
+const readdirAsync = promisify(fs.readdir);
+
+export const readFileAsync = promisify(fs.readFile);
+export const writeFileAsync = promisify(fs.writeFile);
+export const rmdirAsync = promisify(fs.rmdir);
+export const mkdirAsync = promisify(fs.mkdir);
+
 const SEPARATOR = '\n';
 
 export function noop() {}
@@ -41,37 +47,47 @@ export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
 }
 
+/**
+ *  Disable unicode symbols for windows, the underlying
+ *  FS stream has a known issue in windows
+ */
+const NO_UTF8_SUPPORT = process.platform === 'win32';
 export const symbols = {
-  warning: yellow('⚠'),
+  warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
-  succeeded: green('✓'),
-  failed: red('✖'),
+  succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),
+  failed: red(NO_UTF8_SUPPORT ? 'x' : '✖'),
 };
 
+export function generateUniqueId() {
+  return `${Date.now() + Math.floor(Math.random() * 1e13)}`;
+}
+
 export function generateTempPath() {
-  return join(os.tmpdir(), `synthetics-${process.hrtime().toString()}`);
+  return join(os.tmpdir(), `synthetics-${generateUniqueId()}`);
 }
 
 /**
- * We internally use the clock timing similar to the
- * chrome devtools protocol network events for
- * journey and step start/end fields to make
- * querying in the UI easier
+ * Get Monotonically increasing time in seconds since
+ * an arbitrary point in the past.
+ *
+ * We internally use the monotonically increasing clock timing
+ * similar to the chrome devtools protocol network events for
+ * journey,step start/end fields to make querying in the UI easier
  */
-export function getMonotonicTime() {
+export function monotonicTimeInSeconds() {
   const hrTime = process.hrtime(); // [seconds, nanoseconds]
   return hrTime[0] * 1 + hrTime[1] / 1e9;
 }
 
 /**
- * Converts the trace events timestamp field from the
- * format -  hrTime[0] * 1e6 + Math.round(hrTime[1] / 1000) to
- * the internal timestamp similar to other event types (journey, step, etc)
+ * Converts the trace events timestamp field from microsecond
+ * resolution to monotonic seconds timestamp similar to other event types (journey, step, etc)
  * Reference - https://github.com/samccone/chrome-trace-event/blob/d45bc8af3b5c53a3adfa2c5fc107b4fae054f579/lib/trace-event.ts#L21-L22
  *
  * Tested and verified on both Darwin and Linux
  */
-export function convertTraceTimestamp(ts: number) {
+export function microSecsToSeconds(ts: number) {
   return ts / 1e6;
 }
 
@@ -154,11 +170,11 @@ export async function totalist(
   pre = ''
 ) {
   dir = resolve('.', dir);
-  await readAsync(dir).then(arr => {
+  await readdirAsync(dir).then(arr => {
     return Promise.all(
       arr.map(str => {
         const abs = join(dir, str);
-        return statAsync(abs).then(stats =>
+        return lstatAsync(abs).then(stats =>
           stats.isDirectory()
             ? totalist(abs, callback, join(pre, str))
             : callback(join(pre, str), abs)
@@ -237,3 +253,7 @@ const cwd = process.cwd();
  * once we move to executing journeys in parallel
  */
 export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
+
+export function getDurationInUs(duration: number) {
+  return Math.trunc(duration * 1e6);
+}

@@ -41,66 +41,60 @@ describe('Trace metrics', () => {
     expect(metrics).toMatchInlineSnapshot(`
       Array [
         Object {
-          "end": 3069485.988748,
+          "duration": Object {
+            "us": 1212635,
+          },
           "name": "Next.js-before-hydration",
-          "start": 3069484.776113,
+          "start": Object {
+            "us": 3069484776113,
+          },
           "type": "measure",
         },
         Object {
           "name": "beforeRender",
-          "start": 3069485.988763,
+          "start": Object {
+            "us": 3069485988763,
+          },
           "type": "mark",
         },
         Object {
           "name": "afterHydrate",
-          "start": 3069486.106274,
+          "start": Object {
+            "us": 3069486106274,
+          },
           "type": "mark",
         },
       ]
     `);
   });
 
-  it('compute user experience metrics', () => {
-    const domContentLoadedEvt = {
-      name: 'domContentLoadedEventEnd',
-      ts: 10,
-      ph: 'R',
-      cat: 'blink.user_timing,rail',
+  it('compute user experience trace and metrics', () => {
+    const timings = {
+      firstContentfulPaint: 3,
+      largestContentfulPaint: 15,
+      domContentLoaded: 20,
     };
-    const firstContentfulPaintEvt = {
-      name: 'firstContentfulPaint',
-      ts: 8,
-      ph: 'R',
-      cat: 'loading,rail,devtools.timeline',
+    const timestamps = {
+      timeOrigin: 5000,
+      firstContentfulPaint: 8000,
+      largestContentfulPaint: 20000,
+      domContentLoaded: 25000,
     };
-    const largestContentfulPaintEvt = {
-      name: 'largestContentfulPaint::Candidate',
-      ts: 20,
-      ph: 'R',
-      cat: 'loading,rail,devtools.timeline',
-    };
-    const metrics = ExperienceMetrics.compute({
-      domContentLoadedEvt,
-      firstContentfulPaintEvt,
-      largestContentfulPaintEvt,
+    const { metrics, traces } = ExperienceMetrics.compute({
+      timestamps,
+      timings,
     } as any);
 
-    expect(metrics).toEqual([
-      {
-        name: 'firstContentfulPaint',
-        type: 'mark',
-        start: 0.000008,
-      },
-      {
-        name: 'largestContentfulPaint',
-        type: 'mark',
-        start: 0.00002,
-      },
-      {
-        name: 'domContentLoadedEventEnd',
-        type: 'mark',
-        start: 0.00001,
-      },
+    expect(metrics).toEqual({
+      fcp: { us: 3000 },
+      lcp: { us: 15000 },
+      dcl: { us: 20000 },
+    });
+    expect(traces).toEqual([
+      { name: 'navigationStart', type: 'mark', start: { us: 5000 } },
+      { name: 'firstContentfulPaint', type: 'mark', start: { us: 8000 } },
+      { name: 'largestContentfulPaint', type: 'mark', start: { us: 20000 } },
+      { name: 'domContentLoaded', type: 'mark', start: { us: 25000 } },
     ]);
   });
 
@@ -114,50 +108,104 @@ describe('Trace metrics', () => {
           data: {
             is_main_frame: true,
             had_recent_input: event.had_recent_input,
-            score: event.score,
+            weighted_score_delta: event.score,
           },
         },
       };
     });
-    return traceEvents.concat(shiftEvents);
+    return shiftEvents;
   }
 
   it('computes layout shift', () => {
-    let mainThreadEvents = makeTrace([
+    let frameTreeEvents = makeTrace([
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: true },
     ]);
-    expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
-      name: 'LayoutShift',
-      score: 3,
-      exists: true,
-      start: 0.000015,
+    const layoutEvent = {
+      name: 'layoutShift',
+      type: 'mark',
+      start: { us: 15 },
+      score: 1,
+    };
+    expect(CumulativeLayoutShift.compute({ frameTreeEvents } as any)).toEqual({
+      cls: 3,
+      traces: [layoutEvent, layoutEvent, layoutEvent],
     });
 
-    mainThreadEvents = makeTrace([
+    frameTreeEvents = makeTrace([
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: true },
       { score: 1, had_recent_input: false },
       { score: 1, had_recent_input: false },
     ]);
-    expect(CumulativeLayoutShift.compute({ mainThreadEvents } as any)).toEqual({
-      name: 'LayoutShift',
-      score: 4,
-      exists: true,
-      start: 0.000015,
+    expect(
+      CumulativeLayoutShift.compute({ frameTreeEvents } as any)
+    ).toMatchObject({
+      cls: 4,
     });
   });
 
-  it('returns zero when no layout shift is present ', () => {
+  it('computes cls with session window', () => {
     expect(
-      CumulativeLayoutShift.compute({ mainThreadEvents: traceEvents } as any)
+      CumulativeLayoutShift.compute({ frameTreeEvents: traceEvents } as any)
     ).toEqual({
-      name: 'LayoutShift',
-      score: 0,
-      exists: false,
+      cls: 0.21037326388888888,
+      traces: [
+        {
+          name: 'layoutShift',
+          score: 0.19932291666666668,
+          start: {
+            us: 463045197179,
+          },
+          type: 'mark',
+        },
+        {
+          name: 'layoutShift',
+          score: 0.21037326388888888,
+          start: {
+            us: 463047103153,
+          },
+          type: 'mark',
+        },
+      ],
+    });
+  });
+
+  it('calculate cls score with simulated sessions', () => {
+    // events with single session
+    let events = [
+      { ts: 0, weightedScore: 1 },
+      { ts: 1_000_000, weightedScore: 1 },
+      { ts: 2_000_000, weightedScore: 1 },
+    ];
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(3);
+    // 4 more events within the 1 second intervals
+    events = events.concat([
+      { ts: 6_000_000, weightedScore: 1 },
+      { ts: 7_000_000, weightedScore: 1 },
+      { ts: 8_000_000, weightedScore: 1 },
+      { ts: 9_000_000, weightedScore: 1 },
+    ]);
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(4);
+    // use previous max with new events having more gaps
+    events = events.concat([
+      { ts: 11_000_000, weightedScore: 1 },
+      { ts: 13_000_000, weightedScore: 1 },
+      { ts: 15_000_000, weightedScore: 1 },
+      { ts: 17_000_000, weightedScore: 1 },
+    ]);
+    expect(CumulativeLayoutShift.calculateScore(events)).toBe(4);
+  });
+
+  it('cls to 0 when no events found', () => {
+    expect(
+      CumulativeLayoutShift.compute({ frameTreeEvents: [] } as any)
+    ).toEqual({
+      cls: 0,
+      traces: [],
     });
   });
 
@@ -168,7 +216,9 @@ describe('Trace metrics', () => {
     expect(metrics[0]).toEqual({
       blob: expect.any(String),
       mime: 'image/jpeg',
-      start: 3086640.09036,
+      start: {
+        us: 3086640090360,
+      },
     });
   });
 });

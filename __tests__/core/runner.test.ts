@@ -147,6 +147,23 @@ describe('runner', () => {
     });
   });
 
+  it('run journey - failed on beforeAll', async () => {
+    const error = new Error('Broken beforeAll hook');
+    runner.addHook('beforeAll', () => {
+      throw error;
+    });
+    runner.addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
+    runner.addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
+    const result = await runner.run({
+      wsEndpoint,
+      outfd: fs.openSync(dest, 'w'),
+    });
+    expect(result).toEqual({
+      j1: { status: 'failed', error },
+      j2: { status: 'failed', error },
+    });
+  });
+
   it('run step', async () => {
     const j1 = journey('j1', async ({ page }) => {
       step('step1', async () => {
@@ -497,5 +514,50 @@ describe('runner', () => {
     expect(reporter.options).toEqual({
       fd: expect.any(Number),
     });
+  });
+
+  const readAndCloseStreamJson = () => {
+    const fd = fs.openSync(dest, 'r');
+    const buffer = fs.readFileSync(fd, 'utf-8');
+    const out = [];
+    buffer.split('\n').forEach(l => {
+      try {
+        out.push(JSON.parse(l));
+      } catch (e) {
+        return; // ignore empty lines
+      }
+    });
+    return out;
+  };
+
+  it('run api - verify screenshots', async () => {
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const s1 = j1.addStep('j1s1', noop);
+    const j2 = new Journey({ name: 'j2' }, noop);
+    const s2 = j2.addStep('j2s2', noop);
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+
+    await runner.run({
+      wsEndpoint,
+      reporter: 'json',
+      screenshots: 'on',
+      outfd: fs.openSync(dest, 'w'),
+    });
+
+    const screenshotJson = readAndCloseStreamJson().filter(
+      ({ type }) => type === 'step/screenshot'
+    );
+    expect(screenshotJson.length).toEqual(2);
+    expect(screenshotJson).toMatchObject([
+      {
+        journey: { name: j1.name },
+        step: { name: s1.name, index: 1 },
+      },
+      {
+        journey: { name: j2.name },
+        step: { name: s2.name, index: 1 },
+      },
+    ]);
   });
 });

@@ -35,6 +35,7 @@ import JSONReporter, {
 import * as helpers from '../../src/helpers';
 import Runner from '../../src/core/runner';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
+import { StatusValue } from '../../src/common_types';
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -123,11 +124,14 @@ describe('json reporter', () => {
       status: 'succeeded',
       start: 0,
       end: 11,
+      options: {},
       filmstrips: [
         {
           blob: 'dummy',
           mime: 'image/jpeg',
-          start: 392583.998697,
+          start: {
+            us: 392583998697,
+          },
         },
       ],
       networkinfo: [
@@ -138,18 +142,37 @@ describe('json reporter', () => {
           browser: {},
         } as any,
       ],
-      experience: [
+      traces: [
         {
           name: 'navigationStart',
           type: 'mark',
-          start: 3065705.158085,
+          start: {
+            us: 3065705158085,
+          },
         },
         {
           name: 'firstContentfulPaint',
           type: 'mark',
-          start: 3065705.560142,
+          start: {
+            us: 3065705560142,
+          },
+        },
+        {
+          name: 'layoutShift',
+          type: 'mark',
+          start: {
+            us: 463045197179,
+          },
+          score: 0.19932291666666668,
         },
       ],
+      metrics: {
+        lcp: { us: 200 },
+        fcp: { us: 100 },
+        dcl: { us: 300 },
+        load: { us: 400 },
+        cls: 0.123,
+      },
     });
     runner.emit('end', 'done');
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
@@ -195,6 +218,7 @@ describe('json reporter', () => {
       end: 1,
       status: 'failed',
       error: myErr,
+      options: {},
     });
 
     const journeyEnd = (await readAndCloseStreamJson()).find(
@@ -210,6 +234,7 @@ describe('json reporter', () => {
       start: 0,
       end: 1,
       status: 'skipped',
+      options: {},
     });
 
     const journeyEnd = (await readAndCloseStreamJson()).find(
@@ -247,49 +272,83 @@ describe('json reporter', () => {
     expect(screenshot1).toEqual(screenshot2);
   });
 
-  it('write screenshot blob data', async () => {
+  describe('screenshots', () => {
     const sourceDir = join(FIXTURES_DIR, 'screenshots');
     const destDir = join(helpers.CACHE_PATH, 'screenshots');
-    mkdirSync(destDir, { recursive: true });
-    fs.copyFileSync(
-      join(sourceDir, 'content.json'),
-      join(destDir, 'content.json')
-    );
-    runner.emit('journey:end', {
-      journey: j1,
-      start: 0,
-      status: 'failed',
-      ssblocks: false,
+    beforeAll(() => {
+      mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(
+        join(sourceDir, 'content.json'),
+        join(destDir, 'content.json')
+      );
     });
-    const stepEnd = (await readAndCloseStreamJson()).find(
-      json => json.type == 'step/screenshot'
-    );
-    expect(stepEnd).toMatchObject({
-      step: {
-        name: 'launch app',
-        index: 1,
-      },
-      blob: expect.any(String),
-      blob_mime: 'image/jpeg',
-    });
-    fs.rmdirSync(destDir, { recursive: true });
-  });
 
-  it('write screenshot block & reference docs', async () => {
-    const sourceDir = join(FIXTURES_DIR, 'screenshots');
-    const destDir = join(helpers.CACHE_PATH, 'screenshots');
-    mkdirSync(destDir, { recursive: true });
-    fs.copyFileSync(
-      join(sourceDir, 'content.json'),
-      join(destDir, 'content.json')
-    );
-    runner.emit('journey:end', {
-      journey: j1,
-      start: 0,
-      status: 'failed',
-      ssblocks: true,
+    afterAll(() => {
+      fs.rmdirSync(destDir, { recursive: true });
     });
-    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
-    fs.rmdirSync(destDir, { recursive: true });
+
+    const emitEnd = (options, status = 'failed' as StatusValue) =>
+      runner.emit('journey:end', {
+        journey: j1,
+        start: 0,
+        status,
+        options,
+      });
+
+    it('write whole blobs data ', async () => {
+      emitEnd({
+        screenshots: 'on',
+        ssblocks: false,
+      });
+      const screenshotJson = (await readAndCloseStreamJson()).find(
+        json => json.type == 'step/screenshot'
+      );
+      expect(screenshotJson).toMatchObject({
+        step: {
+          name: 'launch app',
+          index: 1,
+        },
+        blob: expect.any(String),
+        blob_mime: 'image/jpeg',
+      });
+    });
+
+    it('write block & reference docs', async () => {
+      emitEnd({
+        screenshots: 'on',
+        ssblocks: true,
+      });
+      expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+    });
+
+    it('dont write on only-on-failure for successful journey', async () => {
+      emitEnd(
+        {
+          screenshots: 'only-on-failure',
+        },
+        'succeeded'
+      );
+      const screenshotJson = (await readAndCloseStreamJson()).find(
+        json => json.type == 'step/screenshot'
+      );
+      expect(screenshotJson).not.toBeDefined();
+    });
+
+    it('write on only-on-failure for failed journey', async () => {
+      emitEnd({
+        screenshots: 'only-on-failure',
+      });
+      const screenshotJson = (await readAndCloseStreamJson()).find(
+        json => json.type == 'step/screenshot'
+      );
+      expect(screenshotJson).toMatchObject({
+        step: {
+          name: 'launch app',
+          index: 1,
+        },
+        blob: expect.any(String),
+        blob_mime: 'image/jpeg',
+      });
+    });
   });
 });

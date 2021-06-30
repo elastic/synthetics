@@ -65,8 +65,7 @@ describe('Run', () => {
       params: {
         foo: 'bar',
       },
-      headless: false,
-      screenshots: true,
+      screenshots: 'on',
       filmstrips: false,
       trace: false,
       dryRun: true,
@@ -74,7 +73,6 @@ describe('Run', () => {
       network: true,
       pauseOnError: true,
       reporter: 'json',
-      sandbox: true,
     };
     await run(runParams);
     expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);

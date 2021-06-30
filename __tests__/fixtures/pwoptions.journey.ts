@@ -23,39 +23,14 @@
  *
  */
 
-import { Tracing } from '../../src/plugins/tracing';
-import { Gatherer } from '../../src/core/gatherer';
-import { Server } from '../utils/server';
-import { wsEndpoint } from '../utils/test-config';
+import { journey, step, expect } from '../../dist';
 
-describe('tracing', () => {
-  let server: Server;
-  beforeAll(async () => {
-    server = await Server.create();
-  });
-  afterAll(async () => {
-    await server.close();
-  });
-
-  it('should capture filmstrips', async () => {
-    const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const tracer = new Tracing({ filmstrips: true, trace: true });
-    await tracer.start(driver.client);
-    await driver.page.goto(server.TEST_PAGE);
-    await driver.page.waitForLoadState();
-    const { filmstrips, traces } = await tracer.stop(driver.client);
-    await Gatherer.stop();
-    expect(filmstrips.length).toBeGreaterThan(0);
-    expect(filmstrips[0]).toMatchObject({
-      blob: expect.any(String),
-      mime: 'image/jpeg',
-      start: { us: expect.any(Number) },
+journey('launch with viewport', ({ page }) => {
+  step('Ensure viewport width', () => {
+    expect(page.viewportSize()).toEqual({
+      height: 658,
+      width: 320,
     });
-    expect(traces.length).toBeGreaterThan(0);
-    expect(traces[0]).toMatchObject({
-      name: 'navigationStart',
-      type: 'mark',
-      start: { us: expect.any(Number) },
-    });
+    expect(page.touchscreen).toBeDefined();
   });
 });

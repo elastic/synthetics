@@ -31,9 +31,8 @@ describe('Trace processor', () => {
     const { traceEvents } = createTestTrace();
     const output = TraceProcessor.computeTrace(traceEvents as any);
     expect(output).toEqual({
-      userTiming: [],
-      experience: [{ name: 'navigationStart', type: 'mark', start: 0 }],
-      layoutShift: { name: 'LayoutShift', score: 0, exists: false },
+      traces: [],
+      metrics: { cls: 0 },
     });
   });
 });

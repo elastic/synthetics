@@ -158,15 +158,18 @@ async function prepareSuites(inputs: string[]) {
   }
 
   /**
-   * Use the NODE_ENV variable to control the environment if its not explicity
-   * passed from either CLI or through the API
+   * Use the NODE_ENV variable to control the environment
    */
-  const environment = options.environment || process.env['NODE_ENV'];
+  const environment = process.env['NODE_ENV'] || 'development';
   /**
    * Validate and handle configs
    */
   const config = readConfig(environment, options.config);
   const params = merge(config.params, JSON.parse(options.suiteParams));
+  const playwrightOptions = merge(config.playwrightOptions, {
+    headless: options.headless,
+    chromiumSandbox: options.sandbox,
+  });
   /**
    * use JSON reporter if json flag is enabled
    */
@@ -176,6 +179,7 @@ async function prepareSuites(inputs: string[]) {
     params: Object.freeze(params),
     environment,
     reporter,
+    playwrightOptions,
     ...options,
   });
 

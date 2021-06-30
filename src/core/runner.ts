@@ -25,16 +25,18 @@
 
 import { once, EventEmitter } from 'events';
 import { join } from 'path';
-import { mkdirSync, rmdirSync, writeFileSync } from 'fs';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
   CACHE_PATH,
-  getMonotonicTime,
+  monotonicTimeInSeconds,
   getTimestamp,
-  now,
   runParallel,
+  generateUniqueId,
+  mkdirAsync,
+  rmdirAsync,
+  writeFileAsync,
 } from '../helpers';
 import {
   StatusValue,
@@ -43,6 +45,7 @@ import {
   PluginOutput,
   CliArgs,
   HooksArgs,
+  PlaywrightOptions,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager, Metrics } from '../plugins';
@@ -60,8 +63,12 @@ export type RunOptions = Omit<
   | 'reporter'
   | 'richEvents'
   | 'capability'
+  | 'sandbox'
+  | 'headless'
 > & {
+  environment?: string;
   params?: Params;
+  playwrightOptions?: PlaywrightOptions;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
@@ -107,7 +114,7 @@ interface Events {
     JourneyResult &
     PluginOutput & {
       journey: Journey;
-      ssblocks?: boolean;
+      options: RunOptions;
     };
   'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
@@ -130,18 +137,49 @@ export default class Runner extends EventEmitter {
   currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
-  screenshotPath = join(CACHE_PATH, 'screenshots');
+  hookError: Error | undefined;
+  static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const start = getMonotonicTime();
+    const start = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
     const pluginManager = await Gatherer.beginRecording(driver, options);
+    /**
+     * For each journey we create the screenshots folder for
+     * caching all screenshots and clear them at end of each journey
+     */
+    await mkdirAsync(this.screenshotPath, { recursive: true });
     return {
       start,
       params: options.params,
       driver,
       pluginManager,
     };
+  }
+
+  async captureScreenshot(page: Driver['page'], step: Step) {
+    await page.waitForLoadState('load');
+    const buffer = await page
+      .screenshot({
+        type: 'jpeg',
+        quality: 80,
+      })
+      .catch(() => {});
+    /**
+     * Write the screenshot image buffer with additional details (step
+     * information) which could be extracted at the end of
+     * each journey without impacting the step timing information
+     */
+    if (buffer) {
+      const fileName = `${generateUniqueId()}.json`;
+      await writeFileAsync(
+        join(Runner.screenshotPath, fileName),
+        JSON.stringify({
+          step,
+          data: buffer.toString('base64'),
+        })
+      );
+    }
   }
 
   addHook(type: HookType, callback: HooksCallback) {
@@ -207,25 +245,8 @@ export default class Runner extends EventEmitter {
       data.error = error;
     } finally {
       data.url ??= driver.page.url();
-      if (screenshots) {
-        await driver.page.waitForLoadState('load');
-        const buffer = await driver.page.screenshot({
-          type: 'jpeg',
-          quality: 80,
-        });
-        /**
-         * Write the screenshot image buffer with additional details (step
-         * information) which could be extracted at the end of
-         * each journey without impacting the step timing information
-         */
-        const fileName = now().toString() + '.json';
-        writeFileSync(
-          join(this.screenshotPath, fileName),
-          JSON.stringify({
-            step,
-            data: buffer.toString('base64'),
-          })
-        );
+      if (screenshots && screenshots !== 'off') {
+        await this.captureScreenshot(driver.page, step);
       }
     }
     log(`Runner: end step (${step.name})`);
@@ -240,7 +261,7 @@ export default class Runner extends EventEmitter {
     const results: Array<StepResult> = [];
     let skipStep = false;
     for (const step of journey.steps) {
-      const start = getMonotonicTime();
+      const start = monotonicTimeInSeconds();
       this.emit('step:start', { journey, step });
       let data: StepResult = { status: 'succeeded' };
       if (skipStep) {
@@ -256,7 +277,7 @@ export default class Runner extends EventEmitter {
         journey,
         step,
         start,
-        end: getMonotonicTime(),
+        end: monotonicTimeInSeconds(),
         ...data,
       });
       if (options.pauseOnError && data.error) {
@@ -283,16 +304,15 @@ export default class Runner extends EventEmitter {
     result: JourneyContext & JourneyResult,
     options: RunOptions
   ) {
-    const { pluginManager, start, params, status, error } = result;
+    const { pluginManager, start, status, error } = result;
     const pluginOutput = await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,
       error,
-      params,
       start,
-      end: getMonotonicTime(),
-      ssblocks: options.ssblocks,
+      end: monotonicTimeInSeconds(),
+      options,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
     });
@@ -300,9 +320,38 @@ export default class Runner extends EventEmitter {
      * Wait for the all the reported events to be consumed aschronously
      * by reporter.
      */
-    if (options.reporter == 'json') {
+    if (options.reporter === 'json') {
       await once(this, 'journey:end:reported');
     }
+    // clear screenshots cache after each journey
+    await rmdirAsync(Runner.screenshotPath, { recursive: true });
+  }
+
+  /**
+   * Simulate a journey run to capture errors in the beforeAll hook
+   */
+  async runFakeJourney(journey: Journey, options: RunOptions) {
+    const start = monotonicTimeInSeconds();
+    this.emit('journey:start', {
+      journey,
+      timestamp: getTimestamp(),
+      params: options.params,
+    });
+    const result: JourneyResult = {
+      status: 'failed',
+      error: this.hookError,
+    };
+    this.emit('journey:end', {
+      journey,
+      start,
+      options,
+      end: monotonicTimeInSeconds(),
+      ...result,
+    });
+    if (options.reporter === 'json') {
+      await once(this, 'journey:end:reported');
+    }
+    return result;
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
@@ -340,7 +389,7 @@ export default class Runner extends EventEmitter {
     return result;
   }
 
-  init(options: RunOptions) {
+  async init(options: RunOptions) {
     const { reporter, outfd } = options;
     /**
      * Set up the corresponding reporter and fallback
@@ -354,7 +403,7 @@ export default class Runner extends EventEmitter {
     /**
      * Set up the directory for caching screenshots
      */
-    mkdirSync(this.screenshotPath, { recursive: true });
+    await mkdirAsync(CACHE_PATH, { recursive: true });
   }
 
   async run(options: RunOptions) {
@@ -368,7 +417,8 @@ export default class Runner extends EventEmitter {
     await this.runBeforeAllHook({
       env: options.environment,
       params: options.params,
-    });
+    }).catch(e => (this.hookError = e));
+
     const { dryRun, match, tags } = options;
     for (const journey of this.journeys) {
       /**
@@ -381,24 +431,26 @@ export default class Runner extends EventEmitter {
       if (!journey.isMatch(match, tags)) {
         continue;
       }
-      const journeyResult = await this.runJourney(journey, options);
+      const journeyResult: JourneyResult = this.hookError
+        ? await this.runFakeJourney(journey, options)
+        : await this.runJourney(journey, options);
       result[journey.name] = journeyResult;
-      await Gatherer.stop();
     }
+    await Gatherer.stop();
     await this.runAfterAllHook({
       env: options.environment,
       params: options.params,
     });
-    this.reset();
+    await this.reset();
     return result;
   }
 
-  reset() {
+  async reset() {
     /**
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    rmdirSync(CACHE_PATH, { recursive: true });
+    await rmdirAsync(CACHE_PATH, { recursive: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;

@@ -23,15 +23,14 @@
  *
  */
 
-import { Filmstrip, LayoutShift, UserTiming } from '../common_types';
-import { convertTraceTimestamp } from '../helpers';
+import { Filmstrip, TraceOutput } from '../common_types';
 import type { LHTrace, TraceEvent } from './trace-processor';
 
 export class UserTimings {
   static compute(trace: LHTrace) {
     const { processEvents } = trace;
     const measuresMap = new Map();
-    const userTimings: Array<UserTiming> = [];
+    const userTimings: Array<TraceOutput> = [];
 
     for (const event of processEvents) {
       const { name, ph, ts, args } = event;
@@ -59,7 +58,9 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'mark',
-          start: convertTraceTimestamp(ts),
+          start: {
+            us: ts,
+          },
         });
       } else if (phase === 'b') {
         measuresMap.set(name, ts);
@@ -68,8 +69,12 @@ export class UserTimings {
         userTimings.push({
           name,
           type: 'measure',
-          start: convertTraceTimestamp(startTime),
-          end: convertTraceTimestamp(ts),
+          start: {
+            us: startTime,
+          },
+          duration: {
+            us: ts - startTime,
+          },
         });
       }
     }
@@ -78,31 +83,27 @@ export class UserTimings {
 }
 
 export class ExperienceMetrics {
-  static buildMetric(event: TraceEvent, name?: string) {
-    if (!event) {
+  static buildMetric(name: string, timestamp?: number) {
+    if (!timestamp) {
       return;
     }
-
     return {
-      name: name || event.name,
+      name,
       type: 'mark',
-      start: convertTraceTimestamp(event.ts),
+      start: {
+        us: timestamp,
+      },
     };
   }
 
   static compute(trace: LHTrace) {
-    const experienceMetrics: Array<UserTiming> = [];
-    const {
-      domContentLoadedEvt,
-      firstContentfulPaintEvt,
-      largestContentfulPaintEvt,
-      loadEvt,
-      timeOriginEvt,
-      lcpInvalidated,
-    } = trace;
+    const traces: Array<TraceOutput> = [];
+    const { timestamps, timings, lcpInvalidated } = trace;
 
-    experienceMetrics.push(this.buildMetric(timeOriginEvt));
-    experienceMetrics.push(this.buildMetric(firstContentfulPaintEvt));
+    traces.push(this.buildMetric('navigationStart', timestamps.timeOrigin));
+    traces.push(
+      this.buildMetric('firstContentfulPaint', timestamps.firstContentfulPaint)
+    );
     /**
      * lcpInvalidated - Denotes when all of the LCP events that comes from the
      * current trace are invalidated. Happens if the previous LCP candidates were
@@ -110,56 +111,138 @@ export class ExperienceMetrics {
      * More info - https://github.com/WICG/largest-contentful-paint/#the-last-candidate
      */
     !lcpInvalidated &&
-      experienceMetrics.push(
-        this.buildMetric(largestContentfulPaintEvt, 'largestContentfulPaint')
+      traces.push(
+        this.buildMetric(
+          'largestContentfulPaint',
+          timestamps.largestContentfulPaint
+        )
       );
-    experienceMetrics.push(this.buildMetric(domContentLoadedEvt));
-    experienceMetrics.push(this.buildMetric(loadEvt));
+    traces.push(
+      this.buildMetric('domContentLoaded', timestamps.domContentLoaded)
+    );
+    traces.push(this.buildMetric('loadEvent', timestamps.load));
 
-    return experienceMetrics.filter(b => Boolean(b));
+    /**
+     * Lighthouse tracer extracts these metrics in milliseconds resolution,
+     * we convert them to microseconds resolution to keep them in sync with
+     * other timings
+     */
+    const millisToMicros = (value?: number) =>
+      value ? value * 1000 : undefined;
+    const keys = [
+      'firstContentfulPaint',
+      'largestContentfulPaint',
+      'domContentLoaded',
+      'load',
+    ];
+    const values = ['fcp', 'lcp', 'dcl', 'load'];
+    const metrics = {};
+
+    for (let i = 0; i < keys.length; i++) {
+      const microSecs = millisToMicros(timings[keys[i]]);
+      if (microSecs) {
+        metrics[values[i]] = { us: microSecs };
+      }
+    }
+
+    return {
+      metrics,
+      traces: traces.filter(b => Boolean(b)),
+    };
   }
 }
 
 export class CumulativeLayoutShift {
-  static type = 'LayoutShift';
-
-  static computeCLSValue(events: Array<TraceEvent>) {
-    const layoutShiftEvents = events.filter(
-      event => event.name === this.type && event.args?.data.is_main_frame
-    );
+  static getLayoutShiftEvents(traceEvents: Array<TraceEvent>) {
+    const layoutShiftEvents = [];
     // Chromium will set `had_recent_input` if there was recent user input, which
     // skips shift events from contributing to CLS. This results in the first few shift
     // events having `had_recent_input` set to true, so ignore it for those events.
-    // See https://bugs.chromium.org/p/chromium/issues/detail?id=1094974.
+    // See https://crbug.com/1094974
     let ignoreHadRecentInput = true;
-    let finalLayoutShiftEvent;
-    let clsScore = 0;
-    for (const event of layoutShiftEvents) {
+
+    for (const event of traceEvents) {
+      // weighted_score_delta was added in chrome 90 - https://crbug.com/1173139
+      if (
+        event.name !== 'LayoutShift' ||
+        !event.args?.data.is_main_frame ||
+        !event.args?.data.weighted_score_delta
+      ) {
+        continue;
+      }
+
       if (event.args.data.had_recent_input) {
         if (!ignoreHadRecentInput) continue;
       } else {
         ignoreHadRecentInput = false;
       }
-      clsScore += event.args.data.score;
-      finalLayoutShiftEvent = event;
+
+      layoutShiftEvents.push({
+        ts: event.ts,
+        weightedScore: event.args.data.weighted_score_delta,
+      });
     }
 
-    return { score: clsScore, event: finalLayoutShiftEvent };
+    return layoutShiftEvents;
   }
 
-  static compute(trace: LHTrace): LayoutShift {
-    const events = trace.mainThreadEvents;
-    const { score, event } = this.computeCLSValue(events);
+  /**
+   * Calculate cumulative layout shift per sesion window where each session
+   * windows lasts for 5 seconds since the last layoutShift event and has 1 second
+   * gap between them. Return the maximum score between all windows.
+   * More details - https://web.dev/evolving-cls/
+   */
+  static calculateScore(layoutShiftEvents) {
+    const gapMicroseconds = 1_000_000; // 1 seconds gap
+    const limitMicroseconds = 5_000_000; // 5 seconds window
+    let maxScore = 0;
+    let currentScore = 0;
+    let firstTimestamp = Number.NEGATIVE_INFINITY;
+    let prevTimestamp = Number.NEGATIVE_INFINITY;
 
-    const metric = { name: this.type, score, exists: false };
-    if (!event) {
-      return metric;
+    for (const event of layoutShiftEvents) {
+      const currTimestamp = event.ts;
+      /**
+       * Two cases
+       * - When the next layout shift event happened after the session window of
+       * 5 seconds.
+       * - When the next and previous layout shift event has a gap of 1 second
+       *
+       * Then consider the layout shift event as the start of
+       * the current session window and reset the cumulative score.
+       */
+      if (
+        currTimestamp - firstTimestamp > limitMicroseconds ||
+        currTimestamp - prevTimestamp > gapMicroseconds
+      ) {
+        firstTimestamp = currTimestamp;
+        currentScore = 0;
+      }
+      prevTimestamp = currTimestamp;
+      currentScore += event.weightedScore;
+      maxScore = Math.max(maxScore, currentScore);
     }
+
+    return maxScore;
+  }
+
+  static compute(trace: LHTrace) {
+    const layoutShiftEvents = this.getLayoutShiftEvents(trace.frameTreeEvents);
+    const traces: Array<TraceOutput> = layoutShiftEvents.map(event => {
+      return {
+        name: 'layoutShift',
+        type: 'mark',
+        start: {
+          us: event.ts,
+        },
+        score: event.weightedScore,
+      };
+    });
+    const cumulativeLayoutShiftScore = this.calculateScore(layoutShiftEvents);
+
     return {
-      name: this.type,
-      score: score,
-      exists: true,
-      start: convertTraceTimestamp(event.ts),
+      cls: cumulativeLayoutShiftScore,
+      traces,
     };
   }
 }
@@ -192,7 +275,9 @@ export class Filmstrips {
     return Filmstrips.filterExcesssiveScreenshots(traceEvents).map(event => ({
       blob: event.args.snapshot,
       mime: 'image/jpeg',
-      start: convertTraceTimestamp(event.ts),
+      start: {
+        us: event.ts,
+      },
     }));
   }
 }

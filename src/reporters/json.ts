@@ -34,15 +34,15 @@ import {
   CACHE_PATH,
   totalist,
   isDirectory,
+  getDurationInUs,
 } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
-  Filmstrip,
-  LayoutShift,
   NetworkInfo,
-  UserTiming,
+  TraceOutput,
   StatusValue,
+  PerfMetrics,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Metrics } from '../plugins';
@@ -332,7 +332,6 @@ export async function gatherScreenshots(
   screenshotsPath: string,
   callback: (step: Step, data: string) => Promise<void>
 ) {
-  const screenshots: Array<ScreenshotOutput> = [];
   if (isDirectory(screenshotsPath)) {
     await totalist(screenshotsPath, async (_, absPath) => {
       try {
@@ -344,7 +343,6 @@ export async function gatherScreenshots(
       }
     });
   }
-  return screenshots;
 }
 
 export default class JSONReporter extends BaseReporter {
@@ -387,7 +385,7 @@ export default class JSONReporter extends BaseReporter {
           step: {
             ...step,
             duration: {
-              us: Math.trunc((end - start) * 1e6),
+              us: getDurationInUs(end - start),
             },
           },
           url,
@@ -411,47 +409,37 @@ export default class JSONReporter extends BaseReporter {
         filmstrips,
         networkinfo,
         browserconsole,
-        userTiming,
-        experience,
-        layoutShift,
+        traces,
+        metrics,
         status,
         error,
-        ssblocks,
+        options,
       }) => {
-        await gatherScreenshots(
-          join(CACHE_PATH, 'screenshots'),
-          async (step, data) => {
-            if (ssblocks) {
-              const { blob_mime, blocks, reference } =
-                await getScreenshotBlocks(Buffer.from(data, 'base64'));
-              for (let i = 0; i < blocks.length; i++) {
-                const block = blocks[i];
+        const { ssblocks, screenshots } = options;
+        const writeScreenshots =
+          screenshots === 'on' ||
+          (screenshots === 'only-on-failure' && status === 'failed');
+        if (writeScreenshots) {
+          await gatherScreenshots(
+            join(CACHE_PATH, 'screenshots'),
+            async (step, data) => {
+              if (!data) {
+                return;
+              }
+              if (ssblocks) {
+                await this.writeScreenshotBlocks(journey, step, data);
+              } else {
                 this.writeJSON({
-                  type: 'screenshot/block',
-                  _id: block.id,
-                  blob: block.blob,
-                  blob_mime,
+                  type: 'step/screenshot',
+                  journey,
+                  step,
+                  blob: data,
+                  blob_mime: 'image/jpeg',
                 });
               }
-              this.writeJSON({
-                type: 'step/screenshot_ref',
-                journey,
-                step,
-                root_fields: {
-                  screenshot_ref: reference,
-                },
-              });
-            } else {
-              this.writeJSON({
-                type: 'step/screenshot',
-                journey,
-                step,
-                blob: data,
-                blob_mime: 'image/jpeg',
-              });
             }
-          }
-        );
+          );
+        }
 
         if (networkinfo) {
           networkinfo.forEach(ni => {
@@ -472,9 +460,9 @@ export default class JSONReporter extends BaseReporter {
             this.writeJSON({
               type: 'journey/filmstrips',
               journey,
-              payload: {
-                index,
-                start: strip.start,
+              payload: { index },
+              root_fields: {
+                browser: { relative_trace: { start: strip.start } },
               },
               blob: strip.blob,
               blob_mime: strip.mime,
@@ -492,9 +480,8 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, 'user_timing', userTiming);
-        this.writeMetrics(journey, 'layout_shift', layoutShift);
-        this.writeMetrics(journey, 'experience', experience);
+        this.writeMetrics(journey, 'relative_trace', traces);
+        this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({
           type: 'journey/end',
@@ -506,15 +493,38 @@ export default class JSONReporter extends BaseReporter {
             status,
           },
         });
-        this.runner.emit('journey:end:reported', {});
+        process.nextTick(() => this.runner.emit('journey:end:reported', {}));
       }
     );
+  }
+
+  async writeScreenshotBlocks(journey: Journey, step: Step, data: string) {
+    const { blob_mime, blocks, reference } = await getScreenshotBlocks(
+      Buffer.from(data, 'base64')
+    );
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      this.writeJSON({
+        type: 'screenshot/block',
+        _id: block.id,
+        blob: block.blob,
+        blob_mime,
+      });
+    }
+    this.writeJSON({
+      type: 'step/screenshot_ref',
+      journey,
+      step,
+      root_fields: {
+        screenshot_ref: reference,
+      },
+    });
   }
 
   writeMetrics(
     journey: Journey,
     type: string,
-    events: Array<UserTiming> | Array<Filmstrip> | LayoutShift
+    events: Array<TraceOutput> | PerfMetrics
   ) {
     const metrics = Array.isArray(events) ? events : [events];
     metrics.forEach(event => {

@@ -106,6 +106,7 @@ describe('base reporter', () => {
       error,
       start: 0,
       end: 1,
+      options: {},
     });
     runner.emit('end', 'done');
     /**
