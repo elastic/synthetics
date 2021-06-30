@@ -67,7 +67,6 @@ export type RunOptions = Omit<
   | 'headless'
 > & {
   environment?: string;
-  params?: Params;
   playwrightOptions?: PlaywrightOptions;
   reporter?: CliArgs['reporter'] | Reporter;
 };

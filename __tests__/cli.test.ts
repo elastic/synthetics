@@ -143,7 +143,7 @@ describe('CLI', () => {
       'json',
       '--config',
       join(FIXTURES_DIR, 'synthetics.config.ts'),
-      '-s',
+      '-p',
       '{"url": "suite-url"}',
     ]);
     await cli.waitFor('journey/start');

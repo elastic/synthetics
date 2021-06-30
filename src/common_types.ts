@@ -140,7 +140,11 @@ export type CliArgs = {
   tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;
-  suiteParams?: string;
+  /**
+   * @deprecated use `params` instead
+   */
+  suiteParams?: Params;
+  params?: Params;
   richEvents?: boolean;
 };
 
