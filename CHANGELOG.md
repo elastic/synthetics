@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.7 (2021-07-01)
+
+### Features
+
+- Deprecate 'suiteparams' infavor of 'params' [#331](https://github.com/elastic/synthetics/pull/331)
+
+### Bug fixes
+
+- Bring `--network` flag back till 7.14 is released [#336](https://github.com/elastic/synthetics/pull/336)
+
+## v1.0.0-beta.6 (2021-06-30)
+
+### Bug fixes
+
+- Bring `--json` flag back till 7.14 is released [#333](https://github.com/elastic/synthetics/pull/333)
+
 ## v1.0.0-beta.5 (2021-06-30)
 
 ### Features
