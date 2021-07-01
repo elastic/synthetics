@@ -58,7 +58,23 @@ describe('CLI', () => {
     });
   });
 
-  it('mimick heartbeat with `--rich-events` flag', async () => {
+  it('mimick 7.13 heartbeat wiwth all flags', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'example.journey.ts'),
+      '--network',
+      '--json',
+      '--screenshots',
+      '--suite-params',
+      '{}',
+      '--outfd',
+      process.stdout.fd.toString(),
+    ]);
+    await cli.waitFor('journey/network_info');
+    expect(cli.output()).toBeDefined();
+    expect(await cli.exitCode).toBe(0);
+  });
+
+  it('mimick new heartbeat with `--rich-events` flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
       '--rich-events',
