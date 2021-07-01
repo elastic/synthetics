@@ -282,8 +282,8 @@ export async function getScreenshotBlocks(screenshot: Buffer) {
    * optimal for caching in the ES and proved out to be bad, so we stick to 8
    */
   const divisions = 8;
-  const blockWidth = width / divisions;
-  const blockHeight = height / divisions;
+  const blockWidth = Math.floor(width / divisions);
+  const blockHeight = Math.floor(height / divisions);
   const reference: ScreenshotReference = {
     width,
     height,
