@@ -47,6 +47,7 @@ program
     'JSON object that gets injected to all journeys',
     JSON.parse
   )
+  .option('-j, --json', 'output newline delimited JSON')
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
