@@ -38,6 +38,7 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option('-s, --suite-params <jsonstring>', 'suite variables', '{}')
+  .option('-j, --json', 'output newline delimited JSON')
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
