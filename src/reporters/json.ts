@@ -43,6 +43,7 @@ import {
   TraceOutput,
   StatusValue,
   PerfMetrics,
+  Params,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Metrics } from '../plugins';
@@ -71,7 +72,7 @@ type Payload = {
   url?: string;
   status?: StatusValue | number;
   metrics?: Metrics;
-  params?: Record<string, unknown>;
+  params?: Params;
   type?: OutputType;
   text?: string;
   index?: number;

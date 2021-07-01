@@ -60,7 +60,7 @@ describe('Run', () => {
       .spyOn(runner, 'run')
       .mockImplementation(() => Promise.resolve({}));
 
-    const runParams: RunOptions = {
+    const options: RunOptions = {
       environment: 'debug',
       params: {
         foo: 'bar',
@@ -74,7 +74,7 @@ describe('Run', () => {
       pauseOnError: true,
       reporter: 'json',
     };
-    await run(runParams);
-    expect(runnerSpy.mock.calls[0][0]).toEqual(runParams);
+    await run(options);
+    expect(runnerSpy.mock.calls[0][0]).toEqual(options);
   });
 });
