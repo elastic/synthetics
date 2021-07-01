@@ -41,19 +41,21 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(1);
   });
 
-  it('produce json output via --json flag', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--reporter',
-      'json',
-    ]);
-    await cli.waitFor('fake journey');
-    const output = cli.output();
-    expect(JSON.parse(output).journey).toEqual({
+  it('produce json output  --json and reporter=json flag', async () => {
+    const output = async args => {
+      const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), ...args]);
+      await cli.waitFor('fake journey');
+      expect(await cli.exitCode).toBe(0);
+      return JSON.parse(cli.output());
+    };
+    expect((await output(['--reporter', 'json'])).journey).toEqual({
       id: 'fake journey',
       name: 'fake journey',
     });
-    expect(await cli.exitCode).toBe(0);
+    expect((await output(['--json'])).journey).toEqual({
+      id: 'fake journey',
+      name: 'fake journey',
+    });
   });
 
   it('mimick heartbeat with `--rich-events` flag', async () => {
