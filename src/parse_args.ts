@@ -63,6 +63,7 @@ program
       .choices(['on', 'off', 'only-on-failure'])
       .default('on')
   )
+  .option('--network', 'capture network information for all journeys')
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
