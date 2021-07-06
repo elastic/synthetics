@@ -112,6 +112,26 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
+  it('screenshots with device emulation', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'fake.journey.ts'),
+      '--rich-events',
+      '--config',
+      join(FIXTURES_DIR, 'synthetics.config.ts'),
+    ]);
+    await cli.waitFor('journey/end');
+    const data = cli.buffer().map(data => JSON.parse(data));
+    const screenshotRef = data.find(
+      ({ type }) => type === 'step/screenshot_ref'
+    );
+    const screenshotBlocks = data.filter(
+      ({ type }) => type === 'screenshot/block'
+    );
+    expect(screenshotRef).toBeDefined();
+    expect(screenshotBlocks.length).toBe(64);
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('pass dynamic config to journey params', async () => {
     // jest by default sets NODE_ENV to `test`
     const original = process.env['NODE_ENV'];
