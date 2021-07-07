@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.8 (2021-07-07)
+
+### Bug fixes
+
+- Capture screenshots correctly when using device emulation [#340](https://github.com/elastic/synthetics/pull/340)
+
 ## v1.0.0-beta.7 (2021-07-01)
 
 ### Features
