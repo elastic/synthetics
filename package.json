@@ -71,7 +71,7 @@
   },
   "engineStrict": true,
   "engines": {
-    "node": "12.18.4",
+    "node": "^12.x",
     "npm": "6"
   }
 }
