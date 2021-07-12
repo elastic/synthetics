@@ -1,5 +1,4 @@
 import { journey, step, expect } from '@elastic/synthetics';
-import { join } from 'path';
 
 journey('check if title is present', ({ page, params }) => {
   step('launch app', async () => {

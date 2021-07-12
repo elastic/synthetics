@@ -1,0 +1,11 @@
+{
+  "name": "ecommerce-demo",
+  "private": true,
+  "description": "test the e-commerce demo app",
+  "scripts": {
+    "test": "npx elastic-synthetics ."
+  },
+  "dependencies": {
+    "@elastic/synthetics": "^1.0.0-beta"
+  }
+}
