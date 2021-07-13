@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.9 (2021-07-13)
+
+### Bug fixes
+
+- Populate journey id when its not explicitly specified
+  [#346](https://github.com/elastic/synthetics/pull/346)
+- Remove Node.js 12 version restriction [#343](https://github.com/elastic/synthetics/pull/343)
+
 ## v1.0.0-beta.8 (2021-07-07)
 
 ### Bug fixes
