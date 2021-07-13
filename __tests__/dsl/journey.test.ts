@@ -27,6 +27,15 @@ import { Journey, Step } from '../../src/dsl';
 
 const noop = () => {};
 describe('Journey', () => {
+  it('add journey details', () => {
+    const name = 'j1';
+    const tags = ['foo', 'bar'];
+    const journey = new Journey({ name, tags }, noop);
+    expect(journey.name).toEqual(name);
+    expect(journey.id).toBe(name);
+    expect(journey.tags).toEqual(tags);
+  });
+
   it('add step to the journey', () => {
     const journey = new Journey({ name: 'j1' }, noop);
     journey.addStep('s1', noop);
