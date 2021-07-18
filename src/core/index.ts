@@ -43,7 +43,7 @@ export const journey = (
   options: JourneyOptions | string,
   callback: JourneyCallback
 ) => {
-  log(`register journey: ${options}`);
+  log(`register journey: ${JSON.stringify(options)}`);
   if (typeof options === 'string') {
     options = { name: options, id: options };
   }

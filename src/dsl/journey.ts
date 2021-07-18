@@ -54,7 +54,7 @@ export class Journey {
 
   constructor(options: JourneyOptions, callback: JourneyCallback) {
     this.name = options.name;
-    this.id = options.id;
+    this.id = options.id || options.name;
     this.tags = options.tags;
     this.callback = callback;
   }

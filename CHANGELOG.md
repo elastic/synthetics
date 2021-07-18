@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.9 (2021-07-13)
+
+### Bug fixes
+
+- Populate journey id when its not explicitly specified
+  [#346](https://github.com/elastic/synthetics/pull/346)
+- Remove Node.js 12 version restriction [#343](https://github.com/elastic/synthetics/pull/343)
+
+## v1.0.0-beta.8 (2021-07-07)
+
+### Bug fixes
+
+- Capture screenshots correctly when using device emulation [#340](https://github.com/elastic/synthetics/pull/340)
+
+## v1.0.0-beta.7 (2021-07-01)
+
+### Features
+
+- Deprecate 'suiteparams' infavor of 'params' [#331](https://github.com/elastic/synthetics/pull/331)
+
+### Bug fixes
+
+- Bring `--network` flag back till 7.14 is released [#336](https://github.com/elastic/synthetics/pull/336)
+
+## v1.0.0-beta.6 (2021-06-30)
+
+### Bug fixes
+
+- Bring `--json` flag back till 7.14 is released [#333](https://github.com/elastic/synthetics/pull/333)
+
 ## v1.0.0-beta.5 (2021-06-30)
 
 ### Features
