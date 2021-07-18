@@ -121,6 +121,7 @@ if (options.capability) {
     'filmstrips',
     'metrics',
     'ssblocks',
+    'accessibility'
   ];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
