@@ -26,6 +26,7 @@
 import { PluginOutput } from '../common_types';
 import {
   BrowserConsole,
+  Accessibility,
   NetworkManager,
   PerformanceManager,
   Tracing,
@@ -34,8 +35,8 @@ import {
 import { Driver } from '../core/gatherer';
 import { Step } from '../dsl';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole' | 'accessibility';
+type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole | Accessibility;
 type PluginOptions = TraceOptions;
 
 export class PluginManager {
@@ -62,6 +63,9 @@ export class PluginManager {
         instance = new BrowserConsole(this.driver.page);
         instance.start();
         break;
+      case 'accessibility':
+        instance = new Accessibility(this.driver.page);
+        break;
     }
 
     this.plugins.set(instance.constructor.name, instance);
@@ -74,6 +78,7 @@ export class PluginManager {
 
   onStep(step: Step) {
     this.get(BrowserConsole) && (this.get(BrowserConsole)._currentStep = step);
+    this.get(Accessibility) && (this.get(Accessibility)._currentStep = step);
     this.get(NetworkManager) && (this.get(NetworkManager)._currentStep = step);
   }
 
