@@ -48,7 +48,7 @@ import {
   PlaywrightOptions,
 } from '../common_types';
 import { PluginManager } from '../plugins';
-import { PerformanceManager, Metrics } from '../plugins';
+import { PerformanceManager, Metrics, Accessibility, AccessibilityReport } from '../plugins';
 import { Driver, Gatherer } from './gatherer';
 import { log } from './logger';
 
@@ -87,6 +87,7 @@ type StepResult = {
   url?: string;
   metrics?: Metrics;
   error?: Error;
+  accessibility?: AccessibilityReport;
 };
 
 type JourneyResult = {
@@ -219,7 +220,7 @@ export default class Runner extends EventEmitter {
       status: 'succeeded',
     };
     log(`Runner: start step (${step.name})`);
-    const { metrics, screenshots } = options;
+    const { metrics, screenshots, accessibility } = options;
     const { driver, pluginManager } = context;
     /**
      * URL needs to be the first navigation request of any step
@@ -238,6 +239,9 @@ export default class Runner extends EventEmitter {
       await step.callback();
       if (metrics) {
         data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
+      }
+      if (accessibility) {
+        data.accessibility = await pluginManager.get(Accessibility).getViolations();
       }
     } catch (error) {
       data.status = 'failed';

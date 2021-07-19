@@ -39,6 +39,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@axe-core/playwright": "^4.2.2",
     "commander": "^7.0.0",
     "deepmerge": "^4.2.2",
     "expect": "^27.0.2",

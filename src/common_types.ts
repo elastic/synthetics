@@ -125,6 +125,7 @@ export type CliArgs = {
   screenshots?: ScreenshotOptions;
   ssblocks?: boolean;
   metrics?: boolean;
+  accessibility?: boolean;
   filmstrips?: boolean;
   trace?: boolean;
   dryRun?: boolean;
