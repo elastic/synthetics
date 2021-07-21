@@ -243,6 +243,38 @@ describe('runner', () => {
     ]);
   });
 
+  it('run steps - new window navigation', async () => {
+    const j1 = journey('j1', async ({ page, context }) => {
+      step('visit test page', async () => {
+        await page.goto(server.TEST_PAGE);
+        await page.setContent(
+          '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+        );
+      });
+      step('click popup', async () => {
+        const [page1] = await Promise.all([
+          context.waitForEvent('page'),
+          page.click('a'),
+        ]);
+        await page1.waitForLoadState();
+      });
+    });
+    const context = await Runner.createContext({});
+    await runner.registerJourney(j1, context);
+    const result = await runner.runSteps(j1, context, {});
+    await Gatherer.stop();
+    expect(result).toEqual([
+      {
+        status: 'succeeded',
+        url: server.TEST_PAGE,
+      },
+      {
+        status: 'succeeded',
+        url: server.PREFIX + '/popup.html',
+      },
+    ]);
+  });
+
   it('run steps - accumulate results', async () => {
     const error = new Error('broken step 2');
     const j1 = journey('j1', async ({ page }) => {
