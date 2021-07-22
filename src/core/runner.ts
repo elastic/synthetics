@@ -233,13 +233,7 @@ export default class Runner extends EventEmitter {
       driver.page.off('request', captureUrl);
     };
     driver.page.on('request', captureUrl);
-    /**
-     * Capture screenshot for the newly created pages
-     * via popup or new windows/tabs
-     */
-    let page = driver.page;
-    const capturePage = newPage => (page = newPage);
-    driver.context.on('page', capturePage);
+
     try {
       pluginManager.onStep(step);
       await step.callback();
@@ -250,12 +244,21 @@ export default class Runner extends EventEmitter {
       data.status = 'failed';
       data.error = error;
     } finally {
-      data.url ??= page.url();
-      if (screenshots && screenshots !== 'off') {
-        await this.captureScreenshot(page, step);
+      /**
+       * Capture screenshot for the newly created pages
+       * via popup or new windows/tabs
+       *
+       * Last open page will get us the correct screenshot
+       */
+      const pages = driver.context.pages();
+      const page = pages[pages.length - 1];
+      if (page) {
+        data.url ??= page.url();
+        if (screenshots && screenshots !== 'off') {
+          await this.captureScreenshot(page, step);
+        }
       }
     }
-    driver.context.off('page', capturePage);
     log(`Runner: end step (${step.name})`);
     return data;
   }
