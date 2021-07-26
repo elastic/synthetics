@@ -230,9 +230,9 @@ export default class Runner extends EventEmitter {
       if (!data.url && req.isNavigationRequest()) {
         data.url = req.url();
       }
-      driver.page.off('request', captureUrl);
+      driver.context.off('request', captureUrl);
     };
-    driver.page.on('request', captureUrl);
+    driver.context.on('request', captureUrl);
 
     try {
       pluginManager.onStep(step);
