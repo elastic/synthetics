@@ -592,4 +592,37 @@ describe('runner', () => {
       },
     ]);
   });
+
+  it('run - differentiate screenshots for popups', async () => {
+    const j1 = journey('j1', async ({ page, context }) => {
+      step('visit test page', async () => {
+        await page.goto(server.TEST_PAGE);
+        await page.setContent(
+          '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+        );
+      });
+      step('click popup', async () => {
+        const [page1] = await Promise.all([
+          context.waitForEvent('page'),
+          page.click('a'),
+        ]);
+        await page1.waitForLoadState();
+      });
+    });
+    runner.addJourney(j1);
+
+    await runner.run({
+      wsEndpoint,
+      reporter: 'json',
+      screenshots: 'on',
+      outfd: fs.openSync(dest, 'w'),
+    });
+
+    const screenshotDocs = readAndCloseStreamJson().filter(
+      ({ type }) => type === 'step/screenshot'
+    );
+    expect(screenshotDocs.length).toEqual(2);
+    const blobs = screenshotDocs.map(data => data.blob);
+    expect(blobs[0]).not.toEqual(blobs[1]);
+  });
 });

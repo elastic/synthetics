@@ -51,9 +51,16 @@ if (process.env.DEBUG === namespace || Boolean(options.debug)) {
 }
 
 const loadInlineScript = source => {
-  const scriptFn = new Function('step', 'page', 'browser', 'params', source);
-  journey('inline', async ({ page, browser, params }) => {
-    scriptFn.apply(null, [step, page, browser, params]);
+  const scriptFn = new Function(
+    'step',
+    'page',
+    'context',
+    'browser',
+    'params',
+    source
+  );
+  journey('inline', async ({ page, context, browser, params }) => {
+    scriptFn.apply(null, [step, page, context, browser, params]);
   });
 };
 
