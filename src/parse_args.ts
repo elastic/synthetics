@@ -38,16 +38,10 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option(
-    '-s, --suite-params <jsonstring>',
-    'JSON object that gets injected to all journeys',
-    JSON.parse
-  )
-  .option(
     '-p, --params <jsonstring>',
     'JSON object that gets injected to all journeys',
     JSON.parse
   )
-  .option('-j, --json', 'output newline delimited JSON')
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
@@ -72,7 +66,6 @@ program
       .choices(['on', 'off', 'only-on-failure'])
       .default('on')
   )
-  .option('--network', 'capture network information for all journeys')
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"

@@ -134,17 +134,12 @@ export type CliArgs = {
   reporter?: Reporters;
   wsEndpoint?: string;
   sandbox?: boolean;
-  json?: boolean;
   pattern?: string;
   inline: boolean;
   match?: string;
   tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;
-  /**
-   * @deprecated use `params` instead
-   */
-  suiteParams?: Params;
   params?: Params;
   richEvents?: boolean;
 };
