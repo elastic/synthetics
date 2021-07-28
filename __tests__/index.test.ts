@@ -72,6 +72,7 @@ describe('Run', () => {
       match: 'check*',
       network: true,
       pauseOnError: true,
+      quietExitCode: true,
       reporter: 'json',
     };
     await run(options);

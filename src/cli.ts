@@ -194,12 +194,14 @@ async function prepareSuites(inputs: string[]) {
     ...options,
   });
 
-  /**
-   * Exit with error status if any journey fails
-   */
-  for (const result of Object.values(results)) {
-    if (result.status === 'failed') {
-      process.exit(1);
+  if (!options.quietExitCode) {
+    /**
+     * Exit with error status if any journey fails
+     */
+    for (const result of Object.values(results)) {
+      if (result.status === 'failed') {
+        process.exit(1);
+      }
     }
   }
 })().catch(e => {

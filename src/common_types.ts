@@ -130,6 +130,7 @@ export type CliArgs = {
   dryRun?: boolean;
   network?: boolean;
   pauseOnError?: boolean;
+  quietExitCode?: boolean;
   reporter?: Reporters;
   wsEndpoint?: string;
   sandbox?: boolean;
