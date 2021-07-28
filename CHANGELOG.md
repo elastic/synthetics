@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.10 (2021-07-27)
+
+### Bug fixes
+
+- Record correct screenshots for popups in new tabs
+  and windows [#353](https://github.com/elastic/synthetics/pull/353)
+- Capture URL correctly for steps that involve navigations inside
+  popups and windows [#352](https://github.com/elastic/synthetics/pull/352)
+
 ## v1.0.0-beta.9 (2021-07-13)
 
 ### Bug fixes
