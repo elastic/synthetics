@@ -98,6 +98,10 @@ program
     '--pause-on-error',
     'pause on error until a keypress is made in the console. Useful during development'
   )
+  .option(
+    '--quiet-exit-code',
+    'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
+  )
   .version(version)
   .description('Run synthetic tests');
 
@@ -112,6 +116,7 @@ if (options.richEvents) {
   options.reporter = options.reporter ?? 'json';
   options.ssblocks = true;
   options.network = true;
+  options.quietExitCode = true;
 }
 
 if (options.capability) {

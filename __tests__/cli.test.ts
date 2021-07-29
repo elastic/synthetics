@@ -41,6 +41,15 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(1);
   });
 
+  it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'error.journey.ts'),
+      '--quiet-exit-code',
+    ]);
+    await cli.waitFor('boom');
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('produce json output  --json and reporter=json flag', async () => {
     const output = async args => {
       const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), ...args]);
@@ -77,6 +86,7 @@ describe('CLI', () => {
   it('mimick new heartbeat with `--rich-events` flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
+      join(FIXTURES_DIR, 'error.journey.ts'),
       '--rich-events',
     ]);
     await cli.waitFor('journey/end');
@@ -94,7 +104,7 @@ describe('CLI', () => {
     });
 
     expect(await cli.exitCode).toBe(0);
-  });
+  }, 30000);
 
   it('override screenshots with `--rich-events` flag', async () => {
     const cli = new CLIMock([
