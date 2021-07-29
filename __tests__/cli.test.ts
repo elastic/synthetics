@@ -104,7 +104,7 @@ describe('CLI', () => {
     });
 
     expect(await cli.exitCode).toBe(0);
-  }, 30);
+  }, 30000);
 
   it('override screenshots with `--rich-events` flag', async () => {
     const cli = new CLIMock([
