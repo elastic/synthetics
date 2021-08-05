@@ -55,11 +55,9 @@ import { log } from './logger';
 export type RunOptions = Omit<
   CliArgs,
   | 'debug'
-  | 'json'
   | 'pattern'
   | 'inline'
   | 'require'
-  | 'suiteParams'
   | 'reporter'
   | 'richEvents'
   | 'capability'
