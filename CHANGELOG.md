@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.11 (2021-08-09)
+
+### Breaking Changes
+
+- Drop support for Heartbeat 7.13
+  [#354](https://github.com/elastic/synthetics/pull/354)
+
+### Features
+
+- Add quiet mode for Heartbeat via `--quiet-exit-code` and make
+  it default for > 7.14 Heartbeat versions [#357](https://github.com/elastic/synthetics/pull/357)
+
 ## v1.0.0-beta.10 (2021-07-27)
 
 ### Bug fixes
