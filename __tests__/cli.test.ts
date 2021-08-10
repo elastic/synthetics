@@ -59,7 +59,7 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
-  it('produce json output  --json and reporter=json flag', async () => {
+  it('produce json with reporter=json flag', async () => {
     const output = async args => {
       const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), ...args]);
       await cli.waitFor('fake journey');
@@ -70,47 +70,33 @@ describe('CLI', () => {
       id: 'fake journey',
       name: 'fake journey',
     });
-    expect((await output(['--json'])).journey).toEqual({
-      id: 'fake journey',
-      name: 'fake journey',
-    });
-  });
-
-  it('mimick 7.13 heartbeat wiwth all flags', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'example.journey.ts'),
-      '--network',
-      '--json',
-      '--screenshots',
-      '--suite-params',
-      JSON.stringify(serverParams),
-      '--outfd',
-      process.stdout.fd.toString(),
-    ]);
-    await cli.waitFor('journey/network_info');
-    expect(cli.output()).toBeDefined();
-    expect(await cli.exitCode).toBe(0);
   });
 
   it('mimick new heartbeat with `--rich-events` flag', async () => {
     const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
+      join(FIXTURES_DIR, 'example.journey.ts'),
       join(FIXTURES_DIR, 'error.journey.ts'),
       '--rich-events',
     ]);
     await cli.waitFor('journey/end');
+
     const screenshotRef = cli
       .buffer()
       .map(data => JSON.parse(data))
       .find(({ type }) => type === 'step/screenshot_ref');
-
     expect(screenshotRef).toMatchObject({
       journey: {
-        id: 'fake journey',
-        name: 'fake journey',
+        id: 'example journey',
+        name: 'example journey',
       },
       root_fields: expect.any(Object),
     });
+
+    const networkData = cli
+      .buffer()
+      .map(data => JSON.parse(data))
+      .find(({ type }) => type === 'journey/network_info');
+    expect(networkData).toBeDefined();
 
     expect(await cli.exitCode).toBe(0);
   }, 30000);
@@ -193,7 +179,7 @@ describe('CLI', () => {
     });
   });
 
-  it('suite params wins over config params', async () => {
+  it('params wins over config params', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'fake.journey.ts'),
       '--reporter',

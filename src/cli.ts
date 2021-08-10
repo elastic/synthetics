@@ -172,25 +172,15 @@ async function prepareSuites(inputs: string[]) {
    * Validate and handle configs
    */
   const config = readConfig(environment, options.config);
-  const params = merge(
-    config.params,
-    options.suiteParams || {},
-    options.params || {}
-  );
+  const params = merge(config.params, options.params || {});
   const playwrightOptions = merge(config.playwrightOptions, {
     headless: options.headless,
     chromiumSandbox: options.sandbox,
     ignoreHTTPSErrors: options.ignoreHTTPSErrors,
   });
-  /**
-   * use JSON reporter if json flag is enabled
-   */
-  const reporter = options.json ? 'json' : options.reporter;
-
   const results = await run({
     params: Object.freeze(params),
     environment,
-    reporter,
     playwrightOptions,
     ...options,
   });
