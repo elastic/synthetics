@@ -272,8 +272,8 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(1);
     });
 
-    it('succeeds succeeds with --ignoreHTTPSErrors', async () => {
-      const cli = new CLIMock([...cliArgs, '--ignoreHTTPSErrors']);
+    it('succeeds succeeds with --ignore-https-errors', async () => {
+      const cli = new CLIMock([...cliArgs, '--ignore-https-errors']);
       expect(await cli.exitCode).toBe(0);
     });
   });
@@ -307,7 +307,6 @@ class CLIMock {
       }
     };
     this.process.stdout.on('data', dataListener);
-    this.process.stderr.on('data', dataListener);
 
     this.exitCode = new Promise((res, rej) => {
       this.process.stderr.on('data', data => rej(new Error(data)));

@@ -92,7 +92,7 @@ program
     'pause on error until a keypress is made in the console. Useful during development'
   )
   .option(
-    '--ignoreHTTPSErrors',
+    '--ignore-https-errors',
     'ignores any HTTPS errors in sites being tested, including ones related to unrecognized certs or signatures. This can be insecure!'
   )
   .option(
@@ -130,7 +130,6 @@ if (options.capability) {
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    * ssblocks - Dedupes the screenshots in to blocks to save storage space
-   * ignoreHTTPsErrors - Sets playwright option to ignore HTTPS errors
    */
   for (const flag of options.capability) {
     if (supportedCapabilities.includes(flag)) {

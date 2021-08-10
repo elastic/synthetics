@@ -51,8 +51,8 @@ export class Server {
       srvConstructor = app =>
         https.createServer(
           {
-            key: readFileSync(`${__dirname}/../fixtures/selfsigned.key`),
-            cert: readFileSync(`${__dirname}/../fixtures/selfsigned.cert`),
+            key: readFileSync(`${__dirname}/../fixtures/ca/selfsigned.key`),
+            cert: readFileSync(`${__dirname}/../fixtures/ca/selfsigned.cert`),
           },
           app
         );
