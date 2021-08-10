@@ -250,7 +250,7 @@ describe('CLI', () => {
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
   });
 
-  describe('testing a TLS site with self-signed cert', () => {
+  describe('TLS site with self-signed cert', () => {
     let tlsServer: Server;
     let cliArgs: Array<string>;
 
