@@ -141,6 +141,7 @@ export type CliArgs = {
   tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;
+  ignoreHTTPSErrors?: boolean;
   /**
    * @deprecated use `params` instead
    */

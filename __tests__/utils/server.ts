@@ -39,7 +39,7 @@ export class Server {
   _routes = new Map<string, RequestListener>();
   static directory = join(__dirname, 'pages');
 
-  static async create(opts?: CreateOpts) {
+  static async create(opts?: CreateOpts): Promise<Server> {
     const instance = new Server(opts);
     await new Promise(resolve => instance._server.once('listening', resolve));
     return instance;

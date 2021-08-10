@@ -27,7 +27,7 @@ import { journey, step } from '../../';
 
 journey('example journey', ({ page, params }) => {
   step('go to test page', async () => {
-    await page.goto(params.url);
-    await page.waitForSelector('h2.syntheticsss');
+    await page.goto(params.url, { timeout: 1500 });
+    await page.waitForSelector('h2.synthetics', { timeout: 1500 });
   });
 });

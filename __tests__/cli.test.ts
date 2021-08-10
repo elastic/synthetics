@@ -29,16 +29,12 @@ import { Server } from './utils/server';
 
 describe('CLI', () => {
   let server: Server;
-  let tlsServer: Server;
+  let serverParams: { url: string };
   beforeAll(async () => {
-    [server, tlsServer] = await Promise.all([
-      Server.create({ tls: false }),
-      Server.create({ tls: true }),
-    ]);
+    server = await Server.create({ tls: false });
+    serverParams = { url: server.TEST_PAGE };
   });
-  afterAll(async () => {
-    await Promise.all([server.close(), tlsServer.close()]);
-  });
+  afterAll(async () => await server.close());
 
   const FIXTURES_DIR = join(__dirname, 'fixtures');
   it('run suites and exit with 0', async () => {
@@ -87,7 +83,7 @@ describe('CLI', () => {
       '--json',
       '--screenshots',
       '--suite-params',
-      '{}',
+      JSON.stringify(serverParams),
       '--outfd',
       process.stdout.fd.toString(),
     ]);
@@ -232,6 +228,8 @@ describe('CLI', () => {
   it('support capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'example.journey.ts'),
+      '--params',
+      JSON.stringify(serverParams),
       '--reporter',
       'json',
       '--capability',
@@ -266,18 +264,32 @@ describe('CLI', () => {
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
   });
 
-  it('can optionally ignore tls errors', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'example.journey.ts'),
-      '--params',
-      JSON.stringify({ tls: true, url: tlsServer.TEST_PAGE }),
-      '--reporter',
-      'json',
-      '--capability',
-      'ignoreHTTPSErrors',
-    ]);
-    console.warn(cli.buffer());
-    expect(await cli.exitCode).toBe(0);
+  describe('testing a TLS site with self-signed cert', () => {
+    let tlsServer: Server;
+    let cliArgs: Array<string>;
+
+    beforeAll(async () => {
+      tlsServer = await Server.create({ tls: true });
+      cliArgs = [
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        '--params',
+        JSON.stringify({ url: tlsServer.TEST_PAGE }),
+        '--reporter',
+        'json',
+      ];
+    });
+
+    afterAll(async () => await tlsServer.close());
+
+    it('fails by default', async () => {
+      const cli = new CLIMock(cliArgs);
+      expect(await cli.exitCode).toBe(1);
+    });
+
+    it('succeeds succeeds with --ignoreHTTPSErrors', async () => {
+      const cli = new CLIMock([...cliArgs, '--ignoreHTTPSErrors']);
+      expect(await cli.exitCode).toBe(0);
+    });
   });
 });
 
@@ -300,6 +312,8 @@ class CLIMock {
     );
     const dataListener = data => {
       this.data = data.toString();
+      // Uncomment the line below if the process is blocked and you need to see its output
+      // console.warn(this.data);
       this.chunks.push(...this.data.split('\n').filter(Boolean));
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);

@@ -180,7 +180,7 @@ async function prepareSuites(inputs: string[]) {
   const playwrightOptions = merge(config.playwrightOptions, {
     headless: options.headless,
     chromiumSandbox: options.sandbox,
-    ignoreHTTPSErrors: options.capability?.indexOf('ignoreHTTPSErrors') > -1,
+    ignoreHTTPSErrors: options.ignoreHTTPSErrors,
   });
   /**
    * use JSON reporter if json flag is enabled
