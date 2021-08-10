@@ -25,8 +25,21 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
+import { Server } from './utils/server';
 
 describe('CLI', () => {
+  let server: Server;
+  let tlsServer: Server;
+  beforeAll(async () => {
+    [server, tlsServer] = await Promise.all([
+      Server.create({ tls: false }),
+      Server.create({ tls: true }),
+    ]);
+  });
+  afterAll(async () => {
+    await Promise.all([server.close(), tlsServer.close()]);
+  });
+
   const FIXTURES_DIR = join(__dirname, 'fixtures');
   it('run suites and exit with 0', async () => {
     const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts')]);
@@ -252,6 +265,20 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
   });
+
+  it('can optionally ignore tls errors', async () => {
+    const cli = new CLIMock([
+      join(FIXTURES_DIR, 'example.journey.ts'),
+      '--params',
+      JSON.stringify({ tls: true, url: tlsServer.TEST_PAGE }),
+      '--reporter',
+      'json',
+      '--capability',
+      'ignoreHTTPSErrors',
+    ]);
+    console.warn(cli.buffer());
+    expect(await cli.exitCode).toBe(0);
+  });
 });
 
 class CLIMock {
@@ -280,6 +307,7 @@ class CLIMock {
       }
     };
     this.process.stdout.on('data', dataListener);
+    this.process.stderr.on('data', dataListener);
 
     this.exitCode = new Promise((res, rej) => {
       this.process.stderr.on('data', data => rej(new Error(data)));

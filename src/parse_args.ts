@@ -126,6 +126,7 @@ if (options.capability) {
     'filmstrips',
     'metrics',
     'ssblocks',
+    'ignoreHTTPSErrors',
   ];
   /**
    * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
@@ -133,6 +134,7 @@ if (options.capability) {
    * filmstrips - record detailed filmstrips for all journeys
    * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
    * ssblocks - Dedupes the screenshots in to blocks to save storage space
+   * ignoreHTTPsErrors - Sets playwright option to ignore HTTPS errors
    */
   for (const flag of options.capability) {
     if (supportedCapabilities.includes(flag)) {
