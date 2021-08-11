@@ -272,11 +272,17 @@ describe('CLI', () => {
     it('fails by default', async () => {
       const cli = new CLIMock(cliArgs);
       expect(await cli.exitCode).toBe(1);
+      expect(JSON.parse(cli.output()).journey).toEqual(
+        expect.objectContaining({ status: 'failed' })
+      );
     });
 
     it('succeeds succeeds with --ignore-https-errors', async () => {
       const cli = new CLIMock(cliArgs.concat('--ignore-https-errors'));
       expect(await cli.exitCode).toBe(0);
+      expect(JSON.parse(cli.output()).journey).toEqual(
+        expect.objectContaining({ status: 'succeeded' })
+      );
     });
   });
 });
@@ -312,7 +318,7 @@ class CLIMock {
 
     this.exitCode = new Promise(res => {
       this.process.stderr.on('data', data => {
-        console.warn('CLIMock STDERR: ', data.toString());
+        console.log('climock.stderr:  ', data.toString());
       });
       this.process.on('exit', code => res(code));
     });

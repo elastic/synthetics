@@ -178,7 +178,6 @@ async function prepareSuites(inputs: string[]) {
     chromiumSandbox: options.sandbox,
     ignoreHTTPSErrors: options.ignoreHttpsErrors,
   });
-  console.warn('OPTIONS ARE', playwrightOptions);
   const results = await run({
     params: Object.freeze(params),
     environment,
