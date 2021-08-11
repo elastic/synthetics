@@ -77,6 +77,8 @@ describe('CLI', () => {
       join(FIXTURES_DIR, 'example.journey.ts'),
       join(FIXTURES_DIR, 'error.journey.ts'),
       '--rich-events',
+      '--params',
+      JSON.stringify(serverParams),
     ]);
     await cli.waitFor('journey/end');
 
@@ -273,7 +275,7 @@ describe('CLI', () => {
     });
 
     it('succeeds succeeds with --ignore-https-errors', async () => {
-      const cli = new CLIMock([...cliArgs, '--ignore-https-errors']);
+      const cli = new CLIMock(cliArgs.concat('--ignore-https-errors'));
       expect(await cli.exitCode).toBe(0);
     });
   });
@@ -308,8 +310,10 @@ class CLIMock {
     };
     this.process.stdout.on('data', dataListener);
 
-    this.exitCode = new Promise((res, rej) => {
-      this.process.stderr.on('data', data => rej(new Error(data)));
+    this.exitCode = new Promise(res => {
+      this.process.stderr.on('data', data => {
+        console.warn('CLIMock STDERR: ', data.toString());
+      });
       this.process.on('exit', code => res(code));
     });
   }

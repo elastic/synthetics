@@ -140,7 +140,7 @@ export type CliArgs = {
   tags?: Array<string>;
   require: Array<string>;
   debug?: boolean;
-  ignoreHTTPSErrors?: boolean;
+  ignoreHttpsErrors?: boolean;
   params?: Params;
   richEvents?: boolean;
 };

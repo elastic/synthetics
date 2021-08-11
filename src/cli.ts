@@ -176,8 +176,9 @@ async function prepareSuites(inputs: string[]) {
   const playwrightOptions = merge(config.playwrightOptions, {
     headless: options.headless,
     chromiumSandbox: options.sandbox,
-    ignoreHTTPSErrors: options.ignoreHTTPSErrors,
+    ignoreHTTPSErrors: options.ignoreHttpsErrors,
   });
+  console.warn('OPTIONS ARE', playwrightOptions);
   const results = await run({
     params: Object.freeze(params),
     environment,
