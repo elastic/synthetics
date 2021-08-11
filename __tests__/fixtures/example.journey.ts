@@ -23,20 +23,11 @@
  *
  */
 
-import { journey, step, beforeAll, afterAll } from '../../';
-import { Server } from '../utils/server';
+import { journey, step } from '../../';
 
-let server: Server;
-
-beforeAll(async () => {
-  server = await Server.create();
-});
-afterAll(async () => {
-  await server.close();
-});
-
-journey('example journey', ({ page }) => {
+journey('example journey', ({ page, params }) => {
   step('go to test page', async () => {
-    await page.goto(server.TEST_PAGE);
+    await page.goto(params.url, { timeout: 1500 });
+    await page.waitForSelector('h2.synthetics', { timeout: 1500 });
   });
 });

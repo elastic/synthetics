@@ -92,6 +92,10 @@ program
     'pause on error until a keypress is made in the console. Useful during development'
   )
   .option(
+    '--ignore-https-errors',
+    'ignores any HTTPS errors in sites being tested, including ones related to unrecognized certs or signatures. This can be insecure!'
+  )
+  .option(
     '--quiet-exit-code',
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )

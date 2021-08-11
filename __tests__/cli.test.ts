@@ -25,8 +25,17 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
+import { Server } from './utils/server';
 
 describe('CLI', () => {
+  let server: Server;
+  let serverParams: { url: string };
+  beforeAll(async () => {
+    server = await Server.create({ tls: false });
+    serverParams = { url: server.TEST_PAGE };
+  });
+  afterAll(async () => await server.close());
+
   const FIXTURES_DIR = join(__dirname, 'fixtures');
   it('run suites and exit with 0', async () => {
     const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts')]);
@@ -68,6 +77,8 @@ describe('CLI', () => {
       join(FIXTURES_DIR, 'example.journey.ts'),
       join(FIXTURES_DIR, 'error.journey.ts'),
       '--rich-events',
+      '--params',
+      JSON.stringify(serverParams),
     ]);
     await cli.waitFor('journey/end');
 
@@ -116,7 +127,13 @@ describe('CLI', () => {
       join(FIXTURES_DIR, 'synthetics.config.ts'),
     ]);
     await cli.waitFor('journey/end');
-    const data = cli.buffer().map(data => JSON.parse(data));
+    const data = cli.buffer().map(data => {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        throw `Error ${e} could not parse data '${data}'`;
+      }
+    });
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );
@@ -205,6 +222,8 @@ describe('CLI', () => {
   it('support capability flag', async () => {
     const cli = new CLIMock([
       join(FIXTURES_DIR, 'example.journey.ts'),
+      '--params',
+      JSON.stringify(serverParams),
       '--reporter',
       'json',
       '--capability',
@@ -238,6 +257,40 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
   });
+
+  describe('TLS site with self-signed cert', () => {
+    let tlsServer: Server;
+    let cliArgs: Array<string>;
+
+    beforeAll(async () => {
+      tlsServer = await Server.create({ tls: true });
+      cliArgs = [
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        '--params',
+        JSON.stringify({ url: tlsServer.TEST_PAGE }),
+        '--reporter',
+        'json',
+      ];
+    });
+
+    afterAll(async () => await tlsServer.close());
+
+    it('fails by default', async () => {
+      const cli = new CLIMock(cliArgs);
+      expect(await cli.exitCode).toBe(1);
+      expect(JSON.parse(cli.output()).journey).toEqual(
+        expect.objectContaining({ status: 'failed' })
+      );
+    });
+
+    it('succeeds succeeds with --ignore-https-errors', async () => {
+      const cli = new CLIMock(cliArgs.concat('--ignore-https-errors'));
+      expect(await cli.exitCode).toBe(0);
+      expect(JSON.parse(cli.output()).journey).toEqual(
+        expect.objectContaining({ status: 'succeeded' })
+      );
+    });
+  });
 });
 
 class CLIMock {
@@ -259,6 +312,8 @@ class CLIMock {
     );
     const dataListener = data => {
       this.data = data.toString();
+      // Uncomment the line below if the process is blocked and you need to see its output
+      // console.warn(this.data);
       this.chunks.push(...this.data.split('\n').filter(Boolean));
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);
@@ -267,8 +322,11 @@ class CLIMock {
     };
     this.process.stdout.on('data', dataListener);
 
-    this.exitCode = new Promise((res, rej) => {
-      this.process.stderr.on('data', data => rej(new Error(data)));
+    this.exitCode = new Promise(res => {
+      // Uncomment to debug stderr
+      // this.process.stderr.on('data', data => {
+      // console.log('climock.stderr:  ', data.toString());
+      //});
       this.process.on('exit', code => res(code));
     });
   }

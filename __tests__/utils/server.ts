@@ -24,29 +24,45 @@
  */
 
 import http, { RequestListener, IncomingMessage, ServerResponse } from 'http';
+import https from 'https';
 import { parse } from 'url';
-import { createReadStream } from 'fs';
+import { createReadStream, readFileSync } from 'fs';
 import { join } from 'path';
 import { AddressInfo } from 'net';
+
+type CreateOpts = { tls?: boolean };
 
 export class Server {
   PREFIX: string;
   TEST_PAGE: string;
-  _server: http.Server;
+  _server: http.Server | https.Server;
   _routes = new Map<string, RequestListener>();
   static directory = join(__dirname, 'pages');
 
-  static async create() {
-    const instance = new Server();
+  static async create(opts?: CreateOpts): Promise<Server> {
+    const instance = new Server(opts);
     await new Promise(resolve => instance._server.once('listening', resolve));
     return instance;
   }
 
-  constructor() {
-    this._server = http.createServer(this._onRequest.bind(this));
+  constructor(opts?: CreateOpts) {
+    let srvConstructor = http.createServer;
+    if (opts?.tls) {
+      srvConstructor = app =>
+        https.createServer(
+          {
+            key: readFileSync(`${__dirname}/../fixtures/ca/selfsigned.key`),
+            cert: readFileSync(`${__dirname}/../fixtures/ca/selfsigned.cert`),
+          },
+          app
+        );
+    }
+
+    this._server = srvConstructor(this._onRequest.bind(this));
     this._server.listen(0);
     const { port } = this._server.address() as AddressInfo;
-    this.PREFIX = `http://localhost:${port}`;
+    const proto = opts?.tls ? 'https' : 'http';
+    this.PREFIX = `${proto}://localhost:${port}`;
     this.TEST_PAGE = `${this.PREFIX}/index.html`;
   }
 
