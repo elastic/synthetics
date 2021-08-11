@@ -127,7 +127,13 @@ describe('CLI', () => {
       join(FIXTURES_DIR, 'synthetics.config.ts'),
     ]);
     await cli.waitFor('journey/end');
-    const data = cli.buffer().map(data => JSON.parse(data));
+    const data = cli.buffer().map(data => {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        throw `Error ${e} could not parse data '${data}'`;
+      }
+    });
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );
@@ -317,9 +323,10 @@ class CLIMock {
     this.process.stdout.on('data', dataListener);
 
     this.exitCode = new Promise(res => {
-      this.process.stderr.on('data', data => {
-        console.log('climock.stderr:  ', data.toString());
-      });
+      // Uncomment to debug stderr
+      // this.process.stderr.on('data', data => {
+      // console.log('climock.stderr:  ', data.toString());
+      //});
       this.process.on('exit', code => res(code));
     });
   }
