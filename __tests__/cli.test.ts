@@ -37,31 +37,52 @@ describe('CLI', () => {
   afterAll(async () => await server.close());
 
   const FIXTURES_DIR = join(__dirname, 'fixtures');
+
+  it('runs inline tests', async () => {
+    const cli = new CLIMock()
+      .stdin(
+        `step('check h2', async () => {
+        await page.goto(params.url, { timeout: 1500 });
+        const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
+        expect(await sel.textContent()).toBe("Synthetics test page");
+      })`
+      )
+      .args(['--inline', '--params', JSON.stringify(serverParams)])
+      .run();
+    await cli.waitFor('Journey: inline');
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('run suites and exit with 0', async () => {
-    const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts')]);
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'fake.journey.ts')])
+      .run();
     await cli.waitFor('Journey: fake journey');
     expect(cli.output()).toContain('fake journey');
     expect(await cli.exitCode).toBe(0);
   });
 
   it('run suites and exit with 1', async () => {
-    const cli = new CLIMock([join(FIXTURES_DIR, 'error.journey.ts')]);
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'error.journey.ts')])
+      .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(1);
   });
 
   it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'error.journey.ts'),
-      '--quiet-exit-code',
-    ]);
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'error.journey.ts'), '--quiet-exit-code'])
+      .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(0);
   });
 
   it('produce json with reporter=json flag', async () => {
     const output = async args => {
-      const cli = new CLIMock([join(FIXTURES_DIR, 'fake.journey.ts'), ...args]);
+      const cli = new CLIMock()
+        .args([join(FIXTURES_DIR, 'fake.journey.ts'), ...args])
+        .run();
       await cli.waitFor('fake journey');
       expect(await cli.exitCode).toBe(0);
       return JSON.parse(cli.output());
@@ -73,13 +94,15 @@ describe('CLI', () => {
   });
 
   it('mimick new heartbeat with `--rich-events` flag', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'example.journey.ts'),
-      join(FIXTURES_DIR, 'error.journey.ts'),
-      '--rich-events',
-      '--params',
-      JSON.stringify(serverParams),
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        join(FIXTURES_DIR, 'error.journey.ts'),
+        '--rich-events',
+        '--params',
+        JSON.stringify(serverParams),
+      ])
+      .run();
     await cli.waitFor('journey/end');
 
     const screenshotRef = cli
@@ -104,12 +127,14 @@ describe('CLI', () => {
   }, 30000);
 
   it('override screenshots with `--rich-events` flag', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--rich-events',
-      '--screenshots',
-      'off',
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--rich-events',
+        '--screenshots',
+        'off',
+      ])
+      .run();
     await cli.waitFor('journey/end');
     const screenshots = cli
       .buffer()
@@ -120,12 +145,14 @@ describe('CLI', () => {
   });
 
   it('screenshots with device emulation', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--rich-events',
-      '--config',
-      join(FIXTURES_DIR, 'synthetics.config.ts'),
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--rich-events',
+        '--config',
+        join(FIXTURES_DIR, 'synthetics.config.ts'),
+      ])
+      .run();
     await cli.waitFor('journey/end');
     const data = cli.buffer().map(data => {
       try {
@@ -149,13 +176,15 @@ describe('CLI', () => {
     // jest by default sets NODE_ENV to `test`
     const original = process.env['NODE_ENV'];
     const output = async () => {
-      const cli = new CLIMock([
-        join(FIXTURES_DIR, 'fake.journey.ts'),
-        '--reporter',
-        'json',
-        '--config',
-        join(FIXTURES_DIR, 'synthetics.config.ts'),
-      ]);
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'fake.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+        ])
+        .run();
       await cli.waitFor('journey/start');
       expect(await cli.exitCode).toBe(0);
       return cli.output();
@@ -172,13 +201,15 @@ describe('CLI', () => {
   });
 
   it('pass playwright options to runner', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'pwoptions.journey.ts'),
-      '--reporter',
-      'json',
-      '--config',
-      join(FIXTURES_DIR, 'synthetics.config.ts'),
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+        '--reporter',
+        'json',
+        '--config',
+        join(FIXTURES_DIR, 'synthetics.config.ts'),
+      ])
+      .run();
     await cli.waitFor('step/end');
     const output = cli.output();
     expect(await cli.exitCode).toBe(0);
@@ -188,15 +219,17 @@ describe('CLI', () => {
   });
 
   it('params wins over config params', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--reporter',
-      'json',
-      '--config',
-      join(FIXTURES_DIR, 'synthetics.config.ts'),
-      '-p',
-      '{"url": "suite-url"}',
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--reporter',
+        'json',
+        '--config',
+        join(FIXTURES_DIR, 'synthetics.config.ts'),
+        '-p',
+        '{"url": "suite-url"}',
+      ])
+      .run();
     await cli.waitFor('journey/start');
     const output = cli.output();
     expect(await cli.exitCode).toBe(0);
@@ -206,11 +239,13 @@ describe('CLI', () => {
   });
 
   it('throw error on modifying params', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'params-error.journey.ts'),
-      '--reporter',
-      'json',
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'params-error.journey.ts'),
+        '--reporter',
+        'json',
+      ])
+      .run();
     expect(await cli.exitCode).toBe(1);
     const output = cli.output();
     expect(JSON.parse(output).error).toMatchObject({
@@ -220,15 +255,17 @@ describe('CLI', () => {
   });
 
   it('support capability flag', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'example.journey.ts'),
-      '--params',
-      JSON.stringify(serverParams),
-      '--reporter',
-      'json',
-      '--capability',
-      'metrics',
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        '--params',
+        JSON.stringify(serverParams),
+        '--reporter',
+        'json',
+        '--capability',
+        'metrics',
+      ])
+      .run();
     await cli.waitFor('step/end');
     const output = JSON.parse(cli.output());
     expect(output.payload.metrics).toBeDefined();
@@ -236,13 +273,15 @@ describe('CLI', () => {
   });
 
   it('show warn for unknown capability flag', async () => {
-    const cli = new CLIMock([
-      join(FIXTURES_DIR, 'fake.journey.ts'),
-      '--reporter',
-      'json',
-      '--capability',
-      'unknown',
-    ]);
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--reporter',
+        'json',
+        '--capability',
+        'unknown',
+      ])
+      .run();
     try {
       await cli.exitCode;
     } catch (e) {
@@ -253,7 +292,9 @@ describe('CLI', () => {
   it('run expect assetions with type check', async () => {
     // flag turns on type checking
     process.env['TS_NODE_TYPE_CHECK'] = 'true';
-    const cli = new CLIMock([join(FIXTURES_DIR, 'expect.journey.ts')]);
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'expect.journey.ts')])
+      .run();
     expect(await cli.exitCode).toBe(0);
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
   });
@@ -276,7 +317,7 @@ describe('CLI', () => {
     afterAll(async () => await tlsServer.close());
 
     it('fails by default', async () => {
-      const cli = new CLIMock(cliArgs);
+      const cli = new CLIMock().args(cliArgs).run();
       expect(await cli.exitCode).toBe(1);
       expect(JSON.parse(cli.output()).journey).toEqual(
         expect.objectContaining({ status: 'failed' })
@@ -284,7 +325,9 @@ describe('CLI', () => {
     });
 
     it('succeeds succeeds with --ignore-https-errors', async () => {
-      const cli = new CLIMock(cliArgs.concat('--ignore-https-errors'));
+      const cli = new CLIMock()
+        .args(cliArgs.concat('--ignore-https-errors'))
+        .run();
       expect(await cli.exitCode).toBe(0);
       expect(JSON.parse(cli.output()).journey).toEqual(
         expect.objectContaining({ status: 'succeeded' })
@@ -299,17 +342,38 @@ class CLIMock {
   private chunks: Array<string> = [];
   private waitForText: string;
   private waitForPromise: () => void;
+  private cliArgs: string[];
+  private stdinStr?: string;
   exitCode: Promise<number>;
 
-  constructor(args: string[]) {
+  constructor() {}
+
+  args(a: string[]): CLIMock {
+    this.cliArgs = a;
+    return this;
+  }
+
+  stdin(s: string): CLIMock {
+    this.stdinStr = s;
+    return this;
+  }
+
+  run(): CLIMock {
     this.process = spawn(
       'node',
-      [join(__dirname, '..', 'dist', 'cli.js'), ...args],
+      [join(__dirname, '..', 'dist', 'cli.js'), ...this.cliArgs],
       {
         env: process.env,
         stdio: 'pipe',
       }
     );
+
+    if (this.stdinStr) {
+      this.process.stdin.setDefaultEncoding('utf8');
+      this.process.stdin.write(this.stdinStr);
+      this.process.stdin.end();
+    }
+
     const dataListener = data => {
       this.data = data.toString();
       // Uncomment the line below if the process is blocked and you need to see its output
@@ -324,11 +388,13 @@ class CLIMock {
 
     this.exitCode = new Promise(res => {
       // Uncomment to debug stderr
-      // this.process.stderr.on('data', data => {
-      // console.log('climock.stderr:  ', data.toString());
+      //this.process.stderr.on('data', data => {
+      //  console.log('climock.stderr:  ', data.toString());
       //});
       this.process.on('exit', code => res(code));
     });
+
+    return this;
   }
 
   async waitFor(text: string): Promise<void> {
