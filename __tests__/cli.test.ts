@@ -369,6 +369,7 @@ class CLIMock {
     );
 
     if (this.stdinStr) {
+      this.process.stdin.setDefaultEncoding('utf8');
       this.process.stdin.write(this.stdinStr);
       this.process.stdin.end();
     }
