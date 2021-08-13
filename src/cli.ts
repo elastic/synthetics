@@ -31,6 +31,7 @@ import merge from 'deepmerge';
 import { step, journey } from './core';
 import { log } from './core/logger';
 import program, { options } from './parse_args';
+import { expect } from './core/expect';
 import {
   findPkgJsonByTraversing,
   isDepInstalled,
@@ -57,10 +58,11 @@ const loadInlineScript = source => {
     'context',
     'browser',
     'params',
+    'expect',
     source
   );
   journey('inline', async ({ page, context, browser, params }) => {
-    scriptFn.apply(null, [step, page, context, browser, params]);
+    scriptFn.apply(null, [step, page, context, browser, params, expect]);
   });
 };
 
