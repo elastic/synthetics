@@ -46,13 +46,12 @@ describe('BrowserConsole', () => {
     await page.evaluate(() =>
       console.warn('test-message', 1, { test: 'test' })
     );
-
     const messages = browserConsole.stop();
+    await Gatherer.stop();
     const testMessage = messages.find(m => m.text.indexOf('test-message') >= 0);
-    expect(testMessage.text).toEqual('test-message 1 JSHandle@object');
+    expect(testMessage.text).toEqual(`test-message 1 {test: test}`);
     expect(testMessage.type).toEqual('warning');
     expect(testMessage.timestamp).toBeDefined();
     expect(testMessage.step).toEqual({ name: 'step-name', index: 0 });
-    await Gatherer.stop();
   });
 });
