@@ -41,7 +41,7 @@ Object {
         "headers": Object {},
         "mime_type": "text/html",
         "protocol": "h2",
-        "remote_i_p_address": "[2606:4700:3035::ac43:83e0]",
+        "remote_ip_address": "[2606:4700:3035::ac43:83e0]",
         "remote_port": 443,
         "response_time": 1612482095476.922,
         "security_details": Object {
@@ -153,7 +153,7 @@ Object {
         "headers": Object {},
         "mime_type": "application/javascript",
         "protocol": "h2",
-        "remote_i_p_address": "[2606:4700:3035::ac43:83e0]",
+        "remote_ip_address": "[2606:4700:3035::ac43:83e0]",
         "remote_port": 443,
         "response_time": 1612482095622.864,
         "security_details": Object {
