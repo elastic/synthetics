@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.12 (2021-08-19)
+
+### Features
+
+- Add support for expect assertions for inline suites
+  [#365](https://github.com/elastic/synthetics/pull/365)
+- Add `ignore-https-errors` to the CLI to ignore any HTTPS errors during
+  navigation [#361](https://github.com/elastic/synthetics/pull/361)
+
+### Notable changes
+
+- Bump playwright to 1.14.0
+  [#366](https://github.com/elastic/synthetics/pull/366)
+- Bump Node.js version to 14 [#364](https://github.com/elastic/synthetics/pull/364)
+
 ## v1.0.0-beta.11 (2021-08-09)
 
 ### Breaking Changes
