@@ -102,7 +102,7 @@ export class PluginManager {
     (this.get('network') as NetworkManager)._currentStep = step;
   }
 
-  output(): PluginOutput {
+  output() {
     const data: PluginOutput = {};
     for (const [, plugin] of this.plugins) {
       if (plugin instanceof NetworkManager) {

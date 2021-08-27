@@ -84,13 +84,18 @@ type JourneyContext = BaseContext & {
 type StepResult = {
   status: StatusValue;
   url?: string;
-  pagemetrics?: PageMetrics;
   error?: Error;
+  pagemetrics?: PageMetrics;
+  filmstrips?: PluginOutput['filmstrips'];
+  metrics?: PluginOutput['metrics'];
+  traces?: PluginOutput['traces'];
 };
 
 type JourneyResult = {
   status: StatusValue;
   error?: Error;
+  networkinfo?: PluginOutput['networkinfo'];
+  browserconsole?: PluginOutput['browserconsole'];
 };
 
 type RunResult = Record<string, JourneyResult>;
@@ -109,20 +114,18 @@ interface Events {
     params: Params;
   };
   'journey:end': BaseContext &
-    JourneyResult &
-    PluginOutput & {
+    JourneyResult & {
       journey: Journey;
       options: RunOptions;
     };
   'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
-  'step:end': StepResult &
-    PluginOutput & {
-      start: number;
-      end: number;
-      journey: Journey;
-      step: Step;
-    };
+  'step:end': StepResult & {
+    start: number;
+    end: number;
+    journey: Journey;
+    step: Step;
+  };
   end: unknown;
 }
 

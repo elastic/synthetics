@@ -379,7 +379,37 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({ journey, step, start, end, error, url, status, pagemetrics }) => {
+      ({
+        journey,
+        step,
+        start,
+        end,
+        error,
+        url,
+        status,
+        pagemetrics,
+        traces,
+        metrics,
+        filmstrips,
+      }) => {
+        this.writeMetrics(journey, step, 'relative_trace', traces);
+        this.writeMetrics(journey, step, 'experience', metrics);
+        if (filmstrips) {
+          // Write each filmstrip separately so that we don't get documents that are too large
+          filmstrips.forEach((strip, index) => {
+            this.writeJSON({
+              type: 'journey/filmstrips',
+              journey,
+              step,
+              payload: { index },
+              root_fields: {
+                browser: { relative_trace: { start: strip.start } },
+              },
+              blob: strip.blob,
+              blob_mime: strip.mime,
+            });
+          });
+        }
         this.writeJSON({
           type: 'step/end',
           journey,
@@ -407,11 +437,8 @@ export default class JSONReporter extends BaseReporter {
         journey,
         start,
         end,
-        filmstrips,
         networkinfo,
         browserconsole,
-        traces,
-        metrics,
         status,
         error,
         options,
@@ -455,21 +482,6 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        if (filmstrips) {
-          // Write each filmstrip separately so that we don't get documents that are too large
-          filmstrips.forEach((strip, index) => {
-            this.writeJSON({
-              type: 'journey/filmstrips',
-              journey,
-              payload: { index },
-              root_fields: {
-                browser: { relative_trace: { start: strip.start } },
-              },
-              blob: strip.blob,
-              blob_mime: strip.mime,
-            });
-          });
-        }
         if (browserconsole) {
           browserconsole.forEach(({ timestamp, text, type, step }) => {
             this.writeJSON({
@@ -481,8 +493,6 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, 'relative_trace', traces);
-        this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({
           type: 'journey/end',
@@ -524,6 +534,7 @@ export default class JSONReporter extends BaseReporter {
 
   writeMetrics(
     journey: Journey,
+    step: Step,
     type: string,
     events: Array<TraceOutput> | PerfMetrics
   ) {
@@ -533,6 +544,7 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON({
           type: 'journey/metrics',
           journey,
+          step,
           root_fields: {
             browser: {
               [type]: event,
