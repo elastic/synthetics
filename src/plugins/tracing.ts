@@ -69,7 +69,7 @@ export class Tracing {
        */
       transferMode: 'ReportEvents',
       categories: includedCategories.join(','),
-      options: 'sampling-frequency=1000', // 1000 is default
+      options: 'sampling-frequency=10000', // 1000 is default
     });
   }
 

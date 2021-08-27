@@ -644,7 +644,6 @@ describe('runner', () => {
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const [step1, step2] = await runner.runSteps(j1, context, runOptions);
-    console.log('step1', step2);
     await Gatherer.stop();
     expect(step1.metrics).toBeUndefined();
     expect(step1.traces).toBeUndefined();
