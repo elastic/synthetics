@@ -39,7 +39,7 @@ describe('performance', () => {
 
   it('should capture page metrics', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const performance = new PerformanceManager(driver.client);
+    const performance = new PerformanceManager(driver);
     await performance.start();
     await driver.page.goto(server.TEST_PAGE);
     const metrics = await performance.getMetrics();

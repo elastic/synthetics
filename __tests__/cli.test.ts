@@ -268,7 +268,7 @@ describe('CLI', () => {
       .run();
     await cli.waitFor('step/end');
     const output = JSON.parse(cli.output());
-    expect(output.payload.metrics).toBeDefined();
+    expect(output.payload.pagemetrics).toBeDefined();
     expect(await cli.exitCode).toBe(0);
   });
 

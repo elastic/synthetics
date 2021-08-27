@@ -23,23 +23,11 @@
  *
  */
 
-import {
-  CDPSession,
-  chromium,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  Page,
-} from 'playwright-chromium';
+import { chromium, ChromiumBrowser } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
 import { log } from './logger';
-
-export type Driver = {
-  browser: ChromiumBrowser;
-  context: ChromiumBrowserContext;
-  page: Page;
-  client: CDPSession;
-};
+import { Driver } from '../common_types';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -70,14 +58,12 @@ export class Gatherer {
    */
   static async beginRecording(driver: Driver, options: RunOptions) {
     log('Gatherer: started recording');
-    const { filmstrips, trace, network, metrics } = options;
+    const { network, metrics } = options;
     const pluginManager = new PluginManager(driver);
-    const plugins = [pluginManager.start('browserconsole')];
-    network && plugins.push(pluginManager.start('network'));
-    metrics && plugins.push(pluginManager.start('performance'));
-    if (filmstrips || trace) {
-      plugins.push(pluginManager.start('trace', { filmstrips, trace }));
-    }
+    pluginManager.registerAll(options);
+    const plugins = [await pluginManager.start('browserconsole')];
+    network && plugins.push(await pluginManager.start('network'));
+    metrics && plugins.push(await pluginManager.start('performance'));
     await Promise.all(plugins);
     return pluginManager;
   }

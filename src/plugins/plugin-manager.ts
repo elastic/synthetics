@@ -23,7 +23,7 @@
  *
  */
 
-import { PluginOutput } from '../common_types';
+import { PluginOutput, Driver } from '../common_types';
 import {
   BrowserConsole,
   NetworkManager,
@@ -31,7 +31,6 @@ import {
   Tracing,
   TraceOptions,
 } from './';
-import { Driver } from '../core/gatherer';
 import { Step } from '../dsl';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
@@ -39,59 +38,78 @@ type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
 type PluginOptions = TraceOptions;
 
 export class PluginManager {
-  protected plugins = new Map<string, Plugin>();
-
+  protected plugins = new Map<PluginType, Plugin>();
+  public PLUGIN_TYPES: Array<PluginType> = [
+    'network',
+    'trace',
+    'performance',
+    'browserconsole',
+  ];
   constructor(private driver: Driver) {}
 
-  async start(type: PluginType, options?: PluginOptions) {
+  register(type: PluginType, options: PluginOptions) {
     let instance: Plugin;
     switch (type) {
       case 'network':
-        instance = new NetworkManager();
-        await instance.start(this.driver.client);
+        instance = new NetworkManager(this.driver);
         break;
       case 'trace':
-        instance = new Tracing(options);
-        await instance.start(this.driver.client);
+        instance = new Tracing(this.driver, options);
         break;
       case 'performance':
-        instance = new PerformanceManager(this.driver.client);
-        instance.start();
+        instance = new PerformanceManager(this.driver);
         break;
       case 'browserconsole':
-        instance = new BrowserConsole(this.driver.page);
-        instance.start();
+        instance = new BrowserConsole(this.driver);
         break;
     }
-
-    this.plugins.set(instance.constructor.name, instance);
+    instance && this.plugins.set(type, instance);
     return instance;
   }
 
-  get<T extends Plugin>(Type: new (...args: any[]) => T): T {
-    return this.plugins.get(Type.name) as T;
+  registerAll(options: PluginOptions) {
+    for (const type of this.PLUGIN_TYPES) {
+      this.register(type, options);
+    }
+  }
+
+  unregisterAll() {
+    for (const type of this.PLUGIN_TYPES) {
+      this.plugins.delete(type);
+    }
+  }
+
+  async stop(type: PluginType) {
+    const instance = this.plugins.get(type);
+    if (instance) {
+      return await instance.stop();
+    }
+    return {};
+  }
+
+  async start(type: PluginType) {
+    const instance = this.plugins.get(type);
+    instance && (await instance.start());
+    return instance;
+  }
+
+  get(type: PluginType) {
+    return this.plugins.get(type);
   }
 
   onStep(step: Step) {
-    this.get(BrowserConsole) && (this.get(BrowserConsole)._currentStep = step);
-    this.get(NetworkManager) && (this.get(NetworkManager)._currentStep = step);
+    (this.get('browserconsole') as BrowserConsole)._currentStep = step;
+    (this.get('network') as NetworkManager)._currentStep = step;
   }
 
-  async output(): Promise<PluginOutput> {
+  output(): PluginOutput {
     const data: PluginOutput = {};
-    try {
-      for (const [, plugin] of this.plugins) {
-        if (plugin instanceof NetworkManager) {
-          data.networkinfo = plugin.stop();
-        } else if (plugin instanceof Tracing) {
-          const result = await plugin.stop(this.driver.client);
-          Object.assign(data, { ...result });
-        } else if (plugin instanceof BrowserConsole) {
-          data.browserconsole = plugin.stop();
-        }
+    for (const [, plugin] of this.plugins) {
+      if (plugin instanceof NetworkManager) {
+        data.networkinfo = plugin.stop();
+      } else if (plugin instanceof BrowserConsole) {
+        data.browserconsole = plugin.stop();
       }
-    } catch (e) {
-      console.error('Error capturing data', e.message);
     }
     return data;
   }

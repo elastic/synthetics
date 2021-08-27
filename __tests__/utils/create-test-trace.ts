@@ -69,6 +69,18 @@ export function createTestTrace() {
     },
     {
       args: {
+        frame,
+      },
+      cat: 'loading,rail,devtools.timeline',
+      name: 'firstContentfulPaint',
+      ph: 'R',
+      pid,
+      s: 't',
+      tid,
+      ts: 200,
+    },
+    {
+      args: {
         data: {
           cumulative_score: 0.23466634114583335,
           had_recent_input: false,
@@ -76,12 +88,13 @@ export function createTestTrace() {
           score: 0.19932291666666668,
           weighted_score_delta: 0.19932291666666668,
         },
+        frame,
       },
       cat: 'loading',
       name: 'LayoutShift',
       ph: 'I',
-      tid: 775,
-      ts: 463045197179,
+      tid,
+      ts: 300,
     },
     {
       args: {
@@ -92,12 +105,13 @@ export function createTestTrace() {
           score: 0.21037326388888888,
           weighted_score_delta: 0.21037326388888888,
         },
+        frame,
       },
       cat: 'loading',
       name: 'LayoutShift',
       ph: 'I',
-      tid: 775,
-      ts: 463047103153,
+      tid,
+      ts: 400,
     },
     {
       args: {
@@ -111,8 +125,8 @@ export function createTestTrace() {
       cat: 'loading',
       name: 'LayoutShift',
       ph: 'I',
-      tid: 775,
-      ts: 463052381097,
+      tid,
+      ts: 500,
     },
   ];
 

@@ -152,13 +152,13 @@ describe('Trace metrics', () => {
     expect(
       CumulativeLayoutShift.compute({ frameTreeEvents: traceEvents } as any)
     ).toEqual({
-      cls: 0.21037326388888888,
+      cls: 0.40969618055555557,
       traces: [
         {
           name: 'layoutShift',
           score: 0.19932291666666668,
           start: {
-            us: 463045197179,
+            us: 300,
           },
           type: 'mark',
         },
@@ -166,7 +166,7 @@ describe('Trace metrics', () => {
           name: 'layoutShift',
           score: 0.21037326388888888,
           start: {
-            us: 463047103153,
+            us: 400,
           },
           type: 'mark',
         },

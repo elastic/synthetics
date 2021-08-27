@@ -24,7 +24,7 @@
  */
 
 import { Gatherer } from '../../src/core/gatherer';
-import { NetworkManager } from '../../src/plugins/network';
+import { NetworkManager, calculateTimings } from '../../src/plugins/network';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
 
@@ -41,8 +41,8 @@ describe('network', () => {
 
   it('should capture network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
     await driver.page.goto(server.TEST_PAGE);
     const netinfo = await network.stop();
     expect(netinfo.length).toBeGreaterThan(0);
@@ -66,8 +66,8 @@ describe('network', () => {
 
   it('not include data URL in network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
     await driver.page.goto('data:text/html,<title>Data URI test</title>');
     const netinfo = await network.stop();
     expect(await driver.page.content()).toContain('Data URI test');
@@ -77,8 +77,8 @@ describe('network', () => {
 
   it('produce distinct events for redirects', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
     /**
      * Set up two level of redirects
      */
@@ -98,8 +98,8 @@ describe('network', () => {
 
   it('measure resource and transfer size', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
     server.route('/route1', (_, res) => {
       res.end('A'.repeat(10));
     });
@@ -114,8 +114,8 @@ describe('network', () => {
 
   it('timings for aborted requests', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
 
     const delayTime = 20;
     server.route('/delay100', async (req, res) => {
@@ -144,8 +144,8 @@ describe('network', () => {
 
   it('timings for chunked response', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
-    const network = new NetworkManager();
-    await network.start(driver.client);
+    const network = new NetworkManager(driver);
+    await network.start();
 
     const delayTime = 100;
     server.route('/chunked', async (req, res) => {
@@ -204,9 +204,8 @@ describe('network', () => {
     };
 
     it('calculate timings for a request event', () => {
-      const network = new NetworkManager();
       const record = getEvent();
-      const timings = network.calculateTimings(record as any);
+      const timings = calculateTimings(record as any);
       expect(timings).toEqual({
         blocked: 0.09999999999998899,
         queueing: -1,
@@ -222,13 +221,12 @@ describe('network', () => {
     });
 
     it('when some resource timing data is unavailable', () => {
-      const network = new NetworkManager();
       const record = getEvent();
       Object.assign(record.response.timing, {
         connectEnd: -1,
         dnsStart: -1,
       });
-      const timings = network.calculateTimings(record as any);
+      const timings = calculateTimings(record as any);
       expect(timings).toEqual({
         blocked: 26.00000000000002,
         connect: -1,
@@ -244,10 +242,9 @@ describe('network', () => {
     });
 
     it('when complete resource timing is not available', () => {
-      const network = new NetworkManager();
       const record = getEvent();
       record.response.timing = null;
-      const timings = network.calculateTimings(record as any);
+      const timings = calculateTimings(record as any);
       expect(timings).toEqual({
         blocked: 1000,
         connect: -1,

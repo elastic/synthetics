@@ -38,8 +38,9 @@ describe('BrowserConsole', () => {
   });
 
   it('should capture browser console logs', async () => {
-    const { page } = await Gatherer.setupDriver({ wsEndpoint });
-    const browserConsole = new BrowserConsole(page);
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const browserConsole = new BrowserConsole(driver);
+    const { page } = driver;
     browserConsole.start();
     await page.goto(server.TEST_PAGE);
     browserConsole._currentStep = { name: 'step-name', index: 0 };

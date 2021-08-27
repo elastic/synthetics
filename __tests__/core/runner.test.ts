@@ -178,7 +178,7 @@ describe('runner', () => {
     expect(result).toEqual([
       {
         status: 'succeeded',
-        metrics: expect.any(Object),
+        pagemetrics: expect.any(Object),
         url: server.TEST_PAGE,
       },
     ]);

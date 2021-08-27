@@ -46,7 +46,7 @@ import {
   Params,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
-import { Metrics } from '../plugins';
+import { PageMetrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -71,7 +71,7 @@ type Payload = {
   end?: number;
   url?: string;
   status?: StatusValue | number;
-  metrics?: Metrics;
+  pagemetrics?: PageMetrics;
   params?: Params;
   type?: OutputType;
   text?: string;
@@ -379,7 +379,7 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({ journey, step, start, end, error, url, status, metrics }) => {
+      ({ journey, step, start, end, error, url, status, pagemetrics }) => {
         this.writeJSON({
           type: 'step/end',
           journey,
@@ -395,7 +395,7 @@ export default class JSONReporter extends BaseReporter {
             source: step.callback.toString(),
             url,
             status,
-            metrics,
+            pagemetrics,
           },
         });
       }

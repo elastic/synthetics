@@ -29,10 +29,31 @@ import { createTestTrace } from '../utils/create-test-trace';
 describe('Trace processor', () => {
   it('computes trace of the tab', () => {
     const { traceEvents } = createTestTrace();
-    const output = TraceProcessor.computeTrace(traceEvents as any);
-    expect(output).toEqual({
-      traces: [],
-      metrics: { cls: 0 },
+    const { metrics, traces } = TraceProcessor.computeTrace(traceEvents as any);
+    expect(metrics).toEqual({
+      cls: 0.40969618055555557,
+      fcp: {
+        us: 200,
+      },
     });
+    expect(traces).toEqual([
+      {
+        name: 'firstContentfulPaint',
+        type: 'mark',
+        start: { us: 200 },
+      },
+      {
+        name: 'layoutShift',
+        type: 'mark',
+        start: { us: 300 },
+        score: 0.19932291666666668,
+      },
+      {
+        name: 'layoutShift',
+        type: 'mark',
+        start: { us: 400 },
+        score: 0.21037326388888888,
+      },
+    ]);
   });
 });
