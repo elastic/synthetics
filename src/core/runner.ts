@@ -239,7 +239,7 @@ export default class Runner extends EventEmitter {
 
     try {
       /**
-       * Set up plugin maanger context and also register
+       * Set up plugin manager context and also register
        * step level plugins
        */
       const traceEnabled = trace || filmstrips;
@@ -257,7 +257,7 @@ export default class Runner extends EventEmitter {
       }
       if (traceEnabled) {
         const traceOutput = await pluginManager.stop('trace');
-        Object.assign(data, { ...traceOutput });
+        Object.assign(data, traceOutput);
       }
     } catch (error) {
       data.status = 'failed';

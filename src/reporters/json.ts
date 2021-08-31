@@ -58,11 +58,11 @@ type OutputType =
   | 'screenshot/block'
   | 'step/screenshot_ref'
   | 'step/screenshot'
+  | 'step/metrics'
+  | 'step/filmstrips'
   | 'step/end'
   | 'journey/network_info'
-  | 'journey/filmstrips'
   | 'journey/browserconsole'
-  | 'journey/metrics'
   | 'journey/end';
 
 type Payload = {
@@ -398,7 +398,7 @@ export default class JSONReporter extends BaseReporter {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {
             this.writeJSON({
-              type: 'journey/filmstrips',
+              type: 'step/filmstrips',
               journey,
               step,
               payload: { index },
@@ -542,7 +542,7 @@ export default class JSONReporter extends BaseReporter {
     metrics.forEach(event => {
       event &&
         this.writeJSON({
-          type: 'journey/metrics',
+          type: 'step/metrics',
           journey,
           step,
           root_fields: {
