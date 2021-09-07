@@ -31,22 +31,29 @@ jest.mock('../../src/plugins/network');
 describe('plugin manager', () => {
   const pluginManager = new PluginManager({} as any);
 
-  it('start plugin with given type', async () => {
-    await pluginManager.start('network');
-    const instance = pluginManager.get(NetworkManager);
-    expect(instance.start).toHaveBeenCalled();
-  });
-
-  it('get returns plugin instance', async () => {
-    await pluginManager.start('network');
-    const instance = pluginManager.get(NetworkManager);
+  it('register plugin by type', async () => {
+    await pluginManager.register('network', {});
+    const instance = pluginManager.get('network');
     expect(instance).toBeInstanceOf(NetworkManager);
   });
 
-  it('stop plugin on output generation', async () => {
-    await pluginManager.start('network');
-    const instance = pluginManager.get(NetworkManager);
-    await pluginManager.output();
+  it('register and unregister all Plugins', async () => {
+    pluginManager.registerAll({});
+    expect(pluginManager.get('network')).toBeDefined();
+    pluginManager.unregisterAll();
+    expect(pluginManager.get('network')).not.toBeDefined();
+  });
+
+  it('start plugin with given type', async () => {
+    await pluginManager.register('network', {}).start();
+    const instance = pluginManager.get('network');
+    expect(instance.start).toHaveBeenCalled();
+  });
+
+  it('stop plugin by type', async () => {
+    await pluginManager.register('network', {}).start();
+    const instance = pluginManager.get('network');
+    await pluginManager.stop('network');
     expect(instance.start).toHaveBeenCalled();
     expect(instance.stop).toHaveBeenCalled();
   });

@@ -118,13 +118,6 @@ describe('json reporter', () => {
       url: 'dummy',
       start: 0,
       end: 10,
-    });
-    runner.emit('journey:end', {
-      journey: j1,
-      status: 'succeeded',
-      start: 0,
-      end: 11,
-      options: {},
       filmstrips: [
         {
           blob: 'dummy',
@@ -133,14 +126,6 @@ describe('json reporter', () => {
             us: 392583998697,
           },
         },
-      ],
-      networkinfo: [
-        {
-          request: {},
-          response: undefined,
-          isNavigationRequest: true,
-          browser: {},
-        } as any,
       ],
       traces: [
         {
@@ -173,6 +158,21 @@ describe('json reporter', () => {
         load: { us: 400 },
         cls: 0.123,
       },
+    });
+    runner.emit('journey:end', {
+      journey: j1,
+      status: 'succeeded',
+      start: 0,
+      end: 11,
+      options: {},
+      networkinfo: [
+        {
+          request: {},
+          response: undefined,
+          isNavigationRequest: true,
+          browser: {},
+        } as any,
+      ],
     });
     runner.emit('end', 'done');
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();

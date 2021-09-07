@@ -23,7 +23,14 @@
  *
  */
 
-import { BrowserContextOptions, LaunchOptions } from 'playwright-chromium';
+import {
+  BrowserContextOptions,
+  LaunchOptions,
+  CDPSession,
+  ChromiumBrowser,
+  ChromiumBrowserContext,
+  Page,
+} from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
 import { reporters } from './reporters';
@@ -37,6 +44,13 @@ export type HooksArgs = {
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
+
+export type Driver = {
+  browser: ChromiumBrowser;
+  context: ChromiumBrowserContext;
+  page: Page;
+  client: CDPSession;
+};
 
 export type TraceOutput = {
   name: string;

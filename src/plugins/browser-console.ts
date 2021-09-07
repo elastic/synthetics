@@ -23,8 +23,7 @@
  *
  */
 
-import { Page } from 'playwright-chromium';
-import { BrowserMessage } from '../common_types';
+import { BrowserMessage, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
@@ -33,6 +32,8 @@ const defaultMessageLimit = 1000;
 export class BrowserConsole {
   private messages: BrowserMessage[] = [];
   _currentStep: Partial<Step> = null;
+
+  constructor(private driver: Driver) {}
 
   private consoleEventListener = msg => {
     if (!this._currentStep) {
@@ -53,14 +54,12 @@ export class BrowserConsole {
     }
   };
 
-  constructor(private page: Page) {}
-
   start() {
-    this.page.on('console', this.consoleEventListener);
+    this.driver.page.on('console', this.consoleEventListener);
   }
 
   stop() {
-    this.page.off('console', this.consoleEventListener);
+    this.driver.page.off('console', this.consoleEventListener);
     return this.messages;
   }
 }

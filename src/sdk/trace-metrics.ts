@@ -24,10 +24,14 @@
  */
 
 import { Filmstrip, TraceOutput } from '../common_types';
-import type { LHTrace, TraceEvent } from './trace-processor';
+import type {
+  LHProcessedNavigation,
+  LHProcessedTrace,
+  TraceEvent,
+} from './trace-processor';
 
 export class UserTimings {
-  static compute(trace: LHTrace) {
+  static compute(trace: LHProcessedTrace) {
     const { processEvents } = trace;
     const measuresMap = new Map();
     const userTimings: Array<TraceOutput> = [];
@@ -96,7 +100,7 @@ export class ExperienceMetrics {
     };
   }
 
-  static compute(trace: LHTrace) {
+  static compute(trace: LHProcessedNavigation) {
     const traces: Array<TraceOutput> = [];
     const { timestamps, timings, lcpInvalidated } = trace;
 
@@ -226,7 +230,7 @@ export class CumulativeLayoutShift {
     return maxScore;
   }
 
-  static compute(trace: LHTrace) {
+  static compute(trace: LHProcessedTrace) {
     const layoutShiftEvents = this.getLayoutShiftEvents(trace.frameTreeEvents);
     const traces: Array<TraceOutput> = layoutShiftEvents.map(event => {
       return {

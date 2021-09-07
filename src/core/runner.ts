@@ -46,10 +46,11 @@ import {
   CliArgs,
   HooksArgs,
   PlaywrightOptions,
+  Driver,
 } from '../common_types';
-import { PluginManager } from '../plugins';
-import { PerformanceManager, Metrics } from '../plugins';
-import { Driver, Gatherer } from './gatherer';
+import { PageMetrics, PluginManager } from '../plugins';
+import { PerformanceManager } from '../plugins';
+import { Gatherer } from './gatherer';
 import { log } from './logger';
 
 export type RunOptions = Omit<
@@ -83,13 +84,18 @@ type JourneyContext = BaseContext & {
 type StepResult = {
   status: StatusValue;
   url?: string;
-  metrics?: Metrics;
   error?: Error;
+  pagemetrics?: PageMetrics;
+  filmstrips?: PluginOutput['filmstrips'];
+  metrics?: PluginOutput['metrics'];
+  traces?: PluginOutput['traces'];
 };
 
 type JourneyResult = {
   status: StatusValue;
   error?: Error;
+  networkinfo?: PluginOutput['networkinfo'];
+  browserconsole?: PluginOutput['browserconsole'];
 };
 
 type RunResult = Record<string, JourneyResult>;
@@ -108,8 +114,7 @@ interface Events {
     params: Params;
   };
   'journey:end': BaseContext &
-    JourneyResult &
-    PluginOutput & {
+    JourneyResult & {
       journey: Journey;
       options: RunOptions;
     };
@@ -217,7 +222,7 @@ export default class Runner extends EventEmitter {
       status: 'succeeded',
     };
     log(`Runner: start step (${step.name})`);
-    const { metrics, screenshots } = options;
+    const { metrics, screenshots, filmstrips, trace } = options;
     const { driver, pluginManager } = context;
     /**
      * URL needs to be the first navigation request of any step
@@ -233,10 +238,26 @@ export default class Runner extends EventEmitter {
     driver.context.on('request', captureUrl);
 
     try {
+      /**
+       * Set up plugin manager context and also register
+       * step level plugins
+       */
+      const traceEnabled = trace || filmstrips;
       pluginManager.onStep(step);
+      traceEnabled && (await pluginManager.start('trace'));
+      // call the step definition
       await step.callback();
+      /**
+       * Collect all step level metrics
+       */
       if (metrics) {
-        data.metrics = await pluginManager.get(PerformanceManager).getMetrics();
+        data.pagemetrics = await (
+          pluginManager.get('performance') as PerformanceManager
+        ).getMetrics();
+      }
+      if (traceEnabled) {
+        const traceOutput = await pluginManager.stop('trace');
+        Object.assign(data, traceOutput);
       }
     } catch (error) {
       data.status = 'failed';
@@ -313,7 +334,7 @@ export default class Runner extends EventEmitter {
     options: RunOptions
   ) {
     const { pluginManager, start, status, error } = result;
-    const pluginOutput = await pluginManager.output();
+    const pluginOutput = pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,

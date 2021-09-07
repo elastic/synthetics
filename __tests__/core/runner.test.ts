@@ -178,7 +178,7 @@ describe('runner', () => {
     expect(result).toEqual([
       {
         status: 'succeeded',
-        metrics: expect.any(Object),
+        pagemetrics: expect.any(Object),
         url: server.TEST_PAGE,
       },
     ]);
@@ -624,5 +624,35 @@ describe('runner', () => {
     expect(screenshotDocs.length).toEqual(2);
     const blobs = screenshotDocs.map(data => data.blob);
     expect(blobs[0]).not.toEqual(blobs[1]);
+  });
+
+  it('run - capture trace step level', async () => {
+    const j1 = journey('test trace', async ({ page }) => {
+      step('without FCP', async () => {
+        await page.goto('about:blank');
+      });
+      step('with FCP', async () => {
+        await page.goto(server.TEST_PAGE);
+        // Image paint triggers FCP and LCP
+        await page.setContent(`
+          <img src=${server.PREFIX}/favicon.png>
+        `);
+        await page.waitForLoadState('networkidle');
+      });
+    });
+    const runOptions = { trace: true };
+    const context = await Runner.createContext(runOptions);
+    await runner.registerJourney(j1, context);
+    const [step1, step2] = await runner.runSteps(j1, context, runOptions);
+    await Gatherer.stop();
+    expect(step1.metrics).toBeUndefined();
+    expect(step1.traces).toBeUndefined();
+    expect(step2.traces.length).toBeGreaterThan(0);
+    expect(step2.metrics).toMatchObject({
+      cls: 0,
+      fcp: {
+        us: expect.any(Number),
+      },
+    });
   });
 });

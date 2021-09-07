@@ -25,7 +25,6 @@
 
 import { Gatherer } from '../../src/core/gatherer';
 import { PluginManager } from '../../src/plugins';
-import { NetworkManager } from '../../src/plugins/network';
 import { wsEndpoint } from '../utils/test-config';
 
 jest.mock('../../src/plugins/network');
@@ -51,7 +50,7 @@ describe('Gatherer', () => {
       network: true,
     });
     expect(pluginManager).toBeInstanceOf(PluginManager);
-    const network = pluginManager.get(NetworkManager);
+    const network = pluginManager.get('network');
     expect(network.start).toHaveBeenCalled();
     await Gatherer.stop();
   });

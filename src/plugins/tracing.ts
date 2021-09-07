@@ -23,8 +23,7 @@
  *
  */
 
-import { CDPSession } from 'playwright-chromium';
-import { PluginOutput } from '../common_types';
+import { Driver, PluginOutput } from '../common_types';
 import { Filmstrips } from '../sdk/trace-metrics';
 import { TraceEvent, TraceProcessor } from '../sdk/trace-processor';
 
@@ -38,9 +37,9 @@ export type TraceOptions = {
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  */
 export class Tracing {
-  constructor(public options: TraceOptions) {}
+  constructor(private driver: Driver, private options: TraceOptions) {}
 
-  async start(client: CDPSession) {
+  async start() {
     const includedCategories = [
       // exclude all default categories
       '-*',
@@ -63,21 +62,21 @@ export class Tracing {
         'disabled-by-default-devtools.timeline'
       );
     }
-    await client.send('Tracing.start', {
+    await this.driver.client.send('Tracing.start', {
       /**
        * Using `ReportEvents` makes gathering trace events
        * much faster as opposed to using `ReturnAsStream` mode
        */
       transferMode: 'ReportEvents',
-      traceConfig: {
-        includedCategories,
-      },
+      categories: includedCategories.join(','),
+      options: 'sampling-frequency=10000', // 1000 is default
     });
   }
 
-  async stop(client: CDPSession) {
+  async stop() {
     const events = [];
     const collectListener = payload => events.push(...payload.value);
+    const { client } = this.driver;
     client.on('Tracing.dataCollected', collectListener);
 
     const [traceEvents] = await Promise.all([

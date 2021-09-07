@@ -46,7 +46,7 @@ import {
   Params,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
-import { Metrics } from '../plugins';
+import { PageMetrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -58,11 +58,11 @@ type OutputType =
   | 'screenshot/block'
   | 'step/screenshot_ref'
   | 'step/screenshot'
+  | 'step/metrics'
+  | 'step/filmstrips'
   | 'step/end'
   | 'journey/network_info'
-  | 'journey/filmstrips'
   | 'journey/browserconsole'
-  | 'journey/metrics'
   | 'journey/end';
 
 type Payload = {
@@ -71,7 +71,7 @@ type Payload = {
   end?: number;
   url?: string;
   status?: StatusValue | number;
-  metrics?: Metrics;
+  pagemetrics?: PageMetrics;
   params?: Params;
   type?: OutputType;
   text?: string;
@@ -379,7 +379,37 @@ export default class JSONReporter extends BaseReporter {
 
     this.runner.on(
       'step:end',
-      ({ journey, step, start, end, error, url, status, metrics }) => {
+      ({
+        journey,
+        step,
+        start,
+        end,
+        error,
+        url,
+        status,
+        pagemetrics,
+        traces,
+        metrics,
+        filmstrips,
+      }) => {
+        this.writeMetrics(journey, step, 'relative_trace', traces);
+        this.writeMetrics(journey, step, 'experience', metrics);
+        if (filmstrips) {
+          // Write each filmstrip separately so that we don't get documents that are too large
+          filmstrips.forEach((strip, index) => {
+            this.writeJSON({
+              type: 'step/filmstrips',
+              journey,
+              step,
+              payload: { index },
+              root_fields: {
+                browser: { relative_trace: { start: strip.start } },
+              },
+              blob: strip.blob,
+              blob_mime: strip.mime,
+            });
+          });
+        }
         this.writeJSON({
           type: 'step/end',
           journey,
@@ -395,7 +425,7 @@ export default class JSONReporter extends BaseReporter {
             source: step.callback.toString(),
             url,
             status,
-            metrics,
+            pagemetrics,
           },
         });
       }
@@ -407,11 +437,8 @@ export default class JSONReporter extends BaseReporter {
         journey,
         start,
         end,
-        filmstrips,
         networkinfo,
         browserconsole,
-        traces,
-        metrics,
         status,
         error,
         options,
@@ -455,21 +482,6 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        if (filmstrips) {
-          // Write each filmstrip separately so that we don't get documents that are too large
-          filmstrips.forEach((strip, index) => {
-            this.writeJSON({
-              type: 'journey/filmstrips',
-              journey,
-              payload: { index },
-              root_fields: {
-                browser: { relative_trace: { start: strip.start } },
-              },
-              blob: strip.blob,
-              blob_mime: strip.mime,
-            });
-          });
-        }
         if (browserconsole) {
           browserconsole.forEach(({ timestamp, text, type, step }) => {
             this.writeJSON({
@@ -481,8 +493,6 @@ export default class JSONReporter extends BaseReporter {
             });
           });
         }
-        this.writeMetrics(journey, 'relative_trace', traces);
-        this.writeMetrics(journey, 'experience', metrics);
 
         this.writeJSON({
           type: 'journey/end',
@@ -524,6 +534,7 @@ export default class JSONReporter extends BaseReporter {
 
   writeMetrics(
     journey: Journey,
+    step: Step,
     type: string,
     events: Array<TraceOutput> | PerfMetrics
   ) {
@@ -531,8 +542,9 @@ export default class JSONReporter extends BaseReporter {
     metrics.forEach(event => {
       event &&
         this.writeJSON({
-          type: 'journey/metrics',
+          type: 'step/metrics',
           journey,
+          step,
           root_fields: {
             browser: {
               [type]: event,

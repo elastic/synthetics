@@ -23,7 +23,7 @@
  *
  */
 
-import { CDPSession } from 'playwright-chromium';
+import { Driver } from '../common_types';
 
 const supportedMetrics = new Set<string>([
   'Timestamp',
@@ -41,7 +41,7 @@ const supportedMetrics = new Set<string>([
   'JSHeapTotalSize',
 ]);
 
-export interface Metrics {
+export interface PageMetrics {
   Timestamp?: number;
   Documents?: number;
   Frames?: number;
@@ -58,22 +58,22 @@ export interface Metrics {
 }
 
 export class PerformanceManager {
-  constructor(private client: CDPSession) {}
+  constructor(private driver: Driver) {}
 
   async start() {
-    await this.client.send('Performance.enable');
+    await this.driver.client.send('Performance.enable');
   }
 
   async stop() {
-    await this.client.send('Performance.disable');
+    await this.driver.client.send('Performance.disable');
   }
 
   async getMetrics() {
-    const { metrics } = await this.client.send('Performance.getMetrics');
+    const { metrics } = await this.driver.client.send('Performance.getMetrics');
     return this.buildMetricsObject(metrics);
   }
 
-  private buildMetricsObject(metrics = []): Metrics {
+  private buildMetricsObject(metrics = []): PageMetrics {
     const result = {};
     for (const metric of metrics) {
       if (supportedMetrics.has(metric.name)) result[metric.name] = metric.value;

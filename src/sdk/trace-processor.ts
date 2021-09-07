@@ -23,13 +23,14 @@
  *
  */
 
-import { PerfMetrics } from '../common_types';
 import LighthouseTraceProcessor from './lh-trace-processor';
 import {
   ExperienceMetrics,
   CumulativeLayoutShift,
   UserTimings,
 } from './trace-metrics';
+import { PerfMetrics } from '../common_types';
+import { log } from '../core/logger';
 
 const ACCEPTABLE_NAVIGATION_URL_REGEX = /^(file|https?):/;
 
@@ -81,16 +82,22 @@ type LHTraceTime = {
   traceEnd: number;
 };
 
-export type LHTrace = {
+export type LHProcessedNavigation = {
   domContentLoadedEvt: TraceEvent;
   firstContentfulPaintEvt: TraceEvent;
   largestContentfulPaintEvt: TraceEvent;
   loadEvt: TraceEvent;
-  timeOriginEvt: TraceEvent;
+  timestamps: LHTraceTime;
+  timings: LHTraceTime;
   lcpInvalidated: boolean;
+};
+
+export type LHProcessedTrace = {
   processEvents: Array<TraceEvent>;
+  frameEvents: Array<TraceEvent>;
   mainThreadEvents: Array<TraceEvent>;
   frameTreeEvents: Array<TraceEvent>;
+  timeOriginEvt: TraceEvent;
   timestamps: Partial<LHTraceTime>;
   timings: Partial<LHTraceTime>;
 };
@@ -118,15 +125,23 @@ export class TraceProcessor extends LighthouseTraceProcessor {
     const options = {
       timeOriginDeterminationMethod: 'lastNavigationStart',
     };
-    const trace = super.computeTraceOfTab({ traceEvents }, options);
-    const userTiming = UserTimings.compute(trace);
-    const { traces: expTraces, metrics } = ExperienceMetrics.compute(trace);
-    const { cls, traces: layoutTraces } = CumulativeLayoutShift.compute(trace);
-    const perfMetrics: Partial<PerfMetrics> = { cls, ...metrics };
+    try {
+      const processedTrace = this.processTrace({ traceEvents }, options);
+      const processedNavigation = this.processNavigation(processedTrace);
+      const userTiming = UserTimings.compute(processedTrace);
+      const { traces: expTraces, metrics } =
+        ExperienceMetrics.compute(processedNavigation);
+      const { cls, traces: layoutTraces } =
+        CumulativeLayoutShift.compute(processedTrace);
+      const perfMetrics: Partial<PerfMetrics> = { cls, ...metrics };
 
-    return {
-      traces: userTiming.concat(expTraces, layoutTraces),
-      metrics: perfMetrics,
-    };
+      return {
+        traces: userTiming.concat(expTraces, layoutTraces),
+        metrics: perfMetrics,
+      };
+    } catch (e) {
+      log(e);
+      return {};
+    }
   }
 }
