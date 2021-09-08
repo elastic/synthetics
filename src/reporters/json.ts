@@ -44,8 +44,10 @@ import {
   StatusValue,
   PerfMetrics,
   Params,
+  SecurityDetails,
+  Request,
+  Response,
 } from '../common_types';
-import { Protocol } from 'playwright-chromium/types/protocol';
 import { PageMetrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -134,7 +136,7 @@ function getMetadata() {
 
 function formatVersion(protocol: string | undefined) {
   if (!protocol) {
-    return;
+    return 1.1;
   }
   if (protocol === 'h2') {
     return 2;
@@ -147,41 +149,29 @@ function formatVersion(protocol: string | undefined) {
   }
 }
 
-function formatRequest(request: Protocol.Network.Request) {
-  const postData = request.postData ? request.postData : '';
+function formatRequest(request: Request) {
   return {
     ...request,
-    body: {
-      bytes: postData.length,
-      content: postData,
-    },
     referrer: request.headers?.Referer,
   };
 }
 
-function formatResponse(response: Protocol.Network.Response) {
+function formatResponse(response: Response) {
   if (!response) {
     return;
   }
   return {
     ...response,
-    body: {
-      bytes: response.encodedDataLength,
-    },
     status_code: response.status,
   };
 }
 
-function formatTLS(tls: Protocol.Network.SecurityDetails) {
+function formatTLS(tls: SecurityDetails) {
   if (!tls) {
     return;
   }
-  const cipher = `${tls.keyExchange ? tls.keyExchange + '_' : ''}${
-    tls.cipher
-  }_${tls.keyExchangeGroup}`;
   const [name, version] = tls.protocol.toLowerCase().split(' ');
   return {
-    cipher,
     server: {
       x509: {
         issuer: {
@@ -210,7 +200,7 @@ export function formatNetworkFields(network: NetworkInfo) {
       original: request.headers?.['User-Agent'],
     },
     http: {
-      version: formatVersion(response?.protocol),
+      version: formatVersion(response?.httpVersion),
       request: formatRequest(request),
       response: formatResponse(response),
     },

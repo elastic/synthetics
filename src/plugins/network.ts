@@ -23,336 +23,210 @@
  *
  */
 
-import { Protocol } from 'playwright-chromium/types/protocol';
+import { Request, Response } from 'playwright-chromium';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
+function epochTimeInMills() {
+  return getTimestamp() / 1000;
+}
+
 export class NetworkManager {
   private _browser: BrowserInfo;
-  private _InflightRequestMap = new Map<string, NetworkInfo>();
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
+  _networkEntrySymbol = Symbol.for('networkEntry');
 
   constructor(private driver: Driver) {}
 
   async start() {
-    const { client } = this.driver;
+    const { client, context } = this.driver;
     const { product } = await client.send('Browser.getVersion');
     const [name, version] = product.split('/');
     this._browser = { name, version };
-    await client.send('Network.enable');
-    /**
-     * Listen for all network events
-     */
-    client.on(
-      'Network.requestWillBeSent',
-      this._onRequestWillBeSent.bind(this)
-    );
-    client.on(
-      'Network.requestWillBeSentExtraInfo',
-      this._onRequestWillBeSentExtraInfo.bind(this)
-    );
-    client.on('Network.dataReceived', this._onDataReceived.bind(this));
-    client.on('Network.responseReceived', this._onResponseReceived.bind(this));
-    client.on('Network.loadingFinished', this._onLoadingFinished.bind(this));
-    client.on('Network.loadingFailed', this._onLoadingFailed.bind(this));
+    context.on('request', this._onRequest.bind(this));
+    context.on('response', this._onResponse.bind(this));
+    context.on('requestfinished', this._onLoadingFinished.bind(this));
+    context.on('requestfailed', this._onLoadingFailed.bind(this));
   }
 
-  _findNetworkRecord(requestId: string) {
-    return this._InflightRequestMap.get(requestId);
+  private _findNetworkEntry(request: Request): NetworkInfo | undefined {
+    return (request as any)[this._networkEntrySymbol];
   }
 
-  _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
-    const { requestId, request, timestamp, type, loaderId } = event;
-    const { url, method } = request;
+  private _onRequest(request: Request) {
+    const url = request.url();
     /**
      * Data URI should not show up as network requests
      */
     if (url.startsWith('data:')) {
       return;
     }
-    const isNavigationRequest = requestId == loaderId && type === 'Document';
-    const record = this._findNetworkRecord(requestId);
-    /**
-     * On redirects, another `requestWillBeSent` event will be fired for the
-     * same requestId. We calculate the timings for the redirect request using
-     * the `redirectedResponse` from the redirected request.
-     */
-    if (record) {
-      if (event.redirectResponse) {
-        const response = event.redirectResponse;
-        const data = Object.assign(event, {
-          type: event.type,
-          response,
-          encodedDataLength: response.encodedDataLength,
-        });
-        this._onResponseReceived(data);
-        this._onLoadingFinished(data);
-      } else {
-        /**
-         * Edge case, we handle it to proceed with next navigation
-         */
-        this._onLoadingFailed(
-          Object.assign(event, {
-            type: event.type,
-            errorText: 'redirectResponse data is not available',
-          })
-        );
-      }
-      const redirectedRecord = this._findNetworkRecord(requestId);
-      /**
-       * Rewrite the map with new redirect id to not reset
-       * the redirect request with original request
-       */
-      this._InflightRequestMap.delete(requestId);
-      this._InflightRequestMap.set(
-        `redirect:${timestamp}:${requestId}`,
-        redirectedRecord
-      );
-    }
 
-    this._InflightRequestMap.set(requestId, {
+    const timestamp = getTimestamp();
+    const networkEntry = {
       browser: this._browser,
       step: this._currentStep,
-      timestamp: getTimestamp(),
-      url,
-      request,
-      type,
-      method,
-      requestSentTime: timestamp,
-      isNavigationRequest,
-      status: 0,
+      timestamp,
+      url: request.url(),
+      type: request.resourceType(),
+      method: request.method(),
+      requestSentTime: epochTimeInMills(),
+      request: {
+        url: request.url(),
+        method: request.method(),
+        headers: {},
+      },
+      response: {
+        status: -1,
+        mimeType: 'x-unknown',
+        headers: {},
+        redirectURL: '',
+      },
+      isNavigationRequest: request.isNavigationRequest(),
+      status: -1,
       loadEndTime: -1,
       responseReceivedTime: -1,
-      response: null,
-      resourceSize: 0,
-      transferSize: 0,
+      resourceSize: -1,
+      transferSize: -1,
       timings: null,
-    });
+    };
+
+    if (request.redirectedFrom()) {
+      const fromEntry = this._findNetworkEntry(request.redirectedFrom());
+      if (fromEntry) fromEntry.response.redirectURL = request.url();
+    }
+    (request as any)[this._networkEntrySymbol] = networkEntry;
+    this.results.push(networkEntry);
   }
 
-  _onRequestWillBeSentExtraInfo(
-    event: Protocol.Network.requestWillBeSentExtraInfoPayload
-  ) {
-    const { requestId, headers } = event;
-    const record = this._findNetworkRecord(requestId);
-    if (!record) {
+  private async _onResponse(response: Response) {
+    const networkEntry = this._findNetworkEntry(response.request());
+    if (!networkEntry) return;
+
+    const server = await response.serverAddr();
+    const headers = response.headers();
+    const mimeType = headers['content-type']
+      ? headers['content-type'].split(';')[0]
+      : 'x-unknown';
+    networkEntry.response = {
+      url: response.url(),
+      status: response.status(),
+      statusText: response.statusText(),
+      headers: response.headers(),
+      mimeType,
+      headersSize: -1,
+      bodySize: -1,
+      redirectURL: networkEntry.response.redirectURL,
+      transferSize: -1,
+      securityDetails: await response.securityDetails(),
+      remoteIPAddress: server?.ipAddress,
+      remotePort: server?.port,
+    };
+    networkEntry.status = response.status();
+    networkEntry.responseReceivedTime = epochTimeInMills();
+  }
+
+  private async _onLoadingFinished(request: Request) {
+    //TODO: Calculate transfer and headers size
+
+    this._onRequestCompleted(request);
+  }
+
+  private _onLoadingFailed(request: Request) {
+    this._onRequestCompleted(request);
+  }
+
+  private _onRequestCompleted(request: Request) {
+    const networkEntry = this._findNetworkEntry(request);
+    if (!networkEntry) return;
+
+    networkEntry.request.headers = request.headers();
+    networkEntry.loadEndTime = epochTimeInMills();
+
+    const timing = request.timing();
+    const { loadEndTime, requestSentTime } = networkEntry;
+
+    const firstPositive = (numbers: number[]) => {
+      for (let i = 0; i < numbers.length; ++i) {
+        if (numbers[i] > 0) {
+          return numbers[i];
+        }
+      }
+      return null;
+    };
+    const roundMilliSecs = (value: number): number => {
+      return ((value * 1000) | 0) / 1000;
+    };
+
+    networkEntry.timings = {
+      blocked: -1,
+      dns: -1,
+      ssl: -1,
+      connect: -1,
+      send: -1,
+      wait: -1,
+      receive: -1,
+      total: -1,
+    };
+    if (timing.startTime === 0) {
+      const total = roundMilliSecs(loadEndTime - requestSentTime);
+      networkEntry.timings.total = total;
       return;
     }
-    /**
-     * Enhance request headers with additional information
-     */
-    record.request.headers = {
-      ...record.request.headers,
-      ...headers,
+
+    const blocked =
+      roundMilliSecs(
+        firstPositive([
+          timing.domainLookupStart,
+          timing.connectStart,
+          timing.requestStart,
+        ])
+      ) || -1;
+    const dns =
+      timing.domainLookupEnd !== -1
+        ? roundMilliSecs(timing.domainLookupEnd - timing.domainLookupStart)
+        : -1;
+    const connect =
+      timing.connectEnd !== -1
+        ? roundMilliSecs(timing.connectEnd - timing.connectStart)
+        : -1;
+    const ssl =
+      timing.secureConnectionStart !== -1
+        ? roundMilliSecs(timing.connectEnd - timing.secureConnectionStart)
+        : -1;
+    const wait =
+      timing.responseStart !== -1
+        ? roundMilliSecs(timing.responseStart - timing.requestStart)
+        : -1;
+    const receive =
+      timing.responseEnd !== -1
+        ? roundMilliSecs(timing.responseEnd - timing.responseStart)
+        : -1;
+    const total = [blocked, dns, connect, wait, receive].reduce(
+      (pre, cur) => (cur > 0 ? cur + pre : pre),
+      0
+    );
+    networkEntry.timings = {
+      blocked,
+      dns,
+      connect,
+      ssl,
+      wait,
+      send: 0, // not exposed via RT api
+      receive,
+      total: roundMilliSecs(total),
     };
   }
 
-  _onDataReceived(event: Protocol.Network.dataReceivedPayload) {
-    const { requestId, dataLength, encodedDataLength } = event;
-    const record = this._findNetworkRecord(requestId);
-    if (!record) {
-      return;
-    }
-    record.resourceSize += dataLength;
-    if (encodedDataLength >= 0) record.transferSize += encodedDataLength;
-  }
-
-  _onResponseReceived(event: Protocol.Network.responseReceivedPayload) {
-    const { requestId, response, timestamp } = event;
-    const record = this._findNetworkRecord(requestId);
-    if (!record) {
-      return;
-    }
-    Object.assign(record, {
-      status: response.status,
-      response,
-      responseReceivedTime: timestamp,
-      transferSize: response.encodedDataLength,
-    });
-  }
-
-  _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {
-    const { requestId, timestamp, encodedDataLength } = event;
-    this._requestCompleted(requestId, timestamp, encodedDataLength);
-  }
-
-  _onLoadingFailed(event: Protocol.Network.loadingFailedPayload) {
-    const { requestId, timestamp } = event;
-    this._requestCompleted(requestId, timestamp);
-  }
-
-  _requestCompleted(
-    requestId: string,
-    endTime: number,
-    encodedDataLength?: number
-  ) {
-    const record = this._findNetworkRecord(requestId);
-    if (!record) {
-      return;
-    }
-    if (encodedDataLength >= 0) {
-      record.transferSize = encodedDataLength;
-    }
-    record.loadEndTime = endTime;
-    record.timings = calculateTimings(record);
-    this.results.push(record);
-    /**
-     * When there is DNS failure, browsers keeps retrying requests which
-     * might result in incorrect timings so we get remove them to measure only once
-     */
-    this._InflightRequestMap.delete(requestId);
-  }
-
-  /**
-   * Account for missing response received event and also adjust the
-   * response received event based on when first byte event was recorded
-   */
-
   stop() {
+    console.log('this.results', this.results);
+    const context = this.driver.context;
+    context.on('request', this._onRequest.bind(this));
+    context.on('response', this._onResponse.bind(this));
+    context.on('requestfinished', this._onLoadingFinished.bind(this));
+    context.on('requestfailed', this._onLoadingFailed.bind(this));
     return this.results;
   }
-}
-
-function getResponseReceivedTime(
-  timing: Protocol.Network.Response['timing'],
-  responseReceivedTime: number
-) {
-  if (timing == null) {
-    return responseReceivedTime;
-  }
-  const startTime = timing.requestTime;
-  const headersReceivedTime = startTime + timing.receiveHeadersEnd / 1000;
-  if (responseReceivedTime < 0 || responseReceivedTime > headersReceivedTime) {
-    responseReceivedTime = headersReceivedTime;
-  }
-  if (startTime > responseReceivedTime) {
-    responseReceivedTime = startTime;
-  }
-  return responseReceivedTime;
-}
-
-/**
- * The timing calculations are based on the chrome devtools frontend
- * https://github.com/ChromeDevTools/devtools-frontend/blob/7f5478d8ceb7586f23f4073ab5c2085dac1ec26a/front_end/network/RequestTimingView.js#L98-L193
- */
-export function calculateTimings(record: NetworkInfo) {
-  const result: NetworkInfo['timings'] = {
-    blocked: -1,
-    queueing: -1,
-    proxy: -1,
-    dns: -1,
-    ssl: -1,
-    connect: -1,
-    send: -1,
-    wait: -1,
-    receive: -1,
-    total: -1,
-  };
-  const { requestSentTime, loadEndTime, responseReceivedTime } = record;
-
-  /**
-   * Handle when request failed and no responseReceived event was
-   * fired for that particular request
-   * Eg: connection refused by remote host
-   */
-  const response = record.response || {
-    timing: null,
-    fromServiceWorker: false,
-  };
-
-  const toMilliseconds = (time: number) => (time === -1 ? -1 : time * 1000);
-  const calculateDiffInMs = (
-    name: keyof NetworkInfo['timings'],
-    start: number,
-    end: number
-  ) => {
-    if (start < Number.MAX_VALUE && start <= end) {
-      result[name] = toMilliseconds(end - start);
-    }
-  };
-  const firstPositive = (numbers: number[]) => {
-    for (let i = 0; i < numbers.length; ++i) {
-      if (numbers[i] > 0) {
-        return numbers[i];
-      }
-    }
-    return null;
-  };
-  /**
-   * requestTime is baseline in seconds, rest of the timing data are ticks in milliseconds
-   * from the requestTime, so we calculate the offset from that
-   */
-  const addOffsetRange = (
-    name: keyof NetworkInfo['timings'],
-    start: number,
-    end: number
-  ) => {
-    if (start >= 0 && end >= 0) {
-      calculateDiffInMs(name, startTime + start / 1000, startTime + end / 1000);
-    }
-  };
-  const timing = response.timing;
-  const actResRcvdTime = getResponseReceivedTime(timing, responseReceivedTime);
-  const issueTime = requestSentTime;
-  const startTime = timing == null ? -1 : timing.requestTime;
-  const endTime = firstPositive([loadEndTime, actResRcvdTime]) || startTime;
-
-  if (timing == null) {
-    const start =
-      issueTime !== -1 ? issueTime : startTime !== -1 ? startTime : 0;
-    const middle = actResRcvdTime === -1 ? Number.MAX_VALUE : actResRcvdTime;
-    const end = endTime === -1 ? Number.MAX_VALUE : endTime;
-    calculateDiffInMs('total', start, end);
-    calculateDiffInMs('blocked', start, middle);
-    calculateDiffInMs('receive', middle, end);
-    // Check if the request is blocked/stalled for the whole timeframe and
-    // calculate timings appropriately for that request
-    if (!isFinite(result['blocked'])) {
-      result['blocked'] = result['total'];
-    }
-    return result;
-  }
-  calculateDiffInMs(
-    'total',
-    issueTime < startTime ? issueTime : startTime,
-    endTime
-  );
-  if (issueTime < startTime) {
-    calculateDiffInMs('queueing', issueTime, startTime);
-  }
-  const responseReceived = toMilliseconds(actResRcvdTime - startTime);
-
-  if (response.fromServiceWorker) {
-    addOffsetRange('blocked', 0, timing.workerStart);
-    addOffsetRange('wait', timing.sendEnd, responseReceived);
-  } else if (!timing.pushStart) {
-    const blockingEnd =
-      firstPositive([
-        timing.dnsStart,
-        timing.connectStart,
-        timing.sendStart,
-        responseReceived,
-      ]) || 0;
-    addOffsetRange('blocked', 0, blockingEnd);
-    addOffsetRange('proxy', timing.proxyStart, timing.proxyEnd);
-    addOffsetRange('dns', timing.dnsStart, timing.dnsEnd);
-    addOffsetRange('connect', timing.connectStart, timing.connectEnd);
-    addOffsetRange('ssl', timing.sslStart, timing.sslEnd);
-    addOffsetRange('send', timing.sendStart, timing.sendEnd);
-    addOffsetRange(
-      'wait',
-      Math.max(
-        timing.sendEnd,
-        timing.connectEnd,
-        timing.dnsEnd,
-        timing.proxyEnd,
-        blockingEnd
-      ),
-      responseReceived
-    );
-  }
-  calculateDiffInMs('receive', actResRcvdTime, endTime);
-  return result;
 }

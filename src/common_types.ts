@@ -31,7 +31,6 @@ import {
   ChromiumBrowserContext,
   Page,
 } from 'playwright-chromium';
-import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
 import { reporters } from './reporters';
 
@@ -88,13 +87,46 @@ export type BrowserInfo = {
   version: string;
 };
 
+export type SecurityDetails = {
+  issuer?: string;
+  protocol?: string;
+  subjectName?: string;
+  validFrom?: number;
+  validTo?: number;
+};
+
+export type Request = {
+  method: string;
+  url: string;
+  httpVersion?: string;
+  headers: Record<string, string>;
+  headersSize?: number;
+  bodySize?: number;
+};
+
+export type Response = {
+  url?: string;
+  status: number;
+  statusText?: string;
+  mimeType: string;
+  httpVersion?: string;
+  headers: Record<string, string>;
+  redirectURL?: string;
+  headersSize?: number;
+  bodySize?: number;
+  transferSize?: number;
+  securityDetails?: SecurityDetails;
+  remoteIPAddress?: string;
+  remotePort?: number;
+};
+
 export type NetworkInfo = {
   url: string;
   browser: BrowserInfo;
   method: string;
   type: string;
-  request: Protocol.Network.Request;
-  response?: Protocol.Network.Response;
+  request: Request;
+  response?: Response;
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
@@ -104,10 +136,10 @@ export type NetworkInfo = {
   transferSize: number;
   timings?: {
     blocked: number;
-    queueing: number;
+    queueing?: number;
     dns: number;
     ssl: number;
-    proxy: number;
+    proxy?: number;
     connect: number;
     send: number;
     wait: number;
