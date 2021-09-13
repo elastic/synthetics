@@ -26,7 +26,6 @@
 import { BrowserMessage, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
-import { log } from '../core/logger';
 
 const defaultMessageLimit = 1000;
 
@@ -70,7 +69,6 @@ export class BrowserConsole {
     if (this.messages.length > defaultMessageLimit) {
       this.messages.splice(0, 1);
     }
-    log(JSON.stringify(this.messages));
   };
 
   start() {
