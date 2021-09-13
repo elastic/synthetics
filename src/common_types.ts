@@ -119,6 +119,7 @@ export type NetworkInfo = {
 export type BrowserMessage = {
   text: string;
   type: string;
+  stacktrace?: string;
 } & DefaultPluginOutput;
 
 export type PluginOutput = {
