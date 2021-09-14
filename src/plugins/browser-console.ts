@@ -26,6 +26,7 @@
 import { BrowserMessage, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
+import { log } from '../core/logger';
 
 const defaultMessageLimit = 1000;
 
@@ -48,9 +49,8 @@ export class BrowserConsole {
         type,
         step: { name, index },
       });
-      if (this.messages.length > defaultMessageLimit) {
-        this.messages.splice(0, 1);
-      }
+
+      this.enforceMessagesLimit();
     }
   };
 
@@ -64,12 +64,17 @@ export class BrowserConsole {
       text: error.message,
       type: 'error',
       step: { name, index },
-      stacktrace: error.stack.toString(),
+      error: error,
     });
+
+    this.enforceMessagesLimit();
+  };
+
+  private enforceMessagesLimit() {
     if (this.messages.length > defaultMessageLimit) {
       this.messages.splice(0, 1);
     }
-  };
+  }
 
   start() {
     this.driver.page.on('console', this.consoleEventListener);

@@ -55,4 +55,49 @@ describe('BrowserConsole', () => {
     expect(testMessage.timestamp).toBeDefined();
     expect(testMessage.step).toEqual({ name: 'step-name', index: 0 });
   });
+
+  it('should capture browser page errors', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const browserConsole = new BrowserConsole(driver);
+    const { page } = driver;
+    browserConsole.start();
+    await page.goto(server.TEST_PAGE);
+    browserConsole._currentStep = { name: 'step-name', index: 0 };
+    const bodyHandle = await page.$('body');
+    try {
+      await page.evaluate(
+        ([body]) => {
+          body.innerHTML = `<img
+        src="imagefound.gif"
+        onError="that.onerror=null;this.src='imagenotfound.gif';"
+      />`;
+        },
+        [bodyHandle]
+      );
+    } catch (e) {}
+
+    await page.waitForTimeout(1000);
+
+    const messages = browserConsole.stop();
+    await Gatherer.stop();
+    const notFoundMessage = messages.find(
+      m => m.text.indexOf('Failed to load resource:') >= 0
+    );
+    expect(notFoundMessage.text).toEqual(
+      `Failed to load resource: the server responded with a status of 404 (Not Found)`
+    );
+    expect(notFoundMessage.type).toEqual('error');
+    expect(notFoundMessage.timestamp).toBeDefined();
+    expect(notFoundMessage.step).toEqual({ name: 'step-name', index: 0 });
+
+    const referenceError = messages.find(
+      m => m.text.indexOf('that is not defined') >= 0
+    );
+    expect(referenceError.error.stack).toContain(
+      `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
+    );
+    expect(referenceError.type).toEqual('error');
+    expect(referenceError.timestamp).toBeDefined();
+    expect(referenceError.step).toEqual({ name: 'step-name', index: 0 });
+  });
 });

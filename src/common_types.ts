@@ -119,7 +119,7 @@ export type NetworkInfo = {
 export type BrowserMessage = {
   text: string;
   type: string;
-  stacktrace?: string;
+  error?: Error;
 } & DefaultPluginOutput;
 
 export type PluginOutput = {
