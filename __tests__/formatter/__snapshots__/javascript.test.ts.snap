@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Synthetics JavaScript formatter inline journeys 1`] = `
+"step('Go to https://vigneshh.in/', async () => {
+  await page.goto('https://vigneshh.in/');
+  await page.click('a:has-text(\\"Go to bag\\")');
+  expect(await page.textContent('text=Babel Minify')).toBe('babel');
+});
+step('Click text=Babel Minify', async () => {
+  const [page1] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.click('text=Babel Minify')
+  ]);
+  await Promise.all([
+    page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
+    page1.click('a:has-text(\\"smoke\\")')
+  ]);
+  await page1.close();
+});"
+`;
+
+exports[`Synthetics JavaScript formatter suite journeys 1`] = `
+"const { journey, step, expect } = require('@elastic/synthetics');
+
+journey('Recorded journey', async ({ page, context }) => {
+  step('Go to https://vigneshh.in/', async () => {
+    await page.goto('https://vigneshh.in/');
+    await page.click('a:has-text(\\"Go to bag\\")');
+    expect(await page.textContent('text=Babel Minify')).toBe('babel');
+  });
+  step('Click text=Babel Minify', async () => {
+    const [page1] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.click('text=Babel Minify')
+    ]);
+    await Promise.all([
+      page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
+      page1.click('a:has-text(\\"smoke\\")')
+    ]);
+    await page1.close();
+  });
+});"
+`;
