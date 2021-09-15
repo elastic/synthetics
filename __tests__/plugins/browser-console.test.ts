@@ -87,7 +87,6 @@ describe('BrowserConsole', () => {
       `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
     );
     expect(referenceError.type).toEqual('error');
-    expect(referenceError.timestamp).toBeDefined();
     expect(referenceError.step).toEqual(currentStep);
   });
 
