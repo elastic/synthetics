@@ -119,6 +119,7 @@ export type NetworkInfo = {
 export type BrowserMessage = {
   text: string;
   type: string;
+  error?: Error;
 } & DefaultPluginOutput;
 
 export type PluginOutput = {

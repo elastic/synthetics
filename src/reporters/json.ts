@@ -483,13 +483,17 @@ export default class JSONReporter extends BaseReporter {
           });
         }
         if (browserconsole) {
-          browserconsole.forEach(({ timestamp, text, type, step }) => {
+          browserconsole.forEach(({ timestamp, text, type, step, error }) => {
             this.writeJSON({
               type: 'journey/browserconsole',
               journey,
               timestamp,
               step,
-              payload: { text, type } as Payload,
+              error,
+              payload: {
+                text,
+                type,
+              } as Payload,
             });
           });
         }
@@ -554,7 +558,7 @@ export default class JSONReporter extends BaseReporter {
     });
   }
 
-  // Writes a structered synthetics event
+  // Writes a structured synthetics event
   // Note that blob is ultimately stored in ES as a base64 encoded string. You must base 64 encode
   // it before passing it into this function!
   // The payload field is an un-indexed field with no ES mapping, so users can put arbitary structured
