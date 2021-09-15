@@ -75,14 +75,14 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     if (action.name === 'openPage') {
       return '';
     }
-    // Dont cleanup page object managed by Synthetics
+    // Don't cleanup page object managed by Synthetics
     const isCleanUp = action.name === 'closePage' && pageAlias === 'page';
     if (isCleanUp) {
       return '';
     }
 
     let formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
-    // Check if its a new step
+    // Check if it's a new step
     const isNewStep = this.isNewStep(actionInContext);
     if (isNewStep) {
       if (this.insideStep) {
@@ -168,8 +168,8 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return formatter.format();
   }
 
-  isNewStep(actionContext) {
-    const { action, frameUrl } = actionContext;
+  isNewStep(actioninContext: ActionInContext) {
+    const { action, frameUrl } = actioninContext;
     if (action.name === 'navigate') {
       return true;
     } else if (action.name === 'click') {

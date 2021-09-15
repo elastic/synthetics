@@ -27,7 +27,7 @@ import {
   ActionInContext,
 } from '../../src/formatter/javascript';
 
-const actions: Array<ActionInContext> = [
+const recorderActions: Array<ActionInContext> = [
   {
     pageAlias: 'page',
     isMainFrame: true,
@@ -154,11 +154,11 @@ const actions: Array<ActionInContext> = [
 describe('Synthetics JavaScript formatter', () => {
   it('inline journeys', async () => {
     const formatter = new SyntheticsGenerator(false);
-    expect(formatter.generateText(actions)).toMatchSnapshot();
+    expect(formatter.generateText(recorderActions)).toMatchSnapshot();
   });
 
   it('suite journeys', async () => {
     const formatter = new SyntheticsGenerator(true);
-    expect(formatter.generateText(actions)).toMatchSnapshot();
+    expect(formatter.generateText(recorderActions)).toMatchSnapshot();
   });
 });
