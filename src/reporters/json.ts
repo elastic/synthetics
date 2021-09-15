@@ -489,10 +489,10 @@ export default class JSONReporter extends BaseReporter {
               journey,
               timestamp,
               step,
+              error,
               payload: {
                 text,
                 type,
-                stacktrace: error?.stack.toString(),
               } as Payload,
             });
           });

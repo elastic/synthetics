@@ -63,7 +63,7 @@ export class BrowserConsole {
       text: error.message,
       type: 'error',
       step: { name, index },
-      error: error,
+      error,
     });
 
     this.enforceMessagesLimit();

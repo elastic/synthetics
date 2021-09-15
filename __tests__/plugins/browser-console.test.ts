@@ -30,6 +30,7 @@ import { wsEndpoint } from '../utils/test-config';
 
 describe('BrowserConsole', () => {
   let server: Server;
+  const currentStep = { name: 'test-step', index: 0 };
   beforeAll(async () => {
     server = await Server.create();
   });
@@ -43,7 +44,7 @@ describe('BrowserConsole', () => {
     const { page } = driver;
     browserConsole.start();
     await page.goto(server.TEST_PAGE);
-    browserConsole._currentStep = { name: 'step-name', index: 0 };
+    browserConsole._currentStep = currentStep;
     await page.evaluate(() =>
       console.warn('test-message', 1, { test: 'test' })
     );
@@ -53,7 +54,7 @@ describe('BrowserConsole', () => {
     expect(testMessage.text).toEqual(`test-message 1 {test: test}`);
     expect(testMessage.type).toEqual('warning');
     expect(testMessage.timestamp).toBeDefined();
-    expect(testMessage.step).toEqual({ name: 'step-name', index: 0 });
+    expect(testMessage.step).toEqual(currentStep);
   });
 
   it('should capture browser page errors', async () => {
@@ -62,24 +63,14 @@ describe('BrowserConsole', () => {
     const { page } = driver;
     browserConsole.start();
     await page.goto(server.TEST_PAGE);
-    browserConsole._currentStep = { name: 'step-name', index: 0 };
-    const bodyHandle = await page.$('body');
-    try {
-      await page.evaluate(
-        ([body]) => {
-          body.innerHTML = `<img
-        src="imagefound.gif"
-        onError="that.onerror=null;this.src='imagenotfound.gif';"
-      />`;
-        },
-        [bodyHandle]
-      );
-    } catch (e) {}
-
-    await page.waitForTimeout(1000);
-
+    browserConsole._currentStep = currentStep;
+    await page.setContent(`
+      <img src="imagefound.gif" onError="that.onerror=null;this.src='imagenotfound.gif';">
+   `);
+    await page.waitForLoadState('networkidle');
     const messages = browserConsole.stop();
     await Gatherer.stop();
+
     const notFoundMessage = messages.find(
       m => m.text.indexOf('Failed to load resource:') >= 0
     );
@@ -87,8 +78,7 @@ describe('BrowserConsole', () => {
       `Failed to load resource: the server responded with a status of 404 (Not Found)`
     );
     expect(notFoundMessage.type).toEqual('error');
-    expect(notFoundMessage.timestamp).toBeDefined();
-    expect(notFoundMessage.step).toEqual({ name: 'step-name', index: 0 });
+    expect(notFoundMessage.step).toEqual(currentStep);
 
     const referenceError = messages.find(
       m => m.text.indexOf('that is not defined') >= 0
@@ -98,6 +88,25 @@ describe('BrowserConsole', () => {
     );
     expect(referenceError.type).toEqual('error');
     expect(referenceError.timestamp).toBeDefined();
-    expect(referenceError.step).toEqual({ name: 'step-name', index: 0 });
+    expect(referenceError.step).toEqual(currentStep);
+  });
+
+  it('should capture unhandled rejections', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const browserConsole = new BrowserConsole(driver);
+    browserConsole.start();
+    browserConsole._currentStep = currentStep;
+    await driver.page.goto(server.TEST_PAGE);
+    await driver.page.setContent(
+      `<script>Promise.reject(new Error("Boom"))</script>`
+    );
+    await driver.page.waitForLoadState('networkidle');
+    const messages = browserConsole.stop();
+    await Gatherer.stop();
+
+    const unhandledError = messages.find(m => m.text.indexOf('Boom') >= 0);
+    expect(unhandledError.type).toEqual('error');
+    expect(unhandledError.error.stack).toContain('Error: Boom');
+    expect(unhandledError.step).toEqual(currentStep);
   });
 });
