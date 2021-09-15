@@ -63,17 +63,11 @@ describe('BrowserConsole', () => {
     browserConsole.start();
     await page.goto(server.TEST_PAGE);
     browserConsole._currentStep = { name: 'step-name', index: 0 };
-    const bodyHandle = await page.$('body');
     try {
-      await page.evaluate(
-        ([body]) => {
-          body.innerHTML = `<img
+      await page.setContent(`<img
         src="imagefound.gif"
         onError="that.onerror=null;this.src='imagenotfound.gif';"
-      />`;
-        },
-        [bodyHandle]
-      );
+      />`);
     } catch (e) {}
 
     await page.waitForTimeout(1000);
@@ -87,7 +81,6 @@ describe('BrowserConsole', () => {
       `Failed to load resource: the server responded with a status of 404 (Not Found)`
     );
     expect(notFoundMessage.type).toEqual('error');
-    expect(notFoundMessage.timestamp).toBeDefined();
     expect(notFoundMessage.step).toEqual({ name: 'step-name', index: 0 });
 
     const referenceError = messages.find(
@@ -97,7 +90,6 @@ describe('BrowserConsole', () => {
       `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
     );
     expect(referenceError.type).toEqual('error');
-    expect(referenceError.timestamp).toBeDefined();
     expect(referenceError.step).toEqual({ name: 'step-name', index: 0 });
   });
 });
