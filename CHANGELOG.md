@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.13 (2021-09-16)
+
+### Features
+
+- Add step level tracing API which enables capturing performance metrics (core
+  web vitals) for each navigation as part of the journey [#369](https://github.com/elastic/synthetics/pull/369)
+- Capture all page errors and unhandled exceptions as part of the journeys [#374](https://github.com/elastic/synthetics/pull/374)
+- Introduce synthetics script generator which can transform the recorder actions
+  into code [#375](https://github.com/elastic/synthetics/pull/375)
+
 ## v1.0.0-beta.12 (2021-08-19)
 
 ### Features
