@@ -20,6 +20,14 @@ cd my-test-dir; npx @elastic/synthetics [options] [dir] [files] file
 
 ## Documentation
 
+- [Introduction](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
+- [CLI Options](https://www.elastic.co/guide/en/observability/current/synthetics-command-reference.html#elastic-synthetics-command)
+- [Syntax](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-syntax)
+- [Creating a Journey](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-create-journey)
+- [Creating a Step](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-create-step)
+- [Running via CLI](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-test-suite)
+- [Running via Heartbeat](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-inline-journey)
+
 Complete documentation is avaiable on [elastic.co](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
 
 Have questions? Want to leave feedback? Visit the [Synthetics discussion
