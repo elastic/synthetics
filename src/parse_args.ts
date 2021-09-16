@@ -38,7 +38,7 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option(
-    '-p, --params <jsonstring>, --suite-params <jsonstring>',
+    '-p, --params <jsonstring>',
     'JSON object that gets injected to all journeys',
     JSON.parse
   )
