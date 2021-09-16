@@ -43,7 +43,7 @@ program
     JSON.parse
   )
   .option(
-    '-s, --suite-params <jsonstring>, --suite-params <jsonstring>',
+    '-s, --suite-params <jsonstring>',
     'DEPRECATED: Use --params instead',
     JSON.parse
   )
