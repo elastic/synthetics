@@ -157,6 +157,10 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
+  /**
+   * @deprecated use params instead
+   */
+  suiteParams?: Params;
   richEvents?: boolean;
 };
 
