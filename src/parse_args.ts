@@ -149,9 +149,5 @@ if (options.capability) {
   }
 }
 
-if (options.suiteParams && !options.params) {
-  options.params = options.suiteParams;
-}
-
 export { options };
 export default command;
