@@ -38,8 +38,13 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .option(
-    '-p, --params <jsonstring>',
+    '-p, --params <jsonstring>, --suite-params <jsonstring>',
     'JSON object that gets injected to all journeys',
+    JSON.parse
+  )
+  .option(
+    '-s, --suite-params <jsonstring>, --suite-params <jsonstring>',
+    'DEPRECATED: Use --params instead',
     JSON.parse
   )
   .addOption(
@@ -142,6 +147,10 @@ if (options.capability) {
       );
     }
   }
+}
+
+if (options.suiteParams && !options.params) {
+  options.params = options.suiteParams;
 }
 
 export { options };

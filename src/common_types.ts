@@ -157,6 +157,7 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
+  suiteParams?: Params;
   richEvents?: boolean;
 };
 
