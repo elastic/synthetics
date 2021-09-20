@@ -27,7 +27,7 @@ import { chromium, ChromiumBrowser } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
 import { log } from './logger';
-import { Driver } from '../common_types';
+import { Driver, PlaywrightOptions } from '../common_types';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -46,10 +46,27 @@ export class Gatherer {
         Gatherer.browser = await chromium.launch(playwrightOptions);
       }
     }
-    const context = await Gatherer.browser.newContext(playwrightOptions);
+    const context = await Gatherer.browser.newContext({
+      userAgent: await Gatherer.getUserAgent(),
+      ...playwrightOptions,
+    });
+
     const page = await context.newPage();
+
     const client = await context.newCDPSession(page);
     return { browser: Gatherer.browser, context, page, client };
+  }
+
+  static async getUserAgent(playwrightOptions?: PlaywrightOptions) {
+    const dummyContext = await Gatherer.browser.newContext(playwrightOptions);
+
+    const dummyPage = await dummyContext.newPage();
+    const currentUAStr = await dummyPage.evaluate(() => navigator.userAgent);
+
+    await dummyPage.close();
+    await dummyContext.close();
+
+    return currentUAStr + ' Elastic/Synthetics';
   }
 
   /**
