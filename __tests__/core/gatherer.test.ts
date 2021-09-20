@@ -58,8 +58,8 @@ describe('Gatherer', () => {
   it('append Elastic/Synthetics as part of userAgent', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
 
-    expect(await driver.page.evaluate(() => navigator.userAgent)).toBe(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/94.0.4595.0 Safari/537.36 Elastic/Synthetics'
+    expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
+      ' Elastic/Synthetics'
     );
 
     await Gatherer.dispose(driver);
