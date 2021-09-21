@@ -47,8 +47,8 @@ export class NetworkManager {
     this._browser = { name, version };
     context.on('request', this._onRequest.bind(this));
     context.on('response', this._onResponse.bind(this));
-    context.on('requestfinished', this._onLoadingFinished.bind(this));
-    context.on('requestfailed', this._onLoadingFailed.bind(this));
+    context.on('requestfinished', this._onRequestCompleted.bind(this));
+    context.on('requestfailed', this._onRequestCompleted.bind(this));
   }
 
   private _findNetworkEntry(request: Request): NetworkInfo | undefined {
@@ -65,21 +65,21 @@ export class NetworkManager {
     }
 
     const timestamp = getTimestamp();
-    const networkEntry = {
+    const networkEntry: NetworkInfo = {
       browser: this._browser,
       step: this._currentStep,
       timestamp,
-      url: request.url(),
+      url,
       type: request.resourceType(),
       method: request.method(),
       requestSentTime: epochTimeInMills(),
       request: {
-        url: request.url(),
+        url,
         method: request.method(),
         headers: {},
       },
       response: {
-        status: -1,
+        statusCode: -1,
         mimeType: 'x-unknown',
         headers: {},
         redirectURL: '',
@@ -102,24 +102,27 @@ export class NetworkManager {
   }
 
   private async _onResponse(response: Response) {
-    const networkEntry = this._findNetworkEntry(response.request());
+    const request = response.request();
+    const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
     const server = await response.serverAddr();
-    const headers = response.headers();
-    const mimeType = headers['content-type']
-      ? headers['content-type'].split(';')[0]
-      : 'x-unknown';
+    const responseHeaders = await response.allHeaders();
+    const mimeType = responseHeaders['content-type']
+      ? responseHeaders['content-type'].split(';')[0]
+      : 'unknown';
+
+    const requestHeaders = await request.allHeaders();
+
+    networkEntry.request.headers = requestHeaders;
+    networkEntry.request.referrer = requestHeaders?.referer;
     networkEntry.response = {
       url: response.url(),
-      status: response.status(),
+      statusCode: response.status(),
       statusText: response.statusText(),
-      headers: response.headers(),
+      headers: responseHeaders,
       mimeType,
-      headersSize: -1,
-      bodySize: -1,
       redirectURL: networkEntry.response.redirectURL,
-      transferSize: -1,
       securityDetails: await response.securityDetails(),
       remoteIPAddress: server?.ipAddress,
       remotePort: server?.port,
@@ -128,25 +131,40 @@ export class NetworkManager {
     networkEntry.responseReceivedTime = epochTimeInMills();
   }
 
-  private async _onLoadingFinished(request: Request) {
-    //TODO: Calculate transfer and headers size
-
-    this._onRequestCompleted(request);
-  }
-
-  private _onLoadingFailed(request: Request) {
-    this._onRequestCompleted(request);
-  }
-
-  private _onRequestCompleted(request: Request) {
+  private async _onRequestCompleted(request: Request) {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
-    networkEntry.request.headers = request.headers();
     networkEntry.loadEndTime = epochTimeInMills();
+
+    // For aborted/failed requests sizes does not exist
+    const sizes = await request.sizes().catch(() => {});
+    if (sizes) {
+      networkEntry.request.bytes =
+        sizes.requestHeadersSize + sizes.requestBodySize;
+      networkEntry.request.body = {
+        bytes: sizes.requestBodySize,
+      };
+      networkEntry.response.bytes =
+        sizes.responseHeadersSize + sizes.responseBodySize;
+      networkEntry.response.body = {
+        bytes: sizes.responseBodySize,
+      };
+      networkEntry.transferSize = sizes.responseBodySize;
+    }
 
     const timing = request.timing();
     const { loadEndTime, requestSentTime } = networkEntry;
+    networkEntry.timings = {
+      blocked: -1,
+      dns: -1,
+      ssl: -1,
+      connect: -1,
+      send: -1,
+      wait: -1,
+      receive: -1,
+      total: -1,
+    };
 
     const firstPositive = (numbers: number[]) => {
       for (let i = 0; i < numbers.length; ++i) {
@@ -160,16 +178,6 @@ export class NetworkManager {
       return ((value * 1000) | 0) / 1000;
     };
 
-    networkEntry.timings = {
-      blocked: -1,
-      dns: -1,
-      ssl: -1,
-      connect: -1,
-      send: -1,
-      wait: -1,
-      receive: -1,
-      total: -1,
-    };
     if (timing.startTime === 0) {
       const total = roundMilliSecs(loadEndTime - requestSentTime);
       networkEntry.timings.total = total;
@@ -221,12 +229,11 @@ export class NetworkManager {
   }
 
   stop() {
-    console.log('this.results', this.results);
     const context = this.driver.context;
     context.on('request', this._onRequest.bind(this));
     context.on('response', this._onResponse.bind(this));
-    context.on('requestfinished', this._onLoadingFinished.bind(this));
-    context.on('requestfailed', this._onLoadingFailed.bind(this));
+    context.on('requestfinished', this._onRequestCompleted.bind(this));
+    context.on('requestfailed', this._onRequestCompleted.bind(this));
     return this.results;
   }
 }

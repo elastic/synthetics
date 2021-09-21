@@ -45,8 +45,6 @@ import {
   PerfMetrics,
   Params,
   SecurityDetails,
-  Request,
-  Response,
 } from '../common_types';
 import { PageMetrics } from '../plugins';
 
@@ -149,23 +147,6 @@ function formatVersion(protocol: string | undefined) {
   }
 }
 
-function formatRequest(request: Request) {
-  return {
-    ...request,
-    referrer: request.headers?.Referer,
-  };
-}
-
-function formatResponse(response: Response) {
-  if (!response) {
-    return;
-  }
-  return {
-    ...response,
-    status_code: response.status,
-  };
-}
-
 function formatTLS(tls: SecurityDetails) {
   if (!tls) {
     return;
@@ -197,12 +178,12 @@ export function formatNetworkFields(network: NetworkInfo) {
     user_agent: {
       name: browser.name,
       version: browser.version,
-      original: request.headers?.['User-Agent'],
+      original: request.headers?.['user-agent'],
     },
     http: {
       version: formatVersion(response?.httpVersion),
-      request: formatRequest(request),
-      response: formatResponse(response),
+      request,
+      response,
     },
     tls: formatTLS(response?.securityDetails),
   };

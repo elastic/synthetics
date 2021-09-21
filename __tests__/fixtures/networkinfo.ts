@@ -38,9 +38,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
       url: 'https://vigneshh.in/',
       method: 'GET',
       headers: {
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36',
+        'upgrade-insecure-requests': '1',
         ':method': 'GET',
         ':path': '/',
         'user-agent':
@@ -58,7 +56,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     response: {
       url: 'https://vigneshh.in/',
       headers: {},
-      status: 200,
+      statusCode: 200,
       statusText: '',
       mimeType: 'text/html',
       remoteIPAddress: '[2606:4700:3035::ac43:83e0]',
@@ -76,7 +74,6 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     timings: {
       blocked: 2.080999780446291,
       queueing: 2.145999576896429,
-      proxy: -1,
       dns: 45.81400007009506,
       ssl: 61.003000009804964,
       connect: 78.5130001604557,
@@ -97,9 +94,10 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     request: {
       url: 'https://vigneshh.in/static/main.js',
       method: 'GET',
+      referrer: 'https://vigneshh.in/',
       headers: {
-        Referer: 'https://vigneshh.in/',
-        'User-Agent':
+        referer: 'https://vigneshh.in/',
+        'user-agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36',
       },
     },
@@ -112,7 +110,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     responseReceivedTime: 2355505.603987,
     response: {
       url: 'https://vigneshh.in/static/main.js',
-      status: 200,
+      statusCode: 200,
       statusText: '',
       headers: {},
       mimeType: 'application/javascript',
@@ -129,7 +127,6 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     timings: {
       blocked: 1.058999914675951,
       queueing: 46.335999853909016,
-      proxy: -1,
       dns: -1,
       ssl: -1,
       connect: -1,
@@ -146,11 +143,12 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     request: {
       url: 'https://www.google-analytics.com/',
       method: 'POST',
+      referrer: 'https://vigneshh.in/',
       headers: {
-        Referer: 'https://vigneshh.in/',
-        'User-Agent':
+        referer: 'https://vigneshh.in/',
+        'user-agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/90.0.4392.0 Safari/537.36',
-        'Content-Type': 'text/plain',
+        'content-type': 'text/plain',
       },
     },
     type: 'XHR',
@@ -160,7 +158,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
     status: 0,
     loadEndTime: -1,
     responseReceivedTime: -1,
-    response: null,
+    response: undefined,
     timings: null,
   },
 ];

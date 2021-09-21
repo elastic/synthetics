@@ -98,23 +98,31 @@ export type SecurityDetails = {
 export type Request = {
   method: string;
   url: string;
-  httpVersion?: string;
   headers: Record<string, string>;
-  headersSize?: number;
-  bodySize?: number;
+  // Total size in bytes of the request (body and headers)
+  bytes?: number;
+  body?: {
+    // Size in bytes of the request body
+    bytes: number;
+  };
+  referrer?: string;
 };
 
 export type Response = {
   url?: string;
-  status: number;
+  statusCode: number;
   statusText?: string;
   mimeType: string;
   httpVersion?: string;
   headers: Record<string, string>;
-  redirectURL?: string;
-  headersSize?: number;
-  bodySize?: number;
+  // Total size in bytes of the response (body and headers)
+  bytes?: number;
+  body?: {
+    // Size in bytes of the response body
+    bytes: number;
+  };
   transferSize?: number;
+  redirectURL?: string;
   securityDetails?: SecurityDetails;
   remoteIPAddress?: string;
   remotePort?: number;
@@ -139,7 +147,6 @@ export type NetworkInfo = {
     queueing?: number;
     dns: number;
     ssl: number;
-    proxy?: number;
     connect: number;
     send: number;
     wait: number;

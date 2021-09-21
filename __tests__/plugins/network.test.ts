@@ -87,16 +87,18 @@ describe('network', () => {
     server.route('/route3', (req, res) => {
       res.end('route3');
     });
-    await driver.page.goto(server.PREFIX + '/route1');
+    await driver.page.goto(server.PREFIX + '/route1', {
+      waitUntil: 'networkidle',
+    });
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toEqual(3);
     expect(netinfo[0].status).toBe(302);
     expect(netinfo[1].status).toBe(302);
     expect(netinfo[2].status).toBe(200);
-    await Gatherer.stop();
   });
 
-  it.skip('measure resource and transfer size', async () => {
+  it('measure resource and transfer size', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);
     await network.start();
@@ -105,11 +107,11 @@ describe('network', () => {
     });
     await driver.page.goto(server.PREFIX + '/route1');
     const netinfo = await network.stop();
-    expect(netinfo[0]).toMatchObject({
-      resourceSize: 10,
-      transferSize: expect.any(Number),
-    });
     await Gatherer.stop();
+    expect(netinfo[0]).toMatchObject({
+      resourceSize: -1,
+      transferSize: 10,
+    });
   });
 
   it('timings for aborted requests', async () => {
@@ -130,14 +132,14 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/abort`,
       status: -1,
       response: {
-        status: -1,
+        statusCode: -1,
         headers: {},
         redirectURL: '',
       },
@@ -166,10 +168,11 @@ describe('network', () => {
       res.end(`<script src=${server.PREFIX}/chunked />`);
     });
 
-    await driver.page.goto(server.PREFIX + '/index');
-    await driver.page.waitForLoadState();
-    await Gatherer.stop();
+    await driver.page.goto(server.PREFIX + '/index', {
+      waitUntil: 'networkidle',
+    });
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/chunked`,
