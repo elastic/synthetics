@@ -314,7 +314,7 @@ describe('runner', () => {
     });
   });
 
-  it('run api - match journey name explict', async () => {
+  it('run api - match journey name explicit', async () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     expect(

@@ -46,10 +46,19 @@ export class Gatherer {
         Gatherer.browser = await chromium.launch(playwrightOptions);
       }
     }
-    const context = await Gatherer.browser.newContext(playwrightOptions);
+    const context = await Gatherer.browser.newContext({
+      ...playwrightOptions,
+      userAgent: await Gatherer.getUserAgent(),
+    });
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     return { browser: Gatherer.browser, context, page, client };
+  }
+
+  static async getUserAgent() {
+    const session = await Gatherer.browser.newBrowserCDPSession();
+    const { userAgent } = await session.send('Browser.getVersion');
+    return userAgent + ' Elastic/Synthetics';
   }
 
   /**
