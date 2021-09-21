@@ -26,6 +26,7 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
+import { devices } from 'playwright-chromium';
 
 jest.mock('../../src/plugins/network');
 
@@ -57,6 +58,20 @@ describe('Gatherer', () => {
 
   it('append Elastic/Synthetics as part of userAgent', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
+
+    expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
+      ' Elastic/Synthetics'
+    );
+
+    await Gatherer.dispose(driver);
+    await Gatherer.stop();
+  });
+
+  it('append Elastic/Synthetics as part of userAgent with device emulation', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+      playwrightOptions: { ...devices['Galaxy S9+'] },
+    });
 
     expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
       ' Elastic/Synthetics'
