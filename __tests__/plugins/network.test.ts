@@ -43,9 +43,9 @@ describe('network', () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);
     await network.start();
-    await driver.page.goto(server.TEST_PAGE);
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'load' });
     const netinfo = await network.stop();
-    expect(netinfo.length).toBeGreaterThan(0);
+    await Gatherer.stop();
     expect(netinfo[0]).toMatchObject({
       isNavigationRequest: true,
       step: null,
@@ -61,7 +61,6 @@ describe('network', () => {
       responseReceivedTime: expect.any(Number),
       timings: expect.any(Object),
     });
-    await Gatherer.stop();
   });
 
   it('not include data URL in network info', async () => {

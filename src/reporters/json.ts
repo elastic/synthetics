@@ -132,6 +132,7 @@ function getMetadata() {
   };
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 function formatVersion(protocol: string | undefined) {
   if (!protocol) {
     return 1.1;
@@ -148,7 +149,7 @@ function formatVersion(protocol: string | undefined) {
 }
 
 function formatTLS(tls: SecurityDetails) {
-  if (!tls) {
+  if (!tls || !tls.issuer) {
     return;
   }
   const [name, version] = tls.protocol.toLowerCase().split(' ');
@@ -181,7 +182,6 @@ export function formatNetworkFields(network: NetworkInfo) {
       original: request.headers?.['user-agent'],
     },
     http: {
-      version: formatVersion(response?.httpVersion),
       request,
       response,
     },
