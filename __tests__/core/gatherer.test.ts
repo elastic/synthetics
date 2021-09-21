@@ -37,6 +37,10 @@ describe('Gatherer', () => {
     server = await Server.create();
   });
 
+  afterAll(async () => {
+    await server.close();
+  });
+
   it('boot and close browser', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     expect(typeof driver.page.goto).toBe('function');
@@ -62,7 +66,7 @@ describe('Gatherer', () => {
     await Gatherer.stop();
   });
 
-  describe('Append Elastic/Synthetics to UA', () => {
+  describe('Elastic UA identifier', () => {
     it('works on a single page', async () => {
       const driver = await Gatherer.setupDriver({ wsEndpoint });
       expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
@@ -91,6 +95,11 @@ describe('Gatherer', () => {
       });
       const { page, context } = driver;
       await page.goto(server.TEST_PAGE);
+      context.on('request', request => {
+        expect(request.headers()['user-agent']).toContain(
+          ' Elastic/Synthetics'
+        );
+      });
       await page.setContent(
         '<a target=_blank rel=noopener href="/popup.html">popup</a>'
       );
