@@ -115,24 +115,5 @@ describe('Gatherer', () => {
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
-
-    it('works with iframe content', async () => {
-      const driver = await Gatherer.setupDriver({
-        wsEndpoint,
-        playwrightOptions: { ...devices['Galaxy S9+'] },
-      });
-      const { page } = driver;
-      await page.goto(server.TEST_PAGE);
-      await page.setContent(
-        '<iframe id="frameID" width="200" height="200">iframe</iframe>'
-      );
-      const handle = await page.$('#frameID');
-      const contentFrame = await handle.contentFrame();
-      expect(await contentFrame.evaluate(() => navigator.userAgent)).toContain(
-        ' Elastic/Synthetics'
-      );
-      await Gatherer.dispose(driver);
-      await Gatherer.stop();
-    });
   });
 });
