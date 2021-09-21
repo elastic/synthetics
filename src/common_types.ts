@@ -151,6 +151,7 @@ export type NetworkInfo = {
 export type BrowserMessage = {
   text: string;
   type: string;
+  error?: Error;
 } & DefaultPluginOutput;
 
 export type PluginOutput = {
@@ -188,6 +189,10 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
+  /**
+   * @deprecated use params instead
+   */
+  suiteParams?: Params;
   richEvents?: boolean;
 };
 

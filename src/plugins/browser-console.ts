@@ -48,18 +48,41 @@ export class BrowserConsole {
         type,
         step: { name, index },
       });
-      if (this.messages.length > defaultMessageLimit) {
-        this.messages.splice(0, 1);
-      }
+
+      this.enforceMessagesLimit();
     }
   };
 
+  private pageErrorEventListener = (error: Error) => {
+    if (!this._currentStep) {
+      return;
+    }
+    const { name, index } = this._currentStep;
+    this.messages.push({
+      timestamp: getTimestamp(),
+      text: error.message,
+      type: 'error',
+      step: { name, index },
+      error,
+    });
+
+    this.enforceMessagesLimit();
+  };
+
+  private enforceMessagesLimit() {
+    if (this.messages.length > defaultMessageLimit) {
+      this.messages.splice(0, 1);
+    }
+  }
+
   start() {
     this.driver.page.on('console', this.consoleEventListener);
+    this.driver.page.on('pageerror', this.pageErrorEventListener);
   }
 
   stop() {
     this.driver.page.off('console', this.consoleEventListener);
+    this.driver.page.off('pageerror', this.pageErrorEventListener);
     return this.messages;
   }
 }

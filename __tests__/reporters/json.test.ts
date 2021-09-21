@@ -103,6 +103,8 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
+    const error = new Error('boom');
+    error.stack = '';
     runner.emit('journey:register', {
       journey: j1,
     });
@@ -172,6 +174,15 @@ describe('json reporter', () => {
           isNavigationRequest: true,
           browser: {},
         } as any,
+      ],
+      browserconsole: [
+        {
+          timestamp,
+          text: 'Boom',
+          type: 'error',
+          step: { name: 'step-name', index: 0 },
+          error,
+        },
       ],
     });
     runner.emit('end', 'done');

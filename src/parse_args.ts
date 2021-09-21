@@ -42,6 +42,11 @@ program
     'JSON object that gets injected to all journeys',
     JSON.parse
   )
+  .option(
+    '-s, --suite-params <jsonstring>',
+    'DEPRECATED: Use --params instead',
+    JSON.parse
+  )
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
