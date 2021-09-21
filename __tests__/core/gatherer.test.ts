@@ -28,13 +28,11 @@ import { PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
 import { devices } from 'playwright-chromium';
 import { Server } from '../utils/server';
-import exp = require('constants');
 
 jest.mock('../../src/plugins/network');
 
 describe('Gatherer', () => {
   let server: Server;
-
   beforeAll(async () => {
     server = await Server.create();
   });
@@ -67,11 +65,9 @@ describe('Gatherer', () => {
   describe('Append Elastic/Synthetics to UA', () => {
     it('works on a single page', async () => {
       const driver = await Gatherer.setupDriver({ wsEndpoint });
-
       expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
         ' Elastic/Synthetics'
       );
-
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
@@ -81,11 +77,9 @@ describe('Gatherer', () => {
         wsEndpoint,
         playwrightOptions: { ...devices['Galaxy S9+'] },
       });
-
       expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
         ' Elastic/Synthetics'
       );
-
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
@@ -95,26 +89,20 @@ describe('Gatherer', () => {
         wsEndpoint,
         playwrightOptions: { ...devices['Galaxy S9+'] },
       });
-
       const { page, context } = driver;
-
       await page.goto(server.TEST_PAGE);
       await page.setContent(
         '<a target=_blank rel=noopener href="/popup.html">popup</a>'
       );
-
       const [page1] = await Promise.all([
         context.waitForEvent('page'),
         page.click('a'),
       ]);
       await page1.waitForLoadState();
-
       expect(await page1.evaluate(() => navigator.userAgent)).toContain(
         ' Elastic/Synthetics'
       );
-
       expect(await page1.textContent('body')).toEqual('Not found');
-
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
@@ -124,21 +112,16 @@ describe('Gatherer', () => {
         wsEndpoint,
         playwrightOptions: { ...devices['Galaxy S9+'] },
       });
-
       const { page } = driver;
-
       await page.goto(server.TEST_PAGE);
       await page.setContent(
         '<iframe id="frameID" width="200" height="200">iframe</iframe>'
       );
-
       const handle = await page.$('#frameID');
       const contentFrame = await handle.contentFrame();
-
       expect(await contentFrame.evaluate(() => navigator.userAgent)).toContain(
         ' Elastic/Synthetics'
       );
-
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
