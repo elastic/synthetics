@@ -27,7 +27,7 @@ pipeline {
     quietPeriod(10)
   }
   triggers {
-    issueCommentTrigger('(?i)(^/test$)')
+    issueCommentTrigger("${obltGitHubComments()}")
     upstream("apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }, apm-agent-rum/heartbeat-elastic-synthetics/${ env.JOB_BASE_NAME.startsWith('PR-') ? 'none' : 'heartbeat-synthetics' }-7.x")
   }
   parameters {
