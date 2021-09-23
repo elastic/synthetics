@@ -30,6 +30,13 @@ import { reporters } from './reporters';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
+const defaultNetworkConditions = {
+  downloadThroughput: (1024 * 1024 * 5).toString(),
+  uploadThroughput: (1024 * 1024 * 3).toString(),
+  latency: (20).toString(),
+  offline: false,
+}
+
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
@@ -104,6 +111,20 @@ program
     '--quiet-exit-code',
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
+  .addOption(
+    new Option('--download-throughput <throughput>', 'Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.')
+      .default(defaultNetworkConditions.downloadThroughput)
+  )
+  .addOption(
+    new Option('--upload-throughput <throughput>', 'Maximal aggregated upload throughput (bytes/sec). -1 disables upload throttling.')
+      .default(defaultNetworkConditions.uploadThroughput)
+  )
+  .addOption(
+    new Option('--latency <latency>', 'Minimum latency from request sent to response headers received (ms).')
+      .default(defaultNetworkConditions.latency)
+  )
+  .option('--offline', 'True to emulate internet disconnection.', defaultNetworkConditions.offline)
+  .option('--no-throttling', 'Turns off default throttling.')
   .version(version)
   .description('Run synthetic tests');
 
@@ -119,6 +140,13 @@ if (options.richEvents) {
   options.ssblocks = true;
   options.network = true;
   options.quietExitCode = true;
+}
+
+if (options.throttling) {
+  options.downloadThroughput = options.downloadThroughput || defaultNetworkConditions.downloadThroughput;
+  options.uploadThroughput = options.uploadThroughput || defaultNetworkConditions.uploadThroughput;
+  options.latency = options.latency || defaultNetworkConditions.latency;
+  options.offline = options.offline || defaultNetworkConditions.offline;
 }
 
 if (options.capability) {

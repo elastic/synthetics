@@ -350,6 +350,82 @@ describe('CLI', () => {
       );
     });
   });
+
+  describe('throttling', () => {
+    let cliArgs: Array<string>;
+
+    beforeAll(async () => {
+      cliArgs = [
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        '--params',
+        JSON.stringify(serverParams),
+        '--reporter',
+        'json',
+      ];
+    });
+
+    it('applies --no-throttling', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs.concat(['--no-throttling']))
+        .run();
+      await cli.waitFor('journey/start');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).not.toHaveProperty('networkConditions');
+    });
+
+    it('applies default throttling', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs)
+        .run();
+      await cli.waitFor('journey/start');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
+        downloadThroughput: 1024 * 1024 * 5, 
+        latency: 20, 
+        offline: false, 
+        uploadThroughput: 1024 * 1024 * 3
+      });
+    });
+
+    it('applies custom throttling', async () => {
+      const downloadThroughput = 1024 * 1024 * 3;
+      const uploadThroughput = 1024 * 1024 * 1;
+      const latency = 30;
+      const cli = new CLIMock()
+        .args(cliArgs.concat([
+          '--download-throughput',
+          downloadThroughput.toString(),
+          '--upload-throughput',
+          uploadThroughput.toString(),
+          '--latency',
+          latency.toString(),
+        ]))
+        .run();
+      await cli.waitFor('journey/start');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
+        downloadThroughput, 
+        latency, 
+        offline: false, 
+        uploadThroughput
+      });
+    });
+
+    it('allows offline', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs.concat([
+          '--offline'
+        ]))
+        .run();
+      expect(await cli.exitCode).toBe(1);
+      expect(JSON.parse(cli.output()).error.message).toEqual(
+        expect.stringContaining('net::ERR_INTERNET_DISCONNECTED')
+      );
+    });
+  });
 });
 
 class CLIMock {
@@ -404,9 +480,9 @@ class CLIMock {
 
     this.exitCode = new Promise(res => {
       // Uncomment to debug stderr
-      //this.process.stderr.on('data', data => {
+      // this.process.stderr.on('data', data => {
       //  console.log('climock.stderr:  ', data.toString());
-      //});
+      // });
       this.process.on('exit', code => res(code));
     });
 

@@ -42,6 +42,7 @@ import {
   StatusValue,
   HooksCallback,
   Params,
+  NetworkConditions,
   PluginOutput,
   CliArgs,
   HooksArgs,
@@ -67,6 +68,7 @@ export type RunOptions = Omit<
 > & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
+  networkConditions?: NetworkConditions;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
@@ -79,6 +81,7 @@ type BaseContext = {
 type JourneyContext = BaseContext & {
   driver: Driver;
   pluginManager: PluginManager;
+  networkConditions: NetworkConditions,
 };
 
 type StepResult = {
@@ -112,6 +115,7 @@ interface Events {
     journey: Journey;
     timestamp: number;
     params: Params;
+    networkConditions: NetworkConditions;
   };
   'journey:end': BaseContext &
     JourneyResult & {
@@ -156,6 +160,7 @@ export default class Runner extends EventEmitter {
       params: options.params,
       driver,
       pluginManager,
+      networkConditions: options.networkConditions,
     };
   }
 
@@ -320,8 +325,8 @@ export default class Runner extends EventEmitter {
   registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
     const timestamp = getTimestamp();
-    const { params } = context;
-    this.emit('journey:start', { journey, timestamp, params });
+    const { params, networkConditions } = context;
+    this.emit('journey:start', { journey, timestamp, params, networkConditions });
     /**
      * Load and register the steps for the current journey
      */
@@ -365,6 +370,7 @@ export default class Runner extends EventEmitter {
       journey,
       timestamp: getTimestamp(),
       params: options.params,
+      networkConditions: options.networkConditions,
     });
     const result: JourneyResult = {
       status: 'failed',

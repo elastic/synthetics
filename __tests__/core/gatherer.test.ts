@@ -116,4 +116,25 @@ describe('Gatherer', () => {
       await Gatherer.stop();
     });
   });
+
+  describe('Network emulation', () => {
+    it('applies network throttling', async () => {
+      const driver = await Gatherer.setupDriver({ 
+        wsEndpoint, 
+        networkConditions: { 
+          downloadThroughput: 1024 * 1024 * 0.05, // slow 3g speeds, 0.4 Mbits
+          uploadThroughput: 1024 * 1024 * 0.02,
+          latency: 20,
+          offline: true,
+        }
+      });
+      // @ts-ignore
+      // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
+      const downlink = await driver.page.evaluate(() => navigator.connection.downlink);
+
+      expect(0.5 > downlink && downlink > 0.3).toBe(true);
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
 });

@@ -40,6 +40,7 @@ import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
   NetworkInfo,
+  NetworkConditions,
   TraceOutput,
   StatusValue,
   PerfMetrics,
@@ -76,6 +77,7 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
+  networkConditions?: NetworkConditions
 };
 
 type OutputFields = {
@@ -368,12 +370,12 @@ export default class JSONReporter extends BaseReporter {
       });
     });
 
-    this.runner.on('journey:start', ({ journey, timestamp, params }) => {
+    this.runner.on('journey:start', ({ journey, timestamp, params, networkConditions }) => {
       this.writeJSON({
         type: 'journey/start',
         journey,
         timestamp,
-        payload: { params, source: journey.callback.toString() },
+        payload: { params, source: journey.callback.toString(), networkConditions },
       });
     });
 

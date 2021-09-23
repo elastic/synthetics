@@ -37,6 +37,12 @@ import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
 export type Params = Record<string, any>;
+export type NetworkConditions = {
+  offline: boolean;
+  downloadThroughput: number;
+	uploadThroughput: number;
+	latency: number;
+};
 export type HooksArgs = {
   env: string;
   params: Params;
@@ -157,6 +163,11 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
+  downloadThroughput?: string;
+  uploadThroughput?: string;
+  latency?: string;
+  offline?: boolean;
+  throttling?: boolean;
   /**
    * @deprecated use params instead
    */

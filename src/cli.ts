@@ -184,8 +184,15 @@ async function prepareSuites(inputs: string[]) {
     chromiumSandbox: options.sandbox,
     ignoreHTTPSErrors: options.ignoreHttpsErrors,
   });
+
   const results = await run({
     params: Object.freeze(params),
+    networkConditions: options.throttling ? {
+      downloadThroughput: parseInt(options.downloadThroughput, 10),
+      uploadThroughput: parseInt(options.uploadThroughput, 10),
+      latency: parseInt(options.latency, 10),
+      offline: options.offline,
+    } : undefined,
     environment,
     playwrightOptions,
     ...options,
