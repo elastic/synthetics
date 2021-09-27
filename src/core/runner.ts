@@ -81,7 +81,6 @@ type BaseContext = {
 type JourneyContext = BaseContext & {
   driver: Driver;
   pluginManager: PluginManager;
-  networkConditions: NetworkConditions,
 };
 
 type StepResult = {
@@ -107,7 +106,10 @@ type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
 interface Events {
-  start: { numJourneys: number };
+  start: { 
+    numJourneys: number, 
+    networkConditions: NetworkConditions;
+  };
   'journey:register': {
     journey: Journey;
   };
@@ -115,7 +117,6 @@ interface Events {
     journey: Journey;
     timestamp: number;
     params: Params;
-    networkConditions: NetworkConditions;
   };
   'journey:end': BaseContext &
     JourneyResult & {
@@ -160,7 +161,6 @@ export default class Runner extends EventEmitter {
       params: options.params,
       driver,
       pluginManager,
-      networkConditions: options.networkConditions,
     };
   }
 
@@ -325,8 +325,8 @@ export default class Runner extends EventEmitter {
   registerJourney(journey: Journey, context: JourneyContext) {
     this.currentJourney = journey;
     const timestamp = getTimestamp();
-    const { params, networkConditions } = context;
-    this.emit('journey:start', { journey, timestamp, params, networkConditions });
+    const { params } = context;
+    this.emit('journey:start', { journey, timestamp, params });
     /**
      * Load and register the steps for the current journey
      */
@@ -370,7 +370,6 @@ export default class Runner extends EventEmitter {
       journey,
       timestamp: getTimestamp(),
       params: options.params,
-      networkConditions: options.networkConditions,
     });
     const result: JourneyResult = {
       status: 'failed',
@@ -425,7 +424,7 @@ export default class Runner extends EventEmitter {
   }
 
   async init(options: RunOptions) {
-    const { reporter, outfd } = options;
+    const { reporter, outfd, networkConditions } = options;
     /**
      * Set up the corresponding reporter and fallback
      */
@@ -434,7 +433,7 @@ export default class Runner extends EventEmitter {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
-    this.emit('start', { numJourneys: this.journeys.length });
+    this.emit('start', { numJourneys: this.journeys.length, networkConditions });
     /**
      * Set up the directory for caching screenshots
      */

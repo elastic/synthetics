@@ -354,12 +354,15 @@ export default class JSONReporter extends BaseReporter {
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
      */
-    this.runner.on('start', ({ numJourneys }) => {
+    this.runner.on('start', ({ numJourneys, networkConditions }) => {
       this.writeJSON({
         type: 'synthetics/metadata',
         root_fields: {
           num_journeys: numJourneys,
         },
+        payload: {
+          networkConditions,
+        }
       });
     });
 
@@ -370,12 +373,12 @@ export default class JSONReporter extends BaseReporter {
       });
     });
 
-    this.runner.on('journey:start', ({ journey, timestamp, params, networkConditions }) => {
+    this.runner.on('journey:start', ({ journey, timestamp, params }) => {
       this.writeJSON({
         type: 'journey/start',
         journey,
         timestamp,
-        payload: { params, source: journey.callback.toString(), networkConditions },
+        payload: { params, source: journey.callback.toString() },
       });
     });
 

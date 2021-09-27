@@ -40,6 +40,12 @@ describe('base reporter', () => {
   let runner: Runner;
   const timestamp = 1600300800000000;
   const j1 = journey('j1', () => {});
+  const networkConditions = { 
+    offline: true,
+    latency: 20,
+    downloadThroughput: 1024 * 1024 * 5,
+    uploadThroughput: 1024 * 1024 * 3
+  }
 
   beforeEach(() => {
     runner = new Runner();
@@ -58,7 +64,10 @@ describe('base reporter', () => {
 
   it('writes each step to the FD', async () => {
     const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
-    runner.emit('start', { numJourneys: 1 });
+    runner.emit('start', { 
+      numJourneys: 1,
+      networkConditions,
+    });
     runner.emit('journey:start', {
       journey: j1,
       params: { environment: 'testing' },
@@ -89,7 +98,10 @@ describe('base reporter', () => {
   });
 
   it('render hook errors without steps', async () => {
-    runner.emit('start', { numJourneys: 1 });
+    runner.emit('start', { 
+      numJourneys: 1,
+      networkConditions,
+    });
     runner.emit('journey:start', {
       journey: j1,
       params: { environment: 'testing' },

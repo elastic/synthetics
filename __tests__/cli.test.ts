@@ -368,7 +368,7 @@ describe('CLI', () => {
       const cli = new CLIMock()
         .args(cliArgs.concat(['--no-throttling']))
         .run();
-      await cli.waitFor('journey/start');
+      await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).not.toHaveProperty('networkConditions');
@@ -378,7 +378,7 @@ describe('CLI', () => {
       const cli = new CLIMock()
         .args(cliArgs)
         .run();
-      await cli.waitFor('journey/start');
+      await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
@@ -403,7 +403,7 @@ describe('CLI', () => {
           String(latency),
         ]))
         .run();
-      await cli.waitFor('journey/start');
+      await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {

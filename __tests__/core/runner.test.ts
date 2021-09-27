@@ -51,7 +51,12 @@ describe('runner', () => {
     runner.on('start', ({ numJourneys }) => {
       expect(numJourneys).toBe(1);
     });
-    runner.emit('start', { numJourneys: 1 });
+    runner.emit('start', { numJourneys: 1, networkConditions: {
+      offline: true,
+      latency: 20,
+      downloadThroughput: 1024 * 1024 * 5,
+      uploadThroughput: 1024 * 1024 * 3,
+    }});
   });
 
   it('add journeys', () => {
