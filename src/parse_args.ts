@@ -31,9 +31,9 @@ import { reporters } from './reporters';
 const { name, version } = require('../package.json');
 
 const defaultNetworkConditions = {
-  downloadThroughput: (1024 * 1024 * 5).toString(),
-  uploadThroughput: (1024 * 1024 * 3).toString(),
-  latency: (20).toString(),
+  downloadThroughput: String(1024 * 1024 * 5),
+  uploadThroughput: String(1024 * 1024 * 3),
+  latency: String(20),
   offline: false,
 }
 

@@ -396,11 +396,11 @@ describe('CLI', () => {
       const cli = new CLIMock()
         .args(cliArgs.concat([
           '--download-throughput',
-          downloadThroughput.toString(),
+          String(downloadThroughput),
           '--upload-throughput',
-          uploadThroughput.toString(),
+          String(uploadThroughput),
           '--latency',
-          latency.toString(),
+          String(latency),
         ]))
         .run();
       await cli.waitFor('journey/start');
