@@ -264,11 +264,16 @@ function toAssertCall(pageAlias, action) {
   const { command, selector, value } = action;
   switch (command) {
     case 'textContent':
+    case 'innerText':
       return `expect(await ${pageAlias}.${command}(${quote(
         selector
-      )})).toBe(${quote(value)});`;
+      )})).toMatch(${quote(value)});`;
     case 'isVisible':
     case 'isHidden':
+    case 'isChecked':
+    case 'isEditable':
+    case 'isEnabled':
+    case 'isDisabled':
       return `expect(await ${pageAlias}.${command}(${quote(
         selector
       )})).toBeTruthy();`;
