@@ -113,7 +113,6 @@ describe('CLI', () => {
     const cli = new CLIMock()
       .args([
         join(FIXTURES_DIR, 'example.journey.ts'),
-        join(FIXTURES_DIR, 'error.journey.ts'),
         '--rich-events',
         '--params',
         JSON.stringify(serverParams),
@@ -125,13 +124,7 @@ describe('CLI', () => {
       .buffer()
       .map(data => JSON.parse(data))
       .find(({ type }) => type === 'step/screenshot_ref');
-    expect(screenshotRef).toMatchObject({
-      journey: {
-        id: 'example journey',
-        name: 'example journey',
-      },
-      root_fields: expect.any(Object),
-    });
+    expect(screenshotRef).toBeDefined();
 
     const networkData = cli
       .buffer()
@@ -139,6 +132,11 @@ describe('CLI', () => {
       .find(({ type }) => type === 'journey/network_info');
     expect(networkData).toBeDefined();
 
+    const traceData = cli
+      .buffer()
+      .map(data => JSON.parse(data))
+      .find(({ type }) => type === 'step/metrics');
+    expect(traceData).toBeDefined();
     expect(await cli.exitCode).toBe(0);
   }, 30000);
 
