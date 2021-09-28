@@ -123,7 +123,7 @@ program
     new Option('--latency <latency>', 'Minimum latency from request sent to response headers received (ms).')
       .default(defaultNetworkConditions.latency)
   )
-  .option('--offline', 'True to emulate internet disconnection.', defaultNetworkConditions.offline)
+  .option('--offline', 'True to emulate network disconnection.', defaultNetworkConditions.offline)
   .option('--no-throttling', 'Turns off default throttling.')
   .version(version)
   .description('Run synthetic tests');
