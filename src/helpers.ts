@@ -29,7 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
-import { HooksArgs, HooksCallback } from './common_types';
+import { HooksArgs, HooksCallback, NetworkConditions } from './common_types';
 
 const lstatAsync = promisify(fs.lstat);
 const readdirAsync = promisify(fs.readdir);
@@ -256,4 +256,51 @@ export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
 
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
+}
+
+export function megabytesToBytes(megabytes: number) {
+  return megabytes * 1024 * 1024;
+}
+
+export const networkConditionDefaults = {
+  download: 5, // megabytes/second
+  upload: 3, // megabytes/second
+  latency: 20, // milliseconds
+}
+
+export function parseNetworkConditions(args: string): NetworkConditions {
+  const uploadToken = 'u';
+  const downloadToken = 'd';
+  const latencyToken = 'l';
+  const networkConditions = {} as NetworkConditions;
+
+  const conditions = args.split(',');
+
+  conditions.forEach(condition => {
+    const value = condition.slice(0, condition.length - 1);
+    const token = condition.slice(-1);
+
+    switch (token) {
+      case uploadToken:
+        networkConditions.uploadThroughput = Number(value);
+        break;
+      case downloadToken:
+        networkConditions.downloadThroughput = Number(value);
+        break;
+      case latencyToken: 
+        networkConditions.latency = Number(value);
+        break;
+      default:
+        break;
+    }
+  });
+
+  return {
+    offline: false,
+    downloadThroughput: 
+      megabytesToBytes(networkConditions.downloadThroughput || networkConditionDefaults.download),
+    uploadThroughput:
+      megabytesToBytes(networkConditions.uploadThroughput || networkConditionDefaults.upload),
+    latency: networkConditions.latency || networkConditionDefaults.latency,
+  };
 }

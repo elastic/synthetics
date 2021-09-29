@@ -163,10 +163,7 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
-  downloadThroughput?: string;
-  uploadThroughput?: string;
-  latency?: string;
-  offline?: boolean;
+  throttle: string;
   throttling?: boolean;
   /**
    * @deprecated use params instead

@@ -26,16 +26,13 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
+import { networkConditionDefaults } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const defaultNetworkConditions = {
-  downloadThroughput: String(1024 * 1024 * 5),
-  uploadThroughput: String(1024 * 1024 * 3),
-  latency: String(20),
-  offline: false,
-}
+const defaultNetworkConditions = 
+  `${networkConditionDefaults.download}d/${networkConditionDefaults.upload}u/${networkConditionDefaults.latency}l`;
 
 program
   .name(`npx ${name}`)
@@ -112,18 +109,9 @@ program
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
   .addOption(
-    new Option('--download-throughput <throughput>', 'Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.')
-      .default(defaultNetworkConditions.downloadThroughput)
+    new Option('--throttle <throttle>', 'Comma separated list of options to throttle network conditions for download throughput (d) in megabytes/second, upload throughput (u) in megabytes/second and latency (l) in milliseconds. Ex: --throttle "3d,2u,10l"')
+      .default(defaultNetworkConditions)
   )
-  .addOption(
-    new Option('--upload-throughput <throughput>', 'Maximal aggregated upload throughput (bytes/sec). -1 disables upload throttling.')
-      .default(defaultNetworkConditions.uploadThroughput)
-  )
-  .addOption(
-    new Option('--latency <latency>', 'Minimum latency from request sent to response headers received (ms).')
-      .default(defaultNetworkConditions.latency)
-  )
-  .option('--offline', 'True to emulate network disconnection.', defaultNetworkConditions.offline)
   .option('--no-throttling', 'Turns off default throttling.')
   .version(version)
   .description('Run synthetic tests');
@@ -143,10 +131,7 @@ if (options.richEvents) {
 }
 
 if (options.throttling) {
-  options.downloadThroughput = options.downloadThroughput || defaultNetworkConditions.downloadThroughput;
-  options.uploadThroughput = options.uploadThroughput || defaultNetworkConditions.uploadThroughput;
-  options.latency = options.latency || defaultNetworkConditions.latency;
-  options.offline = options.offline || defaultNetworkConditions.offline;
+  options.throttle = options.throttle || defaultNetworkConditions;
 }
 
 if (options.capability) {

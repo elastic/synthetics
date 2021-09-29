@@ -37,6 +37,7 @@ import {
   isDepInstalled,
   isDirectory,
   totalist,
+  parseNetworkConditions,
 } from './helpers';
 import { run } from './';
 import { readConfig } from './config';
@@ -187,12 +188,7 @@ async function prepareSuites(inputs: string[]) {
 
   const results = await run({
     params: Object.freeze(params),
-    networkConditions: options.throttling ? {
-      downloadThroughput: parseInt(options.downloadThroughput, 10),
-      uploadThroughput: parseInt(options.uploadThroughput, 10),
-      latency: parseInt(options.latency, 10),
-      offline: options.offline,
-    } : undefined,
+    networkConditions: options.throttling ? parseNetworkConditions(options.throttle) : undefined,
     environment,
     playwrightOptions,
     ...options,
