@@ -65,7 +65,7 @@ export type RunOptions = Omit<
   | 'capability'
   | 'sandbox'
   | 'headless'
-  | 'throttle'
+  | 'throttling'
 > & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
