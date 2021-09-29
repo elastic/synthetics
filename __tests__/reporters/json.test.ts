@@ -255,7 +255,9 @@ describe('json reporter', () => {
   });
 
   it('captures number of journeys as metadata event', async () => {
-    runner.emit('start', { numJourneys: 10 });
+    runner.emit('start', {
+      numJourneys: 10,
+    });
 
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });

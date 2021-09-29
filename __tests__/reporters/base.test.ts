@@ -40,12 +40,6 @@ describe('base reporter', () => {
   let runner: Runner;
   const timestamp = 1600300800000000;
   const j1 = journey('j1', () => {});
-  const networkConditions = { 
-    offline: true,
-    latency: 20,
-    downloadThroughput: 1024 * 1024 * 5,
-    uploadThroughput: 1024 * 1024 * 3
-  }
 
   beforeEach(() => {
     runner = new Runner();
