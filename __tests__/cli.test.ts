@@ -26,7 +26,7 @@
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { Server } from './utils/server';
-import { networkConditionDefaults, megabytesToBytes } from '../src/helpers';
+import { megabytesToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
 describe('CLI', () => {
   let server: Server;
@@ -354,12 +354,6 @@ describe('CLI', () => {
 
   describe('throttling', () => {
     let cliArgs: Array<string>;
-    const defaultNetworkConditions = {
-      offline: false,
-      uploadThroughput: megabytesToBytes(networkConditionDefaults.upload),
-      downloadThroughput: megabytesToBytes(networkConditionDefaults.download),
-      latency: networkConditionDefaults.latency,
-    }
 
     beforeAll(async () => {
       cliArgs = [
@@ -388,7 +382,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', defaultNetworkConditions);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', DEFAULT_NETWORK_CONDITIONS);
     });
 
     it('applies custom throttling', async () => {
@@ -397,8 +391,8 @@ describe('CLI', () => {
       const latency = 30;
       const cli = new CLIMock()
         .args(cliArgs.concat([
-          '--throttle',
-          '3d,1u,30l',
+          '--throttling',
+          '3d/1u/30l',
         ]))
         .run();
       await cli.waitFor('synthetics/metadata');
@@ -418,15 +412,15 @@ describe('CLI', () => {
       const latency = 30;
       const cli = new CLIMock()
         .args(cliArgs.concat([
-          '--throttle',
-          '1u,30l,3d',
+          '--throttling',
+          '1u/30l/3d',
         ]))
         .run();
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        ...defaultNetworkConditions,
+        ...DEFAULT_NETWORK_CONDITIONS,
         downloadThroughput, 
         latency, 
         uploadThroughput
@@ -434,10 +428,10 @@ describe('CLI', () => {
     });
 
     it('uses default throttling when specific params are not provided', async () => {
-      const downloadThroughput = 1024 * 1024 * 2;
+      const downloadThroughput = megabytesToBytes(2);
       const cli = new CLIMock()
         .args(cliArgs.concat([
-          '--throttle',
+          '--throttling',
           '2d',
         ]))
         .run();
@@ -445,7 +439,7 @@ describe('CLI', () => {
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        ...defaultNetworkConditions,
+        ...DEFAULT_NETWORK_CONDITIONS,
         downloadThroughput,
       });
     });

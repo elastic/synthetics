@@ -262,19 +262,35 @@ export function megabytesToBytes(megabytes: number) {
   return megabytes * 1024 * 1024;
 }
 
-export const networkConditionDefaults = {
-  download: 5, // megabytes/second
-  upload: 3, // megabytes/second
-  latency: 20, // milliseconds
+export function bytesToMegabytes(bytes: number) {
+  return bytes / 1024 / 1024;
 }
+
+export const DEFAULT_NETWORK_CONDITIONS = {
+  downloadThroughput: megabytesToBytes(5), // megabytes/second
+  uploadThroughput: megabytesToBytes(3), // megabytes/second
+  latency: 20, // milliseconds,
+  offline: false,
+}
+
+export function formatNetworkConditionsArgs(networkConditions: NetworkConditions) {
+  const d = bytesToMegabytes(networkConditions.downloadThroughput);
+  const u = bytesToMegabytes(networkConditions.uploadThroughput);
+  const l = networkConditions.latency;
+  return `${d}d/${u}u/${l}l`;
+}
+
+export const DEFAULT_NETWORK_CONDITIONS_ARG = formatNetworkConditionsArgs(DEFAULT_NETWORK_CONDITIONS);
 
 export function parseNetworkConditions(args: string): NetworkConditions {
   const uploadToken = 'u';
   const downloadToken = 'd';
   const latencyToken = 'l';
-  const networkConditions = {} as NetworkConditions;
+  const networkConditions = {
+    ...DEFAULT_NETWORK_CONDITIONS,
+  } as NetworkConditions;
 
-  const conditions = args.split(',');
+  const conditions = args.split('/');
 
   conditions.forEach(condition => {
     const value = condition.slice(0, condition.length - 1);
@@ -282,25 +298,16 @@ export function parseNetworkConditions(args: string): NetworkConditions {
 
     switch (token) {
       case uploadToken:
-        networkConditions.uploadThroughput = Number(value);
+        networkConditions.uploadThroughput = megabytesToBytes(Number(value));
         break;
       case downloadToken:
-        networkConditions.downloadThroughput = Number(value);
+        networkConditions.downloadThroughput = megabytesToBytes(Number(value));
         break;
       case latencyToken: 
         networkConditions.latency = Number(value);
         break;
-      default:
-        break;
     }
   });
 
-  return {
-    offline: false,
-    downloadThroughput: 
-      megabytesToBytes(networkConditions.downloadThroughput || networkConditionDefaults.download),
-    uploadThroughput:
-      megabytesToBytes(networkConditions.uploadThroughput || networkConditionDefaults.upload),
-    latency: networkConditions.latency || networkConditionDefaults.latency,
-  };
+  return networkConditions;
 }

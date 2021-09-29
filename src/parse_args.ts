@@ -26,13 +26,10 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
-import { networkConditionDefaults } from './helpers';
+import { DEFAULT_NETWORK_CONDITIONS_ARG } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
-
-const defaultNetworkConditions = 
-  `${networkConditionDefaults.download}d/${networkConditionDefaults.upload}u/${networkConditionDefaults.latency}l`;
 
 program
   .name(`npx ${name}`)
@@ -109,10 +106,10 @@ program
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
   .addOption(
-    new Option('--throttle <throttle>', 'Comma separated list of options to throttle network conditions for download throughput (d) in megabytes/second, upload throughput (u) in megabytes/second and latency (l) in milliseconds. Ex: --throttle "3d,2u,10l"')
-      .default(defaultNetworkConditions)
+    new Option('--throttling <d/u/l>', 'List of options to throttle network conditions for download throughput (d) in megabytes/second, upload throughput (u) in megabytes/second and latency (l) in milliseconds.')
+      .default(DEFAULT_NETWORK_CONDITIONS_ARG)
   )
-  .option('--no-throttling', 'Turns off default throttling.')
+  .option('--no-throttling', 'Turns off default network throttling.')
   .version(version)
   .description('Run synthetic tests');
 
@@ -128,10 +125,6 @@ if (options.richEvents) {
   options.ssblocks = true;
   options.network = true;
   options.quietExitCode = true;
-}
-
-if (options.throttling) {
-  options.throttle = options.throttle || defaultNetworkConditions;
 }
 
 if (options.capability) {

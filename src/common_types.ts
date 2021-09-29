@@ -163,8 +163,7 @@ export type CliArgs = {
   debug?: boolean;
   ignoreHttpsErrors?: boolean;
   params?: Params;
-  throttle: string;
-  throttling?: boolean;
+  throttling?: boolean | string;
   /**
    * @deprecated use params instead
    */
