@@ -64,10 +64,7 @@ describe('base reporter', () => {
 
   it('writes each step to the FD', async () => {
     const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
-    runner.emit('start', { 
-      numJourneys: 1,
-      networkConditions,
-    });
+    runner.emit('start', { numJourneys: 1 });
     runner.emit('journey:start', {
       journey: j1,
       params: { environment: 'testing' },
@@ -98,10 +95,7 @@ describe('base reporter', () => {
   });
 
   it('render hook errors without steps', async () => {
-    runner.emit('start', { 
-      numJourneys: 1,
-      networkConditions,
-    });
+    runner.emit('start', { numJourneys: 1 });
     runner.emit('journey:start', {
       journey: j1,
       params: { environment: 'testing' },

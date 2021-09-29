@@ -77,7 +77,7 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
-  networkConditions?: NetworkConditions
+  network_conditions?: NetworkConditions
 };
 
 type OutputFields = {
@@ -361,7 +361,7 @@ export default class JSONReporter extends BaseReporter {
           num_journeys: numJourneys,
         },
         payload: {
-          networkConditions,
+          network_conditions: networkConditions,
         }
       });
     });

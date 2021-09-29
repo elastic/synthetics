@@ -255,15 +255,7 @@ describe('json reporter', () => {
   });
 
   it('captures number of journeys as metadata event', async () => {
-    runner.emit('start', {
-      numJourneys: 10,
-      networkConditions: {
-        offline: false,
-        latency: 20,
-        downloadThroughput: 1024 * 1024 * 5,
-        uploadThroughput: 1024 * 1024 * 3,
-      }
-    });
+    runner.emit('start', { numJourneys: 10 });
 
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });

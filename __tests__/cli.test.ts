@@ -378,7 +378,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).not.toHaveProperty('networkConditions');
+      expect(journeyStartOutput.payload).not.toHaveProperty('network_conditions');
     });
 
     it('applies default throttling', async () => {
@@ -388,7 +388,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', defaultNetworkConditions);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', defaultNetworkConditions);
     });
 
     it('applies custom throttling', async () => {
@@ -404,7 +404,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
         downloadThroughput, 
         latency, 
         offline: false, 
@@ -425,7 +425,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
         ...defaultNetworkConditions,
         downloadThroughput, 
         latency, 
@@ -444,7 +444,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('networkConditions', {
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
         ...defaultNetworkConditions,
         downloadThroughput,
       });

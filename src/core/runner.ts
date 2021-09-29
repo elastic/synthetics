@@ -109,7 +109,7 @@ export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 interface Events {
   start: { 
     numJourneys: number, 
-    networkConditions: NetworkConditions;
+    networkConditions?: NetworkConditions;
   };
   'journey:register': {
     journey: Journey;

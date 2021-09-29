@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`json reporter captures number of journeys as metadata event 1`] = `
-"{\\"type\\":\\"synthetics/metadata\\",\\"@timestamp\\":1600300800000000,\\"root_fields\\":{\\"num_journeys\\":10,\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{\\"networkConditions\\":{\\"offline\\":false,\\"latency\\":20,\\"downloadThroughput\\":5242880,\\"uploadThroughput\\":3145728}},\\"package_version\\":\\"0.0.1\\"}
+"{\\"type\\":\\"synthetics/metadata\\",\\"@timestamp\\":1600300800000000,\\"root_fields\\":{\\"num_journeys\\":10,\\"os\\":{\\"platform\\":\\"darwin\\"},\\"package\\":{\\"name\\":\\"@elastic/synthetics\\",\\"version\\":\\"0.0.1\\"}},\\"payload\\":{},\\"package_version\\":\\"0.0.1\\"}
 "
 `;
 
