@@ -36,7 +36,7 @@ const readdirAsync = promisify(fs.readdir);
 
 export const readFileAsync = promisify(fs.readFile);
 export const writeFileAsync = promisify(fs.writeFile);
-export const rmdirAsync = promisify(fs.rmdir);
+export const rmAsync = promisify(fs.rm);
 export const mkdirAsync = promisify(fs.mkdir);
 
 const SEPARATOR = '\n';
