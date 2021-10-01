@@ -171,4 +171,15 @@ describe('Synthetics JavaScript formatter', () => {
     const formatter = new SyntheticsGenerator(true);
     expect(formatter.generateText(recorderActions)).toMatchSnapshot();
   });
+
+  it('use modified title if available', async () => {
+    const formatter = new SyntheticsGenerator(false);
+    const actions = [
+      {
+        ...recorderActions[1],
+        title: 'Visiting profile',
+      },
+    ];
+    expect(formatter.generateText(actions)).toMatchSnapshot();
+  });
 });
