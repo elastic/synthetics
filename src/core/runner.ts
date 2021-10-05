@@ -25,6 +25,7 @@
 
 import { once, EventEmitter } from 'events';
 import { join } from 'path';
+import { rm } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -35,7 +36,6 @@ import {
   runParallel,
   generateUniqueId,
   mkdirAsync,
-  rmdirAsync,
   writeFileAsync,
 } from '../helpers';
 import {
@@ -359,7 +359,7 @@ export default class Runner extends EventEmitter {
       await once(this, 'journey:end:reported');
     }
     // clear screenshots cache after each journey
-    await rmdirAsync(Runner.screenshotPath, { recursive: true });
+    await rm(Runner.screenshotPath, { recursive: true, force: true });
   }
 
   /**
@@ -485,7 +485,7 @@ export default class Runner extends EventEmitter {
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
-    await rmdirAsync(CACHE_PATH, { recursive: true });
+    await rm(CACHE_PATH, { recursive: true, force: true });
     this.currentJourney = null;
     this.journeys = [];
     this.active = false;
