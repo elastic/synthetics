@@ -37,6 +37,7 @@ import {
   isDepInstalled,
   isDirectory,
   totalist,
+  parseNetworkConditions,
 } from './helpers';
 import { run } from './';
 import { readConfig } from './config';
@@ -184,8 +185,10 @@ async function prepareSuites(inputs: string[]) {
     chromiumSandbox: options.sandbox,
     ignoreHTTPSErrors: options.ignoreHttpsErrors,
   });
+
   const results = await run({
     params: Object.freeze(params),
+    networkConditions: options.throttling ? parseNetworkConditions(options.throttling as string) : undefined,
     environment,
     playwrightOptions,
     ...options,

@@ -42,6 +42,7 @@ import {
   StatusValue,
   HooksCallback,
   Params,
+  NetworkConditions,
   PluginOutput,
   CliArgs,
   HooksArgs,
@@ -64,9 +65,11 @@ export type RunOptions = Omit<
   | 'capability'
   | 'sandbox'
   | 'headless'
+  | 'throttling'
 > & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
+  networkConditions?: NetworkConditions;
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
@@ -104,7 +107,10 @@ type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
 interface Events {
-  start: { numJourneys: number };
+  start: { 
+    numJourneys: number, 
+    networkConditions?: NetworkConditions;
+  };
   'journey:register': {
     journey: Journey;
   };
@@ -419,7 +425,7 @@ export default class Runner extends EventEmitter {
   }
 
   async init(options: RunOptions) {
-    const { reporter, outfd } = options;
+    const { reporter, outfd, networkConditions } = options;
     /**
      * Set up the corresponding reporter and fallback
      */
@@ -428,7 +434,7 @@ export default class Runner extends EventEmitter {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
-    this.emit('start', { numJourneys: this.journeys.length });
+    this.emit('start', { numJourneys: this.journeys.length, networkConditions });
     /**
      * Set up the directory for caching screenshots
      */

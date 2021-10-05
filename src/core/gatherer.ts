@@ -23,7 +23,7 @@
  *
  */
 
-import { chromium, ChromiumBrowser } from 'playwright-chromium';
+import { chromium, ChromiumBrowser, BrowserContext } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { RunOptions } from './runner';
 import { log } from './logger';
@@ -37,7 +37,12 @@ export class Gatherer {
   static browser: ChromiumBrowser;
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
-    const { wsEndpoint, playwrightOptions } = options;
+    const { 
+      wsEndpoint,
+      playwrightOptions,
+      networkConditions
+    } = options;
+    
     if (Gatherer.browser == null) {
       if (wsEndpoint) {
         log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
@@ -50,6 +55,8 @@ export class Gatherer {
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(),
     });
+    await Gatherer.setNetworkConditions(context, networkConditions);
+
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     return { browser: Gatherer.browser, context, page, client };
@@ -59,6 +66,16 @@ export class Gatherer {
     const session = await Gatherer.browser.newBrowserCDPSession();
     const { userAgent } = await session.send('Browser.getVersion');
     return userAgent + ' Elastic/Synthetics';
+  }
+
+  static async setNetworkConditions(context: BrowserContext, networkConditions: RunOptions['networkConditions']) {
+    if (networkConditions) {
+      context.on('page', async (page) => {
+        const context = page.context();
+        const client = await context.newCDPSession(page);
+        await client.send('Network.emulateNetworkConditions', networkConditions);
+      });
+    }
   }
 
   /**
