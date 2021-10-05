@@ -43,3 +43,9 @@ journey('Recorded journey', async ({ page, context }) => {
   });
 });"
 `;
+
+exports[`Synthetics JavaScript formatter use modified title if available 1`] = `
+"step('Visiting profile', async () => {
+  await page.goto('https://vigneshh.in/');
+});"
+`;
