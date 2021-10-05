@@ -28,15 +28,29 @@ import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
-function epochTimeInMills() {
-  return getTimestamp() / 1000;
+/**
+ * Kibana UI expects the requestStartTime and loadEndTime to be baseline
+ * in seconds as they have the logic to convert it to milliseconds before
+ * using for offset calculation
+ */
+function epochTimeInSeconds() {
+  return getTimestamp() / 1e6;
 }
+
+/**
+ * Used as a key in each Network Request to identify the
+ * associated request across distinct lifecycle events
+ */
+export const NETWORK_ENTRY_SUMBOL = Symbol.for('NetworkEntry');
+
+type RequestWithEntry = Request & {
+  NETWORK_ENTRY_SUMBOL?: symbol;
+};
 
 export class NetworkManager {
   private _browser: BrowserInfo;
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
-  _networkEntrySymbol = Symbol.for('networkEntry');
 
   constructor(private driver: Driver) {}
 
@@ -51,8 +65,10 @@ export class NetworkManager {
     context.on('requestfailed', this._onRequestCompleted.bind(this));
   }
 
-  private _findNetworkEntry(request: Request): NetworkInfo | undefined {
-    return (request as any)[this._networkEntrySymbol];
+  private _findNetworkEntry(
+    request: RequestWithEntry
+  ): NetworkInfo | undefined {
+    return request[NETWORK_ENTRY_SUMBOL];
   }
 
   private _onRequest(request: Request) {
@@ -72,7 +88,7 @@ export class NetworkManager {
       url,
       type: request.resourceType(),
       method: request.method(),
-      requestSentTime: epochTimeInMills(),
+      requestSentTime: epochTimeInSeconds(),
       request: {
         url,
         method: request.method(),
@@ -97,7 +113,7 @@ export class NetworkManager {
       const fromEntry = this._findNetworkEntry(request.redirectedFrom());
       if (fromEntry) fromEntry.response.redirectURL = request.url();
     }
-    (request as any)[this._networkEntrySymbol] = networkEntry;
+    request[NETWORK_ENTRY_SUMBOL] = networkEntry;
     this.results.push(networkEntry);
   }
 
@@ -128,14 +144,14 @@ export class NetworkManager {
       remotePort: server?.port,
     };
     networkEntry.status = response.status();
-    networkEntry.responseReceivedTime = epochTimeInMills();
+    networkEntry.responseReceivedTime = epochTimeInSeconds();
   }
 
   private async _onRequestCompleted(request: Request) {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
-    networkEntry.loadEndTime = epochTimeInMills();
+    networkEntry.loadEndTime = epochTimeInSeconds();
 
     // For aborted/failed requests sizes does not exist
     const sizes = await request.sizes().catch(() => {});
@@ -175,11 +191,12 @@ export class NetworkManager {
       return null;
     };
     const roundMilliSecs = (value: number): number => {
-      return ((value * 1000) | 0) / 1000;
+      return Math.floor(value * 1000) / 1000;
     };
 
     if (timing.startTime === 0) {
-      const total = roundMilliSecs(loadEndTime - requestSentTime);
+      // Convert to milliseconds before round off
+      const total = roundMilliSecs((loadEndTime - requestSentTime) * 1000);
       networkEntry.timings.total = total;
       return;
     }
