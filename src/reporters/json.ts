@@ -360,9 +360,9 @@ export default class JSONReporter extends BaseReporter {
         root_fields: {
           num_journeys: numJourneys,
         },
-        payload: {
+        payload: networkConditions ? {
           network_conditions: networkConditions,
-        }
+        } : undefined
       });
     });
 

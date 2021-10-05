@@ -372,7 +372,7 @@ describe('CLI', () => {
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).not.toHaveProperty('network_conditions');
+      expect(journeyStartOutput.payload).toBeUndefined();
     });
 
     it('applies default throttling', async () => {

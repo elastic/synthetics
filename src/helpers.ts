@@ -266,7 +266,7 @@ export function bytesToMegabytes(bytes: number) {
   return bytes / 1024 / 1024;
 }
 
-export const DEFAULT_NETWORK_CONDITIONS = {
+export const DEFAULT_NETWORK_CONDITIONS: NetworkConditions = {
   downloadThroughput: megabytesToBytes(5), // megabytes/second
   uploadThroughput: megabytesToBytes(3), // megabytes/second
   latency: 20, // milliseconds,
@@ -288,7 +288,7 @@ export function parseNetworkConditions(args: string): NetworkConditions {
   const latencyToken = 'l';
   const networkConditions = {
     ...DEFAULT_NETWORK_CONDITIONS,
-  } as NetworkConditions;
+  };
 
   const conditions = args.split('/');
 
