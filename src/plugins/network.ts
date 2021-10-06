@@ -104,8 +104,8 @@ export class NetworkManager {
       status: -1,
       loadEndTime: -1,
       responseReceivedTime: -1,
-      resourceSize: -1,
-      transferSize: -1,
+      resourceSize: 0,
+      transferSize: 0,
       timings: null,
     };
 
