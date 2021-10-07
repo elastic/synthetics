@@ -125,6 +125,7 @@ if (options.richEvents) {
   options.ssblocks = true;
   options.network = true;
   options.quietExitCode = true;
+  options.trace = true;
 }
 
 if (options.capability) {
