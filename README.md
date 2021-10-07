@@ -1,4 +1,5 @@
 [![Build Status](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/badge/icon)](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/)
+
 # Experimental Synthetics Agent
 
 Synthetic Monitoring with Real Browsers.
@@ -15,7 +16,7 @@ npm install -g @elastic/synthetics
 Run the suites via CLI
 
 ```
-cd my-test-dir; npx @elastic/synthetics [options] [dir] [files] file
+npx @elastic/synthetics [options] [dir] [files] file
 ```
 
 ## Documentation
