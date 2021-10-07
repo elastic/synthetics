@@ -26,10 +26,21 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
+import { devices } from 'playwright-chromium';
+import { Server } from '../utils/server';
 
 jest.mock('../../src/plugins/network');
 
 describe('Gatherer', () => {
+  let server: Server;
+  beforeAll(async () => {
+    server = await Server.create();
+  });
+
+  afterAll(async () => {
+    await server.close();
+  });
+
   it('boot and close browser', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     expect(typeof driver.page.goto).toBe('function');
@@ -53,5 +64,103 @@ describe('Gatherer', () => {
     const network = pluginManager.get('network');
     expect(network.start).toHaveBeenCalled();
     await Gatherer.stop();
+  });
+
+  describe('Elastic UA identifier', () => {
+    it('works on a single page', async () => {
+      const driver = await Gatherer.setupDriver({ wsEndpoint });
+      expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
+        ' Elastic/Synthetics'
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('works with device emulation', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { ...devices['Galaxy S9+'] },
+      });
+      expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
+        ' Elastic/Synthetics'
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('works with popup window', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { ...devices['Galaxy S9+'] },
+      });
+      const { page, context } = driver;
+      await page.goto(server.TEST_PAGE);
+      context.on('request', request => {
+        expect(request.headers()['user-agent']).toContain(
+          ' Elastic/Synthetics'
+        );
+      });
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+      );
+      const [page1] = await Promise.all([
+        context.waitForEvent('page'),
+        page.click('a'),
+      ]);
+      await page1.waitForLoadState();
+      expect(await page1.evaluate(() => navigator.userAgent)).toContain(
+        ' Elastic/Synthetics'
+      );
+      expect(await page1.textContent('body')).toEqual('Not found');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
+  describe('Network emulation', () => {
+    const networkConditions = { 
+      downloadThroughput: 1024 * 1024 * 0.05, // slow 3g speeds, 0.4 Mbits
+      uploadThroughput: 1024 * 1024 * 0.02,
+      latency: 20,
+      offline: false,
+    }
+    it('applies network throttling', async () => {
+      const driver = await Gatherer.setupDriver({ 
+        wsEndpoint, 
+        networkConditions,
+      });
+      // @ts-ignore
+      // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
+      const downlink = await driver.page.evaluate(() => navigator.connection.downlink);
+
+      expect(0.5 > downlink && downlink > 0.3).toBe(true);
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('works with popup window', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        networkConditions,
+      });
+      const { page, context } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+      );
+      const [page1] = await Promise.all([
+        context.waitForEvent('page'),
+        page.click('a'),
+      ]);
+      await page1.waitForLoadState();
+
+      // @ts-ignore
+      // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
+      const downlink = await page1.evaluate(() => navigator.connection.downlink);
+
+      expect(0.5 > downlink && downlink > 0.3).toBe(true);
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
   });
 });

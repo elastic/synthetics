@@ -295,7 +295,7 @@ describe('json reporter', () => {
     });
 
     afterAll(() => {
-      fs.rmdirSync(destDir, { recursive: true });
+      fs.rmSync(destDir, { recursive: true, force: true });
     });
 
     const emitEnd = (options, status = 'failed' as StatusValue) =>

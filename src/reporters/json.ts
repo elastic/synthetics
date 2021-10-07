@@ -40,6 +40,7 @@ import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
   NetworkInfo,
+  NetworkConditions,
   TraceOutput,
   StatusValue,
   PerfMetrics,
@@ -76,6 +77,7 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
+  network_conditions?: NetworkConditions
 };
 
 type OutputFields = {
@@ -352,12 +354,15 @@ export default class JSONReporter extends BaseReporter {
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
      */
-    this.runner.on('start', ({ numJourneys }) => {
+    this.runner.on('start', ({ numJourneys, networkConditions }) => {
       this.writeJSON({
         type: 'synthetics/metadata',
         root_fields: {
           num_journeys: numJourneys,
         },
+        payload: networkConditions ? {
+          network_conditions: networkConditions,
+        } : undefined
       });
     });
 

@@ -26,6 +26,7 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
+import { DEFAULT_NETWORK_CONDITIONS_ARG } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -40,6 +41,11 @@ program
   .option(
     '-p, --params <jsonstring>',
     'JSON object that gets injected to all journeys',
+    JSON.parse
+  )
+  .option(
+    '-s, --suite-params <jsonstring>',
+    'DEPRECATED: Use --params instead',
     JSON.parse
   )
   .addOption(
@@ -99,6 +105,11 @@ program
     '--quiet-exit-code',
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
+  .addOption(
+    new Option('--throttling <d/u/l>', 'List of options to throttle network conditions for download throughput (d) in megabytes/second, upload throughput (u) in megabytes/second and latency (l) in milliseconds.')
+      .default(DEFAULT_NETWORK_CONDITIONS_ARG)
+  )
+  .option('--no-throttling', 'Turns off default network throttling.')
   .version(version)
   .description('Run synthetic tests');
 

@@ -3,8 +3,9 @@
 exports[`Synthetics JavaScript formatter inline journeys 1`] = `
 "step('Go to https://vigneshh.in/', async () => {
   await page.goto('https://vigneshh.in/');
-  await page.click('a:has-text(\\"Go to bag\\")');
-  expect(await page.textContent('text=Babel Minify')).toBe('babel');
+  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
+  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
+  expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
 });
 step('Click text=Babel Minify', async () => {
   const [page1] = await Promise.all([
@@ -25,8 +26,9 @@ exports[`Synthetics JavaScript formatter suite journeys 1`] = `
 journey('Recorded journey', async ({ page, context }) => {
   step('Go to https://vigneshh.in/', async () => {
     await page.goto('https://vigneshh.in/');
-    await page.click('a:has-text(\\"Go to bag\\")');
-    expect(await page.textContent('text=Babel Minify')).toBe('babel');
+    expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
+    expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
+    expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
   });
   step('Click text=Babel Minify', async () => {
     const [page1] = await Promise.all([
@@ -39,5 +41,11 @@ journey('Recorded journey', async ({ page, context }) => {
     ]);
     await page1.close();
   });
+});"
+`;
+
+exports[`Synthetics JavaScript formatter use modified title if available 1`] = `
+"step('Visiting profile', async () => {
+  await page.goto('https://vigneshh.in/');
 });"
 `;

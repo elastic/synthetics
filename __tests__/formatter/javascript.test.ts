@@ -55,14 +55,24 @@ const recorderActions: Array<ActionInContext> = [
     isMainFrame: true,
     frameUrl: 'https://vigneshh.in/',
     action: {
-      name: 'click',
-      selector: 'a:has-text("Go to bag")',
+      name: 'assert',
+      isAssert: true,
+      command: 'isVisible',
+      selector: 'text=Babel Minify',
       signals: [],
-      button: 'left',
-      modifiers: 0,
-      clickCount: 1,
     },
-    committed: true,
+  },
+  {
+    pageAlias: 'page',
+    isMainFrame: true,
+    frameUrl: 'https://vigneshh.in/',
+    action: {
+      name: 'assert',
+      isAssert: true,
+      command: 'isEditable',
+      selector: 'text=Babel Minify',
+      signals: [],
+    },
   },
   {
     pageAlias: 'page',
@@ -73,7 +83,7 @@ const recorderActions: Array<ActionInContext> = [
       isAssert: true,
       command: 'textContent',
       selector: 'text=Babel Minify',
-      value: 'babel',
+      value: 'Babel',
       signals: [],
     },
   },
@@ -160,5 +170,16 @@ describe('Synthetics JavaScript formatter', () => {
   it('suite journeys', async () => {
     const formatter = new SyntheticsGenerator(true);
     expect(formatter.generateText(recorderActions)).toMatchSnapshot();
+  });
+
+  it('use modified title if available', async () => {
+    const formatter = new SyntheticsGenerator(false);
+    const actions = [
+      {
+        ...recorderActions[1],
+        title: 'Visiting profile',
+      },
+    ];
+    expect(formatter.generateText(actions)).toMatchSnapshot();
   });
 });

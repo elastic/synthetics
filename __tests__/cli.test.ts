@@ -26,6 +26,7 @@
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { Server } from './utils/server';
+import { megabytesToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
 describe('CLI', () => {
   let server: Server;
@@ -48,6 +49,22 @@ describe('CLI', () => {
       })`
       )
       .args(['--inline', '--params', JSON.stringify(serverParams)])
+      .run();
+    await cli.waitFor('Journey: inline');
+    expect(await cli.exitCode).toBe(0);
+  });
+
+  // TODO: Delete this once --suite-params is removed
+  it('runs with legacy suite-params', async () => {
+    const cli = new CLIMock()
+      .stdin(
+        `step('check h2', async () => {
+        await page.goto(params.url, { timeout: 1500 });
+        const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
+        expect(await sel.textContent()).toBe("Synthetics test page");
+      })`
+      )
+      .args(['--inline', '--suite-params', JSON.stringify(serverParams)])
       .run();
     await cli.waitFor('Journey: inline');
     expect(await cli.exitCode).toBe(0);
@@ -334,6 +351,99 @@ describe('CLI', () => {
       );
     });
   });
+
+  describe('throttling', () => {
+    let cliArgs: Array<string>;
+
+    beforeAll(async () => {
+      cliArgs = [
+        join(FIXTURES_DIR, 'example.journey.ts'),
+        '--params',
+        JSON.stringify(serverParams),
+        '--reporter',
+        'json',
+      ];
+    });
+
+    it('applies --no-throttling', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs.concat(['--no-throttling']))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toBeUndefined();
+    });
+
+    it('applies default throttling', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs)
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', DEFAULT_NETWORK_CONDITIONS);
+    });
+
+    it('applies custom throttling', async () => {
+      const downloadThroughput = megabytesToBytes(3);
+      const uploadThroughput = megabytesToBytes(1);
+      const latency = 30;
+      const cli = new CLIMock()
+        .args(cliArgs.concat([
+          '--throttling',
+          '3d/1u/30l',
+        ]))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
+        downloadThroughput, 
+        latency, 
+        offline: false, 
+        uploadThroughput
+      });
+    });
+
+    it('applies custom throttling order agnostic', async () => {
+      const downloadThroughput = megabytesToBytes(3);
+      const uploadThroughput = megabytesToBytes(1);
+      const latency = 30;
+      const cli = new CLIMock()
+        .args(cliArgs.concat([
+          '--throttling',
+          '1u/30l/3d',
+        ]))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
+        ...DEFAULT_NETWORK_CONDITIONS,
+        downloadThroughput, 
+        latency, 
+        uploadThroughput
+      });
+    });
+
+    it('uses default throttling when specific params are not provided', async () => {
+      const downloadThroughput = megabytesToBytes(2);
+      const cli = new CLIMock()
+        .args(cliArgs.concat([
+          '--throttling',
+          '2d',
+        ]))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
+        ...DEFAULT_NETWORK_CONDITIONS,
+        downloadThroughput,
+      });
+    });
+  });
 });
 
 class CLIMock {
@@ -388,9 +498,9 @@ class CLIMock {
 
     this.exitCode = new Promise(res => {
       // Uncomment to debug stderr
-      //this.process.stderr.on('data', data => {
+      // this.process.stderr.on('data', data => {
       //  console.log('climock.stderr:  ', data.toString());
-      //});
+      // });
       this.process.on('exit', code => res(code));
     });
 

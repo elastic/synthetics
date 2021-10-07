@@ -35,6 +35,7 @@ export type ActionInContext = {
   isMainFrame: boolean;
   action: Action;
   committed?: boolean;
+  title?: string;
 };
 
 type Action = {
@@ -71,7 +72,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
   }
 
   generateAction(actionInContext: ActionInContext) {
-    const { action, pageAlias } = actionInContext;
+    const { action, pageAlias, title } = actionInContext;
     if (action.name === 'openPage') {
       return '';
     }
@@ -88,7 +89,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       if (this.insideStep) {
         formatter.add(this.generateStepEnd());
       }
-      formatter.add(this.generateStepStart(actionTitle(action)));
+      formatter.add(this.generateStepStart(title || actionTitle(action)));
     } else {
       formatter = new JavaScriptFormatter(this.isSuite ? 4 : 2);
     }
@@ -264,11 +265,16 @@ function toAssertCall(pageAlias, action) {
   const { command, selector, value } = action;
   switch (command) {
     case 'textContent':
+    case 'innerText':
       return `expect(await ${pageAlias}.${command}(${quote(
         selector
-      )})).toBe(${quote(value)});`;
+      )})).toMatch(${quote(value)});`;
     case 'isVisible':
     case 'isHidden':
+    case 'isChecked':
+    case 'isEditable':
+    case 'isEnabled':
+    case 'isDisabled':
       return `expect(await ${pageAlias}.${command}(${quote(
         selector
       )})).toBeTruthy();`;

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.14 (2021-09-16)
+
+### Bug fixes
+
+- Bring back `--suite-params` flag support to support Heartbeat 7.15 [#379](https://github.com/elastic/synthetics/pull/379)
+
 ## v1.0.0-beta.13 (2021-09-16)
 
 ### Features

@@ -29,14 +29,13 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
-import { HooksArgs, HooksCallback } from './common_types';
+import { HooksArgs, HooksCallback, NetworkConditions } from './common_types';
 
 const lstatAsync = promisify(fs.lstat);
 const readdirAsync = promisify(fs.readdir);
 
 export const readFileAsync = promisify(fs.readFile);
 export const writeFileAsync = promisify(fs.writeFile);
-export const rmdirAsync = promisify(fs.rmdir);
 export const mkdirAsync = promisify(fs.mkdir);
 
 const SEPARATOR = '\n';
@@ -256,4 +255,58 @@ export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
 
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
+}
+
+export function megabytesToBytes(megabytes: number) {
+  return megabytes * 1024 * 1024;
+}
+
+export function bytesToMegabytes(bytes: number) {
+  return bytes / 1024 / 1024;
+}
+
+export const DEFAULT_NETWORK_CONDITIONS: NetworkConditions = {
+  downloadThroughput: megabytesToBytes(5), // megabytes/second
+  uploadThroughput: megabytesToBytes(3), // megabytes/second
+  latency: 20, // milliseconds,
+  offline: false,
+}
+
+export function formatNetworkConditionsArgs(networkConditions: NetworkConditions) {
+  const d = bytesToMegabytes(networkConditions.downloadThroughput);
+  const u = bytesToMegabytes(networkConditions.uploadThroughput);
+  const l = networkConditions.latency;
+  return `${d}d/${u}u/${l}l`;
+}
+
+export const DEFAULT_NETWORK_CONDITIONS_ARG = formatNetworkConditionsArgs(DEFAULT_NETWORK_CONDITIONS);
+
+export function parseNetworkConditions(args: string): NetworkConditions {
+  const uploadToken = 'u';
+  const downloadToken = 'd';
+  const latencyToken = 'l';
+  const networkConditions = {
+    ...DEFAULT_NETWORK_CONDITIONS,
+  };
+
+  const conditions = args.split('/');
+
+  conditions.forEach(condition => {
+    const value = condition.slice(0, condition.length - 1);
+    const token = condition.slice(-1);
+
+    switch (token) {
+      case uploadToken:
+        networkConditions.uploadThroughput = megabytesToBytes(Number(value));
+        break;
+      case downloadToken:
+        networkConditions.downloadThroughput = megabytesToBytes(Number(value));
+        break;
+      case latencyToken: 
+        networkConditions.latency = Number(value);
+        break;
+    }
+  });
+
+  return networkConditions;
 }
