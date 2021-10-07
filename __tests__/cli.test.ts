@@ -26,7 +26,7 @@
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { Server } from './utils/server';
-import { megabytesToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
+import { megabitsToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
 describe('CLI', () => {
   let server: Server;
@@ -386,8 +386,8 @@ describe('CLI', () => {
     });
 
     it('applies custom throttling', async () => {
-      const downloadThroughput = megabytesToBytes(3);
-      const uploadThroughput = megabytesToBytes(1);
+      const downloadThroughput = megabitsToBytes(3);
+      const uploadThroughput = megabitsToBytes(1);
       const latency = 30;
       const cli = new CLIMock()
         .args(cliArgs.concat([
@@ -407,8 +407,8 @@ describe('CLI', () => {
     });
 
     it('applies custom throttling order agnostic', async () => {
-      const downloadThroughput = megabytesToBytes(3);
-      const uploadThroughput = megabytesToBytes(1);
+      const downloadThroughput = megabitsToBytes(3);
+      const uploadThroughput = megabitsToBytes(1);
       const latency = 30;
       const cli = new CLIMock()
         .args(cliArgs.concat([
@@ -428,7 +428,7 @@ describe('CLI', () => {
     });
 
     it('uses default throttling when specific params are not provided', async () => {
-      const downloadThroughput = megabytesToBytes(2);
+      const downloadThroughput = megabitsToBytes(2);
       const cli = new CLIMock()
         .args(cliArgs.concat([
           '--throttling',
