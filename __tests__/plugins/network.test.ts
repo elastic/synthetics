@@ -24,7 +24,7 @@
  */
 
 import { Gatherer } from '../../src/core/gatherer';
-import { NetworkManager, calculateTimings } from '../../src/plugins/network';
+import { NetworkManager } from '../../src/plugins/network';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
 
@@ -43,9 +43,9 @@ describe('network', () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);
     await network.start();
-    await driver.page.goto(server.TEST_PAGE);
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'load' });
     const netinfo = await network.stop();
-    expect(netinfo.length).toBeGreaterThan(0);
+    await Gatherer.stop();
     expect(netinfo[0]).toMatchObject({
       isNavigationRequest: true,
       step: null,
@@ -53,7 +53,7 @@ describe('network', () => {
       url: server.TEST_PAGE,
       request: expect.any(Object),
       response: expect.any(Object),
-      type: 'Document',
+      type: 'document',
       method: 'GET',
       requestSentTime: expect.any(Number),
       status: 200,
@@ -61,7 +61,6 @@ describe('network', () => {
       responseReceivedTime: expect.any(Number),
       timings: expect.any(Object),
     });
-    await Gatherer.stop();
   });
 
   it('not include data URL in network info', async () => {
@@ -87,13 +86,15 @@ describe('network', () => {
     server.route('/route3', (req, res) => {
       res.end('route3');
     });
-    await driver.page.goto(server.PREFIX + '/route1');
+    await driver.page.goto(server.PREFIX + '/route1', {
+      waitUntil: 'networkidle',
+    });
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toEqual(3);
     expect(netinfo[0].status).toBe(302);
     expect(netinfo[1].status).toBe(302);
     expect(netinfo[2].status).toBe(200);
-    await Gatherer.stop();
   });
 
   it('measure resource and transfer size', async () => {
@@ -105,11 +106,11 @@ describe('network', () => {
     });
     await driver.page.goto(server.PREFIX + '/route1');
     const netinfo = await network.stop();
-    expect(netinfo[0]).toMatchObject({
-      resourceSize: 10,
-      transferSize: expect.any(Number),
-    });
     await Gatherer.stop();
+    expect(netinfo[0]).toMatchObject({
+      resourceSize: 0,
+      transferSize: 10,
+    });
   });
 
   it('timings for aborted requests', async () => {
@@ -118,28 +119,32 @@ describe('network', () => {
     await network.start();
 
     const delayTime = 20;
-    server.route('/delay100', async (req, res) => {
+    server.route('/abort', async (req, res) => {
       await delay(delayTime);
       res.destroy();
     });
     server.route('/index', async (_, res) => {
       res.setHeader('content-type', 'text/html');
-      res.end(`<script src=${server.PREFIX}/delay100 />`);
+      res.end(`<script src=${server.PREFIX}/abort />`);
     });
 
-    await driver.page.goto(server.PREFIX + '/index');
-    await driver.page.waitForLoadState();
-    await Gatherer.stop();
+    await driver.page.goto(server.PREFIX + '/index', {
+      waitUntil: 'networkidle',
+    });
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
-      url: `${server.PREFIX}/delay100`,
-      status: 0,
-      response: null,
+      url: `${server.PREFIX}/abort`,
+      status: -1,
+      response: {
+        statusCode: -1,
+        headers: {},
+        redirectURL: '',
+      },
       timings: expect.any(Object),
     });
     expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);
-    expect(netinfo[1].timings.total).toEqual(netinfo[1].timings.blocked);
   });
 
   it('timings for chunked response', async () => {
@@ -149,24 +154,24 @@ describe('network', () => {
 
     const delayTime = 100;
     server.route('/chunked', async (req, res) => {
+      await delay(delayTime);
       res.writeHead(200, {
         'content-type': 'application/javascript',
       });
       res.write('a');
       await delay(delayTime);
-      res.write('b');
-      await delay(delayTime);
-      return res.end('c');
+      return res.end('b');
     });
     server.route('/index', async (_, res) => {
       res.setHeader('content-type', 'text/html');
       res.end(`<script src=${server.PREFIX}/chunked />`);
     });
 
-    await driver.page.goto(server.PREFIX + '/index');
-    await driver.page.waitForLoadState();
-    await Gatherer.stop();
+    await driver.page.goto(server.PREFIX + '/index', {
+      waitUntil: 'networkidle',
+    });
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/chunked`,
@@ -174,89 +179,9 @@ describe('network', () => {
       response: expect.any(Object),
       timings: expect.any(Object),
     });
-    expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);
-  });
-
-  describe('waterfall timing calculation', () => {
-    const getEvent = () => {
-      return {
-        response: {
-          // requestTime is in seconds, rest of the timing.* is in milliseconds
-          timing: {
-            requestTime: 1,
-            proxyStart: -1,
-            proxyEnd: -1,
-            dnsStart: 0.1,
-            dnsEnd: 26,
-            connectStart: 26,
-            connectEnd: 92.669,
-            sslStart: 40,
-            sslEnd: 92,
-            sendStart: 94,
-            sendEnd: 95,
-            receiveHeadersEnd: 2350,
-          },
-        },
-        requestSentTime: 1,
-        loadEndTime: 3,
-        responseReceivedTime: 2,
-      };
-    };
-
-    it('calculate timings for a request event', () => {
-      const record = getEvent();
-      const timings = calculateTimings(record as any);
-      expect(timings).toEqual({
-        blocked: 0.09999999999998899,
-        queueing: -1,
-        proxy: -1,
-        dns: 25.900000000000034,
-        ssl: 52.00000000000004,
-        connect: 66.66899999999987,
-        send: 0.9999999999998899,
-        wait: 905,
-        receive: 1000,
-        total: 2000,
-      });
-    });
-
-    it('when some resource timing data is unavailable', () => {
-      const record = getEvent();
-      Object.assign(record.response.timing, {
-        connectEnd: -1,
-        dnsStart: -1,
-      });
-      const timings = calculateTimings(record as any);
-      expect(timings).toEqual({
-        blocked: 26.00000000000002,
-        connect: -1,
-        dns: -1,
-        proxy: -1,
-        queueing: -1,
-        receive: 1000,
-        send: 0.9999999999998899,
-        ssl: 52.00000000000004,
-        total: 2000,
-        wait: 905,
-      });
-    });
-
-    it('when complete resource timing is not available', () => {
-      const record = getEvent();
-      record.response.timing = null;
-      const timings = calculateTimings(record as any);
-      expect(timings).toEqual({
-        blocked: 1000,
-        connect: -1,
-        dns: -1,
-        proxy: -1,
-        queueing: -1,
-        receive: 1000,
-        send: -1,
-        ssl: -1,
-        total: 2000,
-        wait: -1,
-      });
-    });
+    const timings = netinfo[1].timings;
+    expect(timings.wait).toBeGreaterThan(delayTime);
+    expect(timings.receive).toBeGreaterThan(delayTime);
+    expect(timings.total).toBeGreaterThan(timings.wait + timings.receive);
   });
 });
