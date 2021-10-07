@@ -10,17 +10,9 @@ else
   SLEEP_TIME="10"
 fi
 
-# Wait for synthetics docker to start
-##################################################
-echo "" # newline
-echo "${bold}Waiting for synthetics docker to start...${normal}"
-until [ "$(docker inspect -f '{{.State.Running}}' synthetics)" == "true" ]; do
-  sleep ${SLEEP_TIME};
-done;
-
-echo "✅ Setup completed successfully. Running e2e tests..."
-
-#
 # run e2e tests journey
 ##################################################
-SYNTHETICS_JUNIT_FILE='junit.xml' npx @elastic/synthetics uptime.journey.ts --reporter junit
+SYNTHETICS_JUNIT_FILE='junit.xml' npx @elastic/synthetics synthetics.journey.ts --reporter junit
+
+# Take the stafck down
+elastic-package stack down
