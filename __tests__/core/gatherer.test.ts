@@ -28,6 +28,7 @@ import { PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
 import { devices } from 'playwright-chromium';
 import { Server } from '../utils/server';
+import { megabitsToBytes } from '../../src/helpers';
 
 jest.mock('../../src/plugins/network');
 
@@ -119,8 +120,8 @@ describe('Gatherer', () => {
 
   describe('Network emulation', () => {
     const networkConditions = { 
-      downloadThroughput: 1024 * 1024 * 0.05, // slow 3g speeds, 0.4 Mbits
-      uploadThroughput: 1024 * 1024 * 0.02,
+      downloadThroughput: megabitsToBytes(3),
+      uploadThroughput: megabitsToBytes(1),
       latency: 20,
       offline: false,
     }
@@ -133,7 +134,7 @@ describe('Gatherer', () => {
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
       const downlink = await driver.page.evaluate(() => navigator.connection.downlink);
 
-      expect(0.5 > downlink && downlink > 0.3).toBe(true);
+      expect(3.5 > downlink && downlink > 2.5).toBe(true);
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
@@ -158,7 +159,7 @@ describe('Gatherer', () => {
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
       const downlink = await page1.evaluate(() => navigator.connection.downlink);
 
-      expect(0.5 > downlink && downlink > 0.3).toBe(true);
+      expect(3.5 > downlink && downlink > 2.5).toBe(true);
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
