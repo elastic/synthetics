@@ -39,8 +39,8 @@ export type Params = Record<string, any>;
 export type NetworkConditions = {
   offline: boolean;
   downloadThroughput: number;
-	uploadThroughput: number;
-	latency: number;
+  uploadThroughput: number;
+  latency: number;
 };
 export type HooksArgs = {
   env: string;
@@ -118,7 +118,7 @@ export type Response = {
   url?: string;
   statusCode: number;
   statusText?: string;
-  mimeType: string;
+  mimeType?: string;
   httpVersion?: string;
   headers: Record<string, string>;
   // Total size in bytes of the response (body and headers)

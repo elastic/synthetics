@@ -43,7 +43,7 @@ describe('network', () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);
     await network.start();
-    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+    await driver.page.goto(server.TEST_PAGE);
     const netinfo = await network.stop();
     await Gatherer.stop();
     expect(netinfo[0]).toMatchObject({
