@@ -188,7 +188,9 @@ async function prepareSuites(inputs: string[]) {
 
   const results = await run({
     params: Object.freeze(params),
-    networkConditions: options.throttling ? parseNetworkConditions(options.throttling as string) : undefined,
+    networkConditions: options.throttling
+      ? parseNetworkConditions(options.throttling as string)
+      : undefined,
     environment,
     playwrightOptions,
     ...options,

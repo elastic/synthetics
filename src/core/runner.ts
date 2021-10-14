@@ -107,8 +107,8 @@ type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
 interface Events {
-  start: { 
-    numJourneys: number, 
+  start: {
+    numJourneys: number;
     networkConditions?: NetworkConditions;
   };
   'journey:register': {
@@ -434,7 +434,10 @@ export default class Runner extends EventEmitter {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
-    this.emit('start', { numJourneys: this.journeys.length, networkConditions });
+    this.emit('start', {
+      numJourneys: this.journeys.length,
+      networkConditions,
+    });
     /**
      * Set up the directory for caching screenshots
      */

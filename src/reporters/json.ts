@@ -77,7 +77,7 @@ type Payload = {
   type?: OutputType;
   text?: string;
   index?: number;
-  network_conditions?: NetworkConditions
+  network_conditions?: NetworkConditions;
 };
 
 type OutputFields = {
@@ -113,13 +113,6 @@ type ScreenshotReference = {
     width: number;
     height: number;
   }>;
-};
-
-type ScreenshotOutput = {
-  step: Step;
-  blob_mime: string;
-  blocks: Array<ScreenshotBlob>;
-  reference: ScreenshotReference;
 };
 
 function getMetadata() {
@@ -331,9 +324,11 @@ export default class JSONReporter extends BaseReporter {
         root_fields: {
           num_journeys: numJourneys,
         },
-        payload: networkConditions ? {
-          network_conditions: networkConditions,
-        } : undefined
+        payload: networkConditions
+          ? {
+              network_conditions: networkConditions,
+            }
+          : undefined,
       });
     });
 
