@@ -133,7 +133,7 @@ describe('Gatherer', () => {
       // @ts-ignore
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
       const downlink = await driver.page.evaluate(
-        () => navigator.connection.downlink
+        () => (navigator['connection'] as any).downlink
       );
 
       expect(3.5 > downlink && downlink > 2.5).toBe(true);
@@ -160,7 +160,7 @@ describe('Gatherer', () => {
       // @ts-ignore
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
       const downlink = await page1.evaluate(
-        () => navigator.connection.downlink
+        () => (navigator['connection'] as any).downlink
       );
 
       expect(3.5 > downlink && downlink > 2.5).toBe(true);
