@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.15 (2021-10-14)
+
+### Breaking Changes
+
+- Drop support for Node 12 [#397](https://github.com/elastic/synthetics/pull/397)
+
+### Features
+
+- Enable trace events when invoked via Heartbeat, enables step level metrics
+  like FCP, LCP and other performance metrics for all journeys [#387](https://github.com/elastic/synthetics/pull/387)
+- Use network events from playwright context which captures network requests
+  from iframes, new tabs, etc. [#372](https://github.com/elastic/synthetics/pull/372)
+- Add default network emulation for journeys to be able to capture performance
+  measurements more effectively. Default is 5Mbps download, 3Mbps Upload and 20ms latency.
+  Users can control network throttling with `--throttling '10d/2u/30l'` flag or
+  can disable the throttling via `--no-throttling` flag [#284](https://github.com/elastic/synthetics/pull/284)
+- Add `Elastic/Synthetics` user-agent identifier to all network
+  requests. This enables users to analyze traffic from Elastic Synthetic
+  monitoring platform [#232](https://github.com/elastic/synthetics/pull/232)
+- Introduce more assetion commands to formatter [#385](https://github.com/elastic/synthetics/pull/385)
+
+### Bug fixes
+
+- Account for page closing while capturing network events [#398](https://github.com/elastic/synthetics/pull/398)
+
 ## v1.0.0-beta.14 (2021-09-16)
 
 ### Bug fixes
