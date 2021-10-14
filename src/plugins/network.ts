@@ -23,7 +23,7 @@
  *
  */
 
-import { Request, Response } from 'playwright-chromium';
+import { Page, Request, Response } from 'playwright-chromium';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
@@ -49,10 +49,24 @@ type RequestWithEntry = Request & {
 
 export class NetworkManager {
   private _browser: BrowserInfo;
+  private _barrierPromises = new Set<Promise<void>>();
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
 
   constructor(private driver: Driver) {}
+
+  private _addBarrier(page: Page, promise: Promise<void>) {
+    const race = Promise.race([
+      new Promise<void>(resolve =>
+        page.on('close', () => {
+          this._barrierPromises.delete(race);
+          resolve();
+        })
+      ),
+      promise,
+    ]) as Promise<void>;
+    this._barrierPromises.add(race);
+  }
 
   async start() {
     const { client, context } = this.driver;
@@ -96,7 +110,6 @@ export class NetworkManager {
       },
       response: {
         statusCode: -1,
-        mimeType: 'x-unknown',
         headers: {},
         redirectURL: '',
       },
@@ -122,52 +135,54 @@ export class NetworkManager {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
-    const server = await response.serverAddr();
-    const responseHeaders = await response.allHeaders();
-    const mimeType = responseHeaders['content-type']
-      ? responseHeaders['content-type'].split(';')[0]
-      : 'unknown';
-
-    const requestHeaders = await request.allHeaders();
-
-    networkEntry.request.headers = requestHeaders;
-    networkEntry.request.referrer = requestHeaders?.referer;
+    networkEntry.status = response.status();
+    networkEntry.responseReceivedTime = epochTimeInSeconds();
     networkEntry.response = {
       url: response.url(),
       statusCode: response.status(),
       statusText: response.statusText(),
-      headers: responseHeaders,
-      mimeType,
+      headers: {},
       redirectURL: networkEntry.response.redirectURL,
-      securityDetails: await response.securityDetails(),
-      remoteIPAddress: server?.ipAddress,
-      remotePort: server?.port,
     };
-    networkEntry.status = response.status();
-    networkEntry.responseReceivedTime = epochTimeInSeconds();
+
+    const page = request.frame().page();
+    this._addBarrier(
+      page,
+      request.allHeaders().then(reqHeaders => {
+        networkEntry.request.headers = reqHeaders;
+        networkEntry.request.referrer = reqHeaders?.referer;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.serverAddr().then(server => {
+        networkEntry.response.remoteIPAddress = server?.ipAddress;
+        networkEntry.response.remotePort = server?.port;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.securityDetails().then(details => {
+        networkEntry.response.securityDetails = details;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.allHeaders().then(resHeaders => {
+        networkEntry.response.headers = resHeaders;
+
+        const mimeType = resHeaders['content-type']
+          ? resHeaders['content-type'].split(';')[0]
+          : 'unknown';
+        networkEntry.response.mimeType = mimeType;
+      })
+    );
   }
 
   private async _onRequestCompleted(request: Request) {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
-
     networkEntry.loadEndTime = epochTimeInSeconds();
-
-    // For aborted/failed requests sizes does not exist
-    const sizes = await request.sizes().catch(() => {});
-    if (sizes) {
-      networkEntry.request.bytes =
-        sizes.requestHeadersSize + sizes.requestBodySize;
-      networkEntry.request.body = {
-        bytes: sizes.requestBodySize,
-      };
-      networkEntry.response.bytes =
-        sizes.responseHeadersSize + sizes.responseBodySize;
-      networkEntry.response.body = {
-        bytes: sizes.responseBodySize,
-      };
-      networkEntry.transferSize = sizes.responseBodySize;
-    }
 
     const timing = request.timing();
     const { loadEndTime, requestSentTime } = networkEntry;
@@ -243,6 +258,25 @@ export class NetworkManager {
       receive,
       total: roundMilliSecs(total),
     };
+
+    const page = request.frame().page();
+    // For aborted/failed requests sizes does not exist
+    this._addBarrier(
+      page,
+      request.sizes().then(sizes => {
+        networkEntry.request.bytes =
+          sizes.requestHeadersSize + sizes.requestBodySize;
+        networkEntry.request.body = {
+          bytes: sizes.requestBodySize,
+        };
+        networkEntry.response.bytes =
+          sizes.responseHeadersSize + sizes.responseBodySize;
+        networkEntry.response.body = {
+          bytes: sizes.responseBodySize,
+        };
+        networkEntry.transferSize = sizes.responseBodySize;
+      })
+    );
   }
 
   stop() {
@@ -251,6 +285,7 @@ export class NetworkManager {
     context.on('response', this._onResponse.bind(this));
     context.on('requestfinished', this._onRequestCompleted.bind(this));
     context.on('requestfailed', this._onRequestCompleted.bind(this));
+    this._barrierPromises.clear();
     return this.results;
   }
 }
