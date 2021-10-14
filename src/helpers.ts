@@ -258,29 +258,33 @@ export function getDurationInUs(duration: number) {
 }
 
 export function megabitsToBytes(megabytes: number) {
-  return megabytes * 1024 * 1024 / 8;
+  return (megabytes * 1024 * 1024) / 8;
 }
 
 export function bytesToMegabits(bytes: number) {
-  return bytes / 1024 / 1024 * 8;
+  return (bytes / 1024 / 1024) * 8;
 }
 
 export const DEFAULT_NETWORK_CONDITIONS: NetworkConditions = {
-  downloadThroughput: megabitsToBytes(5), // Devtools CDP expects format to be in bytes/second 
+  downloadThroughput: megabitsToBytes(5), // Devtools CDP expects format to be in bytes/second
   uploadThroughput: megabitsToBytes(3), // Devtools CDP expects format to be in bytes/second
   latency: 20, // milliseconds,
   offline: false,
-}
+};
 
 // Tranforms CDP dev tools format back to cli args format
-export function formatNetworkConditionsArgs(networkConditions: NetworkConditions) {
+export function formatNetworkConditionsArgs(
+  networkConditions: NetworkConditions
+) {
   const d = bytesToMegabits(networkConditions.downloadThroughput);
   const u = bytesToMegabits(networkConditions.uploadThroughput);
   const l = networkConditions.latency;
   return `${d}d/${u}u/${l}l`;
 }
 
-export const DEFAULT_NETWORK_CONDITIONS_ARG = formatNetworkConditionsArgs(DEFAULT_NETWORK_CONDITIONS);
+export const DEFAULT_NETWORK_CONDITIONS_ARG = formatNetworkConditionsArgs(
+  DEFAULT_NETWORK_CONDITIONS
+);
 
 export function parseNetworkConditions(args: string): NetworkConditions {
   const uploadToken = 'u';
@@ -303,7 +307,7 @@ export function parseNetworkConditions(args: string): NetworkConditions {
       case downloadToken:
         networkConditions.downloadThroughput = megabitsToBytes(Number(value));
         break;
-      case latencyToken: 
+      case latencyToken:
         networkConditions.latency = Number(value);
         break;
     }

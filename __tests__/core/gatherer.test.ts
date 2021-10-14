@@ -119,20 +119,22 @@ describe('Gatherer', () => {
   });
 
   describe('Network emulation', () => {
-    const networkConditions = { 
+    const networkConditions = {
       downloadThroughput: megabitsToBytes(3),
       uploadThroughput: megabitsToBytes(1),
       latency: 20,
       offline: false,
-    }
+    };
     it('applies network throttling', async () => {
-      const driver = await Gatherer.setupDriver({ 
-        wsEndpoint, 
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
         networkConditions,
       });
       // @ts-ignore
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
-      const downlink = await driver.page.evaluate(() => navigator.connection.downlink);
+      const downlink = await driver.page.evaluate(
+        () => (navigator['connection'] as any).downlink
+      );
 
       expect(3.5 > downlink && downlink > 2.5).toBe(true);
       await Gatherer.dispose(driver);
@@ -157,7 +159,9 @@ describe('Gatherer', () => {
 
       // @ts-ignore
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
-      const downlink = await page1.evaluate(() => navigator.connection.downlink);
+      const downlink = await page1.evaluate(
+        () => (navigator['connection'] as any).downlink
+      );
 
       expect(3.5 > downlink && downlink > 2.5).toBe(true);
       await Gatherer.dispose(driver);

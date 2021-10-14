@@ -106,8 +106,10 @@ program
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
   .addOption(
-    new Option('--throttling <d/u/l>', 'List of options to throttle network conditions for download throughput (d) in megabits/second, upload throughput (u) in megabits/second and latency (l) in milliseconds.')
-      .default(DEFAULT_NETWORK_CONDITIONS_ARG)
+    new Option(
+      '--throttling <d/u/l>',
+      'List of options to throttle network conditions for download throughput (d) in megabits/second, upload throughput (u) in megabits/second and latency (l) in milliseconds.'
+    ).default(DEFAULT_NETWORK_CONDITIONS_ARG)
   )
   .option('--no-throttling', 'Turns off default network throttling.')
   .version(version)

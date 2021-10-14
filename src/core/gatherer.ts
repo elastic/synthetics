@@ -37,12 +37,8 @@ export class Gatherer {
   static browser: ChromiumBrowser;
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
-    const { 
-      wsEndpoint,
-      playwrightOptions,
-      networkConditions
-    } = options;
-    
+    const { wsEndpoint, playwrightOptions, networkConditions } = options;
+
     if (Gatherer.browser == null) {
       if (wsEndpoint) {
         log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
@@ -68,12 +64,18 @@ export class Gatherer {
     return userAgent + ' Elastic/Synthetics';
   }
 
-  static async setNetworkConditions(context: BrowserContext, networkConditions: RunOptions['networkConditions']) {
+  static async setNetworkConditions(
+    context: BrowserContext,
+    networkConditions: RunOptions['networkConditions']
+  ) {
     if (networkConditions) {
-      context.on('page', async (page) => {
+      context.on('page', async page => {
         const context = page.context();
         const client = await context.newCDPSession(page);
-        await client.send('Network.emulateNetworkConditions', networkConditions);
+        await client.send(
+          'Network.emulateNetworkConditions',
+          networkConditions
+        );
       });
     }
   }
