@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.16 (2021-10-19)
+
+### Bug fixes
+
+- Revert to Playwright `1.14.0` as the newer versions of chromium
+  [breaks](https://bugs.chromium.org/p/chromium/issues/detail?id=1253967&q=glibc&can=2)
+  CentOS7. As a result of this revert, network events from other contexts like
+  popups, iframes, tabs would not get captured [#402](https://github.com/elastic/synthetics/pull/402)
+
 ## v1.0.0-beta.15 (2021-10-14)
 
 ### Breaking Changes
