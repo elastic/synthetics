@@ -5,7 +5,10 @@
   "license": "MIT",
   "scripts": {
     "setup": "bash scripts/setup.sh",
-    "test": "npm i && npm run setup &&  bash scripts/test.sh"
+    "test": "npm i && bash scripts/test.sh",
+    "test_all": "npm i && bash scripts/test_versions.sh test",
+    "ci": "npm i && bash scripts/ci.sh",
+    "ci_all": "npm i && bash scripts/test_versions.sh ci"
   },
   "devDependencies": {
     "@elastic/synthetics": "file:../../",
