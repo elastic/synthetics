@@ -26,11 +26,8 @@
 import { beforeAll, journey, step, expect } from '@elastic/synthetics';
 import axios from 'axios';
 
-let syntheticsPackageVersion = undefined;
-
 beforeAll(async () => {
   await waitForElasticSearch();
-  syntheticsPackageVersion = await getSyntheticsPackageInfo();
 });
 
 async function logIn(page) {
@@ -40,16 +37,20 @@ async function logIn(page) {
 }
 
 async function goToSyntheticsIntegrationPage(page) {
-  await page.goto(`http://localhost:5601/app/fleet/integrations/synthetics-${syntheticsPackageVersion}/add-integration`);
+  console.info('Navigating to Elastic Synthetics Integration page')
+  await page.goto('http://localhost:5601/app/integrations/detail/synthetics/overview');
   await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 10000 });
   const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
   if (isUnauthenticated) {
     await logIn(page);
   }
   await page.waitForTimeout(10 * 1000);
+  await page.click('[data-test-subj="addIntegrationPolicyButton"]');
+  await page.waitForTimeout(10 * 1000);
 }
 
 async function goToUptime(page) {
+  console.info('Naviging to Uptime overview page')
   await page.goto('http://localhost:5601/app/uptime');
   await page.waitForTimeout(10 * 1000);
 }
@@ -66,11 +67,18 @@ async function confirmAndSavePolicy(page) {
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
-  await page.click(`text=${journeyName}`, { timeout: 240 * 1000 });
+  const overviewH1 = await page.textContent('h1');
+  if (overviewH1 === 'Welcome to Elastic Observability!') {
+    console.info('Refreshing Uptime')
+    await goToUptime(page);
+    await checkForSyntheticsData({ page, journeyName});
+  }
+  await page.click(`text=${journeyName}`, { timeout: 300 * 1000 });
   await page.waitForTimeout(10 * 1000);
   
   const content = await page.textContent('h1');
   expect(content).toBe(journeyName);
+  console.info(`Data for ${journeyName} indexed successfully`)
 }
 
 journey('E2e test synthetics - http', async ({ page }) => {
@@ -84,6 +92,7 @@ journey('E2e test synthetics - http', async ({ page }) => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
     await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
     await confirmAndSavePolicy(page);
+    console.info(`Monitor for ${journeyName} created successfully`)
   });
 
   step('go to uptime', async () => {
@@ -107,6 +116,7 @@ journey('E2e test synthetics - tcp', async ({ page }) => {
     await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'tcp');
     await page.fill('[data-test-subj="syntheticsTCPHostField"]', 'smtp.gmail.com:587');
     await confirmAndSavePolicy(page);
+    console.info(`Monitor for ${journeyName} created successfully`)
   });
 
   step('go to uptime', async () => {
@@ -163,14 +173,15 @@ journey('E2e test synthetics - browser', async ({ page }) => {
   step('wait for synthetics data', async () => {
     await page.click(`text=${journeyName}`, { timeout: 240 * 1000 });
     await page.waitForTimeout(10 * 1000);
-    
+      
     const content = await page.textContent('h1');
     expect(content).toContain(journeyName);
+    console.info(`Monitor for ${journeyName} created successfully`)
   });
 });
 
 async function waitForElasticSearch() {
-  console.log('Waiting for Elastic Search  to start');
+  console.info('Waiting for Elastic Search  to start');
   let esStatus = false;
 
   while (!esStatus) {
@@ -187,22 +198,3 @@ async function waitForElasticSearch() {
     }
   }
 }
-
-async function getSyntheticsPackageInfo() {
-  console.log('Getting latest synthetics package info');
-
-  let packageVersion = undefined;
-
-  while (!packageVersion) {
-    try {
-      const { data } = await axios.get('http://localhost:8080/search');
-      const syntheticsPackage = data.find(pkg => pkg.name === 'synthetics');
-      packageVersion = syntheticsPackage?.version;
-    } catch (e) {
-      throw new Error(e);
-    }
-  }
-
-  return packageVersion;
-}
-  
