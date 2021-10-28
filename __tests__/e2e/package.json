@@ -5,10 +5,12 @@
   "license": "MIT",
   "scripts": {
     "setup": "bash scripts/setup.sh",
-    "test": "npm i && bash scripts/test.sh",
-    "test_all": "npm i && bash scripts/test_versions.sh test",
-    "ci": "npm i && bash scripts/ci.sh",
-    "ci_all": "npm i && bash scripts/test_versions.sh ci"
+    "test": "npm i && npm run setup &&  bash scripts/test.sh",
+    "setup_integration": "bash scripts/setup_integration.sh",
+    "test_integration": "npm i && npm run setup_integration && bash scripts/test_integration.sh",
+    "test_integration_all": "npm i && bash scripts/test_versions.sh test",
+    "ci_integration": "npm i && npm run setup_integration && bash scripts/ci.sh",
+    "ci_integration_all": "npm i && bash scripts/test_versions.sh ci"
   },
   "devDependencies": {
     "@elastic/synthetics": "file:../../",
