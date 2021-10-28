@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-versions=(7.15.0 7.16.0-SNAPSHOT 8.0.0-SNAPSHOT)
+input="versions"
 
-for version in "${versions[@]}"
+while IFS= read -r line
 do
-   sh ./scripts/setup.sh $version && sh ./scripts/$1.sh $version
-done
+  sh ./scripts/setup.sh $line && sh ./scripts/$1.sh $line
+done < "$input"
