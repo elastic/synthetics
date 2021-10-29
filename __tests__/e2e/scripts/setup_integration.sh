@@ -2,7 +2,7 @@
 set -e
 
 # Update elastic-package
-go get github.com/elastic/elastic-package
+go install github.com/elastic/elastic-package@latest
 
 eval "$(elastic-package stack shellinit)"
 
