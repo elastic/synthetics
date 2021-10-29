@@ -164,6 +164,7 @@ export type CliArgs = {
   ignoreHttpsErrors?: boolean;
   params?: Params;
   throttling?: boolean | string;
+  playwrightOptions?: LaunchOptions & BrowserContextOptions;
   /**
    * @deprecated use params instead
    */

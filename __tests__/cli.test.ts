@@ -25,6 +25,7 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
+import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
 import { megabitsToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
@@ -213,24 +214,6 @@ describe('CLI', () => {
       params: { url: 'dev' },
     });
     process.env['NODE_ENV'] = original;
-  });
-
-  it('pass playwright options to runner', async () => {
-    const cli = new CLIMock()
-      .args([
-        join(FIXTURES_DIR, 'pwoptions.journey.ts'),
-        '--reporter',
-        'json',
-        '--config',
-        join(FIXTURES_DIR, 'synthetics.config.ts'),
-      ])
-      .run();
-    await cli.waitFor('step/end');
-    const output = cli.output();
-    expect(await cli.exitCode).toBe(0);
-    expect(JSON.parse(output).step).toMatchObject({
-      status: 'succeeded',
-    });
   });
 
   it('params wins over config params', async () => {
@@ -429,6 +412,48 @@ describe('CLI', () => {
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
         ...DEFAULT_NETWORK_CONDITIONS,
         downloadThroughput,
+      });
+    });
+  });
+
+  describe('playwright options', () => {
+    it('pass playwright options to runner', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+        ])
+        .run();
+      await cli.waitFor('step/end');
+      const output = cli.output();
+      expect(await cli.exitCode).toBe(0);
+      expect(JSON.parse(output).step).toMatchObject({
+        status: 'succeeded',
+      });
+    });
+
+    it('allows overwriting playwright options with --playwright-options', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+          '--playwright-options',
+          JSON.stringify({ 
+            ...devices['iPad Pro 11'],
+          })
+        ])
+        .run();
+      await cli.waitFor('step/end');
+      const output = cli.output();
+      expect(await cli.exitCode).toBe(1);
+      expect(JSON.parse(output).step).toMatchObject({
+        status: 'failed',
       });
     });
   });
