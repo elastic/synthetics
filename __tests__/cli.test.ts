@@ -54,22 +54,6 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
-  // TODO: Delete this once --suite-params is removed
-  it('runs with legacy suite-params', async () => {
-    const cli = new CLIMock()
-      .stdin(
-        `step('check h2', async () => {
-        await page.goto(params.url, { timeout: 1500 });
-        const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
-        expect(await sel.textContent()).toBe("Synthetics test page");
-      })`
-      )
-      .args(['--inline', '--suite-params', JSON.stringify(serverParams)])
-      .run();
-    await cli.waitFor('Journey: inline');
-    expect(await cli.exitCode).toBe(0);
-  });
-
   it('run suites and exit with 0', async () => {
     const cli = new CLIMock()
       .args([join(FIXTURES_DIR, 'fake.journey.ts')])
