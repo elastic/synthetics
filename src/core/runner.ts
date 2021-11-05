@@ -123,6 +123,7 @@ interface Events {
     JourneyResult & {
       journey: Journey;
       options: RunOptions;
+      timestamp: number;
     };
   'journey:end:reported': unknown;
   'step:start': { journey: Journey; step: Step };
@@ -149,8 +150,12 @@ export default class Runner extends EventEmitter {
   static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const start = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
+    /**
+     * Do not include browser launch/context creation duration
+     * as part of journey duration
+     */
+    const start = monotonicTimeInSeconds();
     const pluginManager = await Gatherer.beginRecording(driver, options);
     /**
      * For each journey we create the screenshots folder for
@@ -339,6 +344,7 @@ export default class Runner extends EventEmitter {
     result: JourneyContext & JourneyResult,
     options: RunOptions
   ) {
+    const end = monotonicTimeInSeconds();
     const { pluginManager, start, status, error } = result;
     const pluginOutput = pluginManager.output();
     this.emit('journey:end', {
@@ -346,7 +352,8 @@ export default class Runner extends EventEmitter {
       status,
       error,
       start,
-      end: monotonicTimeInSeconds(),
+      end,
+      timestamp: getTimestamp(),
       options,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
@@ -378,6 +385,7 @@ export default class Runner extends EventEmitter {
     };
     this.emit('journey:end', {
       journey,
+      timestamp: getTimestamp(),
       start,
       options,
       end: monotonicTimeInSeconds(),
@@ -393,8 +401,8 @@ export default class Runner extends EventEmitter {
     const result: JourneyResult = {
       status: 'succeeded',
     };
-    log(`Runner: start journey (${journey.name})`);
     const context = await Runner.createContext(options);
+    log(`Runner: start journey (${journey.name})`);
     try {
       this.registerJourney(journey, context);
       const hookArgs = {

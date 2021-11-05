@@ -37,6 +37,7 @@ export class Gatherer {
   static browser: ChromiumBrowser;
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
+    log('Gatherer: setup driver');
     const { wsEndpoint, playwrightOptions, networkConditions } = options;
 
     if (Gatherer.browser == null) {

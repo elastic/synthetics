@@ -435,6 +435,7 @@ export default class JSONReporter extends BaseReporter {
       'journey:end',
       async ({
         journey,
+        timestamp,
         start,
         end,
         networkinfo,
@@ -501,6 +502,7 @@ export default class JSONReporter extends BaseReporter {
         this.writeJSON({
           type: 'journey/end',
           journey,
+          timestamp,
           error,
           payload: {
             start,
