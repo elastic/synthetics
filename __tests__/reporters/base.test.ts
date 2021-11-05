@@ -102,6 +102,7 @@ describe('base reporter', () => {
     };
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       status: 'failed',
       error,
       start: 0,
