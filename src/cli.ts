@@ -175,16 +175,18 @@ async function prepareSuites(inputs: string[]) {
    * Validate and handle configs
    */
   const config = readConfig(environment, options.config);
-  /**
-   * Favor playwright options passed via cli to inline playwright options
-   */
-  config.playwrightOptions = merge(config.playwrightOptions, options.playwrightOptions || {});
+
   const params = merge(
     config.params,
     options.suiteParams || {},
     options.params || {}
   );
+
+  /**
+   * Favor playwright options passed via cli to inline playwright options
+   */
   const playwrightOptions = merge(config.playwrightOptions, {
+    ...options.playwrightOptions,
     headless: options.headless,
     chromiumSandbox: options.sandbox,
     ignoreHTTPSErrors: options.ignoreHttpsErrors,

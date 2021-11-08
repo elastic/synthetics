@@ -112,7 +112,7 @@ program
     ).default(DEFAULT_NETWORK_CONDITIONS_ARG)
   )
   .option('--no-throttling', 'Turns off default network throttling.')
-  .option('--playwright-options <jsonstring>', 'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined if your synthetics.config.js file. Options defined via --playwright-options take precedence.', JSON.parse)
+  .option('--playwright-options <jsonstring>', 'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file. Options defined via --playwright-options take precedence.', JSON.parse)
   .version(version)
   .description('Run synthetic tests');
 
