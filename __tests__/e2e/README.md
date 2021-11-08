@@ -5,14 +5,14 @@ This folder contains E2E tests for the Elasic Synthetics Integration, covering t
 ## Prerequistes
 
 ### Node
-We depend upon the version of node defined in .nvmrc.
+We depend upon the version of node defined in .nvmrc in the root of this repo.
 
 You will probably want to install a node version manager. nvm is recommended.
 
-To install and use the correct node version with nvm:
+To install and use the correct node version with nvm, run the following command at the root of the repository.
 
 ```
-nvm install
+nvm use
 ```
 
 ### Go
