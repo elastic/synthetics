@@ -164,10 +164,6 @@ export type CliArgs = {
   ignoreHttpsErrors?: boolean;
   params?: Params;
   throttling?: boolean | string;
-  /**
-   * @deprecated use params instead
-   */
-  suiteParams?: Params;
   richEvents?: boolean;
 };
 
