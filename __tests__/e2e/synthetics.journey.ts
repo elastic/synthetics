@@ -44,15 +44,18 @@ async function goToSyntheticsIntegrationPage(page) {
   if (isUnauthenticated) {
     await logIn(page);
   }
-  await page.waitForTimeout(10 * 1000);
-  await page.click('[data-test-subj="addIntegrationPolicyButton"]');
+  await page.click('[data-test-subj="addIntegrationPolicyButton"]', { timeout: 10 * 1000 });
+  /* We need to ensure that Elastic Synthetics integration page is fully loaded, including the UI logic.
+   * Our UI logic clears out the name input when the page is first loaded. If we don't wait, we run the risk 
+   * of playwright input being overwritten by Kibana logic clearing out the field. Playwright doesn't have
+   * a mechanism to wait for the value of input to be empty, so for now, we are using a simple timeout */
   await page.waitForTimeout(10 * 1000);
 }
 
 async function goToUptime(page) {
-  console.info('Naviging to Uptime overview page')
+  console.info('Navigating to Uptime overview page')
   await page.goto('http://localhost:5601/app/uptime');
-  await page.waitForTimeout(10 * 1000);
+  await page.waitForSelector('h1', { timeout: 10000 });
 }
 
 async function createIntegrationPolicyName({ page, policyName }) {
@@ -72,12 +75,9 @@ async function checkForSyntheticsData({ page, journeyName }) {
     console.info('Refreshing Uptime')
     await goToUptime(page);
     await checkForSyntheticsData({ page, journeyName});
+    return;
   }
   await page.click(`text=${journeyName}`, { timeout: 300 * 1000 });
-  await page.waitForTimeout(10 * 1000);
-  
-  const content = await page.textContent('h1');
-  expect(content).toBe(journeyName);
   console.info(`Data for ${journeyName} indexed successfully`)
 }
 
@@ -171,12 +171,7 @@ journey('E2e test synthetics - browser', async ({ page }) => {
   });
 
   step('wait for synthetics data', async () => {
-    await page.click(`text=${journeyName}`, { timeout: 240 * 1000 });
-    await page.waitForTimeout(10 * 1000);
-      
-    const content = await page.textContent('h1');
-    expect(content).toContain(journeyName);
-    console.info(`Monitor for ${journeyName} created successfully`)
+    await checkForSyntheticsData({ page, journeyName });
   });
 });
 
