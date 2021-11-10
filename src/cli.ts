@@ -185,12 +185,15 @@ async function prepareSuites(inputs: string[]) {
   /**
    * Favor playwright options passed via cli to inline playwright options
    */
-  const playwrightOptions = merge(config.playwrightOptions, {
-    ...options.playwrightOptions,
-    headless: options.headless,
-    chromiumSandbox: options.sandbox,
-    ignoreHTTPSErrors: options.ignoreHttpsErrors,
-  });
+  const playwrightOptions = merge.all([
+    config.playwrightOptions || {},
+    options.playwrightOptions || {},
+    {
+      headless: options.headless,
+      chromiumSandbox: options.sandbox,
+      ignoreHTTPSErrors: options.ignoreHttpsErrors,
+    }
+  ]);
 
   const results = await run({
     params: Object.freeze(params),
