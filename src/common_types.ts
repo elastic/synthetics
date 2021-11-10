@@ -165,10 +165,6 @@ export type CliArgs = {
   params?: Params;
   throttling?: boolean | string;
   playwrightOptions?: LaunchOptions & BrowserContextOptions;
-  /**
-   * @deprecated use params instead
-   */
-  suiteParams?: Params;
   richEvents?: boolean;
 };
 

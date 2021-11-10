@@ -163,6 +163,7 @@ describe('json reporter', () => {
     });
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       status: 'succeeded',
       start: 0,
       end: 11,
@@ -225,6 +226,7 @@ describe('json reporter', () => {
 
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       start: 0,
       end: 1,
       status: 'failed',
@@ -242,6 +244,7 @@ describe('json reporter', () => {
     const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
     runner.emit('journey:end', {
       journey: journey(journeyOpts, () => {}),
+      timestamp,
       start: 0,
       end: 1,
       status: 'skipped',
@@ -301,6 +304,7 @@ describe('json reporter', () => {
     const emitEnd = (options, status = 'failed' as StatusValue) =>
       runner.emit('journey:end', {
         journey: j1,
+        timestamp,
         start: 0,
         status,
         options,

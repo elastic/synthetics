@@ -175,12 +175,7 @@ async function prepareSuites(inputs: string[]) {
    * Validate and handle configs
    */
   const config = readConfig(environment, options.config);
-
-  const params = merge(
-    config.params,
-    options.suiteParams || {},
-    options.params || {}
-  );
+  const params = merge(config.params, options.params || {});
 
   /**
    * Favor playwright options passed via cli to inline playwright options
