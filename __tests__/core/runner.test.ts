@@ -655,4 +655,39 @@ describe('runner', () => {
       },
     });
   });
+
+  it('run - timestamps must be in order', async () => {
+    const j1 = journey('journey1', async ({ page }) => {
+      step('step1', async () => {
+        await page.goto(server.TEST_PAGE);
+      });
+    });
+    runner.addJourney(j1);
+    await runner.run({
+      reporter: 'json',
+      screenshots: 'on',
+      filmstrips: true,
+      network: true,
+      wsEndpoint,
+      outfd: fs.openSync(dest, 'w'),
+    });
+
+    const events = readAndCloseStreamJson().map(event => ({
+      type: event.type,
+      timestamp: event['@timestamp'],
+    }));
+    // sort the events as written order might be different
+    events.sort((a, b) => a.timestamp - b.timestamp);
+    const realEventsOrder = [
+      'synthetics/metadata',
+      'journey/start',
+      'journey/network_info',
+      'step/screenshot',
+      'step/filmstrips',
+      'step/end',
+      'journey/end',
+    ];
+    const collectOrder = events.map(event => event.type);
+    expect(collectOrder).toEqual(realEventsOrder);
+  });
 });

@@ -83,6 +83,7 @@ describe('junit reporter', () => {
       journey: j1,
       timestamp,
       start: 0,
+      end: 2,
       status: 'failed',
       options: {},
     });
@@ -118,6 +119,7 @@ describe('junit reporter', () => {
       journey: j1,
       timestamp,
       start: 0,
+      end: 2,
       status: 'failed',
       options: {},
     });

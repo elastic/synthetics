@@ -276,7 +276,7 @@ describe('json reporter', () => {
     const screenshotsDir = join(FIXTURES_DIR, 'screenshots');
     const collectScreenshots = async () => {
       const screenshots = [];
-      await gatherScreenshots(screenshotsDir, async (_, data) => {
+      await gatherScreenshots(screenshotsDir, async ({ data }) => {
         const result = await getScreenshotBlocks(Buffer.from(data, 'base64'));
         screenshots.push(result);
       });
@@ -306,6 +306,7 @@ describe('json reporter', () => {
         journey: j1,
         timestamp,
         start: 0,
+        end: 2,
         status,
         options,
       });
