@@ -244,7 +244,7 @@ def withNodeInDockerEnv(Map args=[:], Closure body){
 def withNodeEnv(Map args=[:], Closure body){
   withEnv(["HOME=${WORKSPACE}"]) {
     sh(label: 'install Node.js', script: '''
-      set +x
+      set -x
       export NVM_DIR="${HOME}/.nvm"
       [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
 
