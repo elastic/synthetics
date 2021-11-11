@@ -176,11 +176,19 @@ async function prepareSuites(inputs: string[]) {
    */
   const config = readConfig(environment, options.config);
   const params = merge(config.params, options.params || {});
-  const playwrightOptions = merge(config.playwrightOptions, {
-    headless: options.headless,
-    chromiumSandbox: options.sandbox,
-    ignoreHTTPSErrors: options.ignoreHttpsErrors,
-  });
+
+  /**
+   * Favor playwright options passed via cli to inline playwright options
+   */
+  const playwrightOptions = merge.all([
+    config.playwrightOptions || {},
+    options.playwrightOptions || {},
+    {
+      headless: options.headless,
+      chromiumSandbox: options.sandbox,
+      ignoreHTTPSErrors: options.ignoreHttpsErrors,
+    }
+  ]);
 
   const results = await run({
     params: Object.freeze(params),
