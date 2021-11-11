@@ -94,6 +94,12 @@ export type BrowserInfo = {
   version: string;
 };
 
+export type Screenshot = {
+  timestamp: number;
+  step: Step;
+  data: string;
+};
+
 export type NetworkInfo = {
   url: string;
   browser: BrowserInfo;
