@@ -48,6 +48,7 @@ import {
   HooksArgs,
   PlaywrightOptions,
   Driver,
+  Screenshot,
 } from '../common_types';
 import { PageMetrics, PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -73,13 +74,12 @@ export type RunOptions = Omit<
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
-type BaseContext = {
+type HookType = 'beforeAll' | 'afterAll';
+export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
+
+type JourneyContext = {
   params?: Params;
   start: number;
-  end?: number;
-};
-
-type JourneyContext = BaseContext & {
   driver: Driver;
   pluginManager: PluginManager;
 };
@@ -103,8 +103,16 @@ type JourneyResult = {
 
 type RunResult = Record<string, JourneyResult>;
 
-type HookType = 'beforeAll' | 'afterAll';
-export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
+interface StepEvent {
+  step: Step;
+  journey: Journey;
+}
+
+interface JourneyEvent {
+  journey: Journey;
+  timestamp: number;
+  params?: Params;
+}
 
 interface Events {
   start: {
@@ -114,25 +122,21 @@ interface Events {
   'journey:register': {
     journey: Journey;
   };
-  'journey:start': {
-    journey: Journey;
-    timestamp: number;
-    params: Params;
-  };
-  'journey:end': BaseContext &
+  'journey:start': JourneyEvent;
+  'journey:end': JourneyEvent &
     JourneyResult & {
-      journey: Journey;
+      start: number;
+      end: number;
       options: RunOptions;
       timestamp: number;
     };
   'journey:end:reported': unknown;
-  'step:start': { journey: Journey; step: Step };
-  'step:end': StepResult & {
-    start: number;
-    end: number;
-    journey: Journey;
-    step: Step;
-  };
+  'step:start': StepEvent;
+  'step:end': StepEvent &
+    StepResult & {
+      start: number;
+      end: number;
+    };
   end: unknown;
 }
 
@@ -185,12 +189,14 @@ export default class Runner extends EventEmitter {
      */
     if (buffer) {
       const fileName = `${generateUniqueId()}.json`;
+      const screenshot: Screenshot = {
+        step,
+        timestamp: getTimestamp(),
+        data: buffer.toString('base64'),
+      };
       await writeFileAsync(
         join(Runner.screenshotPath, fileName),
-        JSON.stringify({
-          step,
-          data: buffer.toString('base64'),
-        })
+        JSON.stringify(screenshot)
       );
     }
   }

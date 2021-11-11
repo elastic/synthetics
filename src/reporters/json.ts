@@ -45,6 +45,7 @@ import {
   StatusValue,
   PerfMetrics,
   Params,
+  Screenshot,
 } from '../common_types';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { PageMetrics } from '../plugins';
@@ -326,14 +327,14 @@ export async function getScreenshotBlocks(screenshot: Buffer) {
  */
 export async function gatherScreenshots(
   screenshotsPath: string,
-  callback: (step: Step, data: string) => Promise<void>
+  callback: (data: Screenshot) => Promise<void>
 ) {
   if (isDirectory(screenshotsPath)) {
     await totalist(screenshotsPath, async (_, absPath) => {
       try {
         const content = readFileSync(absPath, 'utf8');
-        const { step, data } = JSON.parse(content);
-        await callback(step, data);
+        const screenshot: Screenshot = JSON.parse(content);
+        await callback(screenshot);
       } catch (_) {
         // TODO: capture progarammatic synthetic errors under different type
       }
@@ -451,15 +452,17 @@ export default class JSONReporter extends BaseReporter {
         if (writeScreenshots) {
           await gatherScreenshots(
             join(CACHE_PATH, 'screenshots'),
-            async (step, data) => {
+            async screenshot => {
+              const { data, timestamp, step } = screenshot;
               if (!data) {
                 return;
               }
               if (ssblocks) {
-                await this.writeScreenshotBlocks(journey, step, data);
+                await this.writeScreenshotBlocks(journey, screenshot);
               } else {
                 this.writeJSON({
                   type: 'step/screenshot',
+                  timestamp,
                   journey,
                   step,
                   blob: data,
@@ -515,14 +518,15 @@ export default class JSONReporter extends BaseReporter {
     );
   }
 
-  async writeScreenshotBlocks(journey: Journey, step: Step, data: string) {
+  async writeScreenshotBlocks(journey: Journey, screenshot: Screenshot) {
     const { blob_mime, blocks, reference } = await getScreenshotBlocks(
-      Buffer.from(data, 'base64')
+      Buffer.from(screenshot.data, 'base64')
     );
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
       this.writeJSON({
         type: 'screenshot/block',
+        timestamp: screenshot.timestamp,
         _id: block.id,
         blob: block.blob,
         blob_mime,
@@ -530,8 +534,9 @@ export default class JSONReporter extends BaseReporter {
     }
     this.writeJSON({
       type: 'step/screenshot_ref',
+      timestamp: screenshot.timestamp,
       journey,
-      step,
+      step: screenshot.step,
       root_fields: {
         screenshot_ref: reference,
       },
