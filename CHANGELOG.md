@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.17 (2021-11-11)
+
+### Breaking Changes
+
+- Remove 'suiteparams' CLI option which was depreacted in the previous releases.
+  Use `--params` instead [#406](https://github.com/elastic/synthetics/pull/406)
+
+### Features
+
+- Add support for `--playwright-options` CLI flag that lets user specify all
+  browser and context options that Playwright supports in addition to passing it
+  via `synthetics.config.js` file [#405](https://github.com/elastic/synthetics/pull/405)
+
+### Bug fixes
+
+- Timestamp of `journey/end` event reflects the time when the event happens instead
+  of the time event was written to the output stream. This fixes issue when
+  duration is calculated based on `journey/start` and `journey/end` [#409](https://github.com/elastic/synthetics/pull/409)
+- Rewrite screenshot timestamp based on when screenshot was taken instead of
+  when the screenshot was processed and reconstructed [#411](https://github.com/elastic/synthetics/pull/411)
+
 ## v1.0.0-beta.16 (2021-10-19)
 
 ### Bug fixes
