@@ -245,11 +245,13 @@ def withNodeEnv(Map args=[:], Closure body){
   withEnv(["HOME=${WORKSPACE}"]) {
     sh(label: 'install Node.js', script: '''
       set +x
+      export NVM_DIR="${HOME}/.nvm"
+      [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
+
       if [ -z "$(command -v nvm)" ]; then
         curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
       fi
 
-      export NVM_DIR="${HOME}/.nvm"
       [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
 
       # install node version required by .nvmrc in BASE_DIR
@@ -257,7 +259,7 @@ def withNodeEnv(Map args=[:], Closure body){
       nvm install
       cd -
 
-      nvm version | head -n1 > .nvm-node-version
+      nvm version | head -n1 > ".nvm-node-version"
     ''')
     def node_version = readFile(file: '.nvm-node-version').trim()
     withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){
