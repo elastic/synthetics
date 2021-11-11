@@ -60,6 +60,7 @@ pipeline {
     /**
      Checks formatting / linting.
      */
+     /*
     stage('Lint') {
       options {
         timeout(5)
@@ -75,10 +76,11 @@ pipeline {
           }
         }
       }
-    }
+    }*/
     /**
      Build the main package
      */
+     /*
     stage('Build') {
       options {
         timeout(5)
@@ -93,10 +95,11 @@ pipeline {
           }
         }
       }
-    }
+    }*/
     /**
      Execute integration tests.
      */
+     /*
     stage('Test') {
       options {
         timeout(5)
@@ -117,7 +120,7 @@ pipeline {
           junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
         }
       }
-    }
+    }*/
     stage('E2e Test') {
       agent { label 'ubuntu-18 && immutable' }
       environment {
