@@ -246,14 +246,14 @@ def withNodeEnv(Map args=[:], Closure body){
     sh(label: 'install Node.js', script: '''
       set -x
       export NVM_DIR="${HOME}/.nvm"
-      [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh" && ls -la ${NVM_DIR}/versions/node
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh" && ls -la ${NVM_DIR}/versions/node
 
       if [ -z "$(command -v nvm)" ]; then
         rm -fr "${NVM_DIR}"
         curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
       fi
 
-      [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
 
       # install node version required by .nvmrc in BASE_DIR
       cd "$BASE_DIR"
