@@ -40,6 +40,7 @@ pipeline {
      */
     stage('Checkout') {
       options {
+        skipDefaultCheckout()
         timeout(5)
       }
       steps {
@@ -127,6 +128,7 @@ pipeline {
         E2E_FOLDER = "__tests__/e2e"
       }
       options {
+        skipDefaultCheckout()
         timeout(20)
       }
       steps {
