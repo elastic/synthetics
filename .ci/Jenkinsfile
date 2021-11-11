@@ -258,6 +258,8 @@ def withNodeEnv(Map args=[:], Closure body){
     ''')
     sh(label: 'install Node.js', script: '''
       set -ex
+      pwd
+      ls -la
       export NVM_DIR="${HOME}/.nvm"
       [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
 
