@@ -43,17 +43,23 @@ pipeline {
         timeout(5)
       }
       steps {
+        sh "df -h"
         deleteDir()
+        sh "df -h"
         gitCheckout(basedir: "${BASE_DIR}")
+        sh "df -h"
         retryWithSleep(retries: 3, seconds: 5, backoff: true) {
           dockerLogin(secret: "${DOCKERELASTIC_SECRET}",
                       registry: "${DOCKER_REGISTRY}")
           withNodeEnv(){
+            sh "df -h"
             dir("${BASE_DIR}"){
               sh(label: 'Download dependencies',script: 'npm install')
+              sh "df -h"
             }
           }
         }
+        sh "df -h"
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**,.nvm/.git/**"
       }
     }
@@ -66,11 +72,17 @@ pipeline {
       }
       steps {
         withGithubNotify(context: 'Linting') {
+          sh "df -h"
           cleanup()
+          sh "df -h"
           withNodeEnv(){
+            sh "df -h"
             dir("${BASE_DIR}"){
+              sh "df -h"
               sh(label: 'Checks linting',script: 'npm run-script lint')
+              sh "df -h"
               preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
+              sh "df -h"
             }
           }
         }
