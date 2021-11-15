@@ -10,4 +10,4 @@ eval "$(elastic-package stack shellinit)"
 elastic-package stack down
 
 # start elastic-package
-elastic-package stack up -d -v --version $1
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1
