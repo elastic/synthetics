@@ -23,7 +23,7 @@
  *
  */
 
-import { beforeAll, journey, step, expect } from '@elastic/synthetics';
+import { beforeAll, journey, step } from '@elastic/synthetics';
 import axios from 'axios';
 
 beforeAll(async () => {
