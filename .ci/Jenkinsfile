@@ -132,7 +132,7 @@ pipeline {
         withGithubNotify(context: 'E2e Test2') {
           cleanup()
           withNodeEnv(){
-            withGoEnv(pkgs: [ "github.com/elastic/elastic-package" ] ]){
+            withGoEnv(pkgs: [ "github.com/elastic/elastic-package" ]){
               dir("${BASE_DIR}"){
                 sh(label: 'use nvm',script: 'nvm install')
                 dir("${E2E_FOLDER}"){
