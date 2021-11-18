@@ -95,30 +95,6 @@ pipeline {
         }
       }
     }
-    /**
-     Execute integration tests.
-     */
-    stage('Test') {
-      options {
-        timeout(5)
-      }
-      steps {
-        withGithubNotify(context: 'Test') {
-          cleanup()
-          withNodeEnv(){
-            dir("${BASE_DIR}"){
-              sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
-              sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
-            }
-          }
-        }
-      }
-      post {
-        always {
-          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
-        }
-      }
-    }
     stage('E2e Test 2') {
       agent { label 'ubuntu-18 && immutable' }
       environment {
@@ -147,6 +123,30 @@ pipeline {
         always {
           archiveArtifacts(allowEmptyArchive: true, artifacts: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
           junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
+        }
+      }
+    }
+    /**
+     Execute integration tests.
+     */
+    stage('Test') {
+      options {
+        timeout(5)
+      }
+      steps {
+        withGithubNotify(context: 'Test') {
+          cleanup()
+          withNodeEnv(){
+            dir("${BASE_DIR}"){
+              sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
+              sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
+            }
+          }
+        }
+      }
+      post {
+        always {
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
         }
       }
     }
