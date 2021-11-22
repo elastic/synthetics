@@ -1,7 +1,7 @@
 SYNTHETICS_E2E_ARGS="${@:2}"
 
 #!/usr/bin/env bash
-set -e pipefail
+set -e
 
 # run e2e tests journey
 ##################################################
