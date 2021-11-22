@@ -41,8 +41,8 @@ pipeline {
         cleanup()
         withNodeEnv(){
           dir("${BASE_DIR}"){
-            sh(label: 'Build',script: 'npm run build')
             sh(label: 'npm install', script: 'npm install')
+            sh(label: 'Build',script: 'npm run build')
           }
         }
       }
