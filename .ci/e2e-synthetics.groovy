@@ -41,9 +41,10 @@ pipeline {
         withGithubNotify(context: 'E2e Test2') {
           cleanup()
           withNodeEnv(){
-            withGoEnv(pkgs: [ "github.com/elastic/elastic-package" ]){
+            withGoEnv(){
               dir("${BASE_DIR}/${E2E_FOLDER}"){
-                sh(label: 'run e2e tests',script: 'npm run test:ci_integration_all')
+                sh(label: 'npm install', script: 'npm install')
+                sh(label: 'run e2e tests', script: 'npm run test:ci_integration_all')
               }
             }
           }
