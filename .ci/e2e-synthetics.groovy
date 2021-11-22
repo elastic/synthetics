@@ -92,3 +92,31 @@ def notifyStatus(def args = [:]) {
                       subject: args.subject,
                       body: args.body)
 }
+
+def withNodeEnv(Map args=[:], Closure body){
+  withEnv(["HOME=${WORKSPACE}"]) {
+    sh(label: 'install nvm', script: '''
+      set -e
+      export NVM_DIR="${HOME}/.nvm"
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+
+      if [ -z "$(command -v nvm)" ]; then
+        rm -fr "${NVM_DIR}"
+        curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+      fi
+    ''')
+    sh(label: 'install Node.js', script: '''
+      set -e
+      export NVM_DIR="${HOME}/.nvm"
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+
+      # install node version required by .nvmrc in BASE_DIR
+      nvm install $(cat $BASE_DIR/.nvmrc)
+      nvm version | head -n1 > ".nvm-node-version"
+    ''')
+    def node_version = readFile(file: '.nvm-node-version').trim()
+    withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){
+      body()
+    }
+  }
+}
