@@ -33,19 +33,30 @@ pipeline {
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".nvm/**,.npm/_cacache/**,.nvm/.git/**"
       }
     }
-    stage('E2e Test 2') {
+    stage('Build') {
       options {
         skipDefaultCheckout()
       }
       steps {
-        withGithubNotify(context: 'E2e Test2') {
-          cleanup()
-          withNodeEnv(){
-            withGoEnv(){
-              dir("${BASE_DIR}/${E2E_FOLDER}"){
-                sh(label: 'npm install', script: 'npm install')
-                sh(label: 'run e2e tests', script: 'npm run test:ci_integration_all')
-              }
+        cleanup()
+        withNodeEnv(){
+          dir("${BASE_DIR}"){
+            sh(label: 'Build',script: 'npm run build')
+            sh(label: 'npm install', script: 'npm install')
+          }
+        }
+      }
+    }
+    stage('E2e Test') {
+      options {
+        skipDefaultCheckout()
+      }
+      steps {
+        withNodeEnv(){
+          withGoEnv(){
+            dir("${BASE_DIR}/${E2E_FOLDER}"){
+              sh(label: 'npm install', script: 'npm install')
+              sh(label: 'run e2e tests', script: 'npm run test:ci_integration_all')
             }
           }
         }
