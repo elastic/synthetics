@@ -43,7 +43,7 @@ pipeline {
           withNodeEnv(){
             withGoEnv(pkgs: [ "github.com/elastic/elastic-package" ]){
               dir("${BASE_DIR}/${E2E_FOLDER}"){
-                sh(label: 'run e2e tests',script: 'npm run ci_all')
+                sh(label: 'run e2e tests',script: 'npm run test:ci_integration_all')
               }
             }
           }
@@ -83,7 +83,7 @@ def cleanup(){
   message in both systems.
  */
 def notifyStatus(def args = [:]) {
-  // Disabled temporarily to avoid spamming users while we are still developing this feature
+  // TODO: Disabled temporarily to avoid spamming users while we are still developing this feature
   return
   releaseNotification(slackChannel: "${env.SLACK_CHANNEL}",
                       slackColor: args.slackStatus,
@@ -93,6 +93,7 @@ def notifyStatus(def args = [:]) {
                       body: args.body)
 }
 
+// TODO: to be removed with the new step
 def withNodeEnv(Map args=[:], Closure body){
   withEnv(["HOME=${WORKSPACE}"]) {
     sh(label: 'install nvm', script: '''
