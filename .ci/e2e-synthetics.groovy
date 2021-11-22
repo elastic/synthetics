@@ -56,7 +56,9 @@ pipeline {
           withGoEnv(){
             dir("${BASE_DIR}/${E2E_FOLDER}"){
               sh(label: 'npm install', script: 'npm install')
-              sh(label: 'run e2e tests', script: 'npm run test:ci_integration_all')
+              sh(label: 'run e2e tests', script: '''#!/bin/bash
+                npm run test:ci_integration_all
+              ''')
             }
           }
         }
