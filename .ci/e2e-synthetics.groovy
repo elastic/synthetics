@@ -9,6 +9,7 @@ pipeline {
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL = 'INFO'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
+    E2E_FOLDER = "__tests__/e2e"
   }
   options {
     timeout(time: 1, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
@@ -30,6 +31,29 @@ pipeline {
         deleteDir()
         gitCheckout(basedir: "${BASE_DIR}")
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".nvm/**,.npm/_cacache/**,.nvm/.git/**"
+      }
+    }
+    stage('E2e Test 2') {
+      options {
+        skipDefaultCheckout()
+      }
+      steps {
+        withGithubNotify(context: 'E2e Test2') {
+          cleanup()
+          withNodeEnv(){
+            withGoEnv(pkgs: [ "github.com/elastic/elastic-package" ]){
+              dir("${BASE_DIR}/${E2E_FOLDER}"){
+                sh(label: 'run e2e tests',script: 'npm run ci_all')
+              }
+            }
+          }
+        }
+      }
+      post {
+        always {
+          archiveArtifacts(allowEmptyArchive: true, artifacts: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
+        }
       }
     }
   }
