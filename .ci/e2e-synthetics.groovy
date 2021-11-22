@@ -47,7 +47,7 @@ pipeline {
 }
 
 /**
-  This is the wrapper to send notifications for the release process through
+  This is the wrapper to send notifications for the e2e process through
   slack and email, since it requires some formatting to support the same
   message in both systems.
  */
