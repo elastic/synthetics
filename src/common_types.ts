@@ -40,8 +40,8 @@ export type Params = Record<string, any>;
 export type NetworkConditions = {
   offline: boolean;
   downloadThroughput: number;
-	uploadThroughput: number;
-	latency: number;
+  uploadThroughput: number;
+  latency: number;
 };
 export type HooksArgs = {
   env: string;
@@ -92,6 +92,12 @@ export type DefaultPluginOutput = {
 export type BrowserInfo = {
   name: string;
   version: string;
+};
+
+export type Screenshot = {
+  timestamp: number;
+  step: Step;
+  data: string;
 };
 
 export type NetworkInfo = {
@@ -164,10 +170,7 @@ export type CliArgs = {
   ignoreHttpsErrors?: boolean;
   params?: Params;
   throttling?: boolean | string;
-  /**
-   * @deprecated use params instead
-   */
-  suiteParams?: Params;
+  playwrightOptions?: LaunchOptions & BrowserContextOptions;
   richEvents?: boolean;
 };
 

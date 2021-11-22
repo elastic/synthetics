@@ -81,7 +81,9 @@ describe('junit reporter', () => {
     });
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       start: 0,
+      end: 2,
       status: 'failed',
       options: {},
     });
@@ -115,7 +117,9 @@ describe('junit reporter', () => {
     });
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       start: 0,
+      end: 2,
       status: 'failed',
       options: {},
     });

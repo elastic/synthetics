@@ -163,6 +163,7 @@ describe('json reporter', () => {
     });
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       status: 'succeeded',
       start: 0,
       end: 11,
@@ -225,6 +226,7 @@ describe('json reporter', () => {
 
     runner.emit('journey:end', {
       journey: j1,
+      timestamp,
       start: 0,
       end: 1,
       status: 'failed',
@@ -242,6 +244,7 @@ describe('json reporter', () => {
     const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
     runner.emit('journey:end', {
       journey: journey(journeyOpts, () => {}),
+      timestamp,
       start: 0,
       end: 1,
       status: 'skipped',
@@ -273,7 +276,7 @@ describe('json reporter', () => {
     const screenshotsDir = join(FIXTURES_DIR, 'screenshots');
     const collectScreenshots = async () => {
       const screenshots = [];
-      await gatherScreenshots(screenshotsDir, async (_, data) => {
+      await gatherScreenshots(screenshotsDir, async ({ data }) => {
         const result = await getScreenshotBlocks(Buffer.from(data, 'base64'));
         screenshots.push(result);
       });
@@ -301,7 +304,9 @@ describe('json reporter', () => {
     const emitEnd = (options, status = 'failed' as StatusValue) =>
       runner.emit('journey:end', {
         journey: j1,
+        timestamp,
         start: 0,
+        end: 2,
         status,
         options,
       });

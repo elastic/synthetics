@@ -43,11 +43,6 @@ program
     'JSON object that gets injected to all journeys',
     JSON.parse
   )
-  .option(
-    '-s, --suite-params <jsonstring>',
-    'DEPRECATED: Use --params instead',
-    JSON.parse
-  )
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
@@ -106,10 +101,13 @@ program
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
   .addOption(
-    new Option('--throttling <d/u/l>', 'List of options to throttle network conditions for download throughput (d) in megabytes/second, upload throughput (u) in megabytes/second and latency (l) in milliseconds.')
-      .default(DEFAULT_NETWORK_CONDITIONS_ARG)
+    new Option(
+      '--throttling <d/u/l>',
+      'List of options to throttle network conditions for download throughput (d) in megabits/second, upload throughput (u) in megabits/second and latency (l) in milliseconds.'
+    ).default(DEFAULT_NETWORK_CONDITIONS_ARG)
   )
   .option('--no-throttling', 'Turns off default network throttling.')
+  .option('--playwright-options <jsonstring>', 'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file. Options defined via --playwright-options take precedence.', JSON.parse)
   .version(version)
   .description('Run synthetic tests');
 
@@ -125,6 +123,7 @@ if (options.richEvents) {
   options.ssblocks = true;
   options.network = true;
   options.quietExitCode = true;
+  options.trace = true;
 }
 
 if (options.capability) {

@@ -48,6 +48,7 @@ import {
   HooksArgs,
   PlaywrightOptions,
   Driver,
+  Screenshot,
 } from '../common_types';
 import { PageMetrics, PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -73,13 +74,12 @@ export type RunOptions = Omit<
   reporter?: CliArgs['reporter'] | Reporter;
 };
 
-type BaseContext = {
+type HookType = 'beforeAll' | 'afterAll';
+export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
+
+type JourneyContext = {
   params?: Params;
   start: number;
-  end?: number;
-};
-
-type JourneyContext = BaseContext & {
   driver: Driver;
   pluginManager: PluginManager;
 };
@@ -103,35 +103,40 @@ type JourneyResult = {
 
 type RunResult = Record<string, JourneyResult>;
 
-type HookType = 'beforeAll' | 'afterAll';
-export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
+interface StepEvent {
+  step: Step;
+  journey: Journey;
+}
+
+interface JourneyEvent {
+  journey: Journey;
+  timestamp: number;
+  params?: Params;
+}
 
 interface Events {
-  start: { 
-    numJourneys: number, 
+  start: {
+    numJourneys: number;
     networkConditions?: NetworkConditions;
   };
   'journey:register': {
     journey: Journey;
   };
-  'journey:start': {
-    journey: Journey;
-    timestamp: number;
-    params: Params;
-  };
-  'journey:end': BaseContext &
+  'journey:start': JourneyEvent;
+  'journey:end': JourneyEvent &
     JourneyResult & {
-      journey: Journey;
+      start: number;
+      end: number;
       options: RunOptions;
+      timestamp: number;
     };
   'journey:end:reported': unknown;
-  'step:start': { journey: Journey; step: Step };
-  'step:end': StepResult & {
-    start: number;
-    end: number;
-    journey: Journey;
-    step: Step;
-  };
+  'step:start': StepEvent;
+  'step:end': StepEvent &
+    StepResult & {
+      start: number;
+      end: number;
+    };
   end: unknown;
 }
 
@@ -149,8 +154,12 @@ export default class Runner extends EventEmitter {
   static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const start = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
+    /**
+     * Do not include browser launch/context creation duration
+     * as part of journey duration
+     */
+    const start = monotonicTimeInSeconds();
     const pluginManager = await Gatherer.beginRecording(driver, options);
     /**
      * For each journey we create the screenshots folder for
@@ -180,12 +189,14 @@ export default class Runner extends EventEmitter {
      */
     if (buffer) {
       const fileName = `${generateUniqueId()}.json`;
+      const screenshot: Screenshot = {
+        step,
+        timestamp: getTimestamp(),
+        data: buffer.toString('base64'),
+      };
       await writeFileAsync(
         join(Runner.screenshotPath, fileName),
-        JSON.stringify({
-          step,
-          data: buffer.toString('base64'),
-        })
+        JSON.stringify(screenshot)
       );
     }
   }
@@ -339,6 +350,7 @@ export default class Runner extends EventEmitter {
     result: JourneyContext & JourneyResult,
     options: RunOptions
   ) {
+    const end = monotonicTimeInSeconds();
     const { pluginManager, start, status, error } = result;
     const pluginOutput = pluginManager.output();
     this.emit('journey:end', {
@@ -346,7 +358,8 @@ export default class Runner extends EventEmitter {
       status,
       error,
       start,
-      end: monotonicTimeInSeconds(),
+      end,
+      timestamp: getTimestamp(),
       options,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
@@ -378,6 +391,7 @@ export default class Runner extends EventEmitter {
     };
     this.emit('journey:end', {
       journey,
+      timestamp: getTimestamp(),
       start,
       options,
       end: monotonicTimeInSeconds(),
@@ -393,8 +407,8 @@ export default class Runner extends EventEmitter {
     const result: JourneyResult = {
       status: 'succeeded',
     };
-    log(`Runner: start journey (${journey.name})`);
     const context = await Runner.createContext(options);
+    log(`Runner: start journey (${journey.name})`);
     try {
       this.registerJourney(journey, context);
       const hookArgs = {
@@ -434,7 +448,10 @@ export default class Runner extends EventEmitter {
         ? reporter
         : reporters[reporter] || reporters['default'];
     new Reporter(this, { fd: outfd });
-    this.emit('start', { numJourneys: this.journeys.length, networkConditions });
+    this.emit('start', {
+      numJourneys: this.journeys.length,
+      networkConditions,
+    });
     /**
      * Set up the directory for caching screenshots
      */

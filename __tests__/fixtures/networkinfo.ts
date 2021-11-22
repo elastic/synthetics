@@ -32,7 +32,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
       name: 'go to app',
       index: 1,
     },
-    timestamp: 1612482095137858.2,
+    timestamp: 1612482095137858,
     url: 'https://vigneshh.in/',
     request: {
       url: 'https://vigneshh.in/',
@@ -179,7 +179,7 @@ export const NETWORK_INFO: Array<Partial<NetworkInfo>> = [
   },
   {
     browser: { name: 'HeadlessChrome', version: '90.0.4392.0' },
-    timestamp: 1612482095713278.2,
+    timestamp: 1612482095713278,
     url: 'https://www.google-analytics.com/',
     request: {
       url: 'https://www.google-analytics.com/',

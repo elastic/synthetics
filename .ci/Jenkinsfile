@@ -40,6 +40,7 @@ pipeline {
      */
     stage('Checkout') {
       options {
+        skipDefaultCheckout()
         timeout(5)
       }
       steps {
@@ -54,7 +55,7 @@ pipeline {
             }
           }
         }
-        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".npm/_cacache/**,.nvm/.git/**"
+        stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".nvm/**,.npm/_cacache/**,.nvm/.git/**"
       }
     }
     /**
@@ -124,6 +125,7 @@ pipeline {
         E2E_FOLDER = "__tests__/e2e"
       }
       options {
+        skipDefaultCheckout()
         timeout(20)
       }
       steps {
@@ -243,21 +245,24 @@ def withNodeInDockerEnv(Map args=[:], Closure body){
 
 def withNodeEnv(Map args=[:], Closure body){
   withEnv(["HOME=${WORKSPACE}"]) {
-    sh(label: 'install Node.js', script: '''
-      set +x
-      if [ -z "$(command -v nvm)" ]; then
-        curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.37.1/install.sh | bash
-      fi
-
+    sh(label: 'install nvm', script: '''
+      set -e
       export NVM_DIR="${HOME}/.nvm"
-      [ -s "${NVM_DIR}/nvm.sh" ] && \\. "${NVM_DIR}/nvm.sh"
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+
+      if [ -z "$(command -v nvm)" ]; then
+        rm -fr "${NVM_DIR}"
+        curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+      fi
+    ''')
+    sh(label: 'install Node.js', script: '''
+      set -e
+      export NVM_DIR="${HOME}/.nvm"
+      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
 
       # install node version required by .nvmrc in BASE_DIR
-      cd "$BASE_DIR"
-      nvm install
-      cd -
-
-      nvm version | head -n1 > .nvm-node-version
+      nvm install $(cat $BASE_DIR/.nvmrc)
+      nvm version | head -n1 > ".nvm-node-version"
     ''')
     def node_version = readFile(file: '.nvm-node-version').trim()
     withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){

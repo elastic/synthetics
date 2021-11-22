@@ -25,8 +25,9 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
+import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
-import { megabytesToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
+import { megabitsToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
 describe('CLI', () => {
   let server: Server;
@@ -49,22 +50,6 @@ describe('CLI', () => {
       })`
       )
       .args(['--inline', '--params', JSON.stringify(serverParams)])
-      .run();
-    await cli.waitFor('Journey: inline');
-    expect(await cli.exitCode).toBe(0);
-  });
-
-  // TODO: Delete this once --suite-params is removed
-  it('runs with legacy suite-params', async () => {
-    const cli = new CLIMock()
-      .stdin(
-        `step('check h2', async () => {
-        await page.goto(params.url, { timeout: 1500 });
-        const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
-        expect(await sel.textContent()).toBe("Synthetics test page");
-      })`
-      )
-      .args(['--inline', '--suite-params', JSON.stringify(serverParams)])
       .run();
     await cli.waitFor('Journey: inline');
     expect(await cli.exitCode).toBe(0);
@@ -114,7 +99,6 @@ describe('CLI', () => {
     const cli = new CLIMock()
       .args([
         join(FIXTURES_DIR, 'example.journey.ts'),
-        join(FIXTURES_DIR, 'error.journey.ts'),
         '--rich-events',
         '--params',
         JSON.stringify(serverParams),
@@ -126,13 +110,7 @@ describe('CLI', () => {
       .buffer()
       .map(data => JSON.parse(data))
       .find(({ type }) => type === 'step/screenshot_ref');
-    expect(screenshotRef).toMatchObject({
-      journey: {
-        id: 'example journey',
-        name: 'example journey',
-      },
-      root_fields: expect.any(Object),
-    });
+    expect(screenshotRef).toBeDefined();
 
     const networkData = cli
       .buffer()
@@ -140,6 +118,11 @@ describe('CLI', () => {
       .find(({ type }) => type === 'journey/network_info');
     expect(networkData).toBeDefined();
 
+    const traceData = cli
+      .buffer()
+      .map(data => JSON.parse(data))
+      .find(({ type }) => type === 'step/metrics');
+    expect(traceData).toBeDefined();
     expect(await cli.exitCode).toBe(0);
   }, 30000);
 
@@ -215,24 +198,6 @@ describe('CLI', () => {
       params: { url: 'dev' },
     });
     process.env['NODE_ENV'] = original;
-  });
-
-  it('pass playwright options to runner', async () => {
-    const cli = new CLIMock()
-      .args([
-        join(FIXTURES_DIR, 'pwoptions.journey.ts'),
-        '--reporter',
-        'json',
-        '--config',
-        join(FIXTURES_DIR, 'synthetics.config.ts'),
-      ])
-      .run();
-    await cli.waitFor('step/end');
-    const output = cli.output();
-    expect(await cli.exitCode).toBe(0);
-    expect(JSON.parse(output).step).toMatchObject({
-      status: 'succeeded',
-    });
   });
 
   it('params wins over config params', async () => {
@@ -366,9 +331,7 @@ describe('CLI', () => {
     });
 
     it('applies --no-throttling', async () => {
-      const cli = new CLIMock()
-        .args(cliArgs.concat(['--no-throttling']))
-        .run();
+      const cli = new CLIMock().args(cliArgs.concat(['--no-throttling'])).run();
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
@@ -376,64 +339,40 @@ describe('CLI', () => {
     });
 
     it('applies default throttling', async () => {
-      const cli = new CLIMock()
-        .args(cliArgs)
-        .run();
+      const cli = new CLIMock().args(cliArgs).run();
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', DEFAULT_NETWORK_CONDITIONS);
+      expect(journeyStartOutput.payload).toHaveProperty(
+        'network_conditions',
+        DEFAULT_NETWORK_CONDITIONS
+      );
     });
 
     it('applies custom throttling', async () => {
-      const downloadThroughput = megabytesToBytes(3);
-      const uploadThroughput = megabytesToBytes(1);
+      const downloadThroughput = megabitsToBytes(3);
+      const uploadThroughput = megabitsToBytes(1);
       const latency = 30;
       const cli = new CLIMock()
-        .args(cliArgs.concat([
-          '--throttling',
-          '3d/1u/30l',
-        ]))
+        .args(cliArgs.concat(['--throttling', '3d/1u/30l']))
         .run();
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        downloadThroughput, 
-        latency, 
-        offline: false, 
-        uploadThroughput
+        downloadThroughput,
+        latency,
+        offline: false,
+        uploadThroughput,
       });
     });
 
     it('applies custom throttling order agnostic', async () => {
-      const downloadThroughput = megabytesToBytes(3);
-      const uploadThroughput = megabytesToBytes(1);
+      const downloadThroughput = megabitsToBytes(3);
+      const uploadThroughput = megabitsToBytes(1);
       const latency = 30;
       const cli = new CLIMock()
-        .args(cliArgs.concat([
-          '--throttling',
-          '1u/30l/3d',
-        ]))
-        .run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
-      expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        ...DEFAULT_NETWORK_CONDITIONS,
-        downloadThroughput, 
-        latency, 
-        uploadThroughput
-      });
-    });
-
-    it('uses default throttling when specific params are not provided', async () => {
-      const downloadThroughput = megabytesToBytes(2);
-      const cli = new CLIMock()
-        .args(cliArgs.concat([
-          '--throttling',
-          '2d',
-        ]))
+        .args(cliArgs.concat(['--throttling', '1u/30l/3d']))
         .run();
       await cli.waitFor('synthetics/metadata');
       const journeyStartOutput = JSON.parse(cli.output());
@@ -441,6 +380,64 @@ describe('CLI', () => {
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
         ...DEFAULT_NETWORK_CONDITIONS,
         downloadThroughput,
+        latency,
+        uploadThroughput,
+      });
+    });
+
+    it('uses default throttling when specific params are not provided', async () => {
+      const downloadThroughput = megabitsToBytes(2);
+      const cli = new CLIMock()
+        .args(cliArgs.concat(['--throttling', '2d']))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
+        ...DEFAULT_NETWORK_CONDITIONS,
+        downloadThroughput,
+      });
+    });
+  });
+
+  describe('playwright options', () => {
+    it('pass playwright options to runner', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+        ])
+        .run();
+      await cli.waitFor('step/end');
+      const output = cli.output();
+      expect(await cli.exitCode).toBe(0);
+      expect(JSON.parse(output).step).toMatchObject({
+        status: 'succeeded',
+      });
+    });
+
+    it('allows overwriting playwright options with --playwright-options', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+          '--playwright-options',
+          JSON.stringify({ 
+            ...devices['iPad Pro 11'],
+          })
+        ])
+        .run();
+      await cli.waitFor('step/end');
+      const output = cli.output();
+      expect(await cli.exitCode).toBe(1);
+      expect(JSON.parse(output).step).toMatchObject({
+        status: 'failed',
       });
     });
   });
