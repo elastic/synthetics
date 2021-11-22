@@ -70,6 +70,13 @@ pipeline {
   }
 }
 
+def cleanup(){
+  dir("${BASE_DIR}"){
+    deleteDir()
+  }
+  unstash 'source'
+}
+
 /**
   This is the wrapper to send notifications for the e2e process through
   slack and email, since it requires some formatting to support the same
