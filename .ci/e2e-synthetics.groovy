@@ -39,7 +39,7 @@ pipeline {
       }
       steps {
         cleanup()
-        withNodeEnv(){
+        withNodeJSEnv(){
           dir("${BASE_DIR}"){
             sh(label: 'npm install', script: 'npm install')
             sh(label: 'Build',script: 'npm run build')
@@ -52,7 +52,7 @@ pipeline {
         skipDefaultCheckout()
       }
       steps {
-        withNodeEnv(){
+        withNodeJSEnv(){
           withGoEnv(){
             dir("${BASE_DIR}/${E2E_FOLDER}"){
               sh(label: 'npm install', script: 'npm install')
@@ -105,33 +105,4 @@ def notifyStatus(def args = [:]) {
                       to: 'synthrum@elastic.co',
                       subject: args.subject,
                       body: args.body)
-}
-
-// TODO: to be removed with the new step
-def withNodeEnv(Map args=[:], Closure body){
-  withEnv(["HOME=${WORKSPACE}"]) {
-    sh(label: 'install nvm', script: '''
-      set -e
-      export NVM_DIR="${HOME}/.nvm"
-      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
-
-      if [ -z "$(command -v nvm)" ]; then
-        rm -fr "${NVM_DIR}"
-        curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-      fi
-    ''')
-    sh(label: 'install Node.js', script: '''
-      set -e
-      export NVM_DIR="${HOME}/.nvm"
-      [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
-
-      # install node version required by .nvmrc in BASE_DIR
-      nvm install $(cat $BASE_DIR/.nvmrc)
-      nvm version | head -n1 > ".nvm-node-version"
-    ''')
-    def node_version = readFile(file: '.nvm-node-version').trim()
-    withEnv(["PATH+NVM=${HOME}/.nvm/versions/node/${node_version}/bin"]){
-      body()
-    }
-  }
 }
