@@ -20,6 +20,7 @@ done;
 
 echo "✅ Setup completed successfully. Running e2e tests..."
 
+
 #
 # run e2e tests journey
 ##################################################

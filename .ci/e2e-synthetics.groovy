@@ -9,6 +9,7 @@ pipeline {
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
     PIPELINE_LOG_LEVEL = 'INFO'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
+    E2E_FOLDER = "__tests__/e2e"
   }
   options {
     timeout(time: 1, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
@@ -32,6 +33,43 @@ pipeline {
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".nvm/**,.npm/_cacache/**,.nvm/.git/**"
       }
     }
+    stage('Build') {
+      options {
+        skipDefaultCheckout()
+      }
+      steps {
+        cleanup()
+        withNodeJSEnv(){
+          dir("${BASE_DIR}"){
+            sh(label: 'npm install', script: 'npm install')
+            sh(label: 'Build',script: 'npm run build')
+          }
+        }
+      }
+    }
+    stage('E2e Test') {
+      options {
+        skipDefaultCheckout()
+      }
+      steps {
+        withNodeJSEnv(){
+          withGoEnv(){
+            dir("${BASE_DIR}/${E2E_FOLDER}"){
+              sh(label: 'npm install', script: 'npm install')
+              sh(label: 'run e2e tests', script: '''#!/bin/bash
+                npm run test:ci_integration_all
+              ''')
+            }
+          }
+        }
+      }
+      post {
+        always {
+          archiveArtifacts(allowEmptyArchive: true, artifacts: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
+          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/junit_*.xml")
+        }
+      }
+    }
   }
   post {
     cleanup {
@@ -46,14 +84,19 @@ pipeline {
   }
 }
 
+def cleanup(){
+  dir("${BASE_DIR}"){
+    deleteDir()
+  }
+  unstash 'source'
+}
+
 /**
   This is the wrapper to send notifications for the e2e process through
   slack and email, since it requires some formatting to support the same
   message in both systems.
  */
 def notifyStatus(def args = [:]) {
-  // Disabled temporarily to avoid spamming users while we are still developing this feature
-  return
   releaseNotification(slackChannel: "${env.SLACK_CHANNEL}",
                       slackColor: args.slackStatus,
                       slackCredentialsId: 'jenkins-slack-integration-token',

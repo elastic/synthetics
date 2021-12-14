@@ -133,6 +133,11 @@ heartbeat locally
 3. `./run.sh $HEARTBEAT_ARGS` - Run the heartbeat image with the
    synthetic tests configured in `heartbeat.docker.yml` file.
 
+
+##### End to End tests
+
+We run end to end tests for the Synthetics agent itself, as well as the Elastic Synthetics integration. For more information, view the [README](./__tests__/e2e/README.md) in the end to end tests repo. 
+
 ### Releasing
 
 **NOTE: This project is currently in Beta phase**
