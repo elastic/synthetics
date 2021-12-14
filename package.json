@@ -64,7 +64,7 @@
     "husky": "^4.3.6",
     "jest": "^26.6.3",
     "lint-staged": "^10.5.3",
-    "npm-pack-all": "^1.10.7",
+    "npm-pack-all": "^1.12.7",
     "prettier": "^2.4.1",
     "rimraf": "^3.0.2",
     "ts-jest": "^26.4.4"
