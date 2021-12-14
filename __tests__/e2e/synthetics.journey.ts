@@ -44,7 +44,7 @@ async function goToSyntheticsIntegrationPage(page) {
   if (isUnauthenticated) {
     await logIn(page);
   }
-  await page.click('[data-test-subj="addIntegrationPolicyButton"]', { timeout: 10 * 1000 });
+  await page.click('[data-test-subj="addIntegrationPolicyButton"]', { timeout: 10 * 1500 });
   /* We need to ensure that Elastic Synthetics integration page is fully loaded, including the UI logic.
    * Our UI logic clears out the name input when the page is first loaded. If we don't wait, we run the risk 
    * of playwright input being overwritten by Kibana logic clearing out the field. Playwright doesn't have
@@ -55,7 +55,6 @@ async function goToSyntheticsIntegrationPage(page) {
 async function goToUptime(page) {
   console.info('Navigating to Uptime overview page')
   await page.goto('http://localhost:5601/app/uptime');
-  await page.waitForSelector('h1', { timeout: 10000 });
 }
 
 async function createIntegrationPolicyName({ page, policyName }) {
@@ -70,12 +69,18 @@ async function confirmAndSavePolicy(page) {
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
-  const overviewH1 = await page.textContent('h1');
-  if (overviewH1 === 'Welcome to Elastic Observability!') {
-    console.info('Refreshing Uptime')
-    await goToUptime(page);
-    await checkForSyntheticsData({ page, journeyName});
-    return;
+  const checkForTable =  async () => {
+    try {
+      return await page.waitForSelector('.euiTableRow', { timeout: 5000 });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  let isTableVisible = await checkForTable();
+  while (!isTableVisible) {
+    console.info('Reloading Uptime...')
+    await page.reload();
+    isTableVisible = await checkForTable();
   }
   await page.click(`text=${journeyName}`, { timeout: 300 * 1000 });
   console.info(`Data for ${journeyName} indexed successfully`)
