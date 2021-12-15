@@ -97,7 +97,6 @@ def cleanup(){
   message in both systems.
  */
 def notifyStatus(def args = [:]) {
-  return
   releaseNotification(slackChannel: "${env.SLACK_CHANNEL}",
                       slackColor: args.slackStatus,
                       slackCredentialsId: 'jenkins-slack-integration-token',
