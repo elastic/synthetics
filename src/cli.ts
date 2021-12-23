@@ -126,6 +126,25 @@ async function prepareSuites(inputs: string[]) {
 }
 
 (async () => {
+  /**
+   * Transform `.ts` files out of the box by invoking
+   * the `ts-node` via `transpile-only` mode that compiles
+   * TS files without doing any extensive type checks.
+   *
+   * We must register `ts-node` _before_ loading inline
+   * scripts too because otherwise we will not be able to
+   * require `.ts` configuration files.
+   */
+  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
+  require('ts-node').register({
+    transpileOnly: true,
+    compilerOptions: {
+      esModuleInterop: true,
+      allowJs: true,
+      target: 'es2018',
+    },
+  });
+
   if (options.inline) {
     const source = await readStdin();
     loadInlineScript(source);
@@ -141,20 +160,6 @@ async function prepareSuites(inputs: string[]) {
         throw new Error(`cannot find module '${name}'`);
       }
     }
-    /**
-     * Transform `.ts` files out of the box by invoking
-     * the `ts-node` via `transpile-only` mode that compiles
-     * TS files without doing any extensive type checks
-     */
-    /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-    require('ts-node').register({
-      transpileOnly: true,
-      compilerOptions: {
-        esModuleInterop: true,
-        allowJs: true,
-        target: 'es2018',
-      },
-    });
     /**
      * Handle piped files by reading the STDIN
      * ex: ls example/suites/*.js | npx @elastic/synthetics
@@ -174,7 +179,10 @@ async function prepareSuites(inputs: string[]) {
   /**
    * Validate and handle configs
    */
-  const config = readConfig(environment, options.config);
+  const config =
+    options.config || !options.inline
+      ? readConfig(environment, options.config)
+      : {};
   const params = merge(config.params, options.params || {});
 
   /**
@@ -187,7 +195,7 @@ async function prepareSuites(inputs: string[]) {
       headless: options.headless,
       chromiumSandbox: options.sandbox,
       ignoreHTTPSErrors: options.ignoreHttpsErrors,
-    }
+    },
   ]);
 
   const results = await run({

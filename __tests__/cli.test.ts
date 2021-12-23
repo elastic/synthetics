@@ -40,19 +40,73 @@ describe('CLI', () => {
 
   const FIXTURES_DIR = join(__dirname, 'fixtures');
 
-  it('runs inline tests', async () => {
-    const cli = new CLIMock()
-      .stdin(
-        `step('check h2', async () => {
-        await page.goto(params.url, { timeout: 1500 });
-        const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
-        expect(await sel.textContent()).toBe("Synthetics test page");
-      })`
-      )
-      .args(['--inline', '--params', JSON.stringify(serverParams)])
-      .run();
-    await cli.waitFor('Journey: inline');
-    expect(await cli.exitCode).toBe(0);
+  describe('for inline tests', () => {
+    it('runs inline tests', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `step('check h2', async () => {
+          await page.goto(params.url, { timeout: 1500 });
+          const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
+          expect(await sel.textContent()).toBe("Synthetics test page");
+        })`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline');
+      expect(await cli.exitCode).toBe(0);
+    });
+
+    it('does not load a configuration file without a config param', async () => {
+      // jest by default sets NODE_ENV to `test`
+      const original = process.env['NODE_ENV'];
+      const output = async () => {
+        const cli = new CLIMock()
+          .stdin(`step('fake step', async () => {})`)
+          .args(['--reporter', 'json', '--inline'])
+          .run({ cwd: FIXTURES_DIR });
+        await cli.waitFor('journey/start');
+        expect(await cli.exitCode).toBe(0);
+        return cli.output();
+      };
+
+      expect(JSON.parse(await output()).payload).not.toMatchObject({
+        params: { url: 'non-dev' },
+      });
+      process.env['NODE_ENV'] = 'development';
+      expect(JSON.parse(await output()).payload).not.toMatchObject({
+        params: { url: 'dev' },
+      });
+      process.env['NODE_ENV'] = original;
+    });
+
+    it('loads a configuration file when passing a config param', async () => {
+      // jest by default sets NODE_ENV to `test`
+      const original = process.env['NODE_ENV'];
+      const output = async () => {
+        const cli = new CLIMock()
+          .stdin(`step('fake step', async () => {})`)
+          .args([
+            '--reporter',
+            'json',
+            '--inline',
+            '--config',
+            join(FIXTURES_DIR, 'synthetics.config.ts'),
+          ])
+          .run({ cwd: FIXTURES_DIR });
+        await cli.waitFor('journey/start');
+        expect(await cli.exitCode).toBe(0);
+        return cli.output();
+      };
+
+      expect(JSON.parse(await output()).payload).toMatchObject({
+        params: { url: 'non-dev' },
+      });
+      process.env['NODE_ENV'] = 'development';
+      expect(JSON.parse(await output()).payload).toMatchObject({
+        params: { url: 'dev' },
+      });
+      process.env['NODE_ENV'] = original;
+    });
   });
 
   it('run suites and exit with 0', async () => {
@@ -428,9 +482,9 @@ describe('CLI', () => {
           '--config',
           join(FIXTURES_DIR, 'synthetics.config.ts'),
           '--playwright-options',
-          JSON.stringify({ 
+          JSON.stringify({
             ...devices['iPad Pro 11'],
-          })
+          }),
         ])
         .run();
       await cli.waitFor('step/end');
@@ -465,13 +519,14 @@ class CLIMock {
     return this;
   }
 
-  run(): CLIMock {
+  run(spawnOverrides?: { cwd?: string }): CLIMock {
     this.process = spawn(
       'node',
       [join(__dirname, '..', 'dist', 'cli.js'), ...this.cliArgs],
       {
         env: process.env,
         stdio: 'pipe',
+        ...spawnOverrides,
       }
     );
 
