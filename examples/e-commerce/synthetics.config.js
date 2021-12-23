@@ -1,6 +1,6 @@
 const config = {
   params: {
-    url: 'https://elastic-synthetics.vercel.app/',
+    url: 'https://elastic-synthetics-demo-ecommerce.vercel.app/',
   },
   playwrightOptions: {},
 };
