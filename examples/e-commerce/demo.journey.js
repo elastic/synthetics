@@ -1,6 +1,6 @@
 const { journey, step, expect } = require('@elastic/synthetics');
 
-const URL = 'https://elastic-synthetics.vercel.app/';
+const URL = 'https://elastic-synthetics-demo-ecommerce.vercel.app/';
 
 const navigateToProductDetail = (page, params) => {
   step('visit landing page', async () => {
