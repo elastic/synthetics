@@ -7,6 +7,8 @@ pipeline {
   environment {
     REPO = "synthetics"
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
+    DOCKER_REGISTRY = 'docker.elastic.co'
+    DOCKER_ELASTIC_SECRET = 'secret/observability-team/ci/docker-registry/prod'
     PIPELINE_LOG_LEVEL = 'INFO'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
     E2E_FOLDER = "__tests__/e2e"
@@ -52,6 +54,7 @@ pipeline {
         skipDefaultCheckout()
       }
       steps {
+        dockerLogin(secret: "${DOCKER_ELASTIC_SECRET}", registry: "${DOCKER_REGISTRY}")
         withNodeJSEnv(){
           withGoEnv(){
             dir("${BASE_DIR}/${E2E_FOLDER}"){
