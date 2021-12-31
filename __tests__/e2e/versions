@@ -2,4 +2,4 @@
 7.16.0
 7.16.1
 8.0.0-SNAPSHOT
-8.1.0-SNAPSHOT
+DISABLED -> 8.1.0-SNAPSHOT # enable it again in https://github.com/elastic/synthetics/issues/432
