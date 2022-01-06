@@ -559,7 +559,7 @@ class CLIMock {
       this.data = data.toString();
       // Uncomment the line below if the process is blocked and you need to see its output
       // console.log('CLIMock.stdout:', this.data);
-      this.chunks.push(...this.data.split('\n').filter(Boolean));
+      this.chunks.push(this.data);
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);
         this.waitForPromise();
@@ -588,6 +588,9 @@ class CLIMock {
   }
 
   buffer() {
-    return this.chunks;
+    // Merge all the interleaved chunks from stdout and
+    // split them on new line as synthetics runner writes the
+    // JSON output in separate lines for every event.
+    return this.chunks.join('').split('\n').filter(Boolean);
   }
 }
