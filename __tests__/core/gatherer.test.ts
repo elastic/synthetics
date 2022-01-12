@@ -29,6 +29,7 @@ import { wsEndpoint } from '../utils/test-config';
 import { devices } from 'playwright-chromium';
 import { Server } from '../utils/server';
 import { megabitsToBytes } from '../../src/helpers';
+import { chromium } from 'playwright-chromium';
 
 jest.mock('../../src/plugins/network');
 
@@ -42,9 +43,24 @@ describe('Gatherer', () => {
     await server.close();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('boot and close browser', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     expect(typeof driver.page.goto).toBe('function');
+    await Gatherer.stop();
+  });
+
+  it('uses the disable-gpu flag to start browser', async () => {
+    const chromiumLaunch = jest.spyOn(chromium, 'launch');
+    await Gatherer.setupDriver({ wsEndpoint });
+    expect(chromiumLaunch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.arrayContaining(['--disable-gpu']),
+      })
+    );
     await Gatherer.stop();
   });
 

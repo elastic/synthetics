@@ -45,7 +45,10 @@ export class Gatherer {
         log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
         Gatherer.browser = await chromium.connect({ wsEndpoint });
       } else {
-        Gatherer.browser = await chromium.launch(playwrightOptions);
+        Gatherer.browser = await chromium.launch({
+          ...playwrightOptions,
+          args: ['--disable-gpu', ...(playwrightOptions?.args ?? [])],
+        });
       }
     }
     const context = await Gatherer.browser.newContext({
