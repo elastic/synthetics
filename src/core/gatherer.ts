@@ -47,7 +47,10 @@ export class Gatherer {
       } else {
         Gatherer.browser = await chromium.launch({
           ...playwrightOptions,
-          args: ['--disable-gpu', ...(playwrightOptions?.args ?? [])],
+          args: [
+            ...(playwrightOptions?.headless ? ['--disable-gpu'] : []),
+            ...(playwrightOptions?.args ?? []),
+          ],
         });
       }
     }

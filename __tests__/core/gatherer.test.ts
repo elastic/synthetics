@@ -53,16 +53,49 @@ describe('Gatherer', () => {
     await Gatherer.stop();
   });
 
-  it('uses the disable-gpu flag to start browser', async () => {
-    const chromiumLaunch = jest.spyOn(chromium, 'launch');
-    await Gatherer.setupDriver({ wsEndpoint });
-    expect(chromiumLaunch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        args: expect.arrayContaining(['--disable-gpu']),
-      })
-    );
-    await Gatherer.stop();
-  });
+  // This test should only run when a browser service is up
+  (wsEndpoint ? it : it.skip)(
+    'does not the disable-gpu flag to start browser when running headful',
+    async () => {
+      const chromiumLaunch = jest
+        .spyOn(chromium, 'launch')
+        .mockImplementation(() => {
+          return chromium.connect({ wsEndpoint });
+        });
+
+      await Gatherer.setupDriver({
+        playwrightOptions: { headless: false },
+      });
+      expect(chromiumLaunch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          args: expect.not.arrayContaining(['--disable-gpu']),
+        })
+      );
+      await Gatherer.stop();
+    }
+  );
+
+  // This test should only run when a browser service is up
+  (wsEndpoint ? it : it.skip)(
+    'uses the disable-gpu flag to start browser when running headlessly',
+    async () => {
+      const chromiumLaunch = jest
+        .spyOn(chromium, 'launch')
+        .mockImplementation(() => {
+          return chromium.connect({ wsEndpoint });
+        });
+
+      await Gatherer.setupDriver({
+        playwrightOptions: { headless: true },
+      });
+      expect(chromiumLaunch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          args: expect.arrayContaining(['--disable-gpu']),
+        })
+      );
+      await Gatherer.stop();
+    }
+  );
 
   it('setup and dispose driver', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
