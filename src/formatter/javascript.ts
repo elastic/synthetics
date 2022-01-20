@@ -35,6 +35,7 @@ export type ActionInContext = {
   isMainFrame: boolean;
   action: Action;
   committed?: boolean;
+  modified?: boolean;
   title?: string;
 };
 
@@ -47,6 +48,7 @@ type Action = {
   modifiers?: number;
   button?: 'left' | 'middle' | 'right';
   clickCount?: number;
+  text?: string;
   value?: string;
   isAssert?: boolean;
   command?: string;
