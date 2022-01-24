@@ -1,4 +1,4 @@
-[![Build Status](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/badge/icon)](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/)
+[![Build Status](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/badge/icon)](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/)
 
 # Experimental Synthetics Agent
 

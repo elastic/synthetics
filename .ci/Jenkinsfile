@@ -32,7 +32,7 @@ pipeline {
   }
   parameters {
     booleanParam(name: 'run_all_stages', defaultValue: false, description: 'Force to run all stages.')
-    booleanParam(name: 'release', defaultValue: false, description: 'Release. If so, all the other parameters will be ignored when releasing from master.')
+    booleanParam(name: 'release', defaultValue: false, description: 'Release. If so, all the other parameters will be ignored when releasing from main.')
   }
   stages {
     /**
@@ -157,7 +157,7 @@ pipeline {
       when {
         beforeAgent true
         allOf {
-          branch 'master'
+          branch 'main'
           expression { return params.release }
         }
       }

@@ -22,7 +22,7 @@ pipeline {
   stages {
     stage('Run Tasks'){
       steps {
-        build(job: 'apm-agent-rum/e2e-synthetics-mbp/master',
+        build(job: 'apm-agent-rum/e2e-synthetics-mbp/main',
           propagate: false,
           wait: false
         )
