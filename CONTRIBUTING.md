@@ -38,7 +38,7 @@ Once your changes are ready to submit for review:
 3. Rebase your changes
 
    Update your local repository with the most recent code from the main repo,
-   and rebase your branch on top of the latest master branch. We prefer your
+   and rebase your branch on top of the latest main branch. We prefer your
    initial changes to be squashed into a single commit. Later, if we ask you to
    make changes, add them as separate commits. This makes it easier to review.
    As a final step before merging, we will either ask you to squash all commits
@@ -60,14 +60,14 @@ Once your changes are ready to submit for review:
 
 ### Workflow
 
-All feature development and most bug fixes hit the master branch first.
+All feature development and most bug fixes hit the main branch first.
 Pull requests should be reviewed by someone with commit access. Once approved,
 the author of the pull request, or reviewer if the author does not have commit
 access, should "Squash and merge".
 
 Before submitting a pull request, please make sure to follow the below steps
 
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `main`.
 
 2. We use `npm` for running development scripts.
 
@@ -146,19 +146,19 @@ We run end to end tests for the Synthetics agent itself, as well as the Elastic 
 
 If you have access to publish the package to NPM, the process is as follows:
 
-1. Be sure you have checked out the `master` branch and have pulled the latest changes
+1. Be sure you have checked out the `main` branch and have pulled the latest changes
 1. Run the tests to make sure everything is green
 1. Bump the beta version by running `npm version prerelease --preid=beta`
-1. Push commits and tags upstream with `git push upstream master && git push upstream --tags`
+1. Push commits and tags upstream with `git push upstream main && git push upstream --tags`
 1. Publish to NPM using with `npm publish --tag beta`
 1. Mark the last published beta tags as latest using `npm dist-tag add @elastic/synthetics@<$VERSION> latest`
 
 #### CI based
 
-The release process is also automated in the way any specific commit from the master branch can be potentially released, for such it's required the below steps:
+The release process is also automated in the way any specific commit from the main branch can be potentially released, for such it's required the below steps:
 
 1. Login to apm-ci.elastic.co
-1. Go to the [master](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/master/) pipeline.
+1. Go to the [main](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/) pipeline.
 1. Click on `Build with parameters` with the below checkbox:
 
 - `release` to be selected.

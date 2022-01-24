@@ -16,7 +16,7 @@ nvm use
 ```
 
 ### Go
-We depend on Go to install Elastic Package. The go version depdendency is documented by Elastic Package: https://github.com/elastic/elastic-package/blob/master/.go-version
+We depend on Go to install Elastic Package. The go version depdendency is documented by Elastic Package: https://github.com/elastic/elastic-package/blob/main/.go-version
 
 
 ### Elastic Package
