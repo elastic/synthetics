@@ -64,7 +64,12 @@ export default class BaseReporter {
 
   constructor(public runner: Runner, options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
-    this.stream = new SonicBoom({ fd: this.fd, sync: true });
+    /**
+     * minLength is set to 1 byte to make sure we flush the
+     * content even if its the last byte on the stream buffer
+     * before destroying the pipe with underlying file descriptor
+     */
+    this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
     this._registerListeners();
     this.runner.on('end', () => this.stream.flush());
   }

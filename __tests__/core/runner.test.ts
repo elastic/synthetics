@@ -690,4 +690,21 @@ describe('runner', () => {
     const collectOrder = events.map(event => event.type);
     expect(collectOrder).toEqual(realEventsOrder);
   });
+
+  it('run - ensure journey/end is done for real world pages', async () => {
+    const j1 = journey('journey1', async ({ page }) => {
+      step('load homepage', async () => {
+        await page.goto('https://www.elastic.co');
+      });
+    });
+    runner.addJourney(j1);
+    await runner.run({
+      reporter: 'json',
+      network: true,
+      trace: true,
+      outfd: fs.openSync(dest, 'w'),
+    });
+    const events = readAndCloseStreamJson().map(event => event.type);
+    expect(events[events.length - 1]).toBe('journey/end');
+  });
 });
