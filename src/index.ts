@@ -25,7 +25,6 @@
 
 import { runner } from './core';
 import { RunOptions } from './core/runner';
-import { setLogger } from './core/logger';
 import sourceMapSupport from 'source-map-support';
 
 export async function run(options: RunOptions) {
@@ -35,11 +34,6 @@ export async function run(options: RunOptions) {
   sourceMapSupport.install({
     environment: 'node',
   });
-  /**
-   * set up logger with appropriate file descriptor
-   * to capture all the DEBUG logs when run through heartbeat
-   */
-  setLogger(options.outfd);
 
   try {
     return await runner.run(options);

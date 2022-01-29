@@ -57,7 +57,6 @@ describe('base reporter', () => {
   });
 
   it('writes each step to the FD', async () => {
-    const { stream } = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') });
     runner.emit('start', { numJourneys: 1 });
     runner.emit('journey:start', {
       journey: j1,
