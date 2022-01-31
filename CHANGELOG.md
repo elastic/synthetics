@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.19 (2021-01-31)
+
+### Bug fixes
+
+- Ensure `journey/end` is written to file descriptor by flushing out the
+  last bytes in underlying stream #446
+- Debug logs should be logged to stdout instead of using the reporter
+  file descriptor #423
+
+## v1.0.0-beta.18 (2021-01-13)
+
+### Bug fixes
+
+- Do not read configuration files for inline journeys unless a --config parameter is passed #426
+- Stop runner from hanging indefinitely within ubuntu docker images [elastic/beats#29681] #441
+
 ## v1.0.0-beta.17 (2021-11-11)
 
 ### Breaking Changes
