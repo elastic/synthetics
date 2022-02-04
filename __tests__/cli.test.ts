@@ -56,6 +56,24 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('exit with 1 on syntax errors', async () => {
+      const cli = new CLIMock()
+        .stdin(`step('syntax error', async () => {}})`)
+        .args(['--inline', '--rich-events'])
+        .run();
+      expect(await cli.exitCode).toBe(1);
+    });
+
+    it('treat reference error as journey error', async () => {
+      const cli = new CLIMock()
+        .stdin(`apinotfound('fail', async () => {})`)
+        .args(['--inline', '--rich-events'])
+        .run();
+      await cli.waitFor('journey/end');
+      expect(cli.output()).toContain('apinotfound is not defined');
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('does not load a configuration file without a config param', async () => {
       // jest by default sets NODE_ENV to `test`
       const original = process.env['NODE_ENV'];
@@ -539,7 +557,7 @@ class CLIMock {
     const dataListener = data => {
       this.data = data.toString();
       // Uncomment the line below if the process is blocked and you need to see its output
-      // console.warn(this.data);
+      // console.log('CLIMock.stdout:', this.data);
       this.chunks.push(...this.data.split('\n').filter(Boolean));
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);
@@ -551,7 +569,7 @@ class CLIMock {
     this.exitCode = new Promise(res => {
       // Uncomment to debug stderr
       // this.process.stderr.on('data', data => {
-      //  console.log('climock.stderr:  ', data.toString());
+      //   console.log('CLIMock.stderr:', data.toString());
       // });
       this.process.on('exit', code => res(code));
     });
