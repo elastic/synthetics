@@ -62,7 +62,7 @@ const loadInlineScript = source => {
     'expect',
     source
   );
-  journey('inline', async ({ page, context, browser, params }) => {
+  journey('inline', ({ page, context, browser, params }) => {
     scriptFn.apply(null, [step, page, context, browser, params, expect]);
   });
 };
