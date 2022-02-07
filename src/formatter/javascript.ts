@@ -52,6 +52,8 @@ export type Action = {
   value?: string;
   isAssert?: boolean;
   command?: string;
+  files?: string[];
+  options?: string[];
 };
 
 type Signal = {
