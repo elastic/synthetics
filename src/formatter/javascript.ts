@@ -39,7 +39,7 @@ export type ActionInContext = {
   title?: string;
 };
 
-type Action = {
+export type Action = {
   name: string;
   selector?: string;
   url?: string;
