@@ -18,9 +18,9 @@ ENV ELASTIC_SYNTHETICS_OFFLINE=true
 COPY heartbeat.docker.yml /usr/share/heartbeat/heartbeat.yml
 
 # Uncomment the lines below to add custom cert/CA to CA store if needed
-#COPY elasticsearch-ca.pem /usr/share/pki/ca-trust-source/anchors/
+#COPY elasticsearch-ca.pem /usr/local/share/ca-certificates/
 #USER root
-#RUN /usr/bin/update-ca-trust
+#RUN update-ca-certificates
 #USER heartbeat
 
 RUN mkdir -p $SUITES_DIR/todos
