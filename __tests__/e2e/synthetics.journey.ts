@@ -57,15 +57,23 @@ async function goToUptime(page) {
   await page.goto('http://localhost:5601/app/uptime');
 }
 
+async function selectAgentPolicy({ page }) {
+  const hosts = await page.isVisible('text="Existing hosts"');
+  if (hosts) {
+    await page.click('text="Existing hosts"');
+    await page.selectOption('[data-test-subj="agentPolicySelect"]', { label: 'Elastic-Agent (elastic-package)' });
+  }
+}
+
 async function createIntegrationPolicyName({ page, policyName }) {
   await page.waitForSelector('[data-test-subj="packagePolicyNameInput"]', { timeout: 10000 });
   await page.fill('[data-test-subj="packagePolicyNameInput"]', policyName);
+  await selectAgentPolicy({ page });
 }
 
 async function confirmAndSavePolicy(page) {
   await page.click('[data-test-subj="createPackagePolicySaveButton"]');
-  await page.click('[data-test-subj="confirmModalConfirmButton"]');
-  await page.waitForSelector('[data-test-subj="packagePolicyCreateSuccessToast"]', { timeout: 20000 });
+  await Promise.all([page.waitForNavigation(), page.click('[data-test-subj="confirmModalConfirmButton"]')]);
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
@@ -96,6 +104,7 @@ journey('E2e test synthetics - http', async ({ page }) => {
   step('create an http monitor', async () => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
     await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
+    await page.waitForTimeout(10 * 1000);
     await confirmAndSavePolicy(page);
     console.info(`Monitor for ${journeyName} created successfully`)
   });
