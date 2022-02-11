@@ -360,13 +360,3 @@ function actionTitle(action) {
       return `Select ${action.options.join(', ')}`;
   }
 }
-
-// export class Gen2 extends SyntheticsGenerator {
-//   constructor(isSuite: boolean) {
-//     super(isSuite);
-//   }
-
-//   method() {
-
-//   }
-// }
