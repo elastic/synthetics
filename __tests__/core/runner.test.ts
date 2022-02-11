@@ -711,5 +711,5 @@ describe('runner', () => {
     });
     const events = readAndCloseStreamJson().map(event => event.type);
     expect(events[events.length - 1]).toBe('journey/end');
-  });
+  }, 30000);
 });
