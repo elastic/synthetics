@@ -75,7 +75,15 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     this.previousContext = undefined;
   }
 
-  generateAction(actionInContext: ActionInContext) {
+  generateAction(
+    actionInContext: ActionInContext,
+    ignoreStepDefaults?: boolean
+  ) {
+    if (ignoreStepDefaults && this.insideStep) {
+      throw Error(
+        'Cannot ignore step defaults if generator is already recording a step'
+      );
+    }
     const { action, pageAlias, title } = actionInContext;
     if (action.name === 'openPage') {
       return '';
@@ -88,7 +96,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
 
     let formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
     // Check if it's a new step
-    const isNewStep = this.isNewStep(actionInContext);
+    const isNewStep = this.isNewStep(actionInContext) && !ignoreStepDefaults;
     if (isNewStep) {
       if (this.insideStep) {
         formatter.add(this.generateStepEnd());
@@ -213,17 +221,39 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return `});`;
   }
 
-  generateText(actions: Array<ActionInContext>) {
+  /**
+   * Generates JavaScript code for the given list of actions.
+   * @param actions The actions to convert to code.
+   * @param overrideStepOrder When `true`, all passed actions will be nested in one step.
+   * Otherwise, the generator will insert multiple steps based on the action types.
+   * @returns string of JS code
+   */
+  generateText(actions: Array<ActionInContext>, overrideStepOrder = false) {
     const text = [];
-    if (this.isSuite) {
+    if (this.isSuite && !overrideStepOrder) {
       text.push(this.generateHeader());
     }
     for (let i = 0; i < actions.length; i++) {
-      text.push(this.generateAction(actions[i]));
-      if (i === actions.length - 1) text.push(this.generateStepEnd());
+      text.push(this.generateAction(actions[i], overrideStepOrder));
+      if (i === actions.length - 1 && !overrideStepOrder)
+        text.push(this.generateStepEnd());
     }
-    if (this.isSuite) {
+    if (this.isSuite && !overrideStepOrder) {
       text.push(this.generateFooter());
+    }
+    if (overrideStepOrder) {
+      const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
+      if (this.isSuite) formatter.add(this.generateHeader());
+      formatter.add(
+        this.generateStepStart(
+          actions[0].title || actionTitle(actions[0].action)
+        )
+      );
+      text.filter(f => !!f).forEach(t => formatter.add(t));
+      formatter.add(this.generateStepEnd());
+      if (this.isSuite) formatter.add(this.generateFooter());
+
+      return formatter.format().trim();
     }
     return text.filter(t => Boolean(t)).join('\n');
   }
@@ -330,3 +360,13 @@ function actionTitle(action) {
       return `Select ${action.options.join(', ')}`;
   }
 }
+
+// export class Gen2 extends SyntheticsGenerator {
+//   constructor(isSuite: boolean) {
+//     super(isSuite);
+//   }
+
+//   method() {
+
+//   }
+// }

@@ -182,4 +182,16 @@ describe('Synthetics JavaScript formatter', () => {
     ];
     expect(formatter.generateText(actions)).toMatchSnapshot();
   });
+
+  it('allows overriding default step structure', async () => {
+    const generator = new SyntheticsGenerator(false);
+
+    expect(generator.generateText(recorderActions, true)).toMatchSnapshot();
+  });
+
+  it('allows overriding step structure for suites', async () => {
+    const generator = new SyntheticsGenerator(true);
+
+    expect(generator.generateText(recorderActions, true)).toMatchSnapshot();
+  });
 });
