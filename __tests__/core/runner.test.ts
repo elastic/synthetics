@@ -704,7 +704,6 @@ describe('runner', () => {
         await page.goto('https://www.elastic.co');
       });
     });
-    console.warn('starting run');
     runner.addJourney(j1);
     await runner.run({
       reporter: 'json',
@@ -712,9 +711,7 @@ describe('runner', () => {
       trace: true,
       outfd: fs.openSync(dest, 'w'),
     });
-    console.warn('finished run')
     const events = readAndCloseStreamJson().map(event => event.type);
-    console.warn(events);
     expect(events[events.length - 1]).toBe('journey/end');
   });
 });
