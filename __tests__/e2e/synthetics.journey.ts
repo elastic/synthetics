@@ -104,7 +104,6 @@ journey('E2e test synthetics - http', async ({ page }) => {
   step('create an http monitor', async () => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
     await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
-    await page.waitForTimeout(10 * 1000);
     await confirmAndSavePolicy(page);
     console.info(`Monitor for ${journeyName} created successfully`)
   });
