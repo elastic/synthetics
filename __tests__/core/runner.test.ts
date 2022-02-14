@@ -695,13 +695,16 @@ describe('runner', () => {
    * TODO: Move this as part of integration test
    * Its really hard to ensure the journey/end is called for a real world page
    * without actually testing on a real world webpage.
+   * 
+   * FLAKY skipped
    */
-  it('run - ensure journey/end is written for real world pages', async () => {
+  it.skip('run - ensure journey/end is written for real world pages', async () => {
     const j1 = journey('journey1', async ({ page }) => {
       step('load homepage', async () => {
         await page.goto('https://www.elastic.co');
       });
     });
+    console.warn('starting run');
     runner.addJourney(j1);
     await runner.run({
       reporter: 'json',
@@ -709,7 +712,9 @@ describe('runner', () => {
       trace: true,
       outfd: fs.openSync(dest, 'w'),
     });
+    console.warn('finished run')
     const events = readAndCloseStreamJson().map(event => event.type);
+    console.warn(events);
     expect(events[events.length - 1]).toBe('journey/end');
-  }, 30000);
+  });
 });
