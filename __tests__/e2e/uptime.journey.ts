@@ -56,7 +56,7 @@ journey('E2e test synthetics', async ({ page }) => {
   });
 
   step('Click on my monitor', async () => {
-    await page.click('[data-test-subj=monitor-page-link-my-monitor-inline]');
+    await page.click('[data-test-subj=monitor-page-link-my-monitor]');
   });
 
   step('It navigates to details page', async () => {
@@ -78,7 +78,7 @@ async function waitForSyntheticsData() {
               filter: [
                 {
                   term: {
-                    'monitor.id': 'my-monitor-inline',
+                    'monitor.id': 'my-monitor',
                   },
                 },
                 {
