@@ -66,4 +66,4 @@ export type { default as Runner } from './core/runner';
 export type { Reporter, ReporterOptions } from './reporters';
 
 export type { SyntheticsConfig } from './common_types';
-export type { ActionInContext, Action } from './formatter/javascript';
+export type { ActionInContext, Action, Signal } from './formatter/javascript';

@@ -56,7 +56,7 @@ export type Action = {
   options?: string[];
 };
 
-type Signal = {
+export type Signal = {
   name: string;
   url?: string;
   isAsync?: boolean;
