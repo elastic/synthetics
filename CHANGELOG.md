@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.20 (2021-02-16)
+
+### Bug fixes
+
+- Capture syntax errors inside inline journeys without throwing
+  promise rejection errors #450
+
 ## v1.0.0-beta.19 (2021-01-31)
 
 ### Bug fixes
