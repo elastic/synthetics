@@ -56,7 +56,7 @@ export class Gatherer {
     }
     const context = await Gatherer.browser.newContext({
       ...playwrightOptions,
-      userAgent: await Gatherer.getUserAgent(),
+      userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
     await Gatherer.setNetworkConditions(context, networkConditions);
 
@@ -65,10 +65,13 @@ export class Gatherer {
     return { browser: Gatherer.browser, context, page, client };
   }
 
-  static async getUserAgent() {
-    const session = await Gatherer.browser.newBrowserCDPSession();
-    const { userAgent } = await session.send('Browser.getVersion');
-    return userAgent + ' Elastic/Synthetics';
+  static async getUserAgent(userAgent: string) {
+    const syntheticsIdentifier = ' Elastic/Synthetics';
+    if (!userAgent) {
+      const session = await Gatherer.browser.newBrowserCDPSession();
+      ({ userAgent } = await session.send('Browser.getVersion'));
+    }
+    return userAgent + syntheticsIdentifier;
   }
 
   static async setNetworkConditions(
