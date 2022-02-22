@@ -129,11 +129,11 @@ describe('Gatherer', () => {
     it('works with device emulation', async () => {
       const driver = await Gatherer.setupDriver({
         wsEndpoint,
-        playwrightOptions: { ...devices['Galaxy S9+'] },
+        playwrightOptions: { ...devices['iPhone 12 Pro Max'] },
       });
-      expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
-        ' Elastic/Synthetics'
-      );
+      const userAgent = await driver.page.evaluate(() => navigator.userAgent);
+      expect(userAgent).toContain('Elastic/Synthetics');
+      expect(userAgent).toContain('iPhone');
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
