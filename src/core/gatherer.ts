@@ -65,7 +65,7 @@ export class Gatherer {
     return { browser: Gatherer.browser, context, page, client };
   }
 
-  static async getUserAgent(userAgent: string) {
+  static async getUserAgent(userAgent?: string) {
     const syntheticsIdentifier = ' Elastic/Synthetics';
     if (!userAgent) {
       const session = await Gatherer.browser.newBrowserCDPSession();
