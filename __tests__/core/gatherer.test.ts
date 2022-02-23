@@ -60,7 +60,7 @@ describe('Gatherer', () => {
       const chromiumLaunch = jest
         .spyOn(chromium, 'launch')
         .mockImplementation(() => {
-          return chromium.connect({ wsEndpoint });
+          return chromium.connect(wsEndpoint);
         });
 
       await Gatherer.setupDriver({
@@ -82,7 +82,7 @@ describe('Gatherer', () => {
       const chromiumLaunch = jest
         .spyOn(chromium, 'launch')
         .mockImplementation(() => {
-          return chromium.connect({ wsEndpoint });
+          return chromium.connect(wsEndpoint);
         });
 
       await Gatherer.setupDriver({

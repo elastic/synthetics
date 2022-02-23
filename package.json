@@ -38,19 +38,19 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "commander": "^7.0.0",
+    "commander": "^9.0.0",
     "deepmerge": "^4.2.2",
     "expect": "^27.0.2",
     "http-proxy": "^1.18.1",
-    "kleur": "^4.1.3",
+    "kleur": "^4.1.4",
     "micromatch": "^4.0.4",
     "playwright-chromium": "=1.14.0",
     "sharp": "^0.30.1",
     "snakecase-keys": "^3.2.1",
     "sonic-boom": "^2.6.0",
-    "source-map-support": "^0.5.19",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.3.5"
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
   },
   "devDependencies": {
     "@types/jest": "^27.4.0",
