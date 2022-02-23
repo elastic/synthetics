@@ -25,6 +25,9 @@
 
 import { beforeAll, journey, step } from '@elastic/synthetics';
 import axios from 'axios';
+import semver from 'semver';
+
+const stackVersion = process.env.STACK_VERSION.split('-')[0];
 
 beforeAll(async () => {
   await waitForElasticSearch();
@@ -187,6 +190,36 @@ journey('E2e test synthetics - browser', async ({ page }) => {
     await checkForSyntheticsData({ page, journeyName });
   });
 });
+
+if (semver.satisfies(stackVersion, '>=8.0.1')) {
+  journey('E2e test synthetics - browser - inline', async ({ page }) => {
+    const journeyName = 'Sample browser inline integration policy';
+
+    step('Go to synthetics integration page', async () => {
+      await goToSyntheticsIntegrationPage(page);
+    });
+
+    step('create an browser monitor', async () => {
+      await createIntegrationPolicyName({ page, policyName: journeyName });
+      await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
+      await page.click('[data-test-subj="syntheticsSourceTab__inline"]');
+      await page.fill('[data-test-subj=codeEditorContainer] textarea', `
+        step('load homepage', async () => {
+          await page.goto('https://www.elastic.co');
+        });
+      `);
+      await confirmAndSavePolicy(page);
+    });
+
+    step('go to uptime', async () => {
+      await goToUptime(page);
+    });
+
+    step('wait for synthetics data', async () => {
+      await checkForSyntheticsData({ page, journeyName });
+    });
+  });
+}
 
 async function waitForElasticSearch() {
   console.info('Waiting for Elastic Search  to start');
