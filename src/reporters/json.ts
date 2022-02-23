@@ -94,7 +94,7 @@ type OutputFields = {
   };
   error?: Error;
   root_fields?: Record<string, unknown>;
-  payload?: Payload | Partial<NetworkInfo>;
+  payload?: Payload | NetworkInfo;
   blob?: string;
   blob_mime?: string;
 };

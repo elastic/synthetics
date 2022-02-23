@@ -46,7 +46,7 @@
     "micromatch": "^4.0.4",
     "playwright-chromium": "=1.14.0",
     "sharp": "^0.30.1",
-    "snakecase-keys": "^5.1.2",
+    "snakecase-keys": "^3.2.1",
     "sonic-boom": "^2.6.0",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.5.0",
