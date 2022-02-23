@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
+    "prepare": "husky install",
     "prepublish": "npm run clean && npm run build",
     "build": "tsc",
     "watch": "tsc -w",
@@ -29,11 +30,6 @@
       "npm run lint:fix",
       "prettier --write"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   },
   "author": "",
   "license": "MIT",
@@ -60,7 +56,7 @@
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
-    "husky": "^4.3.6",
+    "husky": "^7.0.0",
     "jest": "^27.5.1",
     "lint-staged": "^12.3.4",
     "prettier": "^2.5.1",
