@@ -43,7 +43,7 @@ export class Gatherer {
     if (Gatherer.browser == null) {
       if (wsEndpoint) {
         log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
-        Gatherer.browser = await chromium.connect({ wsEndpoint });
+        Gatherer.browser = await chromium.connect(wsEndpoint);
       } else {
         Gatherer.browser = await chromium.launch({
           ...playwrightOptions,
