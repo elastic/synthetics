@@ -74,7 +74,7 @@ export default class BaseReporter {
     // flushSync is used here to make sure all the data from the underlying
     // SonicBoom stream buffer is completely written to the fd before closing
     // the process
-    this.runner.on('end', () => this.stream.flush());
+    this.runner.on('end', () => this.stream.flushSync());
 
     this._registerListeners();
   }
