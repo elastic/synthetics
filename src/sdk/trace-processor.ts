@@ -111,7 +111,7 @@ export type LHProcessedTrace = {
  * metrics based on multiple navigations instead of a single navigation.
  */
 export class TraceProcessor extends LighthouseTraceProcessor {
-  static _isNavigationStartOfInterest(event) {
+  static override _isNavigationStartOfInterest(event) {
     return (
       event.name === 'navigationStart' &&
       (!event.args.data ||
