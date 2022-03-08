@@ -177,11 +177,11 @@ export function formatNetworkFields(network: NetworkInfo) {
       original: request.headers?.['User-Agent'],
     },
     http: {
-      version: formatVersion(response.protocol),
+      version: formatVersion(response?.protocol),
       request,
       response,
     },
-    tls: formatTLS(response.securityDetails),
+    tls: formatTLS(response?.securityDetails),
   };
 
   const pickItems: Array<keyof NetworkInfo> = [

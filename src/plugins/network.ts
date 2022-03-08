@@ -131,7 +131,6 @@ export class NetworkManager {
         statusCode: -1,
         mimeType: 'x-unknown',
         headers: {},
-        protocol: '',
         timing: null,
       },
       isNavigationRequest,
@@ -179,6 +178,9 @@ export class NetworkManager {
       return;
     }
 
+    record.status = response.status;
+    record.responseReceivedTime = timestamp;
+    record.transferSize = response.encodedDataLength;
     record.response = {
       url: response.url,
       statusCode: response.status,
@@ -188,20 +190,19 @@ export class NetworkManager {
       mimeType: response.mimeType,
       remoteIPAddress: response.remoteIPAddress,
       remotePort: response.remotePort,
-      securityDetails: {
-        protocol: response.securityDetails?.protocol,
-        subjectName: response.securityDetails?.subjectName,
-        issuer: response.securityDetails?.issuer,
-        validFrom: response.securityDetails?.validFrom,
-        validTo: response.securityDetails?.validTo,
-      },
       fromServiceWorker: response.fromServiceWorker,
       redirectURL: record.response.redirectURL,
       timing: response.timing,
     };
-    record.status = response.status;
-    record.responseReceivedTime = timestamp;
-    record.transferSize = response.encodedDataLength;
+    if (response.securityDetails) {
+      record.response.securityDetails = {
+        protocol: response.securityDetails.protocol,
+        subjectName: response.securityDetails.subjectName,
+        issuer: response.securityDetails.issuer,
+        validFrom: response.securityDetails.validFrom,
+        validTo: response.securityDetails.validTo,
+      };
+    }
   }
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {

@@ -136,8 +136,13 @@ describe('network', () => {
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/delay100`,
-      status: 0,
-      response: null,
+      status: -1,
+      response: {
+        headers: {},
+        mimeType: 'x-unknown',
+        statusCode: -1,
+        timing: null,
+      },
       timings: expect.any(Object),
     });
     expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);

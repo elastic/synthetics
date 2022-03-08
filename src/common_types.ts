@@ -123,7 +123,7 @@ export type Request = {
 
 export type Response = {
   url?: string;
-  protocol: string;
+  protocol?: string;
   statusCode: number;
   statusText?: string;
   mimeType: string;
