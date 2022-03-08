@@ -52,7 +52,7 @@ export default class JUnitReporter extends BaseReporter {
   private totalFailures = 0;
   private totalSkipped = 0;
 
-  _registerListeners() {
+  override _registerListeners() {
     const journeyMap = new Map<string, XMLEntry>();
 
     this.runner.on('journey:start', ({ journey }) => {

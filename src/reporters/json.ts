@@ -343,7 +343,7 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
-  _registerListeners() {
+  override _registerListeners() {
     /**
      * report the number of journeys that exists on a suite which
      * could be used for better sharding

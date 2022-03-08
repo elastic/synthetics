@@ -5,6 +5,7 @@
     "declaration": true,
     "incremental": true,
     "declarationMap": true,
+    "noImplicitOverride": true,
     "sourceMap": true,
     "outDir": "dist",
     "target": "es2018",
