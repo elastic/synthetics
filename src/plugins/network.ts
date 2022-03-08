@@ -64,14 +64,14 @@ export class NetworkManager {
   }
 
   _onRequestWillBeSent(event: Protocol.Network.requestWillBeSentPayload) {
-    const { requestId, request, timestamp, type, loaderId } = event;
-    const { url, method } = request;
+    const { url, method, postData, headers } = event.request;
     /**
      * Data URI should not show up as network requests
      */
     if (url.startsWith('data:')) {
       return;
     }
+    const { requestId, timestamp, type, loaderId } = event;
     const isNavigationRequest = requestId == loaderId && type === 'Document';
     const record = this._findNetworkRecord(requestId);
     /**
@@ -81,6 +81,7 @@ export class NetworkManager {
      */
     if (record) {
       if (event.redirectResponse) {
+        record.response.redirectURL = url;
         const response = event.redirectResponse;
         const data = Object.assign(event, {
           type: event.type,
@@ -117,15 +118,26 @@ export class NetworkManager {
       step: this._currentStep,
       timestamp: getTimestamp(),
       url,
-      request,
       type,
       method,
-      requestSentTime: timestamp,
+      status: -1,
+      request: {
+        url,
+        method,
+        headers,
+        bytes: postData?.length || 0,
+      },
+      response: {
+        statusCode: -1,
+        mimeType: 'x-unknown',
+        headers: {},
+        protocol: '',
+        timing: null,
+      },
       isNavigationRequest,
-      status: 0,
-      loadEndTime: -1,
+      requestSentTime: timestamp,
       responseReceivedTime: -1,
-      response: null,
+      loadEndTime: -1,
       resourceSize: 0,
       transferSize: 0,
       timings: null,
@@ -147,6 +159,7 @@ export class NetworkManager {
       ...record.request.headers,
       ...headers,
     };
+    record.request.referrer = record.request.headers?.Referer;
   }
 
   _onDataReceived(event: Protocol.Network.dataReceivedPayload) {
@@ -165,12 +178,30 @@ export class NetworkManager {
     if (!record) {
       return;
     }
-    Object.assign(record, {
-      status: response.status,
-      response,
-      responseReceivedTime: timestamp,
-      transferSize: response.encodedDataLength,
-    });
+
+    record.response = {
+      url: response.url,
+      statusCode: response.status,
+      protocol: response.protocol,
+      statusText: response.statusText,
+      headers: response.headers,
+      mimeType: response.mimeType,
+      remoteIPAddress: response.remoteIPAddress,
+      remotePort: response.remotePort,
+      securityDetails: {
+        protocol: response.securityDetails?.protocol,
+        subjectName: response.securityDetails?.subjectName,
+        issuer: response.securityDetails?.issuer,
+        validFrom: response.securityDetails?.validFrom,
+        validTo: response.securityDetails?.validTo,
+      },
+      fromServiceWorker: response.fromServiceWorker,
+      redirectURL: record.response.redirectURL,
+      timing: response.timing,
+    };
+    record.status = response.status;
+    record.responseReceivedTime = timestamp;
+    record.transferSize = response.encodedDataLength;
   }
 
   _onLoadingFinished(event: Protocol.Network.loadingFinishedPayload) {
@@ -194,6 +225,9 @@ export class NetworkManager {
     }
     if (encodedDataLength >= 0) {
       record.transferSize = encodedDataLength;
+      record.response.body = {
+        bytes: encodedDataLength,
+      };
     }
     record.loadEndTime = endTime;
     record.timings = calculateTimings(record);
@@ -250,17 +284,6 @@ export function calculateTimings(record: NetworkInfo) {
     receive: -1,
     total: -1,
   };
-  const { requestSentTime, loadEndTime, responseReceivedTime } = record;
-
-  /**
-   * Handle when request failed and no responseReceived event was
-   * fired for that particular request
-   * Eg: connection refused by remote host
-   */
-  const response = record.response || {
-    timing: null,
-    fromServiceWorker: false,
-  };
 
   const toMilliseconds = (time: number) => (time === -1 ? -1 : time * 1000);
   const calculateDiffInMs = (
@@ -293,6 +316,8 @@ export function calculateTimings(record: NetworkInfo) {
       calculateDiffInMs(name, startTime + start / 1000, startTime + end / 1000);
     }
   };
+  const { requestSentTime, loadEndTime, responseReceivedTime, response } =
+    record;
   const timing = response.timing;
   const actResRcvdTime = getResponseReceivedTime(timing, responseReceivedTime);
   const issueTime = requestSentTime;

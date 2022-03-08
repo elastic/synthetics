@@ -100,13 +100,57 @@ export type Screenshot = {
   data: string;
 };
 
+export type SecurityDetails = {
+  issuer?: string;
+  protocol?: string;
+  subjectName?: string;
+  validFrom?: number;
+  validTo?: number;
+};
+
+export type Request = {
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  // Total size in bytes of the request (body and headers)
+  bytes?: number;
+  body?: {
+    // Size in bytes of the request body
+    bytes: number;
+  };
+  referrer?: string;
+};
+
+export type Response = {
+  url?: string;
+  protocol: string;
+  statusCode: number;
+  statusText?: string;
+  mimeType: string;
+  httpVersion?: string;
+  headers: Record<string, string>;
+  // Total size in bytes of the response (body and headers)
+  bytes?: number;
+  body?: {
+    // Size in bytes of the response body
+    bytes: number;
+  };
+  transferSize?: number;
+  redirectURL?: string;
+  securityDetails?: SecurityDetails;
+  remoteIPAddress?: string;
+  remotePort?: number;
+  fromServiceWorker?: boolean;
+  timing?: Protocol.Network.ResourceTiming;
+};
+
 export type NetworkInfo = {
   url: string;
   browser: BrowserInfo;
   method: string;
   type: string;
-  request: Protocol.Network.Request;
-  response?: Protocol.Network.Response;
+  request: Request;
+  response?: Response;
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
