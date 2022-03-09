@@ -77,9 +77,10 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
 
   generateAction(
     actionInContext: ActionInContext,
-    ignoreStepDefaults?: boolean
+    ignoreStepDefaults?: boolean,
+    customStepsOverride?: boolean
   ) {
-    if (ignoreStepDefaults && this.insideStep) {
+    if (ignoreStepDefaults && this.insideStep && !customStepsOverride) {
       throw Error(
         'Cannot ignore step defaults if generator is already recording a step'
       );
@@ -193,23 +194,29 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return false;
   }
 
-  generateStepStart(name) {
+  generateStepStart(name, offsetOverride = 0) {
     this.insideStep = true;
-    return `step(${quote(name)}, async () => {`;
+    const formatter = new JavaScriptFormatter(
+      this.isSuite ? offsetOverride + 2 : offsetOverride
+    );
+    formatter.add(`step(${quote(name)}, async () => {`);
+    return formatter.format();
   }
 
-  generateStepEnd() {
+  generateStepEnd(offsetOverride = 0) {
     if (!this.insideStep) {
       return '';
     }
     this.insideStep = false;
-    const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
+    const formatter = new JavaScriptFormatter(
+      this.isSuite ? offsetOverride + 2 : offsetOverride
+    );
     formatter.add(`});`);
     return formatter.format();
   }
 
-  generateHeader() {
-    const formatter = new JavaScriptFormatter(0);
+  generateHeader(offsetOverride = 0) {
+    const formatter = new JavaScriptFormatter(offsetOverride);
     formatter.add(`
       const { journey, step, expect } = require('@elastic/synthetics');
 
@@ -219,6 +226,29 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
 
   generateFooter() {
     return `});`;
+  }
+
+  generateFromSteps(steps: Array<Array<ActionInContext>>) {
+    const text = [];
+    if (this.isSuite) {
+      text.push(this.generateHeader());
+    }
+    for (const step of steps) {
+      if (step.length === 0) throw Error('Received an empty step');
+      text.push(
+        this.generateStepStart(step[0].title ?? actionTitle(step[0].action))
+      );
+
+      for (const action of step) {
+        text.push(this.generateAction(action, true, true));
+      }
+
+      text.push(this.generateStepEnd());
+    }
+    if (this.isSuite) {
+      text.push(this.generateFooter());
+    }
+    return text.filter(s => !!s);
   }
 
   /**
@@ -358,5 +388,7 @@ function actionTitle(action) {
       );
     case 'select':
       return `Select ${action.options.join(', ')}`;
+    case 'assert':
+      return `Assert ${action.selector} ${action.command}`;
   }
 }

@@ -194,4 +194,15 @@ describe('Synthetics JavaScript formatter', () => {
 
     expect(generator.generateText(recorderActions, true)).toMatchSnapshot();
   });
+
+  it('accepts custom step orders', async () => {
+    const generator = new SyntheticsGenerator(true);
+    const testSteps = [
+      recorderActions.slice(0, 2),
+      recorderActions.slice(2, 4),
+      recorderActions.slice(4, 7),
+      recorderActions.slice(7, 9),
+    ];
+    expect(generator.generateFromSteps(testSteps)).toMatchSnapshot();
+  });
 });

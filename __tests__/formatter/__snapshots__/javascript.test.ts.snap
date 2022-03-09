@@ -1,5 +1,35 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Synthetics JavaScript formatter accepts custom step orders 1`] = `
+Array [
+  "const { journey, step, expect } = require('@elastic/synthetics');
+
+journey('Recorded journey', async ({ page, context }) => {",
+  "  step('Open new page', async () => {",
+  "    await page.goto('https://vigneshh.in/');",
+  "  });",
+  "  step('Assert text=Babel Minify isVisible', async () => {",
+  "    expect(await page.isVisible('text=Babel Minify')).toBeTruthy();",
+  "    expect(await page.isEditable('text=Babel Minify')).toBeTruthy();",
+  "  });",
+  "  step('Assert text=Babel Minify textContent', async () => {",
+  "    expect(await page.textContent('text=Babel Minify')).toMatch('Babel');",
+  "    const [page1] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.click('text=Babel Minify')
+    ]);",
+  "    await Promise.all([
+      page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
+      page1.click('a:has-text(\\"smoke\\")')
+    ]);",
+  "  });",
+  "  step('Close page', async () => {",
+  "    await page1.close();",
+  "  });",
+  "});",
+]
+`;
+
 exports[`Synthetics JavaScript formatter allows overriding default step structure 1`] = `
 "step('Open new page', async () => {
   await page.goto('https://vigneshh.in/');
