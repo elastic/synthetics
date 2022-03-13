@@ -124,7 +124,7 @@ export type Request = {
 export type Response = {
   url?: string;
   protocol?: string;
-  statusCode: number;
+  status: number;
   statusText?: string;
   mimeType: string;
   httpVersion?: string;
@@ -147,7 +147,6 @@ export type Response = {
 export type NetworkInfo = {
   url: string;
   browser: BrowserInfo;
-  method: string;
   type: string;
   request: Request;
   response?: Response;
@@ -155,7 +154,6 @@ export type NetworkInfo = {
   requestSentTime: number;
   loadEndTime: number;
   responseReceivedTime: number;
-  status: number;
   resourceSize: number;
   transferSize: number;
   timings?: {

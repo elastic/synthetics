@@ -72,7 +72,7 @@ type Payload = {
   start?: number;
   end?: number;
   url?: string;
-  status?: StatusValue | number;
+  status?: StatusValue;
   pagemetrics?: PageMetrics;
   params?: Params;
   type?: OutputType;
@@ -94,7 +94,7 @@ type OutputFields = {
   };
   error?: Error;
   root_fields?: Record<string, unknown>;
-  payload?: Payload | NetworkInfo;
+  payload?: Payload;
   blob?: string;
   blob_mime?: string;
 };
@@ -186,8 +186,6 @@ export function formatNetworkFields(network: NetworkInfo) {
 
   const pickItems: Array<keyof NetworkInfo> = [
     'browser',
-    'status',
-    'method',
     'type',
     'isNavigationRequest',
     'requestSentTime',

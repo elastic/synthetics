@@ -119,8 +119,6 @@ export class NetworkManager {
       timestamp: getTimestamp(),
       url,
       type,
-      method,
-      status: -1,
       request: {
         url,
         method,
@@ -128,7 +126,7 @@ export class NetworkManager {
         bytes: postData?.length || 0,
       },
       response: {
-        statusCode: -1,
+        status: -1,
         mimeType: 'x-unknown',
         headers: {},
         timing: null,
@@ -178,12 +176,11 @@ export class NetworkManager {
       return;
     }
 
-    record.status = response.status;
     record.responseReceivedTime = timestamp;
     record.transferSize = response.encodedDataLength;
     record.response = {
       url: response.url,
-      statusCode: response.status,
+      status: response.status,
       protocol: response.protocol,
       statusText: response.statusText,
       headers: response.headers,

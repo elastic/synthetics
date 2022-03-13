@@ -32,8 +32,6 @@ export const NETWORK_INFO: Array<NetworkInfo> = [
     timestamp: 1646782451347652.5,
     url: 'http://localhost:56899/index',
     type: 'Document',
-    method: 'GET',
-    status: 200,
     request: {
       url: 'http://localhost:56899/index',
       method: 'GET',
@@ -49,7 +47,7 @@ export const NETWORK_INFO: Array<NetworkInfo> = [
     },
     response: {
       url: 'http://localhost:56899/index',
-      statusCode: 200,
+      status: 200,
       protocol: 'http/1.1',
       statusText: 'OK',
       headers: {
@@ -111,8 +109,6 @@ export const NETWORK_INFO: Array<NetworkInfo> = [
     timestamp: 1646782451408470,
     url: 'http://localhost:56899/delay100',
     type: 'Script',
-    method: 'GET',
-    status: -1,
     request: {
       url: 'http://localhost:56899/delay100',
       method: 'GET',
@@ -127,7 +123,7 @@ export const NETWORK_INFO: Array<NetworkInfo> = [
       referrer: undefined,
     },
     response: {
-      statusCode: -1,
+      status: -1,
       mimeType: 'x-unknown',
       headers: {},
       timing: null,

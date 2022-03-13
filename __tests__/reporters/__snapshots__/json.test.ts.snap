@@ -38,7 +38,7 @@ Object {
         "redirect_u_r_l": undefined,
         "remote_i_p_address": "[::1]",
         "remote_port": 56899,
-        "status_code": 200,
+        "status": 200,
         "status_text": "OK",
         "timing": Object {
           "connect_end": 0.5,
@@ -79,11 +79,9 @@ Object {
     },
     "is_navigation_request": true,
     "load_end_time": 300869.373125,
-    "method": "GET",
     "request_sent_time": 300869.36725,
     "resource_size": 46,
     "response_received_time": 300869.3735,
-    "status": 200,
     "timings": Object {
       "blocked": 0.24999998277053237,
       "connect": 0.2500000409781933,
@@ -121,7 +119,7 @@ Object {
       "response": Object {
         "headers": Object {},
         "mime_type": "x-unknown",
-        "status_code": -1,
+        "status": -1,
         "timing": null,
       },
       "version": undefined,
@@ -140,10 +138,8 @@ Object {
       "version": "94.0.4595.0",
     },
     "load_end_time": 300869.45675,
-    "method": "GET",
     "request_sent_time": 300869.377,
     "response_received_time": -1,
-    "status": -1,
     "timings": Object {
       "blocked": 79.75000003352761,
       "connect": -1,
