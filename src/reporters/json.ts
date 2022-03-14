@@ -40,6 +40,7 @@ import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
 import {
   NetworkInfo,
+  SecurityDetails,
   NetworkConditions,
   TraceOutput,
   StatusValue,
@@ -47,7 +48,6 @@ import {
   Params,
   Screenshot,
 } from '../common_types';
-import { Protocol } from 'playwright-chromium/types/protocol';
 import { PageMetrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -72,7 +72,7 @@ type Payload = {
   start?: number;
   end?: number;
   url?: string;
-  status?: StatusValue | number;
+  status?: StatusValue;
   pagemetrics?: PageMetrics;
   params?: Params;
   type?: OutputType;
@@ -94,7 +94,7 @@ type OutputFields = {
   };
   error?: Error;
   root_fields?: Record<string, unknown>;
-  payload?: Payload | NetworkInfo;
+  payload?: Payload;
   blob?: string;
   blob_mime?: string;
 };
@@ -143,41 +143,12 @@ function formatVersion(protocol: string | undefined) {
   }
 }
 
-function formatRequest(request: Protocol.Network.Request) {
-  const postData = request.postData ? request.postData : '';
-  return {
-    ...request,
-    body: {
-      bytes: postData.length,
-      content: postData,
-    },
-    referrer: request.headers?.Referer,
-  };
-}
-
-function formatResponse(response: Protocol.Network.Response) {
-  if (!response) {
-    return;
-  }
-  return {
-    ...response,
-    body: {
-      bytes: response.encodedDataLength,
-    },
-    status_code: response.status,
-  };
-}
-
-function formatTLS(tls: Protocol.Network.SecurityDetails) {
+function formatTLS(tls: SecurityDetails) {
   if (!tls) {
     return;
   }
-  const cipher = `${tls.keyExchange ? tls.keyExchange + '_' : ''}${
-    tls.cipher
-  }_${tls.keyExchangeGroup}`;
   const [name, version] = tls.protocol.toLowerCase().split(' ');
   return {
-    cipher,
     server: {
       x509: {
         issuer: {
@@ -191,7 +162,7 @@ function formatTLS(tls: Protocol.Network.SecurityDetails) {
       },
     },
     version_protocol: name,
-    version: version,
+    version,
   };
 }
 
@@ -207,16 +178,14 @@ export function formatNetworkFields(network: NetworkInfo) {
     },
     http: {
       version: formatVersion(response?.protocol),
-      request: formatRequest(request),
-      response: formatResponse(response),
+      request,
+      response,
     },
     tls: formatTLS(response?.securityDetails),
   };
 
   const pickItems: Array<keyof NetworkInfo> = [
     'browser',
-    'status',
-    'method',
     'type',
     'isNavigationRequest',
     'requestSentTime',

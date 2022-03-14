@@ -55,9 +55,7 @@ describe('network', () => {
       request: expect.any(Object),
       response: expect.any(Object),
       type: 'Document',
-      method: 'GET',
       requestSentTime: expect.any(Number),
-      status: 200,
       loadEndTime: expect.any(Number),
       responseReceivedTime: expect.any(Number),
       timings: expect.any(Object),
@@ -90,9 +88,9 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/route1');
     const netinfo = await network.stop();
     expect(netinfo.length).toEqual(3);
-    expect(netinfo[0].status).toBe(302);
-    expect(netinfo[1].status).toBe(302);
-    expect(netinfo[2].status).toBe(200);
+    expect(netinfo[0].response.status).toBe(302);
+    expect(netinfo[1].response.status).toBe(302);
+    expect(netinfo[2].response.status).toBe(200);
     await Gatherer.stop();
   });
 
@@ -136,8 +134,12 @@ describe('network', () => {
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/delay100`,
-      status: 0,
-      response: null,
+      response: {
+        headers: {},
+        mimeType: 'x-unknown',
+        status: -1,
+        timing: null,
+      },
       timings: expect.any(Object),
     });
     expect(netinfo[1].timings.total).toBeGreaterThan(delayTime);
@@ -172,7 +174,6 @@ describe('network', () => {
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/chunked`,
-      status: 200,
       response: expect.any(Object),
       timings: expect.any(Object),
     });
