@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.22 (2021-03-14)
+
+### Bug fixes
+
+- Empty the write buffer before exit the Node.js process #446
+- Reduce the network information data by writing only the
+  necessary fields #466
+
+## v1.0.0-beta.21 (2021-02-22)
+
+### Bug fixes
+
+- Do not override User agent string when doing device emulation #462
+
 ## v1.0.0-beta.20 (2021-02-16)
 
 ### Bug fixes
