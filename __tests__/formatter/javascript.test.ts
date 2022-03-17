@@ -226,4 +226,21 @@ describe('Synthetics JavaScript formatter', () => {
       )
     ).toMatchSnapshot();
   });
+
+  it('does not filter whitespace entries', () => {
+    const generator = new SyntheticsGenerator(false);
+    const testSteps: Steps = [{ actions: recorderStep.actions.slice(0, 4) }];
+    // check that the whitespace lines are included
+    expect(
+      generator
+        .generateFromSteps(
+          testSteps.map((s: Step) => {
+            s.name = 'test-name';
+            return s;
+          }),
+          false
+        )
+        .filter(line => line.length === 0)
+    ).toHaveLength(1);
+  });
 });

@@ -235,7 +235,15 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return `});`;
   }
 
-  generateFromSteps(steps: Steps): string[] {
+  /**
+   * Generates JavaScript code from a custom set of steps and nested actions.
+   *
+   * This function makes no assumptions about where steps should be created,
+   * and instead follows the step definitions the caller has defined.
+   * @param steps IR to use for code generation
+   * @returns a list of the code strings outputted by the generator
+   */
+  generateFromSteps(steps: Steps, filterEmptyLines = true): string[] {
     const text = [];
     if (this.isSuite) {
       text.push(this.generateHeader());
@@ -260,7 +268,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     if (this.isSuite) {
       text.push(this.generateFooter());
     }
-    return text.filter(s => !!s);
+    return text.filter(s => !!s || !filterEmptyLines);
   }
 
   /**
