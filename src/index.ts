@@ -69,7 +69,7 @@ export type { SyntheticsConfig } from './common_types';
 export type {
   Action,
   ActionInContext,
+  Signal,
   Step,
   Steps,
-  Signal,
 } from './formatter/javascript';
