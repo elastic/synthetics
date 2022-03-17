@@ -243,4 +243,12 @@ describe('Synthetics JavaScript formatter', () => {
         .filter(line => line.length === 0)
     ).toHaveLength(1);
   });
+
+  it('throws error if processing empty step', () => {
+    const generator = new SyntheticsGenerator(false);
+    const testSteps: Steps = [{ actions: [] }];
+    expect(() => generator.generateFromSteps(testSteps)).toThrowError(
+      'Cannot process an empty step'
+    );
+  });
 });
