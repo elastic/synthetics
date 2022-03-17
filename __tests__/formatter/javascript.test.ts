@@ -25,184 +25,205 @@
 import {
   SyntheticsGenerator,
   ActionInContext,
+  Step,
+  Steps,
 } from '../../src/formatter/javascript';
 
-const recorderActions: Array<ActionInContext> = [
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'about:blank',
-    committed: true,
-    action: {
-      name: 'openPage',
-      url: 'about:blank',
-      signals: [],
+const recorderStep: Step = {
+  actions: [
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'about:blank',
+      committed: true,
+      action: {
+        name: 'openPage',
+        url: 'about:blank',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    committed: true,
-    action: {
-      name: 'navigate',
-      url: 'https://vigneshh.in/',
-      signals: [],
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      committed: true,
+      action: {
+        name: 'navigate',
+        url: 'https://vigneshh.in/',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    action: {
-      name: 'assert',
-      isAssert: true,
-      command: 'isVisible',
-      selector: 'text=Babel Minify',
-      signals: [],
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      action: {
+        name: 'assert',
+        isAssert: true,
+        command: 'isVisible',
+        selector: 'text=Babel Minify',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    action: {
-      name: 'assert',
-      isAssert: true,
-      command: 'isEditable',
-      selector: 'text=Babel Minify',
-      signals: [],
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      action: {
+        name: 'assert',
+        isAssert: true,
+        command: 'isEditable',
+        selector: 'text=Babel Minify',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    action: {
-      name: 'assert',
-      isAssert: true,
-      command: 'textContent',
-      selector: 'text=Babel Minify',
-      value: 'Babel',
-      signals: [],
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      action: {
+        name: 'assert',
+        isAssert: true,
+        command: 'textContent',
+        selector: 'text=Babel Minify',
+        value: 'Babel',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    action: {
-      name: 'click',
-      selector: 'text=Babel Minify',
-      signals: [
-        {
-          name: 'popup',
-          popupAlias: 'page1',
-          isAsync: true,
-        },
-      ],
-      button: 'left',
-      modifiers: 0,
-      clickCount: 1,
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      action: {
+        name: 'click',
+        selector: 'text=Babel Minify',
+        signals: [
+          {
+            name: 'popup',
+            popupAlias: 'page1',
+            isAsync: true,
+          },
+        ],
+        button: 'left',
+        modifiers: 0,
+        clickCount: 1,
+      },
+      committed: true,
     },
-    committed: true,
-  },
-  {
-    pageAlias: 'page1',
-    isMainFrame: true,
-    frameUrl: 'https://github.com/babel/minify',
-    action: {
-      name: 'click',
-      selector: 'a:has-text("smoke")',
-      signals: [
-        {
-          name: 'navigation',
-          url: 'https://github.com/babel/minify',
-        },
-        {
-          name: 'navigation',
-          url: 'https://github.com/babel/minify/tree/master/smoke',
-        },
-        {
-          name: 'navigation',
-          url: 'https://github.com/babel/minify/tree/master/smoke',
-          isAsync: true,
-        },
-        {
-          name: 'navigation',
-          url: 'https://github.com/babel/minify',
-          isAsync: true,
-        },
-      ],
-      button: 'left',
-      modifiers: 0,
-      clickCount: 1,
+    {
+      pageAlias: 'page1',
+      isMainFrame: true,
+      frameUrl: 'https://github.com/babel/minify',
+      action: {
+        name: 'click',
+        selector: 'a:has-text("smoke")',
+        signals: [
+          {
+            name: 'navigation',
+            url: 'https://github.com/babel/minify',
+          },
+          {
+            name: 'navigation',
+            url: 'https://github.com/babel/minify/tree/master/smoke',
+          },
+          {
+            name: 'navigation',
+            url: 'https://github.com/babel/minify/tree/master/smoke',
+            isAsync: true,
+          },
+          {
+            name: 'navigation',
+            url: 'https://github.com/babel/minify',
+            isAsync: true,
+          },
+        ],
+        button: 'left',
+        modifiers: 0,
+        clickCount: 1,
+      },
     },
-  },
-  {
-    pageAlias: 'page1',
-    isMainFrame: true,
-    frameUrl: 'https://github.com/babel/minify',
-    committed: true,
-    action: {
-      name: 'closePage',
-      signals: [],
+    {
+      pageAlias: 'page1',
+      isMainFrame: true,
+      frameUrl: 'https://github.com/babel/minify',
+      committed: true,
+      action: {
+        name: 'closePage',
+        signals: [],
+      },
     },
-  },
-  {
-    pageAlias: 'page',
-    isMainFrame: true,
-    frameUrl: 'https://vigneshh.in/',
-    committed: true,
-    action: {
-      name: 'closePage',
-      signals: [],
+    {
+      pageAlias: 'page',
+      isMainFrame: true,
+      frameUrl: 'https://vigneshh.in/',
+      committed: true,
+      action: {
+        name: 'closePage',
+        signals: [],
+      },
     },
-  },
-];
+  ],
+};
 
 describe('Synthetics JavaScript formatter', () => {
-  it('inline journeys', async () => {
+  it('inline journeys', () => {
     const formatter = new SyntheticsGenerator(false);
-    expect(formatter.generateText(recorderActions)).toMatchSnapshot();
+    expect(formatter.generateText(recorderStep.actions)).toMatchSnapshot();
   });
 
-  it('suite journeys', async () => {
+  it('suite journeys', () => {
     const formatter = new SyntheticsGenerator(true);
-    expect(formatter.generateText(recorderActions)).toMatchSnapshot();
+    expect(formatter.generateText(recorderStep.actions)).toMatchSnapshot();
   });
 
   it('use modified title if available', async () => {
     const formatter = new SyntheticsGenerator(false);
-    const actions = [
+    const actions: ActionInContext[] = [
       {
-        ...recorderActions[1],
+        ...recorderStep.actions[1],
         title: 'Visiting profile',
       },
     ];
     expect(formatter.generateText(actions)).toMatchSnapshot();
   });
 
-  it('allows overriding default step structure', async () => {
+  it('allows overriding default step structure', () => {
     const generator = new SyntheticsGenerator(false);
 
-    expect(generator.generateText(recorderActions, true)).toMatchSnapshot();
+    expect(
+      generator.generateText(recorderStep.actions, true)
+    ).toMatchSnapshot();
   });
 
-  it('allows overriding step structure for suites', async () => {
+  it('allows overriding step structure for suites', () => {
     const generator = new SyntheticsGenerator(true);
 
-    expect(generator.generateText(recorderActions, true)).toMatchSnapshot();
+    expect(
+      generator.generateText(recorderStep.actions, true)
+    ).toMatchSnapshot();
   });
 
-  it('accepts custom step orders', async () => {
+  it('accepts custom step organization', () => {
     const generator = new SyntheticsGenerator(true);
-    const testSteps = [
-      recorderActions.slice(0, 2),
-      recorderActions.slice(2, 4),
-      recorderActions.slice(4, 7),
-      recorderActions.slice(7, 9),
+    const testSteps: Steps = [
+      { actions: recorderStep.actions.slice(0, 2) },
+      { actions: recorderStep.actions.slice(2, 4) },
+      { actions: recorderStep.actions.slice(4, 7) },
+      { actions: recorderStep.actions.slice(7, 9) },
     ];
     expect(generator.generateFromSteps(testSteps)).toMatchSnapshot();
+  });
+
+  it('uses custom step names', () => {
+    const generator = new SyntheticsGenerator(false);
+    const testSteps: Steps = [{ actions: recorderStep.actions.slice(0, 4) }];
+    expect(
+      generator.generateFromSteps(
+        testSteps.map((s: Step) => {
+          s.name = 'test-name';
+          return s;
+        })
+      )
+    ).toMatchSnapshot();
   });
 });

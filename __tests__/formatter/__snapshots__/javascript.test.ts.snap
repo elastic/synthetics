@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Synthetics JavaScript formatter accepts custom step orders 1`] = `
+exports[`Synthetics JavaScript formatter accepts custom step organization 1`] = `
 Array [
   "const { journey, step, expect } = require('@elastic/synthetics');
 
@@ -118,4 +118,14 @@ exports[`Synthetics JavaScript formatter use modified title if available 1`] = `
 "step('Visiting profile', async () => {
   await page.goto('https://vigneshh.in/');
 });"
+`;
+
+exports[`Synthetics JavaScript formatter uses custom step names 1`] = `
+Array [
+  "step('test-name', async () => {",
+  "  await page.goto('https://vigneshh.in/');",
+  "  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();",
+  "  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();",
+  "});",
+]
 `;

@@ -28,6 +28,13 @@ import {
   JavaScriptFormatter,
 } from 'playwright-chromium/lib/server/supplements/recorder/javascript';
 
+export type Step = {
+  actions: ActionInContext[];
+  name?: string;
+};
+
+export type Steps = Step[];
+
 export type ActionInContext = {
   pageAlias: string;
   frameName?: string;
@@ -228,18 +235,23 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return `});`;
   }
 
-  generateFromSteps(steps: Array<Array<ActionInContext>>) {
+  generateFromSteps(steps: Steps): string[] {
     const text = [];
     if (this.isSuite) {
       text.push(this.generateHeader());
     }
     for (const step of steps) {
-      if (step.length === 0) throw Error('Received an empty step');
+      if (step.actions.length === 0)
+        throw Error('Cannot process an empty step');
       text.push(
-        this.generateStepStart(step[0].title ?? actionTitle(step[0].action))
+        this.generateStepStart(
+          step.name ??
+            step.actions[0].title ??
+            actionTitle(step.actions[0].action)
+        )
       );
 
-      for (const action of step) {
+      for (const action of step.actions) {
         text.push(this.generateAction(action, true, true));
       }
 
