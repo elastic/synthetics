@@ -82,10 +82,19 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     this.previousContext = undefined;
   }
 
+  /**
+   * Generate code for an action.
+   * @param actionInContext The action to create code for.
+   * @param ignoreStepDefaults When true, the function will not create steps between
+   * navigation events as it normally would.
+   * @param customStepsOverride When true, the function will not throw an error if the
+   * called while the generator is already recording a step.
+   * @returns the strings generated for the action.
+   */
   generateAction(
     actionInContext: ActionInContext,
-    ignoreStepDefaults?: boolean,
-    customStepsOverride?: boolean
+    ignoreStepDefaults = false,
+    customStepsOverride = false
   ) {
     if (ignoreStepDefaults && this.insideStep && !customStepsOverride) {
       throw Error(
