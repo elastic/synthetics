@@ -26,7 +26,7 @@
 import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
 
 export type JourneyOptions = {
   name: string;
@@ -49,18 +49,24 @@ export class Journey {
   id?: string;
   tags?: string[];
   callback: JourneyCallback;
+  location?: Location;
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
 
-  constructor(options: JourneyOptions, callback: JourneyCallback) {
+  constructor(
+    options: JourneyOptions,
+    callback: JourneyCallback,
+    location?: Location
+  ) {
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
     this.callback = callback;
+    this.location = location;
   }
 
-  addStep(name: string, callback: VoidCallback) {
-    const step = new Step(name, this.steps.length + 1, callback);
+  addStep(name: string, callback: VoidCallback, location?: Location) {
+    const step = new Step(name, this.steps.length + 1, callback, location);
     this.steps.push(step);
     return step;
   }

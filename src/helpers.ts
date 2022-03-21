@@ -29,7 +29,13 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { performance } from 'perf_hooks';
-import { HooksArgs, HooksCallback, NetworkConditions } from './common_types';
+import sourceMapSupport from '@cspotcode/source-map-support';
+import {
+  HooksArgs,
+  HooksCallback,
+  NetworkConditions,
+  Location,
+} from './common_types';
 
 const lstatAsync = promisify(fs.lstat);
 const readdirAsync = promisify(fs.readdir);
@@ -314,4 +320,37 @@ export function parseNetworkConditions(args: string): NetworkConditions {
   });
 
   return networkConditions;
+}
+
+// default stack trace limit
+const dstackTraceLimit = 10;
+
+// Uses the V8 Stacktrace API to get the function location
+// information - https://v8.dev/docs/stack-trace-api#customizing-stack-traces
+export function wrapFnWithLocation<A extends unknown[], R>(
+  func: (location: Location, ...args: A) => R
+): (...args: A) => R {
+  return (...args) => {
+    const _prepareStackTrace = Error.prepareStackTrace;
+    Error.prepareStackTrace = (_, stackFrames) => {
+      // Deafult CallSite would not map to the original transpiled source
+      // from ts-node properly, So we wrap it with the library that knows
+      // how to retrive those source-map for the transpiled code
+      const frame: NodeJS.CallSite = sourceMapSupport.wrapCallSite(
+        stackFrames[1]
+      );
+      return {
+        file: frame.getFileName(),
+        line: frame.getLineNumber(),
+        column: frame.getColumnNumber(),
+      };
+    };
+    Error.stackTraceLimit = 2;
+    const obj: { stack: Location } = {} as any;
+    Error.captureStackTrace(obj);
+    const location = obj.stack;
+    Error.stackTraceLimit = dstackTraceLimit;
+    Error.prepareStackTrace = _prepareStackTrace;
+    return func(location, ...args);
+  };
 }
