@@ -139,5 +139,7 @@ it('location info on execution', () => {
   const checkLoc = wrapFnWithLocation(location => {
     return location;
   });
+  // line no and column no will not match as we are using
+  // ts-jest preset to transpile code.
   expect(checkLoc().file).toBe(__filename);
 });
