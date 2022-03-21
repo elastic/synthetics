@@ -85,18 +85,18 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
   /**
    * Generate code for an action.
    * @param actionInContext The action to create code for.
-   * @param ignoreStepDefaults When true, the function will not create steps between
-   * navigation events as it normally would.
+   * @param newStepOnNavigate Whether the function should create steps between
+   * navigation events.
    * @param customStepsOverride When true, the function will not throw an error if the
    * called while the generator is already recording a step.
    * @returns the strings generated for the action.
    */
   generateAction(
     actionInContext: ActionInContext,
-    ignoreStepDefaults = false,
+    newStepOnNavigate = true,
     customStepsOverride = false
   ) {
-    if (ignoreStepDefaults && this.insideStep && !customStepsOverride) {
+    if (!newStepOnNavigate && this.insideStep && !customStepsOverride) {
       throw Error(
         'Cannot ignore step defaults if generator is already recording a step'
       );
@@ -113,7 +113,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
 
     let formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
     // Check if it's a new step
-    const isNewStep = this.isNewStep(actionInContext) && !ignoreStepDefaults;
+    const isNewStep = this.isNewStep(actionInContext) && newStepOnNavigate;
     if (isNewStep) {
       if (this.insideStep) {
         formatter.add(this.generateStepEnd());
@@ -269,7 +269,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       );
 
       for (const action of step.actions) {
-        text.push(this.generateAction(action, true, true));
+        text.push(this.generateAction(action, false, true));
       }
 
       text.push(this.generateStepEnd());
