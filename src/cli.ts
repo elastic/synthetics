@@ -32,6 +32,7 @@ import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
+import { push } from './push';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -158,7 +159,7 @@ program
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
       runner.buildMonitors(options);
-      // TODO: Push logic will be implemented in follow up PR's
+      await push();
     } catch (e) {
       console.error(e);
       process.exit(1);
