@@ -36,13 +36,13 @@ import { Step } from './dsl';
 import { reporters } from './reporters';
 
 export type VoidCallback = () => void;
-export type Params = Record<string, any>;
-export type NetworkConditions = {
-  offline: boolean;
-  downloadThroughput: number;
-  uploadThroughput: number;
-  latency: number;
+export type Location = {
+  file: string;
+  line: number;
+  column: number;
 };
+
+export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
   params: Params;
@@ -50,6 +50,13 @@ export type HooksArgs = {
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
 export type Reporters = keyof typeof reporters;
+
+export type NetworkConditions = {
+  offline: boolean;
+  downloadThroughput: number;
+  uploadThroughput: number;
+  latency: number;
+};
 
 export type Driver = {
   browser: ChromiumBrowser;

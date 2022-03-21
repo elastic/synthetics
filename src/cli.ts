@@ -141,7 +141,7 @@ async function prepareSuites(inputs: string[]) {
     compilerOptions: {
       esModuleInterop: true,
       allowJs: true,
-      target: 'es2018',
+      target: 'es2020',
     },
   });
 

@@ -25,7 +25,8 @@
 
 import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
-import { VoidCallback, HooksCallback } from '../common_types';
+import { VoidCallback, HooksCallback, Location } from '../common_types';
+import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
 
 /**
@@ -39,23 +40,28 @@ if (!global[SYNTHETICS_RUNNER]) {
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
-export const journey = (
-  options: JourneyOptions | string,
-  callback: JourneyCallback
-) => {
-  log(`register journey: ${JSON.stringify(options)}`);
-  if (typeof options === 'string') {
-    options = { name: options, id: options };
+export const journey = wrapFnWithLocation(
+  (
+    location: Location,
+    options: JourneyOptions | string,
+    callback: JourneyCallback
+  ) => {
+    log(`register journey: ${JSON.stringify(options)}`);
+    if (typeof options === 'string') {
+      options = { name: options, id: options };
+    }
+    const j = new Journey(options, callback, location);
+    runner.addJourney(j);
+    return j;
   }
-  const j = new Journey(options, callback);
-  runner.addJourney(j);
-  return j;
-};
+);
 
-export const step = (name: string, callback: VoidCallback) => {
-  log(`register step: ${name}`);
-  return runner.currentJourney?.addStep(name, callback);
-};
+export const step = wrapFnWithLocation(
+  (location: Location, name: string, callback: VoidCallback) => {
+    log(`register step: ${name}`);
+    return runner.currentJourney?.addStep(name, callback, location);
+  }
+);
 
 export const beforeAll = (callback: HooksCallback) => {
   runner.addHook('beforeAll', callback);

@@ -25,16 +25,8 @@
 
 import { runner } from './core';
 import { RunOptions } from './core/runner';
-import sourceMapSupport from 'source-map-support';
 
 export async function run(options: RunOptions) {
-  /**
-   * Install source map support
-   */
-  sourceMapSupport.install({
-    environment: 'node',
-  });
-
   try {
     return await runner.run(options);
   } catch (e) {

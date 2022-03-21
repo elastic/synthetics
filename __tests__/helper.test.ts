@@ -33,6 +33,7 @@ import {
   rewriteErrorStack,
   findPWLogsIndexes,
   microSecsToSeconds,
+  wrapFnWithLocation,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -132,4 +133,13 @@ it('does not rewrite non playwright errors', () => {
   const indexes = findPWLogsIndexes(normalStack);
   const newNormalStack = rewriteErrorStack(normalStack, indexes);
   expect(normalStack).toStrictEqual(newNormalStack);
+});
+
+it('location info on execution', () => {
+  const checkLoc = wrapFnWithLocation(location => {
+    return location;
+  });
+  // line no and column no will not match as we are using
+  // ts-jest preset to transpile code.
+  expect(checkLoc().file).toBe(__filename);
 });
