@@ -252,7 +252,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
    * @param steps IR to use for code generation
    * @returns a list of the code strings outputted by the generator
    */
-  generateFromSteps(steps: Steps, filterEmptyLines = true): string[] {
+  generateFromSteps(steps: Steps, filterEmptyLines = true): string {
     const text = [];
     if (this.isSuite) {
       text.push(this.generateHeader());
@@ -277,7 +277,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     if (this.isSuite) {
       text.push(this.generateFooter());
     }
-    return text.filter(s => !!s || !filterEmptyLines);
+    return text.filter(s => !!s || !filterEmptyLines).join('\n');
   }
 }
 
