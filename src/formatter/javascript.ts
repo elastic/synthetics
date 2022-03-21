@@ -98,12 +98,9 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       return '';
     }
 
-    let formatter: JavaScriptFormatter;
-    if (this.insideStep) {
-      formatter = new JavaScriptFormatter(this.isSuite ? 4 : 2);
-    } else {
-      formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
-    }
+    const stepIndent = this.insideStep ? 2 : 0;
+    const offset = this.isSuite ? 2 + stepIndent : 0 + stepIndent;
+    const formatter = new JavaScriptFormatter(offset);
 
     const subject = actionInContext.isMainFrame
       ? pageAlias
@@ -192,29 +189,25 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return false;
   }
 
-  generateStepStart(name, offsetOverride = 0) {
+  generateStepStart(name) {
     this.insideStep = true;
-    const formatter = new JavaScriptFormatter(
-      this.isSuite ? offsetOverride + 2 : offsetOverride
-    );
+    const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
     formatter.add(`step(${quote(name)}, async () => {`);
     return formatter.format();
   }
 
-  generateStepEnd(offsetOverride = 0) {
+  generateStepEnd() {
     if (!this.insideStep) {
       return '';
     }
     this.insideStep = false;
-    const formatter = new JavaScriptFormatter(
-      this.isSuite ? offsetOverride + 2 : offsetOverride
-    );
+    const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
     formatter.add(`});`);
     return formatter.format();
   }
 
-  generateHeader(offsetOverride = 0) {
-    const formatter = new JavaScriptFormatter(offsetOverride);
+  generateHeader() {
+    const formatter = new JavaScriptFormatter(0);
     formatter.add(`
       const { journey, step, expect } = require('@elastic/synthetics');
 
