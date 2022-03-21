@@ -39,7 +39,7 @@ export type ActionInContext = {
   title?: string;
 };
 
-type Action = {
+export type Action = {
   name: string;
   selector?: string;
   url?: string;
@@ -52,9 +52,11 @@ type Action = {
   value?: string;
   isAssert?: boolean;
   command?: string;
+  files?: string[];
+  options?: string[];
 };
 
-type Signal = {
+export type Signal = {
   name: string;
   url?: string;
   isAsync?: boolean;
