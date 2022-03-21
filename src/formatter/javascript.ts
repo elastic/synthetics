@@ -279,43 +279,6 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     }
     return text.filter(s => !!s || !filterEmptyLines);
   }
-
-  /**
-   * Generates JavaScript code for the given list of actions.
-   * @param actions The actions to convert to code.
-   * @param overrideStepOrder When `true`, all passed actions will be nested in one step.
-   * Otherwise, the generator will insert multiple steps based on the action types.
-   * @returns string of JS code
-   */
-  generateText(actions: Array<ActionInContext>, overrideStepOrder = false) {
-    const text = [];
-    if (this.isSuite && !overrideStepOrder) {
-      text.push(this.generateHeader());
-    }
-    for (let i = 0; i < actions.length; i++) {
-      text.push(this.generateAction(actions[i], overrideStepOrder));
-      if (i === actions.length - 1 && !overrideStepOrder)
-        text.push(this.generateStepEnd());
-    }
-    if (this.isSuite && !overrideStepOrder) {
-      text.push(this.generateFooter());
-    }
-    if (overrideStepOrder) {
-      const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
-      if (this.isSuite) formatter.add(this.generateHeader());
-      formatter.add(
-        this.generateStepStart(
-          actions[0].title || actionTitle(actions[0].action)
-        )
-      );
-      text.filter(f => !!f).forEach(t => formatter.add(t));
-      formatter.add(this.generateStepEnd());
-      if (this.isSuite) formatter.add(this.generateFooter());
-
-      return formatter.format().trim();
-    }
-    return text.filter(t => Boolean(t)).join('\n');
-  }
 }
 
 // TODO: Replace once Playwright releases new version

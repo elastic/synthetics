@@ -24,7 +24,6 @@
  */
 import {
   SyntheticsGenerator,
-  ActionInContext,
   Step,
   Steps,
 } from '../../src/formatter/javascript';
@@ -166,43 +165,6 @@ const recorderStep: Step = {
 };
 
 describe('Synthetics JavaScript formatter', () => {
-  it('inline journeys', () => {
-    const formatter = new SyntheticsGenerator(false);
-    expect(formatter.generateText(recorderStep.actions)).toMatchSnapshot();
-  });
-
-  it('suite journeys', () => {
-    const formatter = new SyntheticsGenerator(true);
-    expect(formatter.generateText(recorderStep.actions)).toMatchSnapshot();
-  });
-
-  it('use modified title if available', async () => {
-    const formatter = new SyntheticsGenerator(false);
-    const actions: ActionInContext[] = [
-      {
-        ...recorderStep.actions[1],
-        title: 'Visiting profile',
-      },
-    ];
-    expect(formatter.generateText(actions)).toMatchSnapshot();
-  });
-
-  it('allows overriding default step structure', () => {
-    const generator = new SyntheticsGenerator(false);
-
-    expect(
-      generator.generateText(recorderStep.actions, true)
-    ).toMatchSnapshot();
-  });
-
-  it('allows overriding step structure for suites', () => {
-    const generator = new SyntheticsGenerator(true);
-
-    expect(
-      generator.generateText(recorderStep.actions, true)
-    ).toMatchSnapshot();
-  });
-
   it('accepts custom step organization', () => {
     const generator = new SyntheticsGenerator(true);
     const testSteps: Steps = [
