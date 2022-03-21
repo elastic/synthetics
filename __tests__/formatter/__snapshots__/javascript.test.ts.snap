@@ -1,41 +1,45 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Synthetics JavaScript formatter accepts custom step organization 1`] = `
-Array [
-  "const { journey, step, expect } = require('@elastic/synthetics');
+"const { journey, step, expect } = require('@elastic/synthetics');
 
-journey('Recorded journey', async ({ page, context }) => {",
-  "  step('Open new page', async () => {",
-  "    await page.goto('https://vigneshh.in/');",
-  "  });",
-  "  step('Assert text=Babel Minify isVisible', async () => {",
-  "    expect(await page.isVisible('text=Babel Minify')).toBeTruthy();",
-  "    expect(await page.isEditable('text=Babel Minify')).toBeTruthy();",
-  "  });",
-  "  step('Assert text=Babel Minify textContent', async () => {",
-  "    expect(await page.textContent('text=Babel Minify')).toMatch('Babel');",
-  "    const [page1] = await Promise.all([
+journey('Recorded journey', async ({ page, context }) => {
+  step('Open new page', async () => {
+    await page.goto('https://vigneshh.in/');
+  });
+  step('Assert text=Babel Minify isVisible', async () => {
+    expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
+    expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
+  });
+  step('Assert text=Babel Minify textContent', async () => {
+    expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
+    const [page1] = await Promise.all([
       page.waitForEvent('popup'),
       page.click('text=Babel Minify')
-    ]);",
-  "    await Promise.all([
+    ]);
+    await Promise.all([
       page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
       page1.click('a:has-text(\\"smoke\\")')
-    ]);",
-  "  });",
-  "  step('Close page', async () => {",
-  "    await page1.close();",
-  "  });",
-  "});",
-]
+    ]);
+  });
+  step('Close page', async () => {
+    await page1.close();
+  });
+});"
+`;
+
+exports[`Synthetics JavaScript formatter does not filter whitespace entries 1`] = `
+"step('test-name', async () => {
+  await page.goto('https://vigneshh.in/');
+  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
+  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
+});"
 `;
 
 exports[`Synthetics JavaScript formatter uses custom step names 1`] = `
-Array [
-  "step('test-name', async () => {",
-  "  await page.goto('https://vigneshh.in/');",
-  "  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();",
-  "  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();",
-  "});",
-]
+"step('test-name', async () => {
+  await page.goto('https://vigneshh.in/');
+  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
+  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
+});"
 `;

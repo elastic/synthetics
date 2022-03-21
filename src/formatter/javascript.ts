@@ -85,23 +85,10 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
   /**
    * Generate code for an action.
    * @param actionInContext The action to create code for.
-   * @param newStepOnNavigate Whether the function should create steps between
-   * navigation events.
-   * @param customStepsOverride When true, the function will not throw an error if the
-   * called while the generator is already recording a step.
    * @returns the strings generated for the action.
    */
-  generateAction(
-    actionInContext: ActionInContext,
-    newStepOnNavigate = true,
-    customStepsOverride = false
-  ) {
-    if (!newStepOnNavigate && this.insideStep && !customStepsOverride) {
-      throw Error(
-        'Cannot ignore step defaults if generator is already recording a step'
-      );
-    }
-    const { action, pageAlias, title } = actionInContext;
+  generateAction(actionInContext: ActionInContext) {
+    const { action, pageAlias } = actionInContext;
     if (action.name === 'openPage') {
       return '';
     }
@@ -111,16 +98,11 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       return '';
     }
 
-    let formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
-    // Check if it's a new step
-    const isNewStep = this.isNewStep(actionInContext) && newStepOnNavigate;
-    if (isNewStep) {
-      if (this.insideStep) {
-        formatter.add(this.generateStepEnd());
-      }
-      formatter.add(this.generateStepStart(title || actionTitle(action)));
-    } else {
+    let formatter: JavaScriptFormatter;
+    if (this.insideStep) {
       formatter = new JavaScriptFormatter(this.isSuite ? 4 : 2);
+    } else {
+      formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
     }
 
     const subject = actionInContext.isMainFrame
@@ -269,7 +251,8 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       );
 
       for (const action of step.actions) {
-        text.push(this.generateAction(action, false, true));
+        const actionText = this.generateAction(action);
+        if (actionText.length) text.push(actionText);
       }
 
       text.push(this.generateStepEnd());
