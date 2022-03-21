@@ -73,3 +73,4 @@ export type {
   Step,
   Steps,
 } from './formatter/javascript';
+export { actionTitle } from './formatter/javascript';

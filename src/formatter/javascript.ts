@@ -351,7 +351,12 @@ function formatObject(value, indent = '  ') {
   return String(value);
 }
 
-function actionTitle(action) {
+/**
+ * Generates an appropriate title string based on the action type/data.
+ * @param action Playwright action IR
+ * @returns title string
+ */
+export function actionTitle(action: Action) {
   switch (action.name) {
     case 'openPage':
       return `Open new page`;
