@@ -28,7 +28,7 @@ import { join } from 'path';
 import { rm } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
-import { reporters, Reporter } from '../reporters';
+import { reporters } from '../reporters';
 import {
   CACHE_PATH,
   monotonicTimeInSeconds,
@@ -44,35 +44,15 @@ import {
   Params,
   NetworkConditions,
   PluginOutput,
-  CliArgs,
   HooksArgs,
-  PlaywrightOptions,
   Driver,
   Screenshot,
+  RunOptions,
 } from '../common_types';
 import { PageMetrics, PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
-
-export type RunOptions = Omit<
-  CliArgs,
-  | 'debug'
-  | 'pattern'
-  | 'inline'
-  | 'require'
-  | 'reporter'
-  | 'richEvents'
-  | 'capability'
-  | 'sandbox'
-  | 'headless'
-  | 'throttling'
-> & {
-  environment?: string;
-  playwrightOptions?: PlaywrightOptions;
-  networkConditions?: NetworkConditions;
-  reporter?: CliArgs['reporter'] | Reporter;
-};
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;

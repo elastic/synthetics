@@ -23,34 +23,28 @@
  *
  */
 
-import { runner } from './core';
-import { RunOptions } from './common_types';
+import { CliArgs } from '../src/common_types';
+import { normalizeOptions } from '../src/options';
+import { join } from 'path';
 
-export async function run(options: RunOptions) {
-  return runner.run(options);
-}
-
-/**
- * Export all core module functions
- */
-export { beforeAll, afterAll, journey, step, before, after } from './core';
-export { expect } from './core/expect';
-/**
- * Export all the driver related types to be consumed
- * and used by suites
- */
-export type {
-  Page,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  CDPSession,
-} from 'playwright-chromium';
-
-/**
- * Export the types necessary to write custom reporters
- */
-export type { default as Runner } from './core/runner';
-export type { Reporter, ReporterOptions } from './reporters';
-
-export type { SyntheticsConfig } from './common_types';
-export type { ActionInContext, Action, Signal } from './formatter/javascript';
+describe('options', () => {
+  it('normalize', async () => {
+    const cliArgs: CliArgs = {
+      params: {
+        foo: 'bar',
+      },
+      headless: true,
+      sandbox: false,
+      screenshots: 'on',
+      dryRun: true,
+      match: 'check*',
+      pauseOnError: true,
+      config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
+    };
+    expect(normalizeOptions({})).toMatchObject({
+      environment: 'test',
+      params: {},
+    });
+    expect(normalizeOptions(cliArgs)).toMatchSnapshot();
+  });
+});

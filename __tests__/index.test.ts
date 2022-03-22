@@ -25,8 +25,6 @@
 
 import fs from 'fs';
 import { run, journey } from '../src/index';
-import { runner } from '../src/core';
-import { RunOptions } from '../src/core/runner';
 import { generateTempPath } from '../src/helpers';
 
 describe('Run', () => {
@@ -53,29 +51,5 @@ describe('Run', () => {
       { j1: { status: 'succeeded' }, j2: { status: 'succeeded' } },
       {},
     ]);
-  });
-
-  it('calls runner with proper options', async () => {
-    const runnerSpy = jest
-      .spyOn(runner, 'run')
-      .mockImplementation(() => Promise.resolve({}));
-
-    const options: RunOptions = {
-      environment: 'debug',
-      params: {
-        foo: 'bar',
-      },
-      screenshots: 'on',
-      filmstrips: false,
-      trace: false,
-      dryRun: true,
-      match: 'check*',
-      network: true,
-      pauseOnError: true,
-      quietExitCode: true,
-      reporter: 'json',
-    };
-    await run(options);
-    expect(runnerSpy.mock.calls[0][0]).toEqual(options);
   });
 });

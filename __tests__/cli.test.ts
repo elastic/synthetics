@@ -29,6 +29,16 @@ import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
 import { megabitsToBytes, DEFAULT_NETWORK_CONDITIONS } from '../src/helpers';
 
+const safeParse = (chunks: string[]) => {
+  return chunks.map(data => {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      throw `Error ${e} could not parse data '${data}'`;
+    }
+  });
+};
+
 describe('CLI', () => {
   let server: Server;
   let serverParams: { url: string };
@@ -144,9 +154,9 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(1);
   });
 
-  it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {
+  it('run suites and exit with 0 for Heartbeat', async () => {
     const cli = new CLIMock()
-      .args([join(FIXTURES_DIR, 'error.journey.ts'), '--quiet-exit-code'])
+      .args([join(FIXTURES_DIR, 'error.journey.ts'), '--rich-events'])
       .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(0);
@@ -178,23 +188,20 @@ describe('CLI', () => {
       .run();
     await cli.waitFor('journey/end');
 
-    const screenshotRef = cli
-      .buffer()
-      .map(data => JSON.parse(data))
-      .find(({ type }) => type === 'step/screenshot_ref');
+    const data = safeParse(cli.buffer());
+    const screenshotRef = data.find(
+      ({ type }) => type === 'step/screenshot_ref'
+    );
     expect(screenshotRef).toBeDefined();
 
-    const networkData = cli
-      .buffer()
-      .map(data => JSON.parse(data))
-      .find(({ type }) => type === 'journey/network_info');
+    const networkData = data.find(
+      ({ type }) => type === 'journey/network_info'
+    );
     expect(networkData).toBeDefined();
 
-    const traceData = cli
-      .buffer()
-      .map(data => JSON.parse(data))
-      .find(({ type }) => type === 'step/metrics');
+    const traceData = data.find(({ type }) => type === 'step/metrics');
     expect(traceData).toBeDefined();
+
     expect(await cli.exitCode).toBe(0);
   }, 30000);
 
@@ -226,13 +233,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const data = cli.buffer().map(data => {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        throw `Error ${e} could not parse data '${data}'`;
-      }
-    });
+    const data = safeParse(cli.buffer());
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );

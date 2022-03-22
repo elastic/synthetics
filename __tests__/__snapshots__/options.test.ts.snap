@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`options normalize 1`] = `
+Object {
+  "config": "/Users/vigneshh/elastic/synthetics/__tests__/fixtures/synthetics.config.ts",
+  "dryRun": true,
+  "environment": "test",
+  "headless": true,
+  "match": "check*",
+  "params": Object {
+    "foo": "bar",
+    "url": "non-dev",
+  },
+  "pauseOnError": true,
+  "playwrightOptions": Object {
+    "chromiumSandbox": false,
+    "defaultBrowserType": "chromium",
+    "deviceScaleFactor": 4.5,
+    "hasTouch": true,
+    "headless": true,
+    "ignoreHTTPSErrors": undefined,
+    "isMobile": true,
+    "userAgent": "Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4595.0 Mobile Safari/537.36",
+    "viewport": Object {
+      "height": 658,
+      "width": 320,
+    },
+  },
+  "sandbox": false,
+  "screenshots": "on",
+}
+`;

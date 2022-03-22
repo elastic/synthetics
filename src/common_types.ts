@@ -33,7 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
-import { reporters } from './reporters';
+import { Reporter, reporters } from './reporters';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -194,33 +194,51 @@ export type PluginOutput = {
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
 export type CliArgs = {
-  capability?: Array<string>;
   config?: string;
-  outfd?: number;
-  headless?: boolean;
-  screenshots?: ScreenshotOptions;
-  ssblocks?: boolean;
-  metrics?: boolean;
-  filmstrips?: boolean;
-  trace?: boolean;
-  dryRun?: boolean;
-  network?: boolean;
-  pauseOnError?: boolean;
-  quietExitCode?: boolean;
+  params?: Params;
   reporter?: Reporters;
-  wsEndpoint?: string;
-  sandbox?: boolean;
   pattern?: string;
-  inline: boolean;
+  inline?: boolean;
+  require?: Array<string>;
+  headless?: boolean;
+  sandbox?: boolean;
+  richEvents?: boolean;
+  capability?: Array<string>;
+  screenshots?: ScreenshotOptions;
+  dryRun?: boolean;
   match?: string;
   tags?: Array<string>;
-  require: Array<string>;
-  debug?: boolean;
+  outfd?: number;
+  wsEndpoint?: string;
+  pauseOnError?: boolean;
   ignoreHttpsErrors?: boolean;
-  params?: Params;
   throttling?: boolean | string;
-  playwrightOptions?: LaunchOptions & BrowserContextOptions;
-  richEvents?: boolean;
+  playwrightOptions?: PlaywrightOptions;
+};
+
+export type RunOptions = Omit<
+  CliArgs,
+  | 'config'
+  | 'pattern'
+  | 'inline'
+  | 'require'
+  | 'reporter'
+  | 'richEvents'
+  | 'capability'
+  | 'sandbox'
+  | 'headless'
+  | 'throttling'
+> & {
+  quietExitCode?: boolean;
+  metrics?: boolean;
+  ssblocks?: boolean;
+  network?: boolean;
+  trace?: boolean;
+  filmstrips?: boolean;
+  environment?: string;
+  playwrightOptions?: PlaywrightOptions;
+  networkConditions?: NetworkConditions;
+  reporter?: CliArgs['reporter'] | Reporter;
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
