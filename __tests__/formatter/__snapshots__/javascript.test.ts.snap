@@ -28,14 +28,6 @@ journey('Recorded journey', async ({ page, context }) => {
 });"
 `;
 
-exports[`Synthetics JavaScript formatter does not filter whitespace entries 1`] = `
-"step('test-name', async () => {
-  await page.goto('https://vigneshh.in/');
-  expect(await page.isVisible('text=Babel Minify')).toBeTruthy();
-  expect(await page.isEditable('text=Babel Minify')).toBeTruthy();
-});"
-`;
-
 exports[`Synthetics JavaScript formatter uses custom step names 1`] = `
 "step('test-name', async () => {
   await page.goto('https://vigneshh.in/');
