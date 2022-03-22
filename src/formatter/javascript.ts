@@ -28,6 +28,13 @@ import {
   JavaScriptFormatter,
 } from 'playwright-chromium/lib/server/supplements/recorder/javascript';
 
+export type Step = {
+  actions: ActionInContext[];
+  name?: string;
+};
+
+export type Steps = Step[];
+
 export type ActionInContext = {
   pageAlias: string;
   frameName?: string;
@@ -75,8 +82,13 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     this.previousContext = undefined;
   }
 
+  /**
+   * Generate code for an action.
+   * @param actionInContext The action to create code for.
+   * @returns the strings generated for the action.
+   */
   generateAction(actionInContext: ActionInContext) {
-    const { action, pageAlias, title } = actionInContext;
+    const { action, pageAlias } = actionInContext;
     if (action.name === 'openPage') {
       return '';
     }
@@ -86,17 +98,9 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
       return '';
     }
 
-    let formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
-    // Check if it's a new step
-    const isNewStep = this.isNewStep(actionInContext);
-    if (isNewStep) {
-      if (this.insideStep) {
-        formatter.add(this.generateStepEnd());
-      }
-      formatter.add(this.generateStepStart(title || actionTitle(action)));
-    } else {
-      formatter = new JavaScriptFormatter(this.isSuite ? 4 : 2);
-    }
+    const stepIndent = this.insideStep ? 2 : 0;
+    const offset = this.isSuite ? 2 + stepIndent : 0 + stepIndent;
+    const formatter = new JavaScriptFormatter(offset);
 
     const subject = actionInContext.isMainFrame
       ? pageAlias
@@ -187,7 +191,9 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
 
   generateStepStart(name) {
     this.insideStep = true;
-    return `step(${quote(name)}, async () => {`;
+    const formatter = new JavaScriptFormatter(this.isSuite ? 2 : 0);
+    formatter.add(`step(${quote(name)}, async () => {`);
+    return formatter.format();
   }
 
   generateStepEnd() {
@@ -213,19 +219,41 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return `});`;
   }
 
-  generateText(actions: Array<ActionInContext>) {
+  /**
+   * Generates JavaScript code from a custom set of steps and nested actions.
+   *
+   * This function makes no assumptions about where steps should be created,
+   * and instead follows the step definitions the caller has defined.
+   * @param steps IR to use for code generation
+   * @returns a list of the code strings outputted by the generator
+   */
+  generateFromSteps(steps: Steps): string {
     const text = [];
     if (this.isSuite) {
       text.push(this.generateHeader());
     }
-    for (let i = 0; i < actions.length; i++) {
-      text.push(this.generateAction(actions[i]));
-      if (i === actions.length - 1) text.push(this.generateStepEnd());
+    for (const step of steps) {
+      if (step.actions.length === 0)
+        throw Error('Cannot process an empty step');
+      text.push(
+        this.generateStepStart(
+          step.name ??
+            step.actions[0].title ??
+            actionTitle(step.actions[0].action)
+        )
+      );
+
+      for (const action of step.actions) {
+        const actionText = this.generateAction(action);
+        if (actionText.length) text.push(actionText);
+      }
+
+      text.push(this.generateStepEnd());
     }
     if (this.isSuite) {
       text.push(this.generateFooter());
     }
-    return text.filter(t => Boolean(t)).join('\n');
+    return text.filter(s => !!s).join('\n');
   }
 }
 
@@ -299,7 +327,12 @@ function formatObject(value, indent = '  ') {
   return String(value);
 }
 
-function actionTitle(action) {
+/**
+ * Generates an appropriate title string based on the action type/data.
+ * @param action Playwright action IR
+ * @returns title string
+ */
+export function actionTitle(action: Action) {
   switch (action.name) {
     case 'openPage':
       return `Open new page`;
@@ -328,5 +361,7 @@ function actionTitle(action) {
       );
     case 'select':
       return `Select ${action.options.join(', ')}`;
+    case 'assert':
+      return `Assert ${action.selector} ${action.command}`;
   }
 }
