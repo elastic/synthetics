@@ -45,6 +45,31 @@ describe('options', () => {
       environment: 'test',
       params: {},
     });
-    expect(normalizeOptions(cliArgs)).toMatchSnapshot();
+    expect(normalizeOptions(cliArgs)).toMatchObject({
+      dryRun: true,
+      environment: 'test',
+      match: 'check*',
+      params: {
+        foo: 'bar',
+        url: 'non-dev',
+      },
+      pauseOnError: true,
+      playwrightOptions: {
+        chromiumSandbox: false,
+        defaultBrowserType: 'chromium',
+        deviceScaleFactor: 4.5,
+        hasTouch: true,
+        headless: true,
+        ignoreHTTPSErrors: undefined,
+        isMobile: true,
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4595.0 Mobile Safari/537.36',
+        viewport: {
+          height: 658,
+          width: 320,
+        },
+      },
+      screenshots: 'on',
+    });
   });
 });
