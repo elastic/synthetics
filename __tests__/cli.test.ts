@@ -154,9 +154,9 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(1);
   });
 
-  it('run suites and exit with 0 for Heartbeat', async () => {
+  it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {
     const cli = new CLIMock()
-      .args([join(FIXTURES_DIR, 'error.journey.ts'), '--rich-events'])
+      .args([join(FIXTURES_DIR, 'error.journey.ts'), '--quiet-exit-code'])
       .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(0);

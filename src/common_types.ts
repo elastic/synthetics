@@ -204,6 +204,7 @@ type BaseArgs = {
   pauseOnError?: boolean;
   ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
+  quietExitCode?: boolean;
 };
 
 export type CliArgs = BaseArgs & {
@@ -221,7 +222,6 @@ export type CliArgs = BaseArgs & {
 };
 
 export type RunOptions = BaseArgs & {
-  quietExitCode?: boolean;
   metrics?: boolean;
   ssblocks?: boolean;
   network?: boolean;
