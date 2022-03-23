@@ -193,17 +193,8 @@ export type PluginOutput = {
 
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
-export type CliArgs = {
-  config?: string;
+type BaseArgs = {
   params?: Params;
-  reporter?: Reporters;
-  pattern?: string;
-  inline?: boolean;
-  require?: Array<string>;
-  headless?: boolean;
-  sandbox?: boolean;
-  richEvents?: boolean;
-  capability?: Array<string>;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
   match?: string;
@@ -212,23 +203,24 @@ export type CliArgs = {
   wsEndpoint?: string;
   pauseOnError?: boolean;
   ignoreHttpsErrors?: boolean;
-  throttling?: boolean | string;
   playwrightOptions?: PlaywrightOptions;
 };
 
-export type RunOptions = Omit<
-  CliArgs,
-  | 'config'
-  | 'pattern'
-  | 'inline'
-  | 'require'
-  | 'reporter'
-  | 'richEvents'
-  | 'capability'
-  | 'sandbox'
-  | 'headless'
-  | 'throttling'
-> & {
+export type CliArgs = BaseArgs & {
+  config?: string;
+  reporter?: Reporters;
+  pattern?: string;
+  inline?: boolean;
+  require?: Array<string>;
+  headless?: boolean;
+  sandbox?: boolean;
+  richEvents?: boolean;
+  capability?: Array<string>;
+  ignoreHttpsErrors?: boolean;
+  throttling?: boolean | string;
+};
+
+export type RunOptions = BaseArgs & {
   quietExitCode?: boolean;
   metrics?: boolean;
   ssblocks?: boolean;
