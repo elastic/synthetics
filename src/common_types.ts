@@ -33,7 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Protocol } from 'playwright-chromium/types/protocol';
 import { Step } from './dsl';
-import { reporters } from './reporters';
+import { Reporter, reporters } from './reporters';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -193,34 +193,44 @@ export type PluginOutput = {
 
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
-export type CliArgs = {
-  capability?: Array<string>;
-  config?: string;
-  outfd?: number;
-  headless?: boolean;
+type BaseArgs = {
+  params?: Params;
   screenshots?: ScreenshotOptions;
-  ssblocks?: boolean;
-  metrics?: boolean;
-  filmstrips?: boolean;
-  trace?: boolean;
   dryRun?: boolean;
-  network?: boolean;
-  pauseOnError?: boolean;
-  quietExitCode?: boolean;
-  reporter?: Reporters;
-  wsEndpoint?: string;
-  sandbox?: boolean;
-  pattern?: string;
-  inline: boolean;
   match?: string;
   tags?: Array<string>;
-  require: Array<string>;
-  debug?: boolean;
+  outfd?: number;
+  wsEndpoint?: string;
+  pauseOnError?: boolean;
   ignoreHttpsErrors?: boolean;
-  params?: Params;
-  throttling?: boolean | string;
-  playwrightOptions?: LaunchOptions & BrowserContextOptions;
+  playwrightOptions?: PlaywrightOptions;
+  quietExitCode?: boolean;
+};
+
+export type CliArgs = BaseArgs & {
+  config?: string;
+  reporter?: Reporters;
+  pattern?: string;
+  inline?: boolean;
+  require?: Array<string>;
+  headless?: boolean;
+  sandbox?: boolean;
   richEvents?: boolean;
+  capability?: Array<string>;
+  ignoreHttpsErrors?: boolean;
+  throttling?: boolean | string;
+};
+
+export type RunOptions = BaseArgs & {
+  metrics?: boolean;
+  ssblocks?: boolean;
+  network?: boolean;
+  trace?: boolean;
+  filmstrips?: boolean;
+  environment?: string;
+  playwrightOptions?: PlaywrightOptions;
+  networkConditions?: NetworkConditions;
+  reporter?: CliArgs['reporter'] | Reporter;
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;

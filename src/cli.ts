@@ -25,200 +25,126 @@
  *
  */
 
-import { stdin, cwd } from 'process';
-import { resolve } from 'path';
-import merge from 'deepmerge';
-import { step, journey } from './core';
-import { log } from './core/logger';
-import program, { options } from './parse_args';
-import { expect } from './core/expect';
-import {
-  findPkgJsonByTraversing,
-  isDepInstalled,
-  isDirectory,
-  totalist,
-  parseNetworkConditions,
-} from './helpers';
+import { program, Option } from 'commander';
+import { CliArgs } from './common_types';
+import { reporters } from './reporters';
+import { DEFAULT_NETWORK_CONDITIONS_ARG } from './helpers';
+import { normalizeOptions } from './options';
+import { loadTestFiles } from './loader';
 import { run } from './';
-import { readConfig } from './config';
 
-const resolvedCwd = cwd();
-/**
- * Set debug based on DEBUG ENV and -d flags
- * namespace - synthetics
- */
-const namespace = 'synthetics';
-if (process.env.DEBUG === namespace || Boolean(options.debug)) {
-  process.env.DEBUG = '1';
-}
+/* eslint-disable-next-line @typescript-eslint/no-var-requires */
+const { name, version } = require('../package.json');
 
-const loadInlineScript = source => {
-  const scriptFn = new Function(
-    'step',
-    'page',
-    'context',
-    'browser',
-    'params',
-    'expect',
-    source
-  );
-  journey('inline', ({ page, context, browser, params }) => {
-    scriptFn.apply(null, [step, page, context, browser, params, expect]);
-  });
-};
-
-async function readStdin() {
-  const chunks = [];
-  stdin.resume();
-  stdin.setEncoding('utf-8');
-  for await (const chunk of stdin) {
-    chunks.push(chunk);
-  }
-  return chunks.join();
-}
-
-function requireSuites(suites: Iterable<string>) {
-  for (const suite of suites) {
-    require(suite);
-  }
-}
-
-/**
- * Handle both directory and files that are passed through TTY
- * and add them to suites
- */
-async function prepareSuites(inputs: string[]) {
-  const suites = new Set<string>();
-  const addSuite = absPath => {
-    log(`Processing file: ${absPath}`);
-    suites.add(require.resolve(absPath));
-  };
-  /**
-   * Match all files inside the directory with the
-   * .journey.{mjs|cjs|js|ts) extensions
-   */
-  const pattern = options.pattern
-    ? new RegExp(options.pattern, 'i')
-    : /.+\.journey\.([mc]js|[jt]s?)$/;
-  /**
-   * Ignore node_modules by default when running suites
-   */
-  const ignored = /node_modules/i;
-
-  for (const input of inputs) {
-    const absPath = resolve(resolvedCwd, input);
-    /**
-     * Validate for package.json file before running
-     * the suites
-     */
-    findPkgJsonByTraversing(absPath, resolvedCwd);
-    if (isDirectory(absPath)) {
-      await totalist(absPath, (rel, abs) => {
-        if (pattern.test(rel) && !ignored.test(rel)) {
-          addSuite(abs);
+program
+  .name(`npx ${name}`)
+  .usage('[options] [dir] [files] file')
+  .option(
+    '-c, --config <path>',
+    'configuration path (default: synthetics.config.js)'
+  )
+  .option(
+    '-p, --params <jsonstring>',
+    'JSON object that gets injected to all journeys',
+    JSON.parse
+  )
+  .addOption(
+    new Option('--reporter <value>', `output repoter format`).choices(
+      Object.keys(reporters)
+    )
+  )
+  .option(
+    '--pattern <pattern>',
+    'RegExp file patterns to search inside directory'
+  )
+  .option('--inline', 'Run inline journeys from heartbeat')
+  .option('-r, --require <modules...>', 'module(s) to preload')
+  .option('--no-headless', 'run browser in headful mode')
+  .option('--sandbox', 'enable chromium sandboxing', false)
+  .option('--rich-events', 'Mimics a heartbeat run')
+  .option(
+    '--capability <features...>',
+    'Enable capabilities through feature flags'
+  )
+  .addOption(
+    new Option('--screenshots [flag]', 'take screenshots at end of each step')
+      .choices(['on', 'off', 'only-on-failure'])
+      .default('on')
+  )
+  .option(
+    '--dry-run',
+    "don't actually execute anything, report only registered journeys"
+  )
+  .option(
+    '--match <name>',
+    'run only journeys with a name or tags that matches the glob'
+  )
+  .option(
+    '--tags <name...>',
+    'run only journeys with the given tag(s), or globs'
+  )
+  .option(
+    '--outfd <fd>',
+    'specify a file descriptor for logs. Default is stdout',
+    parseInt
+  )
+  .option(
+    '--ws-endpoint <endpoint>',
+    'Browser WebSocket endpoint to connect to'
+  )
+  .option(
+    '--pause-on-error',
+    'pause on error until a keypress is made in the console. Useful during development'
+  )
+  .option(
+    '--ignore-https-errors',
+    'ignores any HTTPS errors in sites being tested, including ones related to unrecognized certs or signatures. This can be insecure!'
+  )
+  .option(
+    '--quiet-exit-code',
+    'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
+  )
+  .option(
+    '--throttling <d/u/l>',
+    'List of options to throttle network conditions for download throughput (d) in megabits/second, upload throughput (u) in megabits/second and latency (l) in milliseconds.',
+    DEFAULT_NETWORK_CONDITIONS_ARG
+  )
+  .option('--no-throttling', 'Turns off default network throttling.')
+  .option(
+    '--playwright-options <jsonstring>',
+    'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file. Options defined via --playwright-options take precedence.',
+    JSON.parse
+  )
+  .version(version)
+  .description('Run synthetic tests')
+  .action(async (cliArgs: CliArgs) => {
+    try {
+      await loadTestFiles(cliArgs, program.args);
+      const options = normalizeOptions(cliArgs);
+      const results = await run(options);
+      /**
+       * Exit with error status if any journey fails
+       */
+      if (!options.quietExitCode) {
+        for (const result of Object.values(results)) {
+          if (result.status === 'failed') {
+            process.exit(1);
+          }
         }
-      });
-    } else {
-      addSuite(absPath);
+      }
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
     }
-  }
-  return suites.values();
-}
-
-(async () => {
-  /**
-   * Transform `.ts` files out of the box by invoking
-   * the `ts-node` via `transpile-only` mode that compiles
-   * TS files without doing any extensive type checks.
-   *
-   * We must register `ts-node` _before_ loading inline
-   * scripts too because otherwise we will not be able to
-   * require `.ts` configuration files.
-   */
-  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  require('ts-node').register({
-    transpileOnly: true,
-    compilerOptions: {
-      esModuleInterop: true,
-      allowJs: true,
-      target: 'es2020',
-    },
   });
 
-  if (options.inline) {
-    const source = await readStdin();
-    loadInlineScript(source);
-  } else {
-    /**
-     * Preload modules before running the suites
-     */
-    const modules = [].concat(options.require || []).filter(Boolean);
-    for (const name of modules) {
-      if (isDepInstalled(name)) {
-        require(name);
-      } else {
-        throw new Error(`cannot find module '${name}'`);
-      }
-    }
-    /**
-     * Handle piped files by reading the STDIN
-     * ex: ls example/suites/*.js | npx @elastic/synthetics
-     */
-    const files =
-      program.args.length > 0
-        ? program.args
-        : (await readStdin()).split('\n').filter(Boolean);
-    const suites = await prepareSuites(files);
-    requireSuites(suites);
-  }
-
-  /**
-   * Use the NODE_ENV variable to control the environment
-   */
-  const environment = process.env['NODE_ENV'] || 'development';
-  /**
-   * Validate and handle configs
-   */
-  const config =
-    options.config || !options.inline
-      ? readConfig(environment, options.config)
-      : {};
-  const params = merge(config.params, options.params || {});
-
-  /**
-   * Favor playwright options passed via cli to inline playwright options
-   */
-  const playwrightOptions = merge.all([
-    config.playwrightOptions || {},
-    options.playwrightOptions || {},
-    {
-      headless: options.headless,
-      chromiumSandbox: options.sandbox,
-      ignoreHTTPSErrors: options.ignoreHttpsErrors,
-    },
-  ]);
-
-  const results = await run({
-    params: Object.freeze(params),
-    networkConditions: options.throttling
-      ? parseNetworkConditions(options.throttling as string)
-      : undefined,
-    environment,
-    playwrightOptions,
-    ...options,
+program
+  .command('push')
+  .description(
+    'Push monitors to create new montors with Kibana monitor management UI'
+  )
+  .action(() => {
+    throw new Error('TODO: Implement me');
   });
 
-  if (!options.quietExitCode) {
-    /**
-     * Exit with error status if any journey fails
-     */
-    for (const result of Object.values(results)) {
-      if (result.status === 'failed') {
-        process.exit(1);
-      }
-    }
-  }
-})().catch(e => {
-  console.error(e);
-  process.exit(1);
-});
+program.parse(process.argv);

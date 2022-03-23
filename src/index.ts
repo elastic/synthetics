@@ -24,15 +24,10 @@
  */
 
 import { runner } from './core';
-import { RunOptions } from './core/runner';
+import { RunOptions } from './common_types';
 
 export async function run(options: RunOptions) {
-  try {
-    return await runner.run(options);
-  } catch (e) {
-    console.error('Failed to run the test', e);
-    process.exit(1);
-  }
+  return runner.run(options);
 }
 
 /**

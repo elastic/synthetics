@@ -25,9 +25,8 @@
 
 import { chromium, ChromiumBrowser, BrowserContext } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
-import { RunOptions } from './runner';
 import { log } from './logger';
-import { Driver } from '../common_types';
+import { Driver, RunOptions } from '../common_types';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
