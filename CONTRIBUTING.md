@@ -136,22 +136,11 @@ heartbeat locally
 
 ##### End to End tests
 
-We run end to end tests for the Synthetics agent itself, as well as the Elastic Synthetics integration. For more information, view the [README](./__tests__/e2e/README.md) in the end to end tests repo. 
+We run end to end tests for the Synthetics agent itself, as well as the Elastic Synthetics integration. For more information, view the [README](./__tests__/e2e/README.md) in the end to end tests repo.
 
 ### Releasing
 
 **NOTE: This project is currently in Beta phase**
-
-#### Manually
-
-If you have access to publish the package to NPM, the process is as follows:
-
-1. Be sure you have checked out the `main` branch and have pulled the latest changes
-1. Run the tests to make sure everything is green
-1. Bump the beta version by running `npm version prerelease --preid=beta`
-1. Push commits and tags upstream with `git push upstream main && git push upstream --tags`
-1. Publish to NPM using with `npm publish --tag beta`
-1. Mark the last published beta tags as latest using `npm dist-tag add @elastic/synthetics@<$VERSION> latest`
 
 #### CI based
 
