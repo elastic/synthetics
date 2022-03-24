@@ -64,14 +64,16 @@ async function selectAgentPolicy({ page }) {
   const hosts = await page.isVisible('text="Existing hosts"');
   if (hosts) {
     await page.click('text="Existing hosts"');
-    await page.selectOption('[data-test-subj="agentPolicySelect"]', { label: 'Elastic-Agent (elastic-package)' });
+    await page.click('[data-test-subj="agentPolicySelect"]');
+    await page.click('text="Elastic-Agent (elastic-package)"');
+    await page.waitForSelector('text="Elastic-Agent (elastic-package)"');
   }
+  await page.click('[data-test-subj="packagePolicyNameInput"]');
 }
 
 async function createIntegrationPolicyName({ page, policyName }) {
   await page.waitForSelector('[data-test-subj="packagePolicyNameInput"]', { timeout: 10000 });
   await page.fill('[data-test-subj="packagePolicyNameInput"]', policyName);
-  await selectAgentPolicy({ page });
 }
 
 async function confirmAndSavePolicy(page) {
@@ -107,6 +109,8 @@ journey('E2e test synthetics - http', async ({ page }) => {
   step('create an http monitor', async () => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
     await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
+    await selectAgentPolicy({ page });
+    await page.click('[data-test-subj="syntheticsUrlField"]');
     await confirmAndSavePolicy(page);
     console.info(`Monitor for ${journeyName} created successfully`)
   });
@@ -131,6 +135,7 @@ journey('E2e test synthetics - tcp', async ({ page }) => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
     await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'tcp');
     await page.fill('[data-test-subj="syntheticsTCPHostField"]', 'smtp.gmail.com:587');
+    await selectAgentPolicy({ page });
     await confirmAndSavePolicy(page);
     console.info(`Monitor for ${journeyName} created successfully`)
   });
@@ -179,6 +184,7 @@ journey('E2e test synthetics - browser', async ({ page }) => {
     await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
     await page.fill('[data-test-subj="syntheticsBrowserZipUrl"]', 'https://github.com/elastic/synthetics-demo/archive/refs/heads/main.zip');
     await page.fill('[data-test-subj="syntheticsBrowserZipUrlFolder"]', 'todos/synthetics-tests');
+    await selectAgentPolicy({ page });
     await confirmAndSavePolicy(page);
   });
 
@@ -208,6 +214,7 @@ if (semver.satisfies(stackVersion, '>=8.0.1')) {
           await page.goto('https://www.elastic.co');
         });
       `);
+      await selectAgentPolicy({ page });
       await confirmAndSavePolicy(page);
     });
 
