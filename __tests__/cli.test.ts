@@ -364,6 +364,8 @@ describe('CLI', () => {
         JSON.stringify({ url: tlsServer.TEST_PAGE }),
         '--reporter',
         'json',
+        '--screenshots',
+        'off',
       ];
     });
 
