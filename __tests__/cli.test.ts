@@ -187,6 +187,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
+    expect(await cli.exitCode).toBe(0);
 
     const data = safeParse(cli.buffer());
     const screenshotRef = data.find(
@@ -201,9 +202,7 @@ describe('CLI', () => {
 
     const traceData = data.find(({ type }) => type === 'step/metrics');
     expect(traceData).toBeDefined();
-
-    expect(await cli.exitCode).toBe(0);
-  }, 30000);
+  });
 
   it('override screenshots with `--rich-events` flag', async () => {
     const cli = new CLIMock()
@@ -215,10 +214,9 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const screenshots = cli
-      .buffer()
-      .map(data => JSON.parse(data))
-      .find(({ type }) => type === 'step/screenshot_ref');
+    const screenshots = safeParse(cli.buffer()).find(
+      ({ type }) => type === 'step/screenshot_ref'
+    );
     expect(screenshots).not.toBeDefined();
     expect(await cli.exitCode).toBe(0);
   });
