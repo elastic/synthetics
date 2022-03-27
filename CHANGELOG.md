@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.0-beta.23 (2021-03-23)
+
+### Features
+
+- Add location metadata for journeys and step #474
+- Export Action type from the Synthetics formatter #454
+- Enhance the synthetics formatter to control when the step begins and ends #457
+- Add ability to add subcommands to the cli in #475
+
 ## v1.0.0-beta.22 (2021-03-14)
 
 ### Bug fixes
