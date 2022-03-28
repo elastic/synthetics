@@ -114,17 +114,20 @@ describe('network', () => {
 
   it('timings for aborted requests', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
+    await driver.client.send('Network.setCacheDisabled', {
+      cacheDisabled: true,
+    });
     const network = new NetworkManager(driver);
     await network.start();
 
     const delayTime = 20;
-    server.route('/delay100', async (req, res) => {
+    server.route('/delay20', async (req, res) => {
       await delay(delayTime);
       res.destroy();
     });
     server.route('/index', async (_, res) => {
       res.setHeader('content-type', 'text/html');
-      res.end(`<script src=${server.PREFIX}/delay100 />`);
+      res.end(`<script src=${server.PREFIX}/delay20 />`);
     });
 
     await driver.page.goto(server.PREFIX + '/index');
@@ -133,7 +136,7 @@ describe('network', () => {
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
-      url: `${server.PREFIX}/delay100`,
+      url: `${server.PREFIX}/delay20`,
       response: {
         headers: {},
         mimeType: 'x-unknown',

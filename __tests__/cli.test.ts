@@ -187,6 +187,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
+    expect(await cli.exitCode).toBe(0);
 
     const data = safeParse(cli.buffer());
     const screenshotRef = data.find(
@@ -201,9 +202,7 @@ describe('CLI', () => {
 
     const traceData = data.find(({ type }) => type === 'step/metrics');
     expect(traceData).toBeDefined();
-
-    expect(await cli.exitCode).toBe(0);
-  }, 30000);
+  });
 
   it('override screenshots with `--rich-events` flag', async () => {
     const cli = new CLIMock()
@@ -215,10 +214,9 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const screenshots = cli
-      .buffer()
-      .map(data => JSON.parse(data))
-      .find(({ type }) => type === 'step/screenshot_ref');
+    const screenshots = safeParse(cli.buffer()).find(
+      ({ type }) => type === 'step/screenshot_ref'
+    );
     expect(screenshots).not.toBeDefined();
     expect(await cli.exitCode).toBe(0);
   });
@@ -366,6 +364,8 @@ describe('CLI', () => {
         JSON.stringify({ url: tlsServer.TEST_PAGE }),
         '--reporter',
         'json',
+        '--screenshots',
+        'off',
       ];
     });
 
@@ -559,7 +559,7 @@ class CLIMock {
       this.data = data.toString();
       // Uncomment the line below if the process is blocked and you need to see its output
       // console.log('CLIMock.stdout:', this.data);
-      this.chunks.push(...this.data.split('\n').filter(Boolean));
+      this.chunks.push(this.data);
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         this.process.stdout.off('data', dataListener);
         this.waitForPromise();
@@ -588,6 +588,9 @@ class CLIMock {
   }
 
   buffer() {
-    return this.chunks;
+    // Merge all the interleaved chunks from stdout and
+    // split them on new line as synthetics runner writes the
+    // JSON output in separate lines for every event.
+    return this.chunks.join('').split('\n').filter(Boolean);
   }
 }
