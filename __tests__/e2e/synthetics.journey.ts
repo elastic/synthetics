@@ -64,8 +64,12 @@ async function selectAgentPolicy({ page }) {
   const hosts = await page.isVisible('text="Existing hosts"');
   if (hosts) {
     await page.click('text="Existing hosts"');
-    await page.click('[data-test-subj="agentPolicySelect"]');
-    await page.click('text="Elastic-Agent (elastic-package)"');
+    if (semver.satisfies(stackVersion, '>=8.2.0')) {
+      await page.click('[data-test-subj="agentPolicySelect"]');
+      await page.click('text="Elastic-Agent (elastic-package)"');
+    } else {
+      await page.selectOption('[data-test-subj="agentPolicySelect"]', { label: 'Elastic-Agent (elastic-package)' });
+    }
     await page.waitForSelector('text="Elastic-Agent (elastic-package)"');
   }
   await page.click('[data-test-subj="packagePolicyNameInput"]');
