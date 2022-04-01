@@ -364,7 +364,6 @@ export default class JSONReporter extends BaseReporter {
       }) => {
         this.writeMetrics(journey, step, 'relative_trace', traces);
         this.writeMetrics(journey, step, 'experience', metrics);
-        console.log('SF', filmstrips);
         if (filmstrips) {
           // Write each filmstrip separately so that we don't get documents that are too large
           filmstrips.forEach((strip, index) => {

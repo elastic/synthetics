@@ -23,7 +23,7 @@
  *
  */
 
-import { Protocol } from 'playwright-chromium/types/protocol';
+import { Protocol } from 'playwright-core/types/protocol';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
@@ -87,6 +87,9 @@ export class NetworkManager {
           type: event.type,
           response,
           encodedDataLength: response.encodedDataLength,
+          // TODO: New required field 
+          // from upgrade playwright 1.14.0->1.17.0, this seems to be the right value
+          hasExtraInfo: true, 
         });
         this._onResponseReceived(data);
         this._onLoadingFinished(data);

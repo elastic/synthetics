@@ -26,7 +26,7 @@
 import {
   JavaScriptLanguageGenerator,
   JavaScriptFormatter,
-} from 'playwright-chromium/lib/server/supplements/recorder/javascript';
+} from './supplements/recorder/javascript';
 
 export type Step = {
   actions: ActionInContext[];
@@ -87,7 +87,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
    * @param actionInContext The action to create code for.
    * @returns the strings generated for the action.
    */
-  generateAction(actionInContext: ActionInContext) {
+  override generateAction(actionInContext: ActionInContext) {
     const { action, pageAlias } = actionInContext;
     if (action.name === 'openPage') {
       return '';
@@ -206,7 +206,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return formatter.format();
   }
 
-  generateHeader() {
+  override generateHeader() {
     const formatter = new JavaScriptFormatter(0);
     formatter.add(`
       const { journey, step, expect } = require('@elastic/synthetics');
@@ -215,7 +215,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     return formatter.format();
   }
 
-  generateFooter() {
+  override generateFooter() {
     return `});`;
   }
 

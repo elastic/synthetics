@@ -315,6 +315,7 @@ export default class Runner extends EventEmitter {
   }
 
   registerJourney(journey: Journey, context: JourneyContext) {
+    process.exit(222);
     this.currentJourney = journey;
     const timestamp = getTimestamp();
     const { params } = context;

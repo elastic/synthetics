@@ -5,7 +5,7 @@
   "scripts": {},
   "license": "MIT",
   "dependencies": {
-    "@elastic/synthetics": "^1.0.0-beta"
+    "@elastic/synthetics": "=1.0.0-beta.24"
   },
   "devDependencies": {
     "node-static": "^0.7.11"

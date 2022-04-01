@@ -44,7 +44,7 @@ export type {
   ChromiumBrowser,
   ChromiumBrowserContext,
   CDPSession,
-} from 'playwright-chromium';
+} from 'playwright-core';
 
 /**
  * Export the types necessary to write custom reporters
