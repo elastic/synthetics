@@ -15,11 +15,11 @@ journey('Recorded journey', async ({ page, context }) => {
     expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
     const [page1] = await Promise.all([
       page.waitForEvent('popup'),
-      page.click('text=Babel Minify')
+      page.locator('text=Babel Minify').click()
     ]);
     await Promise.all([
       page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
-      page1.click('a:has-text(\\"smoke\\")')
+      page1.locator('a:has-text(\\"smoke\\")').click()
     ]);
   });
   step('Close page', async () => {

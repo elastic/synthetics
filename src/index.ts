@@ -59,5 +59,5 @@ export type {
   Signal,
   Step,
   Steps,
+  actionTitle,
 } from './formatter/javascript';
-export { actionTitle } from './formatter/javascript';

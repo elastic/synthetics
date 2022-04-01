@@ -26,7 +26,7 @@
 import {
   JavaScriptLanguageGenerator,
   JavaScriptFormatter,
-} from 'playwright-chromium/lib/server/supplements/recorder/javascript';
+} from 'playwright-core/lib/server/supplements/recorder/javascript';
 
 export type Step = {
   actions: ActionInContext[];
