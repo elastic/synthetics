@@ -44,6 +44,11 @@ describe('tracing', () => {
     await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
     const { filmstrips, traces } = await tracer.stop();
     await Gatherer.stop();
+    /**
+     * Sometimes if the test gets completed before the sampling frequency is hit,
+     * chrome tracer would not have time to capture filmstripms, We account for
+     * these scenarios by checking them conditionally
+     */
     if (filmstrips.length > 0) {
       expect(filmstrips[0]).toMatchObject({
         blob: expect.any(String),
