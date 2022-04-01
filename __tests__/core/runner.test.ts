@@ -666,7 +666,6 @@ describe('runner', () => {
     await runner.run({
       reporter: 'json',
       screenshots: 'on',
-      filmstrips: true,
       network: true,
       wsEndpoint,
       outfd: fs.openSync(dest, 'w'),
@@ -683,7 +682,6 @@ describe('runner', () => {
       'journey/start',
       'journey/network_info',
       'step/screenshot',
-      'step/filmstrips',
       'step/end',
       'journey/end',
     ];
