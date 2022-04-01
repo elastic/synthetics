@@ -656,7 +656,9 @@ describe('runner', () => {
     });
   });
 
-  it('run - timestamps must be in order', async () => {
+  // Skipped for now since filmstrips sometimes don't show up
+  // It appears they aren't part of the trace events sometimes during test runs
+  it.skip('run - timestamps must be in order', async () => {
     const j1 = journey('journey1', async ({ page }) => {
       step('step1', async () => {
         await page.goto(server.TEST_PAGE);
