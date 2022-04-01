@@ -31,7 +31,7 @@ import {
   ChromiumBrowserContext,
   Page,
 } from 'playwright-chromium';
-import { Protocol } from 'playwright-chromium/types/protocol';
+import { Protocol } from 'playwright-core/types/protocol';
 import { Step } from './dsl';
 import { Reporter, reporters } from './reporters';
 
