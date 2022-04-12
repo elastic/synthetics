@@ -271,10 +271,11 @@ describe('network', () => {
     );
     expect(resources.length).toBe(2);
     resources.forEach(res => {
-      expect(res.timings.wait).toBeGreaterThan(delayTime);
+      const timing = res.timings;
+      expect(timing.wait).toBeGreaterThan(delayTime);
+      expect(timing.total).toBeGreaterThan(timing.wait + timing.receive);
+      // Check with absolute value to make sure we are not crossing absurd values
+      expect(timing.total).toBeLessThan(50);
     });
-    expect(resources[1].timings.total).toBeLessThanOrEqual(
-      resources[0].timings.total
-    );
   });
 });
