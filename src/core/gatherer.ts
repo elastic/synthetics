@@ -27,7 +27,6 @@ import { chromium, ChromiumBrowser, BrowserContext } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
 import { Driver, RunOptions } from '../common_types';
-import { noop } from '../helpers';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -86,11 +85,14 @@ export class Gatherer {
           .then(client =>
             client.send('Network.emulateNetworkConditions', networkConditions)
           );
-        // Guard aganist pages that gets closed before the emulation kicks in
+        /**
+         * Guard against pages that gets closed before the emulation kicks to capture
+         * unhandled rejections from accessing the CDP session of closed page
+         */
         Promise.race([
           new Promise<void>(resolve => page.on('close', () => resolve())),
           emulatePromise,
-        ]).then(noop);
+        ]);
       });
     }
   }
