@@ -2,7 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-## v1.0.0-beta.23 (2021-03-23)
+## v1.0.0-beta.25 (2022-04-12)
+
+### Features
+
+- Use network events emitted from playwright browser context, This would allow
+  the synthetics agent to capture network requests that are part of popups and
+  other page objects #488
+
+## v1.0.0-beta.24 (2021-04-01)
+
+### Bug fixes
+
+- Update the playwright to version `1.20.1` to address issues related
+  to core dumps #485
+
+### Breaking Changes
+
+- With the playwright update to version `1.20.1`, Synthetics agent offically
+  dropped support for CentOS and Heartbeat images will be distributed
+  based on ubuntu 20.04 which is supported by Playwright as well.
+
+## v1.0.0-beta.23 (2022-03-23)
 
 ### Features
 
@@ -11,7 +32,7 @@ All notable changes to this project will be documented in this file.
 - Enhance the synthetics formatter to control when the step begins and ends #457
 - Add ability to add subcommands to the cli in #475
 
-## v1.0.0-beta.22 (2021-03-14)
+## v1.0.0-beta.22 (2022-03-14)
 
 ### Bug fixes
 
@@ -19,20 +40,20 @@ All notable changes to this project will be documented in this file.
 - Reduce the network information data by writing only the
   necessary fields #466
 
-## v1.0.0-beta.21 (2021-02-22)
+## v1.0.0-beta.21 (2022-02-22)
 
 ### Bug fixes
 
 - Do not override User agent string when doing device emulation #462
 
-## v1.0.0-beta.20 (2021-02-16)
+## v1.0.0-beta.20 (2022-02-16)
 
 ### Bug fixes
 
 - Capture syntax errors inside inline journeys without throwing
   promise rejection errors #450
 
-## v1.0.0-beta.19 (2021-01-31)
+## v1.0.0-beta.19 (2022-01-31)
 
 ### Bug fixes
 
@@ -41,7 +62,7 @@ All notable changes to this project will be documented in this file.
 - Debug logs should be logged to stdout instead of using the reporter
   file descriptor #423
 
-## v1.0.0-beta.18 (2021-01-13)
+## v1.0.0-beta.18 (2022-01-13)
 
 ### Bug fixes
 
