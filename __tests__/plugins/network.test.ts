@@ -150,7 +150,6 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await driver.page.waitForLoadState();
     await Gatherer.stop();
     const netinfo = await network.stop();
     expect(netinfo.length).toBe(2);
@@ -237,5 +236,45 @@ describe('network', () => {
         url: `${server.PREFIX}/popup.html`,
       },
     ]);
+  });
+
+  it('cached resource timings', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    const delayTime = 5;
+    server.route('/test.js', async (req, res) => {
+      res.writeHead(200, {
+        'content-type': 'application/javascript',
+        'cache-control': 'public; max-age=600',
+      });
+      await delay(delayTime);
+      res.end('var a=10');
+    });
+    server.route('/index', async (_, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end(`<script src=${server.PREFIX}/test.js />`);
+    });
+
+    await driver.page.goto(server.PREFIX + '/index', {
+      waitUntil: 'networkidle',
+    });
+    await driver.page.reload();
+    await Gatherer.stop();
+    const netinfo = await network.stop();
+    const resources = netinfo.filter(req =>
+      req.url.includes(`${server.PREFIX}/test.js`)
+    );
+    expect(resources.length).toBe(2);
+    resources.forEach(res => {
+      expect(res.timings.wait).toBeGreaterThan(delayTime);
+    });
+    expect(resources[1].timings.total).toBeLessThanOrEqual(
+      resources[0].timings.total
+    );
   });
 });
