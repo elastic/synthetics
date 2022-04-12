@@ -178,7 +178,7 @@ export class NetworkManager {
     this._addBarrier(
       page,
       response.securityDetails().then(details => {
-        networkEntry.response.securityDetails = details;
+        if (details) networkEntry.response.securityDetails = details;
       })
     );
     this._addBarrier(
