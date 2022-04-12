@@ -27,6 +27,7 @@ import { chromium, ChromiumBrowser, BrowserContext } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
 import { Driver, RunOptions } from '../common_types';
+import { noop } from '../helpers';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -57,7 +58,7 @@ export class Gatherer {
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
-    await Gatherer.setNetworkConditions(context, networkConditions);
+    Gatherer.setNetworkConditions(context, networkConditions);
 
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
@@ -73,18 +74,23 @@ export class Gatherer {
     return userAgent + syntheticsIdentifier;
   }
 
-  static async setNetworkConditions(
+  static setNetworkConditions(
     context: BrowserContext,
     networkConditions: RunOptions['networkConditions']
   ) {
     if (networkConditions) {
-      context.on('page', async page => {
+      context.on('page', page => {
         const context = page.context();
-        const client = await context.newCDPSession(page);
-        await client.send(
-          'Network.emulateNetworkConditions',
-          networkConditions
-        );
+        const emulatePromise = context
+          .newCDPSession(page)
+          .then(client =>
+            client.send('Network.emulateNetworkConditions', networkConditions)
+          );
+        // Guard aganist pages that gets closed before the emulation kicks in
+        Promise.race([
+          new Promise<void>(resolve => page.on('close', () => resolve())),
+          emulatePromise,
+        ]).then(noop);
       });
     }
   }

@@ -177,7 +177,6 @@ export function formatNetworkFields(network: NetworkInfo) {
       original: request.headers?.['User-Agent'],
     },
     http: {
-      version: formatVersion(response?.protocol),
       request,
       response,
     },

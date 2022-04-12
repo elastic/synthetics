@@ -332,7 +332,7 @@ export default class Runner extends EventEmitter {
   ) {
     const end = monotonicTimeInSeconds();
     const { pluginManager, start, status, error } = result;
-    const pluginOutput = pluginManager.output();
+    const pluginOutput = await pluginManager.output();
     this.emit('journey:end', {
       journey,
       status,

@@ -102,11 +102,11 @@ export class PluginManager {
     (this.get('network') as NetworkManager)._currentStep = step;
   }
 
-  output() {
+  async output() {
     const data: PluginOutput = {};
     for (const [, plugin] of this.plugins) {
       if (plugin instanceof NetworkManager) {
-        data.networkinfo = plugin.stop();
+        data.networkinfo = await plugin.stop();
       } else if (plugin instanceof BrowserConsole) {
         data.browserconsole = plugin.stop();
       }
