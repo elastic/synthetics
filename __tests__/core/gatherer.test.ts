@@ -205,14 +205,31 @@ describe('Gatherer', () => {
         page.click('a'),
       ]);
       await page1.waitForLoadState();
-
       // @ts-ignore
       // Experimental browser API https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/downlink
       const downlink = await page1.evaluate(
         () => (navigator['connection'] as any).downlink
       );
-
       expect(3.5 > downlink && downlink > 2.5).toBe(true);
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('dont throw for closed popups before load', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        networkConditions,
+      });
+      const { page, context } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+      );
+      const [page1] = await Promise.all([
+        context.waitForEvent('page'),
+        page.click('a'),
+      ]);
+      await page1.close();
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });

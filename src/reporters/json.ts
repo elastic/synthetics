@@ -128,23 +128,8 @@ function getMetadata() {
   };
 }
 
-function formatVersion(protocol: string | undefined) {
-  if (!protocol) {
-    return;
-  }
-  if (protocol === 'h2') {
-    return 2;
-  } else if (protocol === 'http/1.1') {
-    return 1.1;
-  } else if (protocol === 'http/1.0') {
-    return 1.0;
-  } else if (protocol.startsWith('h3')) {
-    return 3;
-  }
-}
-
 function formatTLS(tls: SecurityDetails) {
-  if (!tls) {
+  if (!tls || !tls.protocol) {
     return;
   }
   const [name, version] = tls.protocol.toLowerCase().split(' ');
@@ -177,7 +162,6 @@ export function formatNetworkFields(network: NetworkInfo) {
       original: request.headers?.['User-Agent'],
     },
     http: {
-      version: formatVersion(response?.protocol),
       request,
       response,
     },

@@ -31,7 +31,6 @@ import {
   ChromiumBrowserContext,
   Page,
 } from 'playwright-chromium';
-import { Protocol } from 'playwright-core/types/protocol';
 import { Step } from './dsl';
 import { Reporter, reporters } from './reporters';
 
@@ -130,11 +129,9 @@ export type Request = {
 
 export type Response = {
   url?: string;
-  protocol?: string;
   status: number;
   statusText?: string;
-  mimeType: string;
-  httpVersion?: string;
+  mimeType?: string;
   headers: Record<string, string>;
   // Total size in bytes of the response (body and headers)
   bytes?: number;
@@ -148,7 +145,6 @@ export type Response = {
   remoteIPAddress?: string;
   remotePort?: number;
   fromServiceWorker?: boolean;
-  timing?: Protocol.Network.ResourceTiming;
 };
 
 export type NetworkInfo = {
@@ -156,19 +152,17 @@ export type NetworkInfo = {
   browser: BrowserInfo;
   type: string;
   request: Request;
-  response?: Response;
+  response: Response;
   isNavigationRequest: boolean;
   requestSentTime: number;
   loadEndTime: number;
   responseReceivedTime: number;
   resourceSize: number;
   transferSize: number;
-  timings?: {
+  timings: {
     blocked: number;
-    queueing: number;
     dns: number;
     ssl: number;
-    proxy: number;
     connect: number;
     send: number;
     wait: number;
