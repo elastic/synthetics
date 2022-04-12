@@ -1,6 +1,6 @@
 {
   "name": "@elastic/synthetics",
-  "version": "1.0.0-beta.24",
+  "version": "1.0.0-beta.25",
   "description": "Elastic synthetic monitoring agent",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
