@@ -255,6 +255,7 @@ export type StepResult = {
 /** Reporter and Runner contract */
 export type StartEvent = {
   numJourneys: number;
+  networkConditions?: NetworkConditions;
 };
 
 export type JourneyStartResult = {

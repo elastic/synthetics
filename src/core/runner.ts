@@ -364,7 +364,10 @@ export default class Runner {
 
   async init(options: RunOptions) {
     this.setReporter(options);
-    this.#reporter.onStart?.({ numJourneys: this.journeys.length });
+    this.#reporter.onStart?.({
+      numJourneys: this.journeys.length,
+      networkConditions: options.networkConditions,
+    });
     /**
      * Set up the directory for caching screenshots
      */
