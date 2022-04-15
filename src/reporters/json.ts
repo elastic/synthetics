@@ -47,8 +47,12 @@ import {
   PerfMetrics,
   Params,
   Screenshot,
+  StartEvent,
+  JourneyStartResult,
+  StepEndResult,
+  JourneyEndResult,
+  PageMetrics,
 } from '../common_types';
-import { PageMetrics } from '../plugins';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -296,179 +300,178 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
-  override _registerListeners() {
+  onStart(params: StartEvent) {
     /**
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
      */
-    this.runner.on('start', ({ numJourneys, networkConditions }) => {
-      this.writeJSON({
-        type: 'synthetics/metadata',
-        root_fields: {
-          num_journeys: numJourneys,
+    this.writeJSON({
+      type: 'synthetics/metadata',
+      root_fields: {
+        num_journeys: params.numJourneys,
+      },
+    });
+  }
+
+  onJourneyRegister(journey: Journey): void {
+    this.writeJSON({
+      type: 'journey/register',
+      journey,
+    });
+  }
+
+  override onJourneyStart(
+    journey: Journey,
+    { timestamp, params }: JourneyStartResult
+  ) {
+    this.writeJSON({
+      type: 'journey/start',
+      journey,
+      timestamp,
+      payload: { params, source: journey.callback.toString() },
+    });
+  }
+
+  override onStepEnd(
+    journey: Journey,
+    step: Step,
+    {
+      start,
+      end,
+      error,
+      url,
+      status,
+      pagemetrics,
+      traces,
+      metrics,
+      filmstrips,
+    }: StepEndResult
+  ) {
+    this.writeMetrics(journey, step, 'relative_trace', traces);
+    this.writeMetrics(journey, step, 'experience', metrics);
+    if (filmstrips) {
+      // Write each filmstrip separately so that we don't get documents that are too large
+      filmstrips.forEach((strip, index) => {
+        this.writeJSON({
+          type: 'step/filmstrips',
+          journey,
+          step,
+          payload: { index },
+          root_fields: {
+            browser: { relative_trace: { start: strip.start } },
+          },
+          blob: strip.blob,
+          blob_mime: strip.mime,
+        });
+      });
+    }
+
+    this.writeJSON({
+      type: 'step/end',
+      journey,
+      step: {
+        ...step,
+        duration: {
+          us: getDurationInUs(end - start),
         },
-        payload: networkConditions
-          ? {
-              network_conditions: networkConditions,
-            }
-          : undefined,
-      });
-    });
-
-    this.runner.on('journey:register', ({ journey }) => {
-      this.writeJSON({
-        type: 'journey/register',
-        journey,
-      });
-    });
-
-    this.runner.on('journey:start', ({ journey, timestamp, params }) => {
-      this.writeJSON({
-        type: 'journey/start',
-        journey,
-        timestamp,
-        payload: { params, source: journey.callback.toString() },
-      });
-    });
-
-    this.runner.on(
-      'step:end',
-      ({
-        journey,
-        step,
-        start,
-        end,
-        error,
+      },
+      url,
+      error,
+      payload: {
+        source: step.callback.toString(),
         url,
         status,
         pagemetrics,
-        traces,
-        metrics,
-        filmstrips,
-      }) => {
-        this.writeMetrics(journey, step, 'relative_trace', traces);
-        this.writeMetrics(journey, step, 'experience', metrics);
-        if (filmstrips) {
-          // Write each filmstrip separately so that we don't get documents that are too large
-          filmstrips.forEach((strip, index) => {
-            this.writeJSON({
-              type: 'step/filmstrips',
-              journey,
-              step,
-              payload: { index },
-              root_fields: {
-                browser: { relative_trace: { start: strip.start } },
-              },
-              blob: strip.blob,
-              blob_mime: strip.mime,
-            });
-          });
-        }
-        this.writeJSON({
-          type: 'step/end',
-          journey,
-          step: {
-            ...step,
-            duration: {
-              us: getDurationInUs(end - start),
-            },
-          },
-          url,
-          error,
-          payload: {
-            source: step.callback.toString(),
-            url,
-            status,
-            pagemetrics,
-          },
-        });
-      }
-    );
+      },
+    });
+  }
 
-    this.runner.on(
-      'journey:end',
-      async ({
-        journey,
-        timestamp,
-        start,
-        end,
-        networkinfo,
-        browserconsole,
-        status,
-        error,
-        options,
-      }) => {
-        const { ssblocks, screenshots } = options;
-        const writeScreenshots =
-          screenshots === 'on' ||
-          (screenshots === 'only-on-failure' && status === 'failed');
-        if (writeScreenshots) {
-          await gatherScreenshots(
-            join(CACHE_PATH, 'screenshots'),
-            async screenshot => {
-              const { data, timestamp, step } = screenshot;
-              if (!data) {
-                return;
-              }
-              if (ssblocks) {
-                await this.writeScreenshotBlocks(journey, screenshot);
-              } else {
-                this.writeJSON({
-                  type: 'step/screenshot',
-                  timestamp,
-                  journey,
-                  step,
-                  blob: data,
-                  blob_mime: 'image/jpeg',
-                });
-              }
-            }
-          );
-        }
-
-        if (networkinfo) {
-          networkinfo.forEach(ni => {
-            const { ecs, payload } = formatNetworkFields(ni);
+  override async onJourneyEnd(
+    journey: Journey,
+    {
+      timestamp,
+      start,
+      end,
+      networkinfo,
+      browserconsole,
+      status,
+      error,
+      options,
+    }: JourneyEndResult
+  ) {
+    const { ssblocks, screenshots } = options;
+    const writeScreenshots =
+      screenshots === 'on' ||
+      (screenshots === 'only-on-failure' && status === 'failed');
+    if (writeScreenshots) {
+      await gatherScreenshots(
+        join(CACHE_PATH, 'screenshots'),
+        async screenshot => {
+          const { data, timestamp, step } = screenshot;
+          if (!data) {
+            return;
+          }
+          if (ssblocks) {
+            await this.writeScreenshotBlocks(journey, screenshot);
+          } else {
             this.writeJSON({
-              type: 'journey/network_info',
-              journey,
-              timestamp: ni.timestamp,
-              root_fields: snakeCaseKeys(ecs),
-              step: ni.step,
-              payload: snakeCaseKeys(payload),
-            });
-          });
-        }
-        if (browserconsole) {
-          browserconsole.forEach(({ timestamp, text, type, step, error }) => {
-            this.writeJSON({
-              type: 'journey/browserconsole',
-              journey,
+              type: 'step/screenshot',
               timestamp,
+              journey,
               step,
-              error,
-              payload: {
-                text,
-                type,
-              } as Payload,
+              blob: data,
+              blob_mime: 'image/jpeg',
             });
-          });
+          }
         }
+      );
+    }
 
+    if (networkinfo) {
+      networkinfo.forEach(ni => {
+        const { ecs, payload } = formatNetworkFields(ni);
         this.writeJSON({
-          type: 'journey/end',
+          type: 'journey/network_info',
+          journey,
+          timestamp: ni.timestamp,
+          root_fields: snakeCaseKeys(ecs),
+          step: ni.step,
+          payload: snakeCaseKeys(payload),
+        });
+      });
+    }
+
+    if (browserconsole) {
+      browserconsole.forEach(({ timestamp, text, type, step, error }) => {
+        this.writeJSON({
+          type: 'journey/browserconsole',
           journey,
           timestamp,
+          step,
           error,
           payload: {
-            start,
-            end,
-            status,
-          },
+            text,
+            type,
+          } as Payload,
         });
-        process.nextTick(() => this.runner.emit('journey:end:reported', {}));
-      }
-    );
+      });
+    }
+
+    this.writeJSON({
+      type: 'journey/end',
+      journey,
+      timestamp,
+      error,
+      payload: {
+        start,
+        end,
+        status,
+      },
+    });
+  }
+
+  override onEnd() {
+    this.stream.flushSync();
   }
 
   async writeScreenshotBlocks(journey: Journey, screenshot: Screenshot) {

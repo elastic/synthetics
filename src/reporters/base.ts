@@ -25,7 +25,6 @@
 
 import SonicBoom from 'sonic-boom';
 import { green, red, cyan } from 'kleur/colors';
-import Runner from '../core/runner';
 import {
   symbols,
   indent,
@@ -33,7 +32,13 @@ import {
   findPWLogsIndexes,
   rewriteErrorStack,
 } from '../helpers';
-import { ReporterOptions } from './reporter';
+import { Reporter, ReporterOptions } from '.';
+import {
+  JourneyEndResult,
+  JourneyStartResult,
+  StepEndResult,
+} from '../common_types';
+import { Journey, Step } from '../dsl';
 
 function renderError(error) {
   let output = '';
@@ -58,11 +63,16 @@ function renderDuration(durationMs) {
   return parseInt(durationMs);
 }
 
-export default class BaseReporter {
+export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
+  metrics = {
+    succeeded: 0,
+    failed: 0,
+    skipped: 0,
+  };
 
-  constructor(public runner: Runner, options: ReporterOptions = {}) {
+  constructor(options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
     /**
      * minLength is set to 1 byte to make sure we flush the
@@ -70,66 +80,57 @@ export default class BaseReporter {
      * before destroying the pipe with underlying file descriptor
      */
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
+  }
+
+  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+    this.write(`\nJourney: ${journey.name}`);
+  }
+
+  onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
+    const { status, end, start, error } = result;
+    const message = `${symbols[status]}  Step: '${
+      step.name
+    }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
+    this.write(indent(message));
+    error && this.write(renderError(error));
+    this.metrics[status]++;
+  }
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  onJourneyEnd(journey: Journey, { error }: JourneyEndResult) {
+    const { failed, succeeded, skipped } = this.metrics;
+    const total = failed + succeeded + skipped;
+    /**
+     * Render the error on the terminal only when no steps could
+     * be executed which means the error happened in one of the hooks
+     */
+    if (total === 0 && error) {
+      this.write(renderError(error));
+    }
+  }
+
+  onEnd() {
+    const { failed, succeeded, skipped } = this.metrics;
+    const total = failed + succeeded + skipped;
+
+    let message = '\n';
+    if (total === 0) {
+      message = 'No tests found!';
+      message += ` (${renderDuration(now())} ms) \n`;
+      this.write(message);
+      return;
+    }
+
+    message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
+    message += failed > 0 ? red(` ${failed} failed`) : '';
+    message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
+    message += ` (${renderDuration(now())} ms) \n`;
+    this.write(message);
 
     // flushSync is used here to make sure all the data from the underlying
     // SonicBoom stream buffer is completely written to the fd before closing
     // the process
-    this.runner.on('end', () => this.stream.flushSync());
-
-    this._registerListeners();
-  }
-
-  _registerListeners() {
-    const result = {
-      succeeded: 0,
-      failed: 0,
-      skipped: 0,
-    };
-
-    this.runner.on('journey:start', ({ journey }) => {
-      this.write(`\nJourney: ${journey.name}`);
-    });
-
-    this.runner.on('step:end', ({ step, start, end, error, status }) => {
-      const message = `${symbols[status]}  Step: '${
-        step.name
-      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
-      this.write(indent(message));
-      error && this.write(renderError(error));
-      result[status]++;
-    });
-
-    this.runner.on('journey:end', ({ error }) => {
-      const { failed, succeeded, skipped } = result;
-      const total = failed + succeeded + skipped;
-
-      /**
-       * Render the error on the terminal only when no steps could
-       * be executed which means the error happened in one of the hooks
-       */
-      if (total === 0 && error) {
-        this.write(renderError(error));
-      }
-    });
-
-    this.runner.on('end', () => {
-      const { failed, succeeded, skipped } = result;
-      const total = failed + succeeded + skipped;
-
-      let message = '\n';
-      if (total === 0) {
-        message = 'No tests found!';
-        message += ` (${renderDuration(now())} ms) \n`;
-        this.write(message);
-        return;
-      }
-
-      message += succeeded > 0 ? green(` ${succeeded} passed`) : '';
-      message += failed > 0 ? red(` ${failed} failed`) : '';
-      message += skipped > 0 ? cyan(` ${skipped} skipped`) : '';
-      message += ` (${renderDuration(now())} ms) \n`;
-      this.write(message);
-    });
+    this.stream.flushSync();
   }
 
   write(message) {

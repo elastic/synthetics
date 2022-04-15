@@ -23,8 +23,14 @@
  *
  */
 
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
+import {
+  JourneyEndResult,
+  JourneyStartResult,
+  StepEndResult,
+} from '../common_types';
+import { Journey, Step } from '../dsl';
 import { formatError, indent, now } from '../helpers';
 import BaseReporter from './base';
 
@@ -51,104 +57,103 @@ export default class JUnitReporter extends BaseReporter {
   private totalTests = 0;
   private totalFailures = 0;
   private totalSkipped = 0;
+  #journeyMap = new Map<string, XMLEntry>();
 
-  override _registerListeners() {
-    const journeyMap = new Map<string, XMLEntry>();
-
-    this.runner.on('journey:start', ({ journey }) => {
-      if (!journeyMap.has(journey.name)) {
-        const entry = {
-          name: 'testsuite',
-          attributes: {
-            name: journey.name,
-            tests: 0,
-            failures: 0,
-            skipped: 0,
-            errors: 0,
-          },
-          children: [],
-        };
-        journeyMap.set(journey.name, entry);
-      }
-    });
-
-    this.runner.on(
-      'step:end',
-      ({ journey, step, status, error, start, end }) => {
-        if (!journeyMap.has(journey.name)) {
-          return;
-        }
-        const entry = journeyMap.get(journey.name);
-        const caseEntry = {
-          name: 'testcase',
-          attributes: {
-            name: step.name,
-            classname: journey.name + ' ' + step.name,
-            time: end - start,
-          },
-          children: [],
-        };
-
-        entry.attributes.tests++;
-        if (status === 'failed') {
-          const { name, message, stack } = formatError(error);
-          caseEntry.children.push({
-            name: 'failure',
-            attributes: {
-              message,
-              type: name,
-            },
-            text: stack,
-          });
-          entry.attributes.failures++;
-        } else if (status === 'skipped') {
-          caseEntry.children.push({
-            name: 'skipped',
-            attributes: {
-              message: 'previous step failed',
-            },
-          });
-          entry.attributes.skipped++;
-        }
-        entry.children.push(caseEntry);
-      }
-    );
-
-    this.runner.on('journey:end', ({ journey }) => {
-      if (!journeyMap.has(journey.name)) {
-        return;
-      }
-      const { attributes } = journeyMap.get(journey.name);
-      this.totalTests += attributes.tests;
-      this.totalFailures += attributes.failures;
-      this.totalSkipped += attributes.skipped;
-    });
-
-    this.runner.on('end', () => {
-      const root: XMLEntry = {
-        name: 'testsuites',
+  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+    if (!this.#journeyMap.has(journey.name)) {
+      const entry = {
+        name: 'testsuite',
         attributes: {
-          name: '',
-          tests: this.totalTests,
-          failures: this.totalFailures,
-          skipped: this.totalSkipped,
+          name: journey.name,
+          tests: 0,
+          failures: 0,
+          skipped: 0,
           errors: 0,
-          time: parseInt(String(now())) / 1000,
         },
-        children: [...journeyMap.values()],
+        children: [],
       };
-      const output = serializeEntries(root).join('\n');
-      /**
-       * write the xml output to a file if specified via env flag
-       */
-      const fileName = process.env['SYNTHETICS_JUNIT_FILE'];
-      if (fileName) {
-        mkdirSync(dirname(fileName), { recursive: true });
-        writeFileSync(fileName, output);
-      } else {
-        this.write(output);
-      }
-    });
+      this.#journeyMap.set(journey.name, entry);
+    }
+  }
+
+  override onStepEnd(
+    journey: Journey,
+    step: Step,
+    { status, error, start, end }: StepEndResult
+  ) {
+    if (!this.#journeyMap.has(journey.name)) {
+      return;
+    }
+    const entry = this.#journeyMap.get(journey.name);
+    const caseEntry = {
+      name: 'testcase',
+      attributes: {
+        name: step.name,
+        classname: journey.name + ' ' + step.name,
+        time: end - start,
+      },
+      children: [],
+    };
+
+    entry.attributes.tests++;
+    if (status === 'failed') {
+      const { name, message, stack } = formatError(error);
+      caseEntry.children.push({
+        name: 'failure',
+        attributes: {
+          message,
+          type: name,
+        },
+        text: stack,
+      });
+      entry.attributes.failures++;
+    } else if (status === 'skipped') {
+      caseEntry.children.push({
+        name: 'skipped',
+        attributes: {
+          message: 'previous step failed',
+        },
+      });
+      entry.attributes.skipped++;
+    }
+    entry.children.push(caseEntry);
+  }
+
+  override onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+    if (!this.#journeyMap.has(journey.name)) {
+      return;
+    }
+    const { attributes } = this.#journeyMap.get(journey.name);
+    this.totalTests += attributes.tests;
+    this.totalFailures += attributes.failures;
+    this.totalSkipped += attributes.skipped;
+  }
+
+  override async onEnd() {
+    const root: XMLEntry = {
+      name: 'testsuites',
+      attributes: {
+        name: '',
+        tests: this.totalTests,
+        failures: this.totalFailures,
+        skipped: this.totalSkipped,
+        errors: 0,
+        time: parseInt(String(now())) / 1000,
+      },
+      children: [...this.#journeyMap.values()],
+    };
+
+    const output = serializeEntries(root).join('\n');
+    /**
+     * write the xml output to a file if specified via env flag
+     */
+    const fileName = process.env['SYNTHETICS_JUNIT_FILE'];
+    if (fileName) {
+      await mkdir(dirname(fileName), { recursive: true });
+      await writeFile(fileName, output);
+    } else {
+      this.write(output);
+    }
   }
 }
 

@@ -23,12 +23,11 @@
  *
  */
 
-import { once, EventEmitter } from 'events';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
-import { reporters } from '../reporters';
+import { reporters, Reporter } from '../reporters';
 import {
   CACHE_PATH,
   monotonicTimeInSeconds,
@@ -39,17 +38,16 @@ import {
   writeFileAsync,
 } from '../helpers';
 import {
-  StatusValue,
   HooksCallback,
   Params,
-  NetworkConditions,
-  PluginOutput,
   HooksArgs,
   Driver,
   Screenshot,
   RunOptions,
+  JourneyResult,
+  StepResult,
 } from '../common_types';
-import { PageMetrics, PluginManager } from '../plugins';
+import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
@@ -64,70 +62,12 @@ type JourneyContext = {
   pluginManager: PluginManager;
 };
 
-type StepResult = {
-  status: StatusValue;
-  url?: string;
-  error?: Error;
-  pagemetrics?: PageMetrics;
-  filmstrips?: PluginOutput['filmstrips'];
-  metrics?: PluginOutput['metrics'];
-  traces?: PluginOutput['traces'];
-};
-
-type JourneyResult = {
-  status: StatusValue;
-  error?: Error;
-  networkinfo?: PluginOutput['networkinfo'];
-  browserconsole?: PluginOutput['browserconsole'];
-};
-
 type RunResult = Record<string, JourneyResult>;
 
-interface StepEvent {
-  step: Step;
-  journey: Journey;
-}
-
-interface JourneyEvent {
-  journey: Journey;
-  timestamp: number;
-  params?: Params;
-}
-
-interface Events {
-  start: {
-    numJourneys: number;
-    networkConditions?: NetworkConditions;
-  };
-  'journey:register': {
-    journey: Journey;
-  };
-  'journey:start': JourneyEvent;
-  'journey:end': JourneyEvent &
-    JourneyResult & {
-      start: number;
-      end: number;
-      options: RunOptions;
-      timestamp: number;
-    };
-  'journey:end:reported': unknown;
-  'step:start': StepEvent;
-  'step:end': StepEvent &
-    StepResult & {
-      start: number;
-      end: number;
-    };
-  end: unknown;
-}
-
-export default interface Runner {
-  on<K extends keyof Events>(name: K, listener: (v: Events[K]) => void): this;
-  emit<K extends keyof Events>(event: K, args: Events[K]): boolean;
-}
-
-export default class Runner extends EventEmitter {
-  active = false;
-  currentJourney?: Journey = null;
+export default class Runner {
+  #active = false;
+  #reporter: Reporter;
+  #currentJourney?: Journey = null;
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   hookError: Error | undefined;
@@ -185,9 +125,26 @@ export default class Runner extends EventEmitter {
     this.hooks[type].push(callback);
   }
 
+  get currentJourney() {
+    return this.#currentJourney;
+  }
+
   addJourney(journey: Journey) {
     this.journeys.push(journey);
-    this.currentJourney = journey;
+    this.#currentJourney = journey;
+  }
+
+  setReporter(options: RunOptions) {
+    /**
+     * Set up the corresponding reporter and fallback
+     * to default reporter if not provided
+     */
+    const { reporter, outfd } = options;
+    const Reporter =
+      typeof reporter === 'function'
+        ? reporter
+        : reporters[reporter] || reporters['default'];
+    this.#reporter = new Reporter({ fd: outfd });
   }
 
   async runBeforeAllHook(args: HooksArgs) {
@@ -288,7 +245,7 @@ export default class Runner extends EventEmitter {
     let skipStep = false;
     for (const step of journey.steps) {
       const start = monotonicTimeInSeconds();
-      this.emit('step:start', { journey, step });
+      this.#reporter?.onStepStart?.(journey, step);
       let data: StepResult = { status: 'succeeded' };
       if (skipStep) {
         data.status = 'skipped';
@@ -299,9 +256,7 @@ export default class Runner extends EventEmitter {
          */
         if (data.error) skipStep = true;
       }
-      this.emit('step:end', {
-        journey,
-        step,
+      this.#reporter?.onStepEnd?.(journey, step, {
         start,
         end: monotonicTimeInSeconds(),
         ...data,
@@ -315,12 +270,16 @@ export default class Runner extends EventEmitter {
   }
 
   registerJourney(journey: Journey, context: JourneyContext) {
-    this.currentJourney = journey;
+    this.#currentJourney = journey;
     const timestamp = getTimestamp();
     const { params } = context;
-    this.emit('journey:start', { journey, timestamp, params });
+    this.#reporter?.onJourneyStart?.(journey, {
+      timestamp,
+      params,
+    });
     /**
-     * Load and register the steps for the current journey
+     * Exeucute the journey callback which would
+     * register the steps for the current journey
      */
     journey.callback({ ...context.driver, params });
   }
@@ -333,8 +292,7 @@ export default class Runner extends EventEmitter {
     const end = monotonicTimeInSeconds();
     const { pluginManager, start, status, error } = result;
     const pluginOutput = await pluginManager.output();
-    this.emit('journey:end', {
-      journey,
+    await this.#reporter?.onJourneyEnd?.(journey, {
       status,
       error,
       start,
@@ -344,13 +302,6 @@ export default class Runner extends EventEmitter {
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
     });
-    /**
-     * Wait for the all the reported events to be consumed aschronously
-     * by reporter.
-     */
-    if (options.reporter === 'json') {
-      await once(this, 'journey:end:reported');
-    }
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
   }
@@ -360,8 +311,7 @@ export default class Runner extends EventEmitter {
    */
   async runFakeJourney(journey: Journey, options: RunOptions) {
     const start = monotonicTimeInSeconds();
-    this.emit('journey:start', {
-      journey,
+    this.#reporter.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
       params: options.params,
     });
@@ -369,24 +319,18 @@ export default class Runner extends EventEmitter {
       status: 'failed',
       error: this.hookError,
     };
-    this.emit('journey:end', {
-      journey,
+    await this.#reporter.onJourneyEnd?.(journey, {
       timestamp: getTimestamp(),
       start,
       options,
       end: monotonicTimeInSeconds(),
       ...result,
     });
-    if (options.reporter === 'json') {
-      await once(this, 'journey:end:reported');
-    }
     return result;
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
-    const result: JourneyResult = {
-      status: 'succeeded',
-    };
+    const result: JourneyResult = { status: 'succeeded' };
     const context = await Runner.createContext(options);
     log(`Runner: start journey (${journey.name})`);
     try {
@@ -419,19 +363,8 @@ export default class Runner extends EventEmitter {
   }
 
   async init(options: RunOptions) {
-    const { reporter, outfd, networkConditions } = options;
-    /**
-     * Set up the corresponding reporter and fallback
-     */
-    const Reporter =
-      typeof reporter === 'function'
-        ? reporter
-        : reporters[reporter] || reporters['default'];
-    new Reporter(this, { fd: outfd });
-    this.emit('start', {
-      numJourneys: this.journeys.length,
-      networkConditions,
-    });
+    this.setReporter(options);
+    this.#reporter.onStart?.({ numJourneys: this.journeys.length });
     /**
      * Set up the directory for caching screenshots
      */
@@ -440,10 +373,10 @@ export default class Runner extends EventEmitter {
 
   async run(options: RunOptions) {
     const result: RunResult = {};
-    if (this.active) {
+    if (this.#active) {
       return result;
     }
-    this.active = true;
+    this.#active = true;
     log(`Runner: run ${this.journeys.length} journeys`);
     this.init(options);
     await this.runBeforeAllHook({
@@ -457,7 +390,7 @@ export default class Runner extends EventEmitter {
        * Used by heartbeat to gather all registered journeys
        */
       if (dryRun) {
-        this.emit('journey:register', { journey });
+        this.#reporter.onJourneyRegister?.(journey);
         continue;
       }
       if (!journey.isMatch(match, tags)) {
@@ -478,14 +411,14 @@ export default class Runner extends EventEmitter {
   }
 
   async reset() {
+    this.#currentJourney = null;
+    this.journeys = [];
+    this.#active = false;
     /**
      * Clear all cache data stored for post processing by
      * the current synthetic agent run
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
-    this.currentJourney = null;
-    this.journeys = [];
-    this.active = false;
-    this.emit('end', {});
+    await this.#reporter?.onEnd?.();
   }
 }
