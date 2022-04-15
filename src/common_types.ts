@@ -32,7 +32,7 @@ import {
   Page,
 } from 'playwright-chromium';
 import { Step } from './dsl';
-import { Reporter, BuiltInReporter, ReporterInstance } from './reporters';
+import { BuiltInReporter, ReporterInstance } from './reporters';
 
 export type VoidCallback = () => void;
 export type Location = {
