@@ -374,6 +374,17 @@ export default class Runner {
     await mkdirAsync(CACHE_PATH, { recursive: true });
   }
 
+  async push() {
+    for (const journey of this.journeys) {
+      /**
+       * Execute dummy callback to get all monitor specific
+       * configurations for the current journey
+       */
+      journey.callback({} as any);
+      console.log(journey);
+    }
+  }
+
   async run(options: RunOptions) {
     const result: RunResult = {};
     if (this.#active) {

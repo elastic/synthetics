@@ -26,7 +26,7 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { step, journey } from '../../src/core';
+import { step, journey, monitor } from '../../src/core';
 import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
 import { generateTempPath, noop } from '../../src/helpers';
@@ -670,6 +670,17 @@ describe('runner', () => {
     ];
     const collectOrder = events.map(event => event.type);
     expect(collectOrder).toEqual(realEventsOrder);
+  });
+
+  it.only('runner - push command', async () => {
+    const j1 = journey('journey1', async ({ page }) => {
+      // monitor.use({ schedule: '2m', location: 'US Central' });
+      step('load test server', async () => {
+        await page.goto(server.PREFIX);
+      });
+    });
+    runner.addJourney(j1);
+    await runner.push();
   });
 
   /**

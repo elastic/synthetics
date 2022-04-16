@@ -27,6 +27,7 @@ import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { Monitor, MonitorConfig } from './monitor';
 
 export type JourneyOptions = {
   name: string;
@@ -52,6 +53,7 @@ export class Journey {
   location?: Location;
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
+  monitor: Monitor;
 
   constructor(
     options: JourneyOptions,
@@ -73,6 +75,11 @@ export class Journey {
 
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
+  }
+
+  addMonitor(config: MonitorConfig) {
+    this.monitor = new Monitor({ name: this.name, id: this.id });
+    this.monitor.merge(config);
   }
   /**
    * Matches journeys based on the provided args. Proitize tags over match

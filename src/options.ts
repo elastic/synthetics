@@ -25,8 +25,8 @@
 
 import merge from 'deepmerge';
 import { readConfig } from './config';
-import { parseNetworkConditions } from './helpers';
-import type { CliArgs, RunOptions } from './common_types';
+import { getNetworkConditions } from './helpers';
+import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
 
 /**
  * Set debug based on DEBUG ENV and -d flags
@@ -107,8 +107,8 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   ]);
 
   if (cliArgs.throttling) {
-    options.networkConditions = parseNetworkConditions(
-      cliArgs.throttling as string
+    options.networkConditions = getNetworkConditions(
+      cliArgs.throttling as ThrottlingOptions
     );
   }
 

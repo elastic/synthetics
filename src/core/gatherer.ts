@@ -26,7 +26,7 @@
 import { chromium, ChromiumBrowser, BrowserContext } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
-import { Driver, RunOptions } from '../common_types';
+import { Driver, NetworkConditions, RunOptions } from '../common_types';
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -75,7 +75,7 @@ export class Gatherer {
 
   static setNetworkConditions(
     context: BrowserContext,
-    networkConditions: RunOptions['networkConditions']
+    networkConditions: NetworkConditions
   ) {
     if (networkConditions) {
       context.on('page', page => {
