@@ -281,14 +281,10 @@ export const DEFAULT_THROTTLING_OPTIONS: ThrottlingOptions = {
 export function getNetworkConditions(
   throttlingOpts: ThrottlingOptions
 ): NetworkConditions {
-  const { download, upload, latency } = {
-    ...DEFAULT_THROTTLING_OPTIONS,
-    ...throttlingOpts,
-  };
   return {
-    downloadThroughput: megabitsToBytes(download),
-    uploadThroughput: megabitsToBytes(upload), // Devtools CDP expects format to be in bytes/second
-    latency, // milliseconds,
+    downloadThroughput: megabitsToBytes(throttlingOpts.download),
+    uploadThroughput: megabitsToBytes(throttlingOpts.upload), // Devtools CDP expects format to be in bytes/second
+    latency: throttlingOpts.latency, // milliseconds,
     offline: false,
   };
 }

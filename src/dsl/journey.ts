@@ -65,6 +65,7 @@ export class Journey {
     this.tags = options.tags;
     this.callback = callback;
     this.location = location;
+    this.monitor = new Monitor({ name: this.name, id: this.id });
   }
 
   addStep(name: string, callback: VoidCallback, location?: Location) {
@@ -77,10 +78,13 @@ export class Journey {
     this.hooks[type].push(callback);
   }
 
-  addMonitor(config: MonitorConfig) {
-    this.monitor = new Monitor({ name: this.name, id: this.id });
-    this.monitor.merge(config);
+  updateMonitor(config: MonitorConfig) {
+    /**
+     * Use defaults values from journey for monitor like `name` and `id`
+     */
+    this.monitor = new Monitor({ name: this.name, id: this.id, ...config });
   }
+
   /**
    * Matches journeys based on the provided args. Proitize tags over match
    * - tags pattern that matches only tags

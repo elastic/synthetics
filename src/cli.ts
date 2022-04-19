@@ -28,10 +28,10 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
-import { DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import { normalizeOptions } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
+import { runner } from './core';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -106,9 +106,9 @@ program
   )
   .option(
     '--throttling <config>',
-    'JSON object to to throttle network conditions for download throughput in megabits/second, upload throughput in megabits/second and latency in milliseconds.',
+    'JSON object to throttle network conditions for download throughput in megabits/second, upload throughput in megabits/second and latency in milliseconds.',
     JSON.parse,
-    DEFAULT_THROTTLING_OPTIONS
+    {}
   )
   .option('--no-throttling', 'Turns off default network throttling.')
   .option(
@@ -144,14 +144,21 @@ program
   .description(
     'Push monitors to create new montors with Kibana monitor management UI'
   )
+  .option(
+    '--schedule <time>',
+    'schedule the monitors at configured intervals. Ex: setting `10m` configures the monitor to be executed every 10 minutes.'
+  )
+  .option(
+    '--locations <locations...>',
+    'Multiple global locations based on Synthetics nodes availability.'
+  )
   .action(async (files, cmdOpts) => {
     try {
       const cliArgs = { inline: false };
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
-      console.log('Options', options);
-
-      // TODO: Push logic will be implemened in subsequent PR's
+      runner.buildMonitors(options);
+      // TODO: Push logic will be implemented in follow up PR's
     } catch (e) {
       console.error(e);
       process.exit(1);

@@ -27,7 +27,11 @@ import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
-import { getNetworkConditions, megabitsToBytes } from '../src/helpers';
+import {
+  DEFAULT_THROTTLING_OPTIONS,
+  getNetworkConditions,
+  megabitsToBytes,
+} from '../src/helpers';
 
 const safeParse = (chunks: string[]) => {
   return chunks.map(data => {
@@ -418,7 +422,7 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty(
         'network_conditions',
-        getNetworkConditions({} as any)
+        getNetworkConditions(DEFAULT_THROTTLING_OPTIONS)
       );
     });
 
@@ -454,7 +458,7 @@ describe('CLI', () => {
       const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
       expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        ...getNetworkConditions({} as any),
+        ...getNetworkConditions(DEFAULT_THROTTLING_OPTIONS),
         downloadThroughput: megabitsToBytes(2),
       });
     });

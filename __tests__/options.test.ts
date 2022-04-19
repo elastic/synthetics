@@ -28,7 +28,7 @@ import { normalizeOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
-  it('normalize', async () => {
+  it('normalize', () => {
     const cliArgs: CliArgs = {
       params: {
         foo: 'bar',
@@ -70,6 +70,26 @@ describe('options', () => {
         },
       },
       screenshots: 'on',
+    });
+  });
+
+  it('normalize monitor configs', () => {
+    expect(normalizeOptions({ throttling: false })).toMatchObject({
+      locations: ['US East'],
+      schedule: '10m',
+      throttling: {},
+    });
+
+    expect(
+      normalizeOptions({ throttling: { download: 50 }, schedule: '2m' })
+    ).toMatchObject({
+      locations: ['US East'],
+      schedule: '2m',
+      throttling: {
+        download: 50,
+        upload: 3,
+        latency: 20,
+      },
     });
   });
 });

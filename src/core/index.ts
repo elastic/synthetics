@@ -66,7 +66,15 @@ export const step = wrapFnWithLocation(
 
 export const monitor = {
   use: wrapFnWithLocation((location: Location, config: MonitorConfig) => {
-    return runner.currentJourney?.addMonitor(config);
+    /**
+     * If the context is inside journey, then set it to journey context
+     * otherwise set to the global monitor which will be used for all journeys
+     */
+    if (runner.currentJourney) {
+      runner.currentJourney.updateMonitor(config);
+    } else {
+      runner.updateMonitor(config);
+    }
   }),
 };
 

@@ -33,7 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
-import { MonitorConfig } from './dsl/monitor';
+import { MonitorConfig, SyntheticsLocations } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -190,9 +190,9 @@ export type PluginOutput = {
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
 export type ThrottlingOptions = {
-  download: number;
-  upload: number;
-  latency: number;
+  download?: number;
+  upload?: number;
+  latency?: number;
 };
 
 type BaseArgs = {
@@ -207,6 +207,9 @@ type BaseArgs = {
   ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
+  throttling?: ThrottlingOptions;
+  schedule?: string;
+  locations?: SyntheticsLocations[];
 };
 
 export type CliArgs = BaseArgs & {

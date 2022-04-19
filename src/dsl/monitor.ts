@@ -23,20 +23,29 @@
  *
  */
 
+import merge from 'deepmerge';
 import { ThrottlingOptions } from '../common_types';
 
+export type SyntheticsLocations = 'US East' | 'EU West';
 export type MonitorConfig = {
   id?: string;
   name?: string;
   schedule?: string;
-  location?: string;
+  locations?: SyntheticsLocations[];
   throttling?: ThrottlingOptions;
 };
 
 export class Monitor {
-  constructor(public config: MonitorConfig) {}
-
-  merge(useConfig: MonitorConfig) {
-    this.config = { ...this.config, ...useConfig };
+  constructor(public config: MonitorConfig = {}) {}
+  /**
+   * Treat the creation time config with `monitor.use` as source of truth by
+   * merging the values coming from CLI and Synthetics config file
+   */
+  update(globalOpts: MonitorConfig = {}) {
+    this.config = merge(globalOpts, this.config, {
+      arrayMerge(target, source) {
+        return [...new Set(source)];
+      },
+    });
   }
 }

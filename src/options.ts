@@ -25,8 +25,9 @@
 
 import merge from 'deepmerge';
 import { readConfig } from './config';
-import { getNetworkConditions } from './helpers';
+import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
+import { MonitorConfig } from './dsl/monitor';
 
 /**
  * Set debug based on DEBUG ENV and -d flags
@@ -91,11 +92,14 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
       ? readConfig(options.environment, cliArgs.config)
       : {};
 
+  /**
+   * Order of preference for options that are used while running are
+   * 1. Local options configured via Runner API
+   * 2. CLI flags
+   * 3. Configuration file
+   */
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
 
-  /**
-   * Favor playwright options passed via cli to inline playwright options
-   */
   options.playwrightOptions = merge.all([
     config.playwrightOptions || {},
     cliArgs.playwrightOptions || {},
@@ -106,11 +110,38 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     },
   ]);
 
+  const { throttling, locations, schedule } = getDefaultMonitorConfig();
+
   if (cliArgs.throttling) {
-    options.networkConditions = getNetworkConditions(
-      cliArgs.throttling as ThrottlingOptions
-    );
+    const throttleConfig = merge.all([
+      throttling,
+      config.monitor?.throttling || {},
+      cliArgs.throttling as ThrottlingOptions,
+    ]);
+    options.throttling = throttleConfig;
+    options.networkConditions = getNetworkConditions(throttleConfig);
+  } else {
+    /**
+     * Do not apply throttling when `--no-throttling` flag is passed
+     */
+    options.throttling = {};
   }
 
+  options.locations =
+    cliArgs.locations ?? config.monitor?.locations ?? locations;
+
+  options.schedule = cliArgs.schedule ?? config.monitor?.schedule ?? schedule;
+
   return options;
+}
+
+/**
+ * Get the default monitor configuration for all journeys
+ */
+export function getDefaultMonitorConfig(): MonitorConfig {
+  return {
+    throttling: DEFAULT_THROTTLING_OPTIONS,
+    locations: ['US East'],
+    schedule: '10m',
+  };
 }

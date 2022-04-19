@@ -26,12 +26,13 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { step, journey, monitor } from '../../src/core';
+import { step, journey } from '../../src/core';
 import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
 import { generateTempPath, noop } from '../../src/helpers';
 import { wsEndpoint } from '../utils/test-config';
 import { Reporter } from '../../src/reporters';
+import { getDefaultMonitorConfig } from '../../src/options';
 import {
   JourneyEndResult,
   JourneyStartResult,
@@ -78,7 +79,7 @@ describe('runner', () => {
     expect(runner.hooks.afterAll).toEqual([noop]);
   });
 
-  it.only('run journey - report results payload', async () => {
+  it('run journey - report results payload', async () => {
     const j1 = new Journey({ name: 'j1' }, noop);
     const s1 = j1.addStep('step1', noop);
     runner.addJourney(j1);
@@ -672,15 +673,72 @@ describe('runner', () => {
     expect(collectOrder).toEqual(realEventsOrder);
   });
 
-  it.only('runner - push command', async () => {
-    const j1 = journey('journey1', async ({ page }) => {
-      // monitor.use({ schedule: '2m', location: 'US Central' });
-      step('load test server', async () => {
-        await page.goto(server.PREFIX);
-      });
-    });
+  it('runner - build monitors with local config', async () => {
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const j2 = new Journey({ name: 'j2' }, noop);
+    j1.updateMonitor({ id: 'test-j1', schedule: '2m', locations: ['EU West'] });
+    j2.updateMonitor({ throttling: { latency: 1000 } });
     runner.addJourney(j1);
-    await runner.push();
+    runner.addJourney(j2);
+
+    const monitors = runner.buildMonitors({
+      ...getDefaultMonitorConfig(),
+    });
+    expect(monitors.length).toBe(2);
+    expect(monitors[0].config).toEqual({
+      id: 'test-j1',
+      name: 'j1',
+      locations: ['EU West'],
+      schedule: '2m',
+      throttling: {
+        download: 5,
+        latency: 20,
+        upload: 3,
+      },
+    });
+    expect(monitors[1].config).toMatchObject({
+      locations: ['US East'],
+      schedule: '10m',
+      throttling: { latency: 1000 },
+    });
+  });
+
+  it('runner - build monitors with global config', async () => {
+    runner.updateMonitor({
+      schedule: '5m',
+      throttling: {
+        download: 100,
+        upload: 50,
+      },
+    });
+
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const j2 = new Journey({ name: 'j2' }, noop);
+    j1.updateMonitor({ id: 'test-j1', schedule: '2m', locations: ['EU West'] });
+    j2.updateMonitor({ throttling: { latency: 1000 } });
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+
+    const monitors = runner.buildMonitors({
+      ...getDefaultMonitorConfig(),
+    });
+    expect(monitors.length).toBe(2);
+    expect(monitors[0].config).toEqual({
+      id: 'test-j1',
+      name: 'j1',
+      locations: ['EU West'],
+      schedule: '2m',
+      throttling: {
+        download: 100,
+        latency: 20,
+        upload: 50,
+      },
+    });
+    expect(monitors[1].config).toMatchObject({
+      locations: ['US East'],
+      schedule: '5m',
+      throttling: { latency: 1000 },
+    });
   });
 
   /**

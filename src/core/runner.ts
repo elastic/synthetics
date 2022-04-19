@@ -51,6 +51,7 @@ import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
+import { Monitor, MonitorConfig } from '../dsl/monitor';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
@@ -71,6 +72,7 @@ export default class Runner {
   journeys: Journey[] = [];
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   hookError: Error | undefined;
+  monitor?: Monitor;
   static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
@@ -121,12 +123,20 @@ export default class Runner {
     }
   }
 
+  get currentJourney() {
+    return this.#currentJourney;
+  }
+
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
 
-  get currentJourney() {
-    return this.#currentJourney;
+  updateMonitor(config: MonitorConfig) {
+    if (!this.monitor) {
+      this.monitor = new Monitor(config);
+      return;
+    }
+    this.monitor.update(config);
   }
 
   addJourney(journey: Journey) {
@@ -374,15 +384,29 @@ export default class Runner {
     await mkdirAsync(CACHE_PATH, { recursive: true });
   }
 
-  async push() {
+  buildMonitors(options: RunOptions) {
+    /**
+     * Update the global monitor configuration required for
+     * setting defaults
+     */
+    this.updateMonitor({
+      throttling: options.throttling,
+      schedule: options.schedule,
+      locations: options.locations,
+    });
+
+    const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
+      this.#currentJourney = journey;
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
        */
-      journey.callback({} as any);
-      console.log(journey);
+      journey.callback({ params: options.params } as any);
+      journey.monitor.update(this.monitor?.config);
+      monitors.push(journey.monitor);
     }
+    return monitors;
   }
 
   async run(options: RunOptions) {
