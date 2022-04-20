@@ -106,7 +106,7 @@ program
   )
   .option(
     '--throttling <config>',
-    'JSON object to throttle network conditions for download throughput in megabits/second, upload throughput in megabits/second and latency in milliseconds.',
+    'JSON object to throttle network conditions for download and upload throughput in megabits/second and latency in milliseconds. Ex: { "download": 10, "upload": 5, "latency": 200 }.',
     JSON.parse,
     {}
   )
@@ -146,11 +146,11 @@ program
   )
   .option(
     '--schedule <time>',
-    'schedule the monitors at configured intervals. Ex: setting `10m` configures the monitor to be executed every 10 minutes.'
+    "The default interval for the pushed monitors. Setting `10m`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes."
   )
   .option(
     '--locations <locations...>',
-    'Multiple global locations based on Synthetics nodes availability.'
+    'The default list of locations from which your monitors will run.'
   )
   .action(async (files, cmdOpts) => {
     try {
