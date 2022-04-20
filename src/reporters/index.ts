@@ -35,10 +35,10 @@ import {
 } from '../common_types';
 
 export type ReporterOptions = { fd?: number; colors?: boolean };
-export type BuiltInReporter = 'default' | 'json' | 'junit';
+export type BuiltInReporterName = 'default' | 'json' | 'junit';
 export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
 export const reporters: {
-  [key in BuiltInReporter]: ReporterInstance;
+  [key in BuiltInReporterName]: ReporterInstance;
 } = {
   default: BaseReporter,
   json: JSONReporter,

@@ -32,7 +32,7 @@ import {
   Page,
 } from 'playwright-chromium';
 import { Step } from './dsl';
-import { BuiltInReporter, ReporterInstance } from './reporters';
+import { BuiltInReporterName, ReporterInstance } from './reporters';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -204,7 +204,7 @@ type BaseArgs = {
 
 export type CliArgs = BaseArgs & {
   config?: string;
-  reporter?: BuiltInReporter;
+  reporter?: BuiltInReporterName;
   pattern?: string;
   inline?: boolean;
   require?: Array<string>;
@@ -225,7 +225,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
-  reporter?: BuiltInReporter | ReporterInstance;
+  reporter?: BuiltInReporterName | ReporterInstance;
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
