@@ -26,11 +26,34 @@
 import BaseReporter from './base';
 import JSONReporter from './json';
 import JUnitReporter from './junit';
-import Reporter, { ReporterOptions } from './reporter';
+import { Journey, Step } from '../dsl';
+import {
+  StartEvent,
+  JourneyEndResult,
+  JourneyStartResult,
+  StepEndResult,
+} from '../common_types';
 
-export { Reporter, ReporterOptions };
-export const reporters = {
+export type ReporterOptions = { fd?: number; colors?: boolean };
+export type BuiltInReporterName = 'default' | 'json' | 'junit';
+export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
+export const reporters: {
+  [key in BuiltInReporterName]: ReporterInstance;
+} = {
   default: BaseReporter,
   json: JSONReporter,
   junit: JUnitReporter,
 };
+
+export interface Reporter {
+  onStart?(params: StartEvent): void;
+  onJourneyRegister?(journey: Journey): void;
+  onJourneyStart?(journey: Journey, result: JourneyStartResult): void;
+  onStepStart?(journey: Journey, step: Step): void;
+  onStepEnd?(journey: Journey, step: Step, result: StepEndResult): void;
+  onJourneyEnd?(
+    journey: Journey,
+    result: JourneyEndResult
+  ): void | Promise<void>;
+  onEnd?(): void | Promise<void>;
+}

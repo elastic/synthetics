@@ -25,36 +25,31 @@
 
 import fs from 'fs';
 import { join } from 'path';
+import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
-import Runner from '../../src/core/runner';
 import JUnitReporter from '../../src/reporters/junit';
 import * as helpers from '../../src/helpers';
 
 describe('junit reporter', () => {
   beforeEach(() => {});
   let dest: string;
-  let runner: Runner;
-  let stream;
+  let stream: SonicBoom;
+  let reporter: JUnitReporter;
   const timestamp = 1600300800000000;
   const j1 = journey('j1', () => {});
   const s1 = step('s1', () => {});
 
-  beforeAll(() => {
-    runner = new Runner();
-  });
-
   beforeEach(() => {
-    runner = new Runner();
     dest = helpers.generateTempPath();
-    stream = new JUnitReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
+    reporter = new JUnitReporter({ fd: fs.openSync(dest, 'w') });
+    stream = reporter.stream;
     jest.spyOn(helpers, 'now').mockImplementation(() => 0);
   });
 
   afterAll(() => fs.unlinkSync(dest));
 
   it('writes the output to fd', async () => {
-    runner.emit('journey:start', {
-      journey: j1,
+    reporter.onJourneyStart(j1, {
       params: { environment: 'testing' },
       timestamp,
     });
@@ -64,66 +59,54 @@ describe('junit reporter', () => {
      * so keep it simple
      */
     error.stack = 'at /__tests/reporters/junit.test.ts';
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, s1, {
       status: 'failed',
       error,
-      step: s1,
       start: 0,
       end: 1,
     });
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, step('s2', helpers.noop), {
       status: 'skipped',
-      step: step('s2', () => {}),
       start: 0,
       end: 1,
     });
-    runner.emit('journey:end', {
-      journey: j1,
+    reporter.onJourneyEnd(j1, {
       timestamp,
       start: 0,
       end: 2,
       status: 'failed',
       options: {},
     });
-    runner.emit('end', 'done');
+    reporter.onEnd();
     /**
      * Close the underyling stream writing to FD to read all its contents
      */
     stream.end();
     await new Promise(resolve => stream.once('finish', resolve));
-    const fd = fs.openSync(dest, 'r');
-    const buffer = fs.readFileSync(fd);
+    const buffer = fs.readFileSync(fs.openSync(dest, 'r'));
     expect(buffer.toString()).toMatchSnapshot();
   });
 
   it('writes the output to a file', async () => {
     const filepath = join(__dirname, '../../tmp', 'junit.xml');
     process.env.SYNTHETICS_JUNIT_FILE = filepath;
-    runner.emit('journey:start', {
-      journey: j1,
-      params: {
-        environment: 'testing',
-      },
+    reporter.onJourneyStart(j1, {
+      params: { environment: 'testing' },
       timestamp,
     });
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, s1, {
       status: 'skipped',
-      step: s1,
       start: 0,
       end: 1,
     });
-    runner.emit('journey:end', {
-      journey: j1,
+    reporter.onJourneyEnd(j1, {
       timestamp,
       start: 0,
       end: 2,
       status: 'failed',
       options: {},
     });
-    runner.emit('end', 'done');
+    await reporter.onEnd();
     stream.end();
     expect(fs.readFileSync(filepath, 'utf-8')).toMatchSnapshot();
     fs.unlinkSync(filepath);

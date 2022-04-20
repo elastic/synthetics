@@ -27,41 +27,47 @@ import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
 import { step, journey } from '../../src/core';
-import { Journey } from '../../src/dsl';
+import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
-import { generateTempPath } from '../../src/helpers';
+import { generateTempPath, noop } from '../../src/helpers';
 import { wsEndpoint } from '../utils/test-config';
+import { Reporter } from '../../src/reporters';
+import {
+  JourneyEndResult,
+  JourneyStartResult,
+  RunOptions,
+  StartEvent,
+  StepEndResult,
+} from '../../src/common_types';
 
 describe('runner', () => {
-  let runner: Runner, server: Server;
-  const noop = () => {};
-  const dest = generateTempPath();
+  let runner: Runner,
+    server: Server,
+    dest: string,
+    defaultRunOptions: RunOptions = {};
+
+  beforeAll(async () => (server = await Server.create()));
   beforeEach(async () => {
     runner = new Runner();
+    dest = generateTempPath();
+    defaultRunOptions = {
+      wsEndpoint,
+      outfd: fs.openSync(dest, 'w'),
+    };
   });
-  beforeAll(async () => {
-    server = await Server.create();
+  afterEach(() => {
+    try {
+      fs.accessSync(dest);
+      fs.unlinkSync(dest);
+    } catch (_) {}
   });
-  afterAll(async () => {
-    await server.close();
-    fs.unlinkSync(dest);
-  });
-
-  it('support emitting/subscribing to events', () => {
-    runner.on('start', ({ numJourneys }) => {
-      expect(numJourneys).toBe(1);
-    });
-    runner.emit('start', { numJourneys: 1 });
-  });
+  afterAll(async () => await server.close());
 
   it('add journeys', () => {
     const j1 = new Journey({ name: 'j1' }, noop);
     const j2 = new Journey({ name: 'j2' }, noop);
-    expect(runner.currentJourney).toBeNull();
     runner.addJourney(j1);
-    expect(runner.currentJourney).toEqual(j1);
     runner.addJourney(j2);
-    expect(runner.currentJourney).toEqual(j2);
     expect(runner.journeys.length).toBe(2);
   });
 
@@ -72,51 +78,54 @@ describe('runner', () => {
     expect(runner.hooks.afterAll).toEqual([noop]);
   });
 
-  it('run journey - with events payload', async () => {
-    const journey = new Journey({ name: 'j1' }, noop);
-    const step = journey.addStep('step1', noop);
-    runner.on('journey:start', event => {
-      expect(event).toMatchObject({
-        journey,
-        timestamp: expect.any(Number),
-      });
-    });
-    runner.on('step:start', event => {
-      expect(event).toMatchObject({
-        journey,
-        step,
-      });
-    });
-    runner.on('step:end', event => {
-      expect(event).toMatchObject({
-        journey,
-        step,
-        status: 'succeeded',
-        url: 'about:blank',
-        start: expect.any(Number),
-        end: expect.any(Number),
-      });
-    });
-    runner.on('journey:end', event => {
-      expect(event).toMatchObject({
-        journey,
-        status: 'succeeded',
-        start: expect.any(Number),
-        end: expect.any(Number),
-      });
-    });
-    const result = await runner.runJourney(journey, { wsEndpoint });
-    expect(result.status).toBe('succeeded');
+  it.only('run journey - report results payload', async () => {
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const s1 = j1.addStep('step1', noop);
+    runner.addJourney(j1);
+    class ResultReporter implements Reporter {
+      onJourneyStart(journey: Journey, result: JourneyStartResult) {
+        expect(j1).toEqual(journey);
+        expect(result).toMatchObject({
+          timestamp: expect.any(Number),
+        });
+      }
+      onStepStart(journey: Journey, step: Step) {
+        expect(j1).toEqual(journey);
+        expect(s1).toEqual(step);
+      }
+      onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
+        expect(j1).toEqual(journey);
+        expect(s1).toEqual(step);
+        expect(result).toMatchObject({
+          status: 'succeeded',
+          url: 'about:blank',
+          start: expect.any(Number),
+          end: expect.any(Number),
+        });
+      }
+      onJourneyEnd(journey: Journey, result: JourneyEndResult) {
+        expect(j1).toEqual(journey);
+        expect(result).toMatchObject({
+          status: 'succeeded',
+          start: expect.any(Number),
+          end: expect.any(Number),
+        });
+      }
+    }
+    const opts = { ...defaultRunOptions, reporter: ResultReporter };
+
+    const result = await runner.run(opts);
+    expect(result[j1.name].status).toBe('succeeded');
   });
 
   it('run journey - failed when any step fails', async () => {
     const journey = new Journey({ name: 'failed-journey' }, noop);
     journey.addStep('step1', noop);
     const error = new Error('Broken step 2');
-    journey.addStep('step2', async () => {
+    journey.addStep('step2', () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, { wsEndpoint });
+    const result = await runner.runJourney(journey, defaultRunOptions);
     expect(result).toEqual({
       status: 'failed',
       error,
@@ -127,7 +136,7 @@ describe('runner', () => {
     const journey = new Journey({ name: 'with hooks' }, noop);
     journey.addHook('before', noop);
     journey.addHook('after', noop);
-    const result = await runner.runJourney(journey, { wsEndpoint });
+    const result = await runner.runJourney(journey, defaultRunOptions);
     expect(result).toEqual({
       status: 'succeeded',
     });
@@ -140,7 +149,7 @@ describe('runner', () => {
     journey.addHook('after', () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, { wsEndpoint });
+    const result = await runner.runJourney(journey, defaultRunOptions);
     expect(result).toEqual({
       status: 'failed',
       error,
@@ -154,10 +163,7 @@ describe('runner', () => {
     });
     runner.addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
     runner.addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
-    const result = await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
-    });
+    const result = await runner.run(defaultRunOptions);
     expect(result).toEqual({
       j1: { status: 'failed', error },
       j2: { status: 'failed', error },
@@ -170,7 +176,7 @@ describe('runner', () => {
         await page.goto(server.TEST_PAGE);
       });
     });
-    const runOptions = { metrics: true };
+    const runOptions = { ...defaultRunOptions, metrics: true };
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const result = await runner.runSteps(j1, context, runOptions);
@@ -190,10 +196,9 @@ describe('runner', () => {
         await (page as any).clickkkkkk();
       });
     });
-    const runOptions = {};
-    const context = await Runner.createContext(runOptions);
+    const context = await Runner.createContext(defaultRunOptions);
     await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, runOptions);
+    const result = await runner.runSteps(j1, context, defaultRunOptions);
     await Gatherer.stop();
     expect(result).toEqual([
       {
@@ -211,9 +216,9 @@ describe('runner', () => {
         await page.goto(url);
       });
     });
-    const context = await Runner.createContext({});
+    const context = await Runner.createContext(defaultRunOptions);
     await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, {});
+    const result = await runner.runSteps(j1, context, defaultRunOptions);
     await Gatherer.stop();
     expect(result).toEqual([
       {
@@ -230,9 +235,9 @@ describe('runner', () => {
         await page.goto('blah');
       });
     });
-    const context = await Runner.createContext({});
+    const context = await Runner.createContext(defaultRunOptions);
     await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, {});
+    const result = await runner.runSteps(j1, context, defaultRunOptions);
     await Gatherer.stop();
     expect(result).toEqual([
       {
@@ -259,9 +264,9 @@ describe('runner', () => {
         await page1.waitForLoadState();
       });
     });
-    const context = await Runner.createContext({});
+    const context = await Runner.createContext(defaultRunOptions);
     await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, {});
+    const result = await runner.runSteps(j1, context, defaultRunOptions);
     await Gatherer.stop();
     expect(result).toEqual([
       {
@@ -285,10 +290,13 @@ describe('runner', () => {
         throw error;
       });
     });
-    const runOptions = {};
-    const context = await Runner.createContext(runOptions);
+    const context = await Runner.createContext(defaultRunOptions);
     await runner.registerJourney(j1, context);
-    const [step1, step2] = await runner.runSteps(j1, context, runOptions);
+    const [step1, step2] = await runner.runSteps(
+      j1,
+      context,
+      defaultRunOptions
+    );
     await Gatherer.stop();
     expect(step1).toEqual({
       status: 'succeeded',
@@ -305,10 +313,7 @@ describe('runner', () => {
     const name = 'test-journey';
     const journey = new Journey({ name }, noop);
     runner.addJourney(journey);
-    const result = await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
-    });
+    const result = await runner.run(defaultRunOptions);
     expect(result).toEqual({
       [name]: { status: 'succeeded' },
     });
@@ -319,8 +324,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     expect(
       await runner.run({
-        wsEndpoint,
-        outfd: fs.openSync(dest, 'w'),
+        ...defaultRunOptions,
         match: 'j2',
       })
     ).toEqual({
@@ -333,8 +337,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'tagj2', tags: ['j2'] }, noop));
     expect(
       await runner.run({
-        wsEndpoint,
-        outfd: fs.openSync(dest, 'w'),
+        ...defaultRunOptions,
         match: 'j*',
       })
     ).toEqual({
@@ -351,8 +354,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j5', tags: ['foo'] }, noop));
     expect(
       await runner.run({
-        wsEndpoint,
-        outfd: fs.openSync(dest, 'w'),
+        ...defaultRunOptions,
         tags: ['foo*'],
         match: 'j*',
       })
@@ -369,8 +371,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
     expect(
       await runner.run({
-        wsEndpoint,
-        outfd: fs.openSync(dest, 'w'),
+        ...defaultRunOptions,
         tags: ['hello:b*'],
       })
     ).toEqual({
@@ -385,8 +386,7 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
     expect(
       await runner.run({
-        wsEndpoint,
-        outfd: fs.openSync(dest, 'w'),
+        ...defaultRunOptions,
         tags: ['!hello:b*'],
       })
     ).toEqual({
@@ -402,10 +402,7 @@ describe('runner', () => {
       throw error;
     });
     runner.addJourney(j2);
-    const result = await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
-    });
+    const result = await runner.run(defaultRunOptions);
     expect(result).toEqual({
       j1: { status: 'succeeded' },
       j2: { status: 'failed', error },
@@ -416,10 +413,14 @@ describe('runner', () => {
     runner.addJourney(new Journey({ name: 'j1' }, noop));
     runner.addJourney(new Journey({ name: 'j2' }, noop));
     let count = 0;
-    runner.on('journey:register', () => count++);
+    class DryRunReporter implements Reporter {
+      onJourneyRegister() {
+        count++;
+      }
+    }
     const result = await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
+      ...defaultRunOptions,
+      reporter: DryRunReporter,
       dryRun: true,
     });
     expect(result).toEqual({});
@@ -443,10 +444,7 @@ describe('runner', () => {
     runner.addJourney(j1);
     runner.addJourney(j2);
 
-    await runner.run({
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
-    });
+    await runner.run(defaultRunOptions);
     expect(result).toEqual([
       'beforeAll1',
       'beforeAll2',
@@ -483,10 +481,9 @@ describe('runner', () => {
       url: 'http://local.dev',
     };
     await runner.run({
-      wsEndpoint,
+      ...defaultRunOptions,
       params,
       environment: 'testing',
-      outfd: fs.openSync(dest, 'w'),
     });
 
     expect(result).toEqual([
@@ -500,37 +497,30 @@ describe('runner', () => {
 
   it('run - supports custom reporters', async () => {
     let reporter;
-    class Reporter {
+    class CustomReporter implements Reporter {
       messages: string[] = [];
-
-      constructor(
-        public readonly runner: Runner,
-        public readonly options: any
-      ) {
+      constructor() {
         reporter = this;
-
-        this.runner.on('start', ({ numJourneys }) => {
-          this.messages.push(`numJourneys ${numJourneys}`);
-        });
-        this.runner.on('journey:start', ({ journey }) => {
-          this.messages.push(`journey:start ${journey.name}`);
-        });
-        this.runner.on('journey:end', ({ journey }) => {
-          this.messages.push(`journey:end ${journey.name}`);
-        });
-        this.runner.on('end', () => {
-          this.messages.push(`end`);
-        });
+      }
+      onStart({ numJourneys }: StartEvent) {
+        this.messages.push(`numJourneys ${numJourneys}`);
+      }
+      onJourneyStart(journey: Journey) {
+        this.messages.push(`journey:start ${journey.name}`);
+      }
+      onJourneyEnd(journey: Journey) {
+        this.messages.push(`journey:end ${journey.name}`);
+      }
+      onEnd() {
+        this.messages.push(`end`);
       }
     }
 
     runner.addJourney(new Journey({ name: 'foo' }, noop));
     const result = await runner.run({
-      reporter: Reporter,
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
+      ...defaultRunOptions,
+      reporter: CustomReporter,
     });
-
     expect(result).toEqual({
       foo: {
         status: 'succeeded',
@@ -542,10 +532,6 @@ describe('runner', () => {
       'journey:end foo',
       'end',
     ]);
-    expect(reporter.runner).toBeInstanceOf(Runner);
-    expect(reporter.options).toEqual({
-      fd: expect.any(Number),
-    });
   });
 
   const readAndCloseStreamJson = () => {
@@ -571,10 +557,9 @@ describe('runner', () => {
     runner.addJourney(j2);
 
     await runner.run({
-      wsEndpoint,
+      ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
-      outfd: fs.openSync(dest, 'w'),
     });
 
     const screenshotJson = readAndCloseStreamJson().filter(
@@ -612,10 +597,9 @@ describe('runner', () => {
     runner.addJourney(j1);
 
     await runner.run({
-      wsEndpoint,
+      ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
-      outfd: fs.openSync(dest, 'w'),
     });
 
     const screenshotDocs = readAndCloseStreamJson().filter(
@@ -640,7 +624,7 @@ describe('runner', () => {
         await page.waitForLoadState('networkidle');
       });
     });
-    const runOptions = { trace: true };
+    const runOptions = { ...defaultRunOptions, trace: true };
     const context = await Runner.createContext(runOptions);
     await runner.registerJourney(j1, context);
     const [step1, step2] = await runner.runSteps(j1, context, runOptions);
@@ -664,11 +648,10 @@ describe('runner', () => {
     });
     runner.addJourney(j1);
     await runner.run({
+      ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
       network: true,
-      wsEndpoint,
-      outfd: fs.openSync(dest, 'w'),
     });
 
     const events = readAndCloseStreamJson().map(event => ({
@@ -701,10 +684,10 @@ describe('runner', () => {
     });
     runner.addJourney(j1);
     await runner.run({
+      ...defaultRunOptions,
       reporter: 'json',
       network: true,
       trace: true,
-      outfd: fs.openSync(dest, 'w'),
     });
     const events = readAndCloseStreamJson().map(event => event.type);
     expect(events[events.length - 1]).toBe('journey/end');

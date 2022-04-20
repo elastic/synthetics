@@ -29,22 +29,31 @@
 process.env.NO_COLOR = '1';
 
 import fs from 'fs';
+import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
-import Runner from '../../src/core/runner';
 import BaseReporter from '../../src/reporters/base';
 import * as helpers from '../../src/helpers';
 
 describe('base reporter', () => {
   let dest: string;
-  let stream;
-  let runner: Runner;
+  let stream: SonicBoom;
+  let reporter: BaseReporter;
   const timestamp = 1600300800000000;
   const j1 = journey('j1', () => {});
 
+  const readAndCloseStream = async () => {
+    /**
+     * Close the underlying stream writing to FD to read all the contents
+     */
+    stream.end();
+    await new Promise(resolve => stream.once('finish', resolve));
+    return fs.readFileSync(fs.openSync(dest, 'r'), 'utf-8');
+  };
+
   beforeEach(() => {
-    runner = new Runner();
     dest = helpers.generateTempPath();
-    stream = new BaseReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
+    reporter = new BaseReporter({ fd: fs.openSync(dest, 'w') });
+    stream = reporter.stream;
     jest.spyOn(helpers, 'now').mockImplementation(() => 0);
   });
 
@@ -57,40 +66,27 @@ describe('base reporter', () => {
   });
 
   it('writes each step to the FD', async () => {
-    runner.emit('start', { numJourneys: 1 });
-    runner.emit('journey:start', {
-      journey: j1,
+    reporter.onJourneyStart(j1, {
       params: { environment: 'testing' },
       timestamp,
     });
-    const error = {
-      name: 'Error',
-      message: 'step failed',
-      stack: 'Error: step failed',
-    };
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, step('s1', helpers.noop), {
       status: 'failed',
-      error,
-      step: step('s1', () => {}),
+      error: {
+        name: 'Error',
+        message: 'step failed',
+        stack: 'Error: step failed',
+      },
       url: 'dummy',
       start: 0,
       end: 1,
     });
-    runner.emit('end', 'done');
-    /**
-     * Close the underyling stream writing to FD to read all its contents
-     */
-    stream.end();
-    await new Promise(resolve => stream.once('finish', resolve));
-    const buffer = fs.readFileSync(fs.openSync(dest, 'r'));
-    expect(buffer.toString()).toMatchSnapshot();
+    reporter.onEnd();
+    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
   it('render hook errors without steps', async () => {
-    runner.emit('start', { numJourneys: 1 });
-    runner.emit('journey:start', {
-      journey: j1,
+    reporter.onJourneyStart(j1, {
       params: { environment: 'testing' },
       timestamp,
     });
@@ -99,8 +95,7 @@ describe('base reporter', () => {
       message: 'before hook failed',
       stack: 'Error: before hook failed',
     };
-    runner.emit('journey:end', {
-      journey: j1,
+    reporter.onJourneyEnd(j1, {
       timestamp,
       status: 'failed',
       error,
@@ -108,13 +103,7 @@ describe('base reporter', () => {
       end: 1,
       options: {},
     });
-    runner.emit('end', 'done');
-    /**
-     * Close the underyling stream writing to FD to read all its contents
-     */
-    stream.end();
-    await new Promise(resolve => stream.once('finish', resolve));
-    const buffer = fs.readFileSync(fs.openSync(dest, 'r'));
-    expect(buffer.toString()).toMatchSnapshot();
+    reporter.onEnd();
+    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 });

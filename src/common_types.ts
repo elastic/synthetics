@@ -32,7 +32,7 @@ import {
   Page,
 } from 'playwright-chromium';
 import { Step } from './dsl';
-import { Reporter, reporters } from './reporters';
+import { BuiltInReporterName, ReporterInstance } from './reporters';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -48,7 +48,6 @@ export type HooksArgs = {
 };
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
-export type Reporters = keyof typeof reporters;
 
 export type NetworkConditions = {
   offline: boolean;
@@ -171,6 +170,8 @@ export type NetworkInfo = {
   };
 } & DefaultPluginOutput;
 
+export type PageMetrics = Record<string, number>;
+
 export type BrowserMessage = {
   text: string;
   type: string;
@@ -203,7 +204,7 @@ type BaseArgs = {
 
 export type CliArgs = BaseArgs & {
   config?: string;
-  reporter?: Reporters;
+  reporter?: BuiltInReporterName;
   pattern?: string;
   inline?: boolean;
   require?: Array<string>;
@@ -224,11 +225,53 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
-  reporter?: CliArgs['reporter'] | Reporter;
+  reporter?: BuiltInReporterName | ReporterInstance;
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
+};
+
+/** Runner Payload types */
+export type JourneyResult = {
+  status: StatusValue;
+  error?: Error;
+  networkinfo?: PluginOutput['networkinfo'];
+  browserconsole?: PluginOutput['browserconsole'];
+};
+
+export type StepResult = {
+  status: StatusValue;
+  url?: string;
+  error?: Error;
+  pagemetrics?: PageMetrics;
+  filmstrips?: PluginOutput['filmstrips'];
+  metrics?: PluginOutput['metrics'];
+  traces?: PluginOutput['traces'];
+};
+
+/** Reporter and Runner contract */
+export type StartEvent = {
+  numJourneys: number;
+  networkConditions?: NetworkConditions;
+};
+
+export type JourneyStartResult = {
+  timestamp: number;
+  params?: Params;
+};
+
+export type JourneyEndResult = JourneyStartResult &
+  JourneyResult & {
+    start: number;
+    end: number;
+    options: RunOptions;
+    timestamp: number;
+  };
+
+export type StepEndResult = StepResult & {
+  start: number;
+  end: number;
 };

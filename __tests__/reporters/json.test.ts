@@ -26,6 +26,7 @@
 import fs, { mkdirSync } from 'fs';
 import { join } from 'path';
 import snakeCaseKeys from 'snakecase-keys';
+import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
@@ -33,7 +34,6 @@ import JSONReporter, {
   getScreenshotBlocks,
 } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
-import Runner from '../../src/core/runner';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
 
@@ -49,8 +49,8 @@ jest.mock(
 describe('json reporter', () => {
   let dest: string;
   const j1 = journey('j1', () => {});
-  let stream;
-  let runner: Runner;
+  let stream: SonicBoom;
+  let reporter: JSONReporter;
   const timestamp = 1600300800000000;
   const originalProcess = global.process;
   const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -68,9 +68,9 @@ describe('json reporter', () => {
   });
 
   beforeEach(() => {
-    runner = new Runner();
     dest = helpers.generateTempPath();
-    stream = new JSONReporter(runner, { fd: fs.openSync(dest, 'w') }).stream;
+    reporter = new JSONReporter({ fd: fs.openSync(dest, 'w') });
+    stream = reporter.stream;
     jest.spyOn(helpers, 'getTimestamp').mockImplementation(() => timestamp);
   });
 
@@ -82,11 +82,9 @@ describe('json reporter', () => {
     /**
      * Close the underlying stream writing to FD to read all the contents
      */
-    stream.once('drain', () => stream.end());
+    stream.once('drain', stream.end);
     await new Promise(resolve => stream.once('finish', resolve));
-    const fd = fs.openSync(dest, 'r');
-    const buffer = fs.readFileSync(fd, 'utf-8');
-    return buffer;
+    return fs.readFileSync(fs.openSync(dest, 'r'), 'utf-8');
   };
 
   const readAndCloseStreamJson = async () => {
@@ -105,18 +103,13 @@ describe('json reporter', () => {
   it('writes each step as NDJSON to the FD', async () => {
     const error = new Error('boom');
     error.stack = '';
-    runner.emit('journey:register', {
-      journey: j1,
-    });
-    runner.emit('journey:start', {
-      journey: j1,
+    reporter.onJourneyRegister(j1);
+    reporter.onJourneyStart(j1, {
       params: { environment: 'testing' },
       timestamp,
     });
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, step('s1', helpers.noop), {
       status: 'succeeded',
-      step: step('s1', () => {}),
       url: 'dummy',
       start: 0,
       end: 10,
@@ -161,8 +154,7 @@ describe('json reporter', () => {
         cls: 0.123,
       },
     });
-    runner.emit('journey:end', {
-      journey: j1,
+    reporter.onJourneyEnd(j1, {
       timestamp,
       status: 'succeeded',
       start: 0,
@@ -186,7 +178,7 @@ describe('json reporter', () => {
         },
       ],
     });
-    runner.emit('end', 'done');
+    reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
@@ -205,10 +197,8 @@ describe('json reporter', () => {
   it('writes step errors to the top level', async () => {
     const myErr = new Error('myError');
 
-    runner.emit('step:end', {
-      journey: j1,
+    reporter.onStepEnd(j1, step('s2', helpers.noop), {
       status: 'failed',
-      step: step('s2', () => {}),
       url: 'dummy2',
       start: 11,
       end: 20,
@@ -224,8 +214,7 @@ describe('json reporter', () => {
   it('writes journey errors to the top level', async () => {
     const myErr = new Error('myError');
 
-    runner.emit('journey:end', {
-      journey: j1,
+    reporter.onJourneyEnd(j1, {
       timestamp,
       start: 0,
       end: 1,
@@ -242,14 +231,17 @@ describe('json reporter', () => {
 
   it('writes full journey info if present', async () => {
     const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
-    runner.emit('journey:end', {
-      journey: journey(journeyOpts, () => {}),
-      timestamp,
-      start: 0,
-      end: 1,
-      status: 'skipped',
-      options: {},
-    });
+
+    reporter.onJourneyEnd(
+      journey(journeyOpts, () => {}),
+      {
+        timestamp,
+        start: 0,
+        end: 1,
+        status: 'skipped',
+        options: {},
+      }
+    );
 
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
@@ -258,9 +250,7 @@ describe('json reporter', () => {
   });
 
   it('captures number of journeys as metadata event', async () => {
-    runner.emit('start', {
-      numJourneys: 10,
-    });
+    reporter.onStart({ numJourneys: 10 });
 
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
@@ -302,8 +292,7 @@ describe('json reporter', () => {
     });
 
     const emitEnd = (options, status = 'failed' as StatusValue) =>
-      runner.emit('journey:end', {
-        journey: j1,
+      reporter.onJourneyEnd(j1, {
         timestamp,
         start: 0,
         end: 2,

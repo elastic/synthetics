@@ -23,7 +23,7 @@
  *
  */
 
-import { Driver } from '../common_types';
+import { Driver, PageMetrics } from '../common_types';
 
 const supportedMetrics = new Set<string>([
   'Timestamp',
@@ -40,22 +40,6 @@ const supportedMetrics = new Set<string>([
   'JSHeapUsedSize',
   'JSHeapTotalSize',
 ]);
-
-export interface PageMetrics {
-  Timestamp?: number;
-  Documents?: number;
-  Frames?: number;
-  JSEventListeners?: number;
-  Nodes?: number;
-  LayoutCount?: number;
-  RecalcStyleCount?: number;
-  LayoutDuration?: number;
-  RecalcStyleDuration?: number;
-  ScriptDuration?: number;
-  TaskDuration?: number;
-  JSHeapUsedSize?: number;
-  JSHeapTotalSize?: number;
-}
 
 export class PerformanceManager {
   constructor(private driver: Driver) {}
