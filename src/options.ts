@@ -110,11 +110,10 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     },
   ]);
 
-  const { throttling, locations, schedule } = getDefaultMonitorConfig();
-
+  const defaults = getDefaultMonitorConfig();
   if (cliArgs.throttling) {
     const throttleConfig = merge.all([
-      throttling,
+      defaults.throttling,
       config.monitor?.throttling || {},
       cliArgs.throttling as ThrottlingOptions,
     ]);
@@ -128,9 +127,10 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   }
 
   options.locations =
-    cliArgs.locations ?? config.monitor?.locations ?? locations;
+    cliArgs.locations ?? config.monitor?.locations ?? defaults.locations;
 
-  options.schedule = cliArgs.schedule ?? config.monitor?.schedule ?? schedule;
+  options.schedule =
+    cliArgs.schedule ?? config.monitor?.schedule ?? defaults.schedule;
 
   return options;
 }
@@ -144,4 +144,36 @@ export function getDefaultMonitorConfig(): MonitorConfig {
     locations: ['US East'],
     schedule: '10m',
   };
+}
+
+/**
+ * Parses the throttling CLI settings and also
+ * adapts to the format to keep the backwards compatability
+ * - Accepts old format `<5d/3u/20l>`
+ * - Processess new format otherwise `{download: 5, upload: 3, latency: 20}`
+ */
+export function parseThrottling(value: string, prev?: string) {
+  const THROTTLING_REGEX = /([0-9]{1,}u)|([0-9]{1,}d)|([0-9]{1,}l)/gm;
+  if (THROTTLING_REGEX.test(value)) {
+    const throttling: ThrottlingOptions = {};
+    const conditions = value.split('/');
+
+    conditions.forEach(condition => {
+      const setting = condition.slice(0, condition.length - 1);
+      const token = condition.slice(-1);
+      switch (token) {
+        case 'd':
+          throttling.download = Number(setting);
+          break;
+        case 'u':
+          throttling.upload = Number(setting);
+          break;
+        case 'l':
+          throttling.latency = Number(setting);
+          break;
+      }
+    });
+    return throttling;
+  }
+  return JSON.parse(value || prev);
 }

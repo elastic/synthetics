@@ -24,7 +24,7 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions } from '../src/options';
+import { normalizeOptions, parseThrottling } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
@@ -90,6 +90,19 @@ describe('options', () => {
         upload: 3,
         latency: 20,
       },
+    });
+  });
+
+  it('parse throttling', () => {
+    expect(parseThrottling('{}')).toEqual({});
+    expect(parseThrottling('{"download": 20, "upload": 10}')).toEqual({
+      download: 20,
+      upload: 10,
+    });
+    expect(parseThrottling('100l/41u/9d')).toEqual({
+      download: 9,
+      upload: 41,
+      latency: 100,
     });
   });
 });

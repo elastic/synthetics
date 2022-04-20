@@ -450,6 +450,21 @@ describe('CLI', () => {
       });
     });
 
+    it('supports older format', async () => {
+      const cli = new CLIMock()
+        .args(cliArgs.concat(['--throttling', '17u/30l/3d']))
+        .run();
+      await cli.waitFor('synthetics/metadata');
+      const journeyStartOutput = JSON.parse(cli.output());
+      expect(await cli.exitCode).toBe(0);
+      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
+        downloadThroughput: megabitsToBytes(3),
+        uploadThroughput: megabitsToBytes(17),
+        latency: 30,
+        offline: false,
+      });
+    });
+
     it('uses default throttling when specific params are not provided', async () => {
       const cli = new CLIMock()
         .args(cliArgs.concat(['--throttling', JSON.stringify({ download: 2 })]))

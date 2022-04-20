@@ -28,7 +28,7 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
-import { normalizeOptions } from './options';
+import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
@@ -107,7 +107,7 @@ program
   .option(
     '--throttling <config>',
     'JSON object to throttle network conditions for download and upload throughput in megabits/second and latency in milliseconds. Ex: { "download": 10, "upload": 5, "latency": 200 }.',
-    JSON.parse,
+    parseThrottling,
     {}
   )
   .option('--no-throttling', 'Turns off default network throttling.')
