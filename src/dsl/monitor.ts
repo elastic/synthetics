@@ -24,7 +24,7 @@
  */
 
 import merge from 'deepmerge';
-import { ThrottlingOptions } from '../common_types';
+import { ThrottlingOptions, Location } from '../common_types';
 
 export type SyntheticsLocations = 'US East' | 'EU West';
 export type MonitorConfig = {
@@ -36,6 +36,7 @@ export type MonitorConfig = {
 };
 
 export class Monitor {
+  source?: Location;
   constructor(public config: MonitorConfig = {}) {}
   /**
    * Treat the creation time config with `monitor.use` as source of truth by
@@ -47,5 +48,9 @@ export class Monitor {
         return [...new Set(source)];
       },
     });
+  }
+
+  setSource(source: Location) {
+    this.source = source;
   }
 }

@@ -25,10 +25,10 @@
 
 import { green, cyan } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { runner } from '../core';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { CACHE_PATH } from '../helpers';
+import { Monitor } from '../dsl/monitor';
 
 function write(message) {
   process.stderr.write(green(message) + '\n');
@@ -38,8 +38,8 @@ function progress(message) {
   process.stderr.write(cyan(message) + '\n');
 }
 
-export async function push() {
-  if (runner.journeys.length == 0) {
+export async function push(monitors: Monitor[]) {
+  if (monitors.length == 0) {
     throw new Error('No Monitors found');
   }
   const bundler = new Bundler();
@@ -47,12 +47,15 @@ export async function push() {
   const bundlePath = join(CACHE_PATH, 'bundles');
   await mkdir(bundlePath, { recursive: true });
 
-  for (const journey of runner.journeys) {
-    const { name, location } = journey;
-    const outPath = join(bundlePath, name + '.zip');
-    progress(`Preparing journey: ${name}`);
-    const value = await bundler.build(location.file, outPath);
-    console.log('Bundled', value);
+  for (const monitor of monitors) {
+    const { source, config } = monitor;
+    const outPath = join(bundlePath, config.name + '.zip');
+    progress(`Preparing journey: ${config.name}`);
+    const value = await bundler.build(source.file, outPath);
+    console.log('Monitor', {
+      content: value,
+      ...config,
+    });
     await bundler.cleanup(outPath);
   }
   write('Done');

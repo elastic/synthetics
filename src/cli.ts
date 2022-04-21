@@ -158,8 +158,8 @@ program
       const cliArgs = { inline: false };
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
-      runner.buildMonitors(options);
-      await push();
+      const monitors = runner.buildMonitors(options);
+      await push(monitors);
     } catch (e) {
       console.error(e);
       process.exit(1);

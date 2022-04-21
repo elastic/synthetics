@@ -65,7 +65,7 @@ export class Journey {
     this.tags = options.tags;
     this.callback = callback;
     this.location = location;
-    this.monitor = new Monitor({ name: this.name, id: this.id });
+    this.updateMonitor({});
   }
 
   addStep(name: string, callback: VoidCallback, location?: Location) {
@@ -83,6 +83,7 @@ export class Journey {
      * Use defaults values from journey for monitor like `name` and `id`
      */
     this.monitor = new Monitor({ name: this.name, id: this.id, ...config });
+    this.monitor.setSource(this.location);
   }
 
   /**
