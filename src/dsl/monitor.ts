@@ -23,49 +23,29 @@
  *
  */
 
-import { runner } from './core';
-import { RunOptions } from './common_types';
+import merge from 'deepmerge';
+import { ThrottlingOptions } from '../common_types';
 
-export async function run(options: RunOptions) {
-  return runner.run(options);
+export type SyntheticsLocations = 'US East' | 'EU West';
+export type MonitorConfig = {
+  id?: string;
+  name?: string;
+  schedule?: string;
+  locations?: SyntheticsLocations[];
+  throttling?: ThrottlingOptions;
+};
+
+export class Monitor {
+  constructor(public config: MonitorConfig = {}) {}
+  /**
+   * Treat the creation time config with `monitor.use` as source of truth by
+   * merging the values coming from CLI and Synthetics config file
+   */
+  update(globalOpts: MonitorConfig = {}) {
+    this.config = merge(globalOpts, this.config, {
+      arrayMerge(target, source) {
+        return [...new Set(source)];
+      },
+    });
+  }
 }
-
-/**
- * Export all core module functions
- */
-export {
-  journey,
-  step,
-  monitor,
-  beforeAll,
-  afterAll,
-  before,
-  after,
-} from './core';
-export { expect } from './core/expect';
-/**
- * Export all the driver related types to be consumed
- * and used by suites
- */
-export type {
-  Page,
-  ChromiumBrowser,
-  ChromiumBrowserContext,
-  CDPSession,
-} from 'playwright-chromium';
-
-/**
- * Export the types necessary to write custom reporters
- */
-export type { default as Runner } from './core/runner';
-export type { Reporter, ReporterOptions } from './reporters';
-
-export type { SyntheticsConfig } from './common_types';
-export type {
-  Action,
-  ActionInContext,
-  Signal,
-  Step,
-  Steps,
-  actionTitle,
-} from './formatter/javascript';

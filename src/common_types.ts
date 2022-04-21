@@ -33,6 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
+import { MonitorConfig, SyntheticsLocations } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -188,6 +189,12 @@ export type PluginOutput = {
 
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
 
+export type ThrottlingOptions = {
+  download?: number;
+  upload?: number;
+  latency?: number;
+};
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
@@ -200,6 +207,9 @@ type BaseArgs = {
   ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
+  throttling?: ThrottlingOptions;
+  schedule?: string;
+  locations?: SyntheticsLocations[];
 };
 
 export type CliArgs = BaseArgs & {
@@ -213,7 +223,7 @@ export type CliArgs = BaseArgs & {
   richEvents?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
-  throttling?: boolean | string;
+  throttling?: boolean | ThrottlingOptions;
 };
 
 export type RunOptions = BaseArgs & {
@@ -232,6 +242,7 @@ export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
+  monitor?: MonitorConfig;
 };
 
 /** Runner Payload types */

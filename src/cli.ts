@@ -28,10 +28,10 @@
 import { program, Option } from 'commander';
 import { CliArgs } from './common_types';
 import { reporters } from './reporters';
-import { DEFAULT_NETWORK_CONDITIONS_ARG } from './helpers';
-import { normalizeOptions } from './options';
+import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
+import { runner } from './core';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -105,9 +105,10 @@ program
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
   )
   .option(
-    '--throttling <d/u/l>',
-    'List of options to throttle network conditions for download throughput (d) in megabits/second, upload throughput (u) in megabits/second and latency (l) in milliseconds.',
-    DEFAULT_NETWORK_CONDITIONS_ARG
+    '--throttling <config>',
+    'JSON object to throttle network conditions for download and upload throughput in megabits/second and latency in milliseconds. Ex: { "download": 10, "upload": 5, "latency": 200 }.',
+    parseThrottling,
+    {}
   )
   .option('--no-throttling', 'Turns off default network throttling.')
   .option(
@@ -139,12 +140,29 @@ program
   });
 
 program
-  .command('push')
+  .command('push [files...]')
   .description(
     'Push monitors to create new montors with Kibana monitor management UI'
   )
-  .action(() => {
-    throw new Error('TODO: Implement me');
+  .option(
+    '--schedule <time>',
+    "The default interval for the pushed monitors. Setting `10m`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes."
+  )
+  .option(
+    '--locations <locations...>',
+    'The default list of locations from which your monitors will run.'
+  )
+  .action(async (files, cmdOpts) => {
+    try {
+      const cliArgs = { inline: false };
+      await loadTestFiles(cliArgs, files);
+      const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
+      runner.buildMonitors(options);
+      // TODO: Push logic will be implemented in follow up PR's
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
+    }
   });
 
 program.parse(process.argv);

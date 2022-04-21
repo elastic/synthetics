@@ -35,6 +35,7 @@ import {
   HooksCallback,
   NetworkConditions,
   Location,
+  ThrottlingOptions,
 } from './common_types';
 
 const lstatAsync = promisify(fs.lstat);
@@ -267,62 +268,27 @@ export function megabitsToBytes(megabytes: number) {
   return (megabytes * 1024 * 1024) / 8;
 }
 
-export function bytesToMegabits(bytes: number) {
-  return (bytes / 1024 / 1024) * 8;
-}
-
-export const DEFAULT_NETWORK_CONDITIONS: NetworkConditions = {
-  downloadThroughput: megabitsToBytes(5), // Devtools CDP expects format to be in bytes/second
-  uploadThroughput: megabitsToBytes(3), // Devtools CDP expects format to be in bytes/second
-  latency: 20, // milliseconds,
-  offline: false,
+export const DEFAULT_THROTTLING_OPTIONS: ThrottlingOptions = {
+  download: 5,
+  upload: 3,
+  latency: 20,
 };
 
-// Tranforms CDP dev tools format back to cli args format
-export function formatNetworkConditionsArgs(
-  networkConditions: NetworkConditions
-) {
-  const d = bytesToMegabits(networkConditions.downloadThroughput);
-  const u = bytesToMegabits(networkConditions.uploadThroughput);
-  const l = networkConditions.latency;
-  return `${d}d/${u}u/${l}l`;
-}
-
-export const DEFAULT_NETWORK_CONDITIONS_ARG = formatNetworkConditionsArgs(
-  DEFAULT_NETWORK_CONDITIONS
-);
-
-export function parseNetworkConditions(args: string): NetworkConditions {
-  const uploadToken = 'u';
-  const downloadToken = 'd';
-  const latencyToken = 'l';
-  const networkConditions = {
-    ...DEFAULT_NETWORK_CONDITIONS,
+/**
+ * Transforms the CLI throttling arguments in to format
+ * expected by Chrome devtools protocol NetworkConditions
+ */
+export function getNetworkConditions(
+  throttlingOpts: ThrottlingOptions
+): NetworkConditions {
+  return {
+    downloadThroughput: megabitsToBytes(throttlingOpts.download),
+    uploadThroughput: megabitsToBytes(throttlingOpts.upload), // Devtools CDP expects format to be in bytes/second
+    latency: throttlingOpts.latency, // milliseconds,
+    offline: false,
   };
-
-  const conditions = args.split('/');
-
-  conditions.forEach(condition => {
-    const value = condition.slice(0, condition.length - 1);
-    const token = condition.slice(-1);
-
-    switch (token) {
-      case uploadToken:
-        networkConditions.uploadThroughput = megabitsToBytes(Number(value));
-        break;
-      case downloadToken:
-        networkConditions.downloadThroughput = megabitsToBytes(Number(value));
-        break;
-      case latencyToken:
-        networkConditions.latency = Number(value);
-        break;
-    }
-  });
-
-  return networkConditions;
 }
 
-// default stack trace limit
 const dstackTraceLimit = 10;
 
 // Uses the V8 Stacktrace API to get the function location

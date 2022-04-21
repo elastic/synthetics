@@ -27,6 +27,7 @@ import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { Monitor, MonitorConfig } from './monitor';
 
 export type JourneyOptions = {
   name: string;
@@ -52,6 +53,7 @@ export class Journey {
   location?: Location;
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
+  monitor: Monitor;
 
   constructor(
     options: JourneyOptions,
@@ -63,6 +65,7 @@ export class Journey {
     this.tags = options.tags;
     this.callback = callback;
     this.location = location;
+    this.monitor = new Monitor({ name: this.name, id: this.id });
   }
 
   addStep(name: string, callback: VoidCallback, location?: Location) {
@@ -74,6 +77,14 @@ export class Journey {
   addHook(type: HookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
+
+  updateMonitor(config: MonitorConfig) {
+    /**
+     * Use defaults values from journey for monitor like `name` and `id`
+     */
+    this.monitor = new Monitor({ name: this.name, id: this.id, ...config });
+  }
+
   /**
    * Matches journeys based on the provided args. Proitize tags over match
    * - tags pattern that matches only tags

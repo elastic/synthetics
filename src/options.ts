@@ -25,8 +25,9 @@
 
 import merge from 'deepmerge';
 import { readConfig } from './config';
-import { parseNetworkConditions } from './helpers';
-import type { CliArgs, RunOptions } from './common_types';
+import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
+import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
+import { MonitorConfig } from './dsl/monitor';
 
 /**
  * Set debug based on DEBUG ENV and -d flags
@@ -91,11 +92,14 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
       ? readConfig(options.environment, cliArgs.config)
       : {};
 
+  /**
+   * Order of preference for options that are used while running are
+   * 1. Local options configured via Runner API
+   * 2. CLI flags
+   * 3. Configuration file
+   */
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
 
-  /**
-   * Favor playwright options passed via cli to inline playwright options
-   */
   options.playwrightOptions = merge.all([
     config.playwrightOptions || {},
     cliArgs.playwrightOptions || {},
@@ -106,11 +110,70 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     },
   ]);
 
+  const defaults = getDefaultMonitorConfig();
   if (cliArgs.throttling) {
-    options.networkConditions = parseNetworkConditions(
-      cliArgs.throttling as string
-    );
+    const throttleConfig = merge.all([
+      defaults.throttling,
+      config.monitor?.throttling || {},
+      cliArgs.throttling as ThrottlingOptions,
+    ]);
+    options.throttling = throttleConfig;
+    options.networkConditions = getNetworkConditions(throttleConfig);
+  } else {
+    /**
+     * Do not apply throttling when `--no-throttling` flag is passed
+     */
+    options.throttling = {};
   }
 
+  options.locations =
+    cliArgs.locations ?? config.monitor?.locations ?? defaults.locations;
+
+  options.schedule =
+    cliArgs.schedule ?? config.monitor?.schedule ?? defaults.schedule;
+
   return options;
+}
+
+/**
+ * Get the default monitor configuration for all journeys
+ */
+export function getDefaultMonitorConfig(): MonitorConfig {
+  return {
+    throttling: DEFAULT_THROTTLING_OPTIONS,
+    locations: ['US East'],
+    schedule: '10m',
+  };
+}
+
+/**
+ * Parses the throttling CLI settings and also
+ * adapts to the format to keep the backwards compatability
+ * - Accepts old format `<5d/3u/20l>`
+ * - Processess new format otherwise `{download: 5, upload: 3, latency: 20}`
+ */
+export function parseThrottling(value: string, prev?: string) {
+  const THROTTLING_REGEX = /([0-9]{1,}u)|([0-9]{1,}d)|([0-9]{1,}l)/gm;
+  if (THROTTLING_REGEX.test(value)) {
+    const throttling: ThrottlingOptions = {};
+    const conditions = value.split('/');
+
+    conditions.forEach(condition => {
+      const setting = condition.slice(0, condition.length - 1);
+      const token = condition.slice(-1);
+      switch (token) {
+        case 'd':
+          throttling.download = Number(setting);
+          break;
+        case 'u':
+          throttling.upload = Number(setting);
+          break;
+        case 'l':
+          throttling.latency = Number(setting);
+          break;
+      }
+    });
+    return throttling;
+  }
+  return JSON.parse(value || prev);
 }

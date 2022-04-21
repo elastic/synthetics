@@ -28,6 +28,7 @@ import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
+import { MonitorConfig } from '../dsl/monitor';
 
 /**
  * Use a gloabl Runner which would be accessed by the runtime and
@@ -62,6 +63,20 @@ export const step = wrapFnWithLocation(
     return runner.currentJourney?.addStep(name, callback, location);
   }
 );
+
+export const monitor = {
+  use: wrapFnWithLocation((location: Location, config: MonitorConfig) => {
+    /**
+     * If the context is inside journey, then set it to journey context
+     * otherwise set to the global monitor which will be used for all journeys
+     */
+    if (runner.currentJourney) {
+      runner.currentJourney.updateMonitor(config);
+    } else {
+      runner.updateMonitor(config);
+    }
+  }),
+};
 
 export const beforeAll = (callback: HooksCallback) => {
   runner.addHook('beforeAll', callback);
