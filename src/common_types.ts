@@ -238,6 +238,13 @@ export type RunOptions = BaseArgs & {
   reporter?: BuiltInReporterName | ReporterInstance;
 };
 
+export type PushOptions = {
+  schedule?: string;
+  locations?: SyntheticsLocations[];
+  auth: string;
+  url: string;
+};
+
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;

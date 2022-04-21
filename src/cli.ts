@@ -26,7 +26,7 @@
  */
 
 import { program, Option } from 'commander';
-import { CliArgs } from './common_types';
+import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
 import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
@@ -153,13 +153,18 @@ program
     '--locations <locations...>',
     'The default list of locations from which your monitors will run.'
   )
-  .action(async (files, cmdOpts) => {
+  .requiredOption('--url <url>', 'kibana URL to upload the monitors')
+  .requiredOption(
+    '--auth <auth>',
+    'user authentication/API key that will be used to communicate with Kibana.'
+  )
+  .action(async (files, cmdOpts: PushOptions) => {
     try {
       const cliArgs = { inline: false };
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
       const monitors = runner.buildMonitors(options);
-      await push(monitors);
+      await push(cmdOpts, monitors);
     } catch (e) {
       console.error(e);
       process.exit(1);

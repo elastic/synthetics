@@ -23,37 +23,32 @@
  *
  */
 
-import { cyan } from 'kleur/colors';
-import { mkdir } from 'fs/promises';
-import { join } from 'path';
-import { Bundler } from './bundler';
-import { createMonitor } from './request';
-import { CACHE_PATH } from '../helpers';
-import { Monitor } from '../dsl/monitor';
+import { request } from 'undici';
 import { PushOptions } from '../common_types';
+import { MonitorConfig } from '../dsl/monitor';
 
-function progress(message) {
-  process.stderr.write(cyan(message) + '\n');
+type MonitorSchema = MonitorConfig & {
+  content: string;
+};
+
+function encodeAuth(auth: string) {
+  if (auth.includes(':')) {
+    return Buffer.from(auth).toString('base64');
+  }
+  return auth;
 }
 
-export async function push(options: PushOptions, monitors: Monitor[]) {
-  if (monitors.length == 0) {
-    throw new Error('No Monitors found');
-  }
-  /**
-   * Set up the bundle artificats path which can be used to
-   * create the bundles required for uploading journeys
-   */
-  const bundlePath = join(CACHE_PATH, 'bundles');
-  await mkdir(bundlePath, { recursive: true });
-  const bundler = new Bundler();
-
-  for (const monitor of monitors) {
-    const { source, config } = monitor;
-    const outPath = join(bundlePath, config.name + '.zip');
-    progress(`preparing journey: ${config.name}`);
-    const content = await bundler.build(source.file, outPath);
-    await createMonitor({ ...config, content }, options);
-    progress(`created monitor: ${config.name}`);
-  }
+export async function createMonitor(
+  monitor: MonitorSchema,
+  options: PushOptions
+) {
+  return await request(options.url, {
+    method: 'POST',
+    body: JSON.stringify(monitor),
+    headers: {
+      authorization: `Basic ${encodeAuth(options.auth)}`,
+      'content-type': 'application/json',
+      'user-agent': 'Elastic/Synthetics',
+    },
+  });
 }

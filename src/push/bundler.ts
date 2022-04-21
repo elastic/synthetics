@@ -83,7 +83,9 @@ export class Bundler {
   async build(entry: string, output: string) {
     await this.prepare(entry);
     await this.zip(output);
-    return this.encode(output);
+    const data = this.encode(output);
+    await this.cleanup(output);
+    return data;
   }
 
   async encode(outputPath: string) {
