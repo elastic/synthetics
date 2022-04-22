@@ -164,7 +164,7 @@ program
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
       const monitors = runner.buildMonitors(options);
-      await push(cmdOpts, monitors);
+      await push(monitors, cmdOpts);
     } catch (e) {
       console.error(e);
       process.exit(1);

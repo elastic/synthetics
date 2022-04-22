@@ -23,11 +23,11 @@
  *
  */
 
-import { cyan } from 'kleur/colors';
+import { cyan, red } from 'kleur/colors';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Bundler } from './bundler';
-import { createMonitor } from './request';
+import { createMonitor, MonitorSchema } from './request';
 import { CACHE_PATH } from '../helpers';
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
@@ -36,24 +36,39 @@ function progress(message) {
   process.stderr.write(cyan(message) + '\n');
 }
 
-export async function push(options: PushOptions, monitors: Monitor[]) {
+function error(message) {
+  process.stderr.write(red(message) + '\n');
+}
+
+export async function createSchema(monitors: Monitor[]) {
   if (monitors.length == 0) {
     throw new Error('No Monitors found');
   }
   /**
-   * Set up the bundle artificats path which can be used to
+   * Set up the bundle artifacts path which can be used to
    * create the bundles required for uploading journeys
    */
   const bundlePath = join(CACHE_PATH, 'bundles');
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
+  const schemas: MonitorSchema[] = [];
 
   for (const monitor of monitors) {
     const { source, config } = monitor;
     const outPath = join(bundlePath, config.name + '.zip');
-    progress(`preparing journey: ${config.name}`);
     const content = await bundler.build(source.file, outPath);
-    await createMonitor({ ...config, content }, options);
-    progress(`created monitor: ${config.name}`);
+    schemas.push({ ...config, content });
+  }
+  return schemas;
+}
+
+export async function push(monitors: Monitor[], options: PushOptions) {
+  const schemas = await createSchema(monitors);
+  progress(`preparing all monitors`);
+  try {
+    progress(`creating all monitors`);
+    await createMonitor(schemas, options);
+  } catch (e) {
+    error(e);
   }
 }

@@ -23,32 +23,26 @@
  *
  */
 
-import { request } from 'undici';
-import { PushOptions } from '../common_types';
-import { MonitorConfig } from '../dsl/monitor';
+import { createServer } from 'http';
+import { AddressInfo } from 'net';
 
-export type MonitorSchema = MonitorConfig & {
-  content: string;
-};
-
-function encodeAuth(auth: string) {
-  if (auth.includes(':')) {
-    return Buffer.from(auth).toString('base64');
-  }
-  return auth;
-}
-
-export async function createMonitor(
-  monitors: MonitorSchema[],
-  options: PushOptions
-) {
-  return await request(options.url, {
-    method: 'POST',
-    body: JSON.stringify(monitors),
-    headers: {
-      authorization: `Basic ${encodeAuth(options.auth)}`,
-      'content-type': 'application/json',
-      'user-agent': 'Elastic/Synthetics',
-    },
+export async function createMockServer() {
+  const server = createServer((req, res) => {
+    let data = '';
+    req.on('data', chunks => {
+      data += chunks;
+    });
+    req.on('end', () => {
+      // Write the post data back
+      res.end(data.toString());
+    });
   });
+  server.listen(0);
+  await new Promise(resolve => server.once('listening', resolve));
+
+  const { port } = server.address() as AddressInfo;
+  return {
+    url: `http://localhost:${port}`,
+    close: async () => await new Promise(resolve => server.close(resolve)),
+  };
 }
