@@ -99,11 +99,12 @@ async function checkForSyntheticsData({ page, journeyName }) {
     await page.reload();
     isTableVisible = await checkForTable();
   }
-  await page.click(`text=${journeyName}`, { timeout: 300 * 1000 });
+  await page.fill('[data-test-subj="queryInput"]', journeyName);
+  await page.click(`a:has-text("${journeyName}")`, { timeout: 300 * 1000 });
   console.info(`Data for ${journeyName} indexed successfully`)
 }
 
-journey('E2e test synthetics - http', async ({ page }) => {
+journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
   const journeyName = 'Sample http integration policy';
 
   step('Go to synthetics integration page', async () => {
@@ -128,7 +129,7 @@ journey('E2e test synthetics - http', async ({ page }) => {
   });
 });
 
-journey('E2e test synthetics - tcp', async ({ page }) => {
+journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
   const journeyName = 'Sample tcp integration policy';
 
   step('Go to synthetics integration page', async () => {
@@ -176,7 +177,7 @@ journey('E2e test synthetics - tcp', async ({ page }) => {
 //   });
 // });
 
-journey('E2e test synthetics - browser', async ({ page }) => {
+journey(`${stackVersion} e2e test synthetics - browser`, async ({ page }) => {
   const journeyName = 'Sample browser integration policy';
 
   step('Go to synthetics integration page', async () => {
@@ -202,7 +203,7 @@ journey('E2e test synthetics - browser', async ({ page }) => {
 });
 
 if (semver.satisfies(stackVersion, '>=8.0.1')) {
-  journey('E2e test synthetics - browser - inline', async ({ page }) => {
+  journey(`${stackVersion} e2e test synthetics - browser - inline`, async ({ page }) => {
     const journeyName = 'Sample browser inline integration policy';
 
     step('Go to synthetics integration page', async () => {
