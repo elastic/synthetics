@@ -21,7 +21,7 @@ npx @elastic/synthetics [options] [dir] [files] file
 
 ## Documentation
 
-- [Introduction](https://www.elastic.co/guide/en/observability/current/synthetic-monitoring.html)
+- [Introduction](https://www.elastic.co/guide/en/observability/current/monitor-uptime-synthetics.html#monitoring-synthetics)
 - [CLI Options](https://www.elastic.co/guide/en/observability/current/synthetics-command-reference.html#elastic-synthetics-command)
 - [Syntax](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-syntax)
 - [Creating a Journey](https://www.elastic.co/guide/en/observability/current/synthetics-create-test.html#synthetics-create-journey)
