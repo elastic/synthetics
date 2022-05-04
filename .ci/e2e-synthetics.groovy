@@ -78,9 +78,10 @@ pipeline {
     cleanup {
       notifyBuildResult(prComment: true)
     }
-    unsuccessful {
-      notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] e2e failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
-    }
+    // Temporarily disabled until https://github.com/elastic/uptime-dev/issues/99 is resolved
+    // unsuccessful {
+    //   notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] e2e failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
+    // }
     // success {
     //   notifyStatus(slackStatus: 'good', subject: "[${env.REPO}] e2e ran successfully", body: "Great news, the e2e for synthetics has finished successfully. (<${env.RUN_DISPLAY_URL}|Open>).")
     // }
