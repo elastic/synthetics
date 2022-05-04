@@ -35,7 +35,7 @@ function createTestMonitor(filename: string) {
   const monitor = new Monitor({
     id: 'test-monitor',
     name: 'test',
-    schedule: '10m',
+    schedule: 10,
     locations: ['EU West'],
   });
   monitor.setSource({
@@ -56,29 +56,33 @@ describe('Push', () => {
   });
 
   it('creates monitor', async () => {
-    server.route('/echo', (req, res) => {
-      let data = '';
-      req.on('data', chunks => {
-        data += chunks;
-      });
-      req.on('end', () => {
-        // Write the post data back
-        res.end(data.toString());
-      });
-    });
+    server.route(
+      '/s/default/api/synthetics/service/push/monitors',
+      (req, res) => {
+        let data = '';
+        req.on('data', chunks => {
+          data += chunks;
+        });
+        req.on('end', () => {
+          // Write the post data back
+          res.end(data.toString());
+        });
+      }
+    );
 
     const monitor = createTestMonitor('example.journey.ts');
     const schema = await createMonitorSchema([monitor]);
     expect(schema[0]).toMatchObject({
       id: 'test-monitor',
       name: 'test',
-      schedule: '10m',
-      locations: ['EU West'],
+      schedule: 10,
+      locations: ['europe-west2-a'],
       content: expect.any(String),
     });
     const { statusCode, body } = await createMonitor(schema, {
-      url: `${server.PREFIX}/echo`,
+      url: `${server.PREFIX}`,
       auth: 'foo:bar',
+      project: 'blah',
       space: 'default',
       delete: false,
     });
@@ -89,8 +93,8 @@ describe('Push', () => {
       data += chunk;
     }
     expect(JSON.parse(data)).toEqual({
+      project: 'blah',
       keep_stale: true,
-      space: 'default',
       monitors: schema,
     });
   });

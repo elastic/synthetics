@@ -33,7 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
-import { MonitorConfig } from './dsl/monitor';
+import { Monitor, MonitorConfig } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -208,7 +208,7 @@ type BaseArgs = {
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: ThrottlingOptions;
-  schedule?: string;
+  schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
 };
 
@@ -244,7 +244,7 @@ export type PushOptions = {
   project: string;
   space: string;
   delete: boolean;
-  schedule?: string;
+  schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
 };
 

@@ -147,8 +147,9 @@ program
     'Push monitors to create new montors with Kibana monitor management UI'
   )
   .option(
-    '--schedule <time>',
-    "The default interval for the pushed monitors. Setting `10m`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes."
+    '--schedule <time-in-minutes>',
+    "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes.",
+    parseInt
   )
   .addOption(
     new Option(

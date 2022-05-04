@@ -36,6 +36,7 @@ import {
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content: string;
   locations: string[];
+  filter: Monitor['filter'];
 };
 
 // Internal representation of Locations that would be used when
@@ -62,14 +63,16 @@ export async function createMonitorSchema(monitors: Monitor[]) {
   const schemas: MonitorSchema[] = [];
 
   for (const monitor of monitors) {
-    const { source, config } = monitor;
+    const { source, config, filter } = monitor;
     const outPath = join(bundlePath, config.name + '.zip');
     const content = await bundler.build(source.file, outPath);
     schemas.push({
       ...config,
       content,
       locations: translateLocation(config.locations),
+      filter: filter,
     });
   }
+  schemas.forEach(console.log);
   return schemas;
 }

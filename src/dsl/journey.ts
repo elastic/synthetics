@@ -80,10 +80,16 @@ export class Journey {
 
   updateMonitor(config: MonitorConfig) {
     /**
-     * Use defaults values from journey for monitor like `name` and `id`
+     * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this.monitor = new Monitor({ name: this.name, id: this.id, ...config });
+    this.monitor = new Monitor({
+      name: this.name,
+      id: this.id,
+      tags: this.tags ?? [],
+      ...config,
+    });
     this.monitor.setSource(this.location);
+    this.monitor.setFilter({ match: this.name });
   }
 
   /**
