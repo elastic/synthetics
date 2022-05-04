@@ -27,11 +27,26 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Bundler } from './bundler';
 import { CACHE_PATH } from '../helpers';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
+import {
+  Monitor,
+  MonitorConfig,
+  SyntheticsLocationsType,
+} from '../dsl/monitor';
 
-export type MonitorSchema = MonitorConfig & {
+export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content: string;
+  locations: string[];
 };
+
+// Internal representation of Locations that would be used when
+// talking to the Kibana API
+const LocationsMap: Record<SyntheticsLocationsType, string> = {
+  'US East': 'us-east4-a',
+  'EU West': 'europe-west2-a',
+};
+function translateLocation(locations: MonitorConfig['locations']) {
+  return locations.map(loc => LocationsMap[loc]).filter(Boolean);
+}
 
 export async function createMonitorSchema(monitors: Monitor[]) {
   if (monitors.length == 0) {
@@ -50,7 +65,11 @@ export async function createMonitorSchema(monitors: Monitor[]) {
     const { source, config } = monitor;
     const outPath = join(bundlePath, config.name + '.zip');
     const content = await bundler.build(source.file, outPath);
-    schemas.push({ ...config, content });
+    schemas.push({
+      ...config,
+      content,
+      locations: translateLocation(config.locations),
+    });
   }
   return schemas;
 }

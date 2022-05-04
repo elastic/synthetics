@@ -31,7 +31,7 @@ import { MonitorSchema } from './monitor';
 const { version } = require('../../package.json');
 
 export type APISchema = {
-  space: string;
+  project: string;
   keep_stale: boolean;
   monitors: MonitorSchema[];
 };
@@ -43,17 +43,23 @@ function encodeAuth(auth: string) {
   return auth;
 }
 
+function getAPIUrl(options: PushOptions) {
+  return (
+    options.url + `/s/${options.space}/api/synthetics/service/push/monitors`
+  );
+}
+
 export async function createMonitor(
   monitors: MonitorSchema[],
   options: PushOptions
 ) {
   const schema: APISchema = {
-    space: options.space,
+    project: options.project,
     keep_stale: !options.delete,
     monitors,
   };
 
-  return await request(options.url, {
+  return await request(getAPIUrl(options), {
     method: 'POST',
     body: JSON.stringify(schema),
     headers: {

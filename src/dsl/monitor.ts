@@ -32,13 +32,14 @@ import {
   PlaywrightOptions,
 } from '../common_types';
 
-export type SyntheticsLocations = 'US East' | 'EU West';
+export const SyntheticsLocations = ['US East', 'EU West'] as const;
+export type SyntheticsLocationsType = typeof SyntheticsLocations[number];
 export type MonitorConfig = {
   id?: string;
   name?: string;
   schedule?: string;
   enabled?: boolean;
-  locations?: SyntheticsLocations[];
+  locations?: SyntheticsLocationsType[];
   throttling?: ThrottlingOptions;
   screenshot?: ScreenshotOptions;
   params?: Params;

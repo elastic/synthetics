@@ -32,6 +32,7 @@ import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
+import { SyntheticsLocations } from './dsl/monitor';
 import { push } from './push';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
@@ -149,9 +150,15 @@ program
     '--schedule <time>',
     "The default interval for the pushed monitors. Setting `10m`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes."
   )
-  .option(
-    '--locations <locations...>',
-    'The default list of locations from which your monitors will run.'
+  .addOption(
+    new Option(
+      '--locations <locations...>',
+      'The default list of locations from which your monitors will run.'
+    ).choices(SyntheticsLocations)
+  )
+  .requiredOption(
+    '--project <id/name>',
+    'project/repository that is used for grouping the pushed monitors.'
   )
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(
