@@ -24,15 +24,25 @@
  */
 
 import merge from 'deepmerge';
-import { ThrottlingOptions, Location } from '../common_types';
+import {
+  ThrottlingOptions,
+  Location,
+  ScreenshotOptions,
+  Params,
+  PlaywrightOptions,
+} from '../common_types';
 
 export type SyntheticsLocations = 'US East' | 'EU West';
 export type MonitorConfig = {
   id?: string;
   name?: string;
   schedule?: string;
+  enabled?: boolean;
   locations?: SyntheticsLocations[];
   throttling?: ThrottlingOptions;
+  screenshot?: ScreenshotOptions;
+  params?: Params;
+  playwrightOptions?: PlaywrightOptions;
 };
 
 export class Monitor {

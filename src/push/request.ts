@@ -25,10 +25,15 @@
 
 import { request } from 'undici';
 import { PushOptions } from '../common_types';
-import { MonitorConfig } from '../dsl/monitor';
+import { MonitorSchema } from './monitor';
 
-export type MonitorSchema = MonitorConfig & {
-  content: string;
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { version } = require('../../package.json');
+
+export type APISchema = {
+  space: string;
+  keep_stale: boolean;
+  monitors: MonitorSchema[];
 };
 
 function encodeAuth(auth: string) {
@@ -42,13 +47,19 @@ export async function createMonitor(
   monitors: MonitorSchema[],
   options: PushOptions
 ) {
+  const schema: APISchema = {
+    space: options.space,
+    keep_stale: !options.delete,
+    monitors,
+  };
+
   return await request(options.url, {
     method: 'POST',
-    body: JSON.stringify(monitors),
+    body: JSON.stringify(schema),
     headers: {
       authorization: `Basic ${encodeAuth(options.auth)}`,
       'content-type': 'application/json',
-      'user-agent': 'Elastic/Synthetics',
+      'user-agent': `Elastic/Synthetics ${version}`,
     },
   });
 }

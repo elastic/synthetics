@@ -239,10 +239,12 @@ export type RunOptions = BaseArgs & {
 };
 
 export type PushOptions = {
-  schedule?: string;
-  locations?: SyntheticsLocations[];
   auth: string;
   url: string;
+  space: string;
+  delete: boolean;
+  schedule?: string;
+  locations?: SyntheticsLocations[];
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;

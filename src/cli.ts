@@ -158,6 +158,12 @@ program
     '--auth <auth>',
     'user authentication/API key that will be used to communicate with Kibana.'
   )
+  .option(
+    '--space <space>',
+    'kibana spaces that helps you to organize the pushed monitors.',
+    'default'
+  )
+  .option('--delete', 'automatically delete the stale monitors.')
   .action(async (files, cmdOpts: PushOptions) => {
     try {
       const cliArgs = { inline: false };

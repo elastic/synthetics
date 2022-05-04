@@ -25,9 +25,9 @@
 
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
-import { createSchema } from '../../src/push';
+import { createMonitorSchema } from '../../src/push/monitor';
 import { createMonitor } from '../../src/push/request';
-import { createMockServer } from './mock-server';
+import { Server } from '../utils/server';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -47,10 +47,28 @@ function createTestMonitor(filename: string) {
 }
 
 describe('Push', () => {
+  let server: Server;
+  beforeAll(async () => {
+    server = await Server.create();
+  });
+  afterAll(async () => {
+    await server.close();
+  });
+
   it('creates monitor', async () => {
-    const { url, close } = await createMockServer();
+    server.route('/echo', (req, res) => {
+      let data = '';
+      req.on('data', chunks => {
+        data += chunks;
+      });
+      req.on('end', () => {
+        // Write the post data back
+        res.end(data.toString());
+      });
+    });
+
     const monitor = createTestMonitor('example.journey.ts');
-    const schema = await createSchema([monitor]);
+    const schema = await createMonitorSchema([monitor]);
     expect(schema[0]).toMatchObject({
       id: 'test-monitor',
       name: 'test',
@@ -59,16 +77,21 @@ describe('Push', () => {
       content: expect.any(String),
     });
     const { statusCode, body } = await createMonitor(schema, {
-      url,
+      url: `${server.PREFIX}/echo`,
       auth: 'foo:bar',
+      space: 'default',
+      delete: false,
     });
-    await close();
 
     expect(statusCode).toBe(200);
     let data = '';
     for await (const chunk of body) {
       data += chunk;
     }
-    expect(JSON.parse(data)).toEqual(schema);
+    expect(JSON.parse(data)).toEqual({
+      keep_stale: true,
+      space: 'default',
+      monitors: schema,
+    });
   });
 });

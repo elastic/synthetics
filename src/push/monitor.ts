@@ -23,26 +23,34 @@
  *
  */
 
-import { createServer } from 'http';
-import { AddressInfo } from 'net';
+import { mkdir } from 'fs/promises';
+import { join } from 'path';
+import { Bundler } from './bundler';
+import { CACHE_PATH } from '../helpers';
+import { Monitor, MonitorConfig } from '../dsl/monitor';
 
-export async function createMockServer() {
-  const server = createServer((req, res) => {
-    let data = '';
-    req.on('data', chunks => {
-      data += chunks;
-    });
-    req.on('end', () => {
-      // Write the post data back
-      res.end(data.toString());
-    });
-  });
-  server.listen(0);
-  await new Promise(resolve => server.once('listening', resolve));
+export type MonitorSchema = MonitorConfig & {
+  content: string;
+};
 
-  const { port } = server.address() as AddressInfo;
-  return {
-    url: `http://localhost:${port}`,
-    close: async () => await new Promise(resolve => server.close(resolve)),
-  };
+export async function createMonitorSchema(monitors: Monitor[]) {
+  if (monitors.length == 0) {
+    throw new Error('No Monitors found');
+  }
+  /**
+   * Set up the bundle artifacts path which can be used to
+   * create the bundles required for uploading journeys
+   */
+  const bundlePath = join(CACHE_PATH, 'bundles');
+  await mkdir(bundlePath, { recursive: true });
+  const bundler = new Bundler();
+  const schemas: MonitorSchema[] = [];
+
+  for (const monitor of monitors) {
+    const { source, config } = monitor;
+    const outPath = join(bundlePath, config.name + '.zip');
+    const content = await bundler.build(source.file, outPath);
+    schemas.push({ ...config, content });
+  }
+  return schemas;
 }
