@@ -3,6 +3,8 @@
 # Update elastic-package
 go install github.com/elastic/elastic-package@latest
 
+echo "elastic-package version: $(elastic-package version)"
+
 eval "$(elastic-package stack shellinit)"
 
 # Take the stack down
