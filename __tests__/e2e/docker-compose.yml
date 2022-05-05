@@ -17,7 +17,7 @@ services:
       - cluster.initial_master_nodes=elasticsearch
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - 'ES_JAVA_OPTS=-Xms2g -Xmx2g'
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
     ulimits:
       memlock:
         soft: -1
