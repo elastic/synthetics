@@ -86,19 +86,6 @@ async function confirmAndSavePolicy(page) {
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
-  const checkForTable =  async () => {
-    try {
-      return await page.waitForSelector('.euiTableRow', { timeout: 5000 });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-  let isTableVisible = await checkForTable();
-  while (!isTableVisible) {
-    console.info('Reloading Uptime...')
-    await page.reload();
-    isTableVisible = await checkForTable();
-  }
   await page.fill('[data-test-subj="queryInput"]', journeyName);
   await page.click(`a:has-text("${journeyName}")`, { timeout: 300 * 1000 });
   console.info(`Data for ${journeyName} indexed successfully`)
