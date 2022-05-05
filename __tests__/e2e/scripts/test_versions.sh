@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-set -e
-
 input="versions"
 
 SYNTHETICS_E2E_ARGS="${@:2}"
