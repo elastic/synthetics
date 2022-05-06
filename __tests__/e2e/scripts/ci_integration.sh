@@ -35,7 +35,10 @@ echo "$logs\n"
 
 for log in $logs; do 
   docker exec elastic-package-stack_elastic-agent_1 cat state/data/logs/default/$log;
-done; 
+done;
+
+echo "Fetching Fleet policy...\n"
+docker exec elastic-package-stack_elastic-agent_1 cat state/data/state.yml
 
 # Take the stack down
 elastic-package stack down
