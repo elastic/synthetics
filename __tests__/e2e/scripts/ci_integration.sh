@@ -40,6 +40,9 @@ done;
 echo "Fetching Fleet policy...\n"
 docker exec elastic-package-stack_elastic-agent_1 cat state/data/state.yml
 
+echo "Fetching ES documents"
+curl http://elastic:changeme@localhost:9200/synthetics-*/_search
+
 # Take the stack down
 elastic-package stack down
 
