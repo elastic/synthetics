@@ -25,8 +25,6 @@ status=$?
 # echo $(docker logs elastic-package-stack_elastic-agent_1)
 
 # echo "Kibana commit: \n$(docker inspect --format='{{index .Config.Labels "org.opencontainers.image.revision"}}' elastic-package-stack_kibana_1)"
-# echo "Fetching Kibana logs... \n"
-# echo $(docker logs elastic-package-stack_kibana_1)
 
 logs=$(docker exec elastic-package-stack_elastic-agent_1 ls -1 state/data/logs/default | grep 'heartbeat-*')
 
@@ -42,6 +40,9 @@ docker exec elastic-package-stack_elastic-agent_1 cat state/data/state.yml
 
 echo "Fetching ES documents"
 curl http://elastic:changeme@localhost:9200/synthetics-*/_search
+
+echo "Fetching ES logs... \n"
+echo $(docker logs elastic-package-stack_elasticsearch_1)
 
 # Take the stack down
 elastic-package stack down
