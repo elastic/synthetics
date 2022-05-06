@@ -91,6 +91,27 @@ async function checkForSyntheticsData({ page, journeyName }) {
   console.info(`Data for ${journeyName} indexed successfully`)
 }
 
+journey(`${stackVersion} check that fleet server is up`, async ({ page }) => {
+  step('navigate to Fleet page', async () => {
+    console.info('Navigating to Fleet page')
+    await page.goto('http://localhost:5601/app/fleet/agents');
+    await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 10000 });
+    const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
+    if (isUnauthenticated) {
+      await logIn(page);
+    }
+  })
+
+
+  step('check that Fleet server is up', async () => {
+    await page.waitForSelector('text=Elastic-Agent (elastic-package)');
+    await page.waitForSelector('text=Fleet Server (elastic-package)');
+    await page.waitForSelector('text=docker-fleet-agent');
+    await page.waitForSelector('text=docker-fleet-server');
+    console.info('Fleet server appears to be up')
+  });
+});
+
 journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
   const journeyName = 'Sample http integration policy';
 
@@ -116,30 +137,30 @@ journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
   });
 });
 
-journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
-  const journeyName = 'Sample tcp integration policy';
+// journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
+//   const journeyName = 'Sample tcp integration policy';
 
-  step('Go to synthetics integration page', async () => {
-    await goToSyntheticsIntegrationPage(page);
-  });
+//   step('Go to synthetics integration page', async () => {
+//     await goToSyntheticsIntegrationPage(page);
+//   });
 
-  step('create an tcp monitor', async () => {
-    await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'tcp');
-    await page.fill('[data-test-subj="syntheticsTCPHostField"]', 'smtp.gmail.com:587');
-    await selectAgentPolicy({ page });
-    await confirmAndSavePolicy(page);
-    console.info(`Monitor for ${journeyName} created successfully`)
-  });
+//   step('create an tcp monitor', async () => {
+//     await createIntegrationPolicyName({ page, policyName: journeyName });
+//     await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'tcp');
+//     await page.fill('[data-test-subj="syntheticsTCPHostField"]', 'smtp.gmail.com:587');
+//     await selectAgentPolicy({ page });
+//     await confirmAndSavePolicy(page);
+//     console.info(`Monitor for ${journeyName} created successfully`)
+//   });
 
-  step('go to uptime', async () => {
-    await goToUptime(page);
-  });
+//   step('go to uptime', async () => {
+//     await goToUptime(page);
+//   });
 
-  step('wait for synthetics data', async () => {
-    await checkForSyntheticsData({ page, journeyName });
-  });
-});
+//   step('wait for synthetics data', async () => {
+//     await checkForSyntheticsData({ page, journeyName });
+//   });
+// });
 
 // journey('E2e test synthetics - icmp', async ({ page }) => {
 //   const journeyName = 'Sample icmp integration policy';
@@ -164,61 +185,82 @@ journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
 //   });
 // });
 
-journey(`${stackVersion} e2e test synthetics - browser`, async ({ page }) => {
-  const journeyName = 'Sample browser integration policy';
+// journey(`${stackVersion} e2e test synthetics - browser`, async ({ page }) => {
+//   const journeyName = 'Sample browser integration policy';
 
-  step('Go to synthetics integration page', async () => {
-    await goToSyntheticsIntegrationPage(page);
-  });
+//   step('Go to synthetics integration page', async () => {
+//     await goToSyntheticsIntegrationPage(page);
+//   });
 
-  step('create an browser monitor', async () => {
-    await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
-    await page.fill('[data-test-subj="syntheticsBrowserZipUrl"]', 'https://github.com/elastic/synthetics-demo/archive/refs/heads/main.zip');
-    await page.fill('[data-test-subj="syntheticsBrowserZipUrlFolder"]', 'todos/synthetics-tests');
-    await selectAgentPolicy({ page });
-    await confirmAndSavePolicy(page);
-  });
+//   step('create an browser monitor', async () => {
+//     await createIntegrationPolicyName({ page, policyName: journeyName });
+//     await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
+//     await page.fill('[data-test-subj="syntheticsBrowserZipUrl"]', 'https://github.com/elastic/synthetics-demo/archive/refs/heads/main.zip');
+//     await page.fill('[data-test-subj="syntheticsBrowserZipUrlFolder"]', 'todos/synthetics-tests');
+//     await selectAgentPolicy({ page });
+//     await confirmAndSavePolicy(page);
+//   });
 
-  step('go to uptime', async () => {
-    await goToUptime(page);
-  });
+//   step('go to uptime', async () => {
+//     await goToUptime(page);
+//   });
 
-  step('wait for synthetics data', async () => {
-    await checkForSyntheticsData({ page, journeyName });
+//   step('wait for synthetics data', async () => {
+//     await checkForSyntheticsData({ page, journeyName });
+//   });
+// });
+
+// if (semver.satisfies(stackVersion, '>=8.0.1')) {
+//   journey(`${stackVersion} e2e test synthetics - browser - inline`, async ({ page }) => {
+//     const journeyName = 'Sample browser inline integration policy';
+
+//     step('Go to synthetics integration page', async () => {
+//       await goToSyntheticsIntegrationPage(page);
+//     });
+
+//     step('create an browser monitor', async () => {
+//       await createIntegrationPolicyName({ page, policyName: journeyName });
+//       await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
+//       await page.click('[data-test-subj="syntheticsSourceTab__inline"]');
+//       await page.fill('[data-test-subj=codeEditorContainer] textarea', `
+//         step('load homepage', async () => {
+//           await page.goto('https://www.elastic.co');
+//         });
+//       `);
+//       await selectAgentPolicy({ page });
+//       await confirmAndSavePolicy(page);
+//     });
+
+//     step('go to uptime', async () => {
+//       await goToUptime(page);
+//     });
+
+//     step('wait for synthetics data', async () => {
+//       await checkForSyntheticsData({ page, journeyName });
+//     });
+//   });
+// }
+
+journey(`${stackVersion} check that policies are enrolled correctly`, async ({ page }) => {
+  step('check that integration is enrolled in the correct policy', async () => {
+    console.info('Navigating to Fleet page')
+    await page.goto('http://localhost:5601/app/fleet/policies/elastic-agent-managed-ep');
+    await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 10000 });
+    const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
+    if (isUnauthenticated) {
+      await logIn(page);
+    }
+  })
+
+
+  step('check that policies are enrolled correctly', async () => {
+    // await page.waitForSelector('text=Sample browser integration policy');
+    // await page.waitForSelector('text=Sample browser inline integration policy');
+    await page.waitForSelector('text=Sample http integration policy');
+    // await page.waitForSelector('text=Sample tcp integration policy');
+    console.info('Policy enrolled correctly')
   });
 });
-
-if (semver.satisfies(stackVersion, '>=8.0.1')) {
-  journey(`${stackVersion} e2e test synthetics - browser - inline`, async ({ page }) => {
-    const journeyName = 'Sample browser inline integration policy';
-
-    step('Go to synthetics integration page', async () => {
-      await goToSyntheticsIntegrationPage(page);
-    });
-
-    step('create an browser monitor', async () => {
-      await createIntegrationPolicyName({ page, policyName: journeyName });
-      await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
-      await page.click('[data-test-subj="syntheticsSourceTab__inline"]');
-      await page.fill('[data-test-subj=codeEditorContainer] textarea', `
-        step('load homepage', async () => {
-          await page.goto('https://www.elastic.co');
-        });
-      `);
-      await selectAgentPolicy({ page });
-      await confirmAndSavePolicy(page);
-    });
-
-    step('go to uptime', async () => {
-      await goToUptime(page);
-    });
-
-    step('wait for synthetics data', async () => {
-      await checkForSyntheticsData({ page, journeyName });
-    });
-  });
-}
 
 async function waitForElasticSearch() {
   console.info('Waiting for Elastic Search  to start');
