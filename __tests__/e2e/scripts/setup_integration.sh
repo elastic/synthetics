@@ -27,4 +27,7 @@ echo "Kibana commit: \n$(docker inspect --format='{{index .Config.Labels "org.op
 echo "Fetching Kibana logs... \n"
 echo $(docker logs elastic-package-stack_kibana_1)
 
+echo "Disk usage..."
+df -h
+
 exit $status

@@ -44,6 +44,9 @@ curl http://elastic:changeme@localhost:9200/synthetics-*/_search
 echo "Fetching ES logs... \n"
 echo $(docker logs elastic-package-stack_elasticsearch_1)
 
+echo "Disk usage..."
+df -h
+
 # Take the stack down
 elastic-package stack down
 
