@@ -112,30 +112,32 @@ journey(`${stackVersion} check that fleet server is up`, async ({ page }) => {
   });
 });
 
-// journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
-//   const journeyName = 'Sample http integration policy';
+journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
+  const journeyName = 'Sample http integration policy';
 
-//   step('Go to synthetics integration page', async () => {
-//     await goToSyntheticsIntegrationPage(page);
-//   });
+  step('Go to synthetics integration page', async () => {
 
-//   step('create an http monitor', async () => {
-//     await createIntegrationPolicyName({ page, policyName: journeyName });
-//     await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
-//     await selectAgentPolicy({ page });
-//     await page.click('[data-test-subj="syntheticsUrlField"]');
-//     await confirmAndSavePolicy(page);
-//     console.info(`Monitor for ${journeyName} created successfully`)
-//   });
+    await goToSyntheticsIntegrationPage(page);
+  });
 
-//   step('go to uptime', async () => {
-//     await goToUptime(page);
-//   });
+  step('create an http monitor', async () => {
+    await createIntegrationPolicyName({ page, policyName: journeyName });
+    await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
+    await selectAgentPolicy({ page });
+    await page.click('[data-test-subj="syntheticsUrlField"]');
+    await confirmAndSavePolicy(page);
+    console.info(`Monitor for ${journeyName} created successfully`)
+    await page.waitForTimeout(30 * 1000);
+  });
 
-//   step('wait for synthetics data', async () => {
-//     await checkForSyntheticsData({ page, journeyName });
-//   });
-// });
+  step('go to uptime', async () => {
+    await goToUptime(page);
+  });
+
+  step('wait for synthetics data', async () => {
+    await checkForSyntheticsData({ page, journeyName });
+  });
+});
 
 // journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
 //   const journeyName = 'Sample tcp integration policy';
