@@ -36,4 +36,6 @@ df -h
 docker ps -a
 docker stats --no-stream  --no-trunc
 
+curl http://elastic:changeme@localhost:9200/_cat/shards?v
+
 exit $status

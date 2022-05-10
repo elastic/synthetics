@@ -49,6 +49,8 @@ df -h
 docker ps -a
 docker stats --no-stream  --no-trunc
 
+curl http://elastic:changeme@localhost:9200/_cat/shards?v
+
 # Take the stack down
 elastic-package stack down
 
