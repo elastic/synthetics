@@ -25,8 +25,8 @@
 
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
-import { createMonitorSchema } from '../../src/push/monitor';
-import { createMonitor } from '../../src/push/request';
+import { buildMonitorSchema } from '../../src/push/monitor';
+import { createMonitors } from '../../src/push/request';
 import { Server } from '../utils/server';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -71,7 +71,7 @@ describe('Push', () => {
     );
 
     const monitor = createTestMonitor('example.journey.ts');
-    const schema = await createMonitorSchema([monitor]);
+    const schema = await buildMonitorSchema([monitor]);
     expect(schema[0]).toMatchObject({
       id: 'test-monitor',
       name: 'test',
@@ -79,7 +79,7 @@ describe('Push', () => {
       locations: ['europe-west2-a'],
       content: expect.any(String),
     });
-    const { statusCode, body } = await createMonitor(schema, {
+    const { statusCode, body } = await createMonitors(schema, {
       url: `${server.PREFIX}`,
       auth: 'foo:bar',
       project: 'blah',

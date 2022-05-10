@@ -23,8 +23,10 @@
  *
  */
 
+import { bold, gray, yellow } from 'kleur/colors';
 import { request } from 'undici';
 import { PushOptions } from '../common_types';
+import { indent, symbols } from '../helpers';
 import { MonitorSchema } from './monitor';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -49,7 +51,11 @@ function getAPIUrl(options: PushOptions) {
   );
 }
 
-export async function createMonitor(
+export function ok(statusCode: number) {
+  return statusCode >= 200 && statusCode <= 299;
+}
+
+export async function createMonitors(
   monitors: MonitorSchema[],
   options: PushOptions
 ) {
@@ -60,12 +66,52 @@ export async function createMonitor(
   };
 
   return await request(getAPIUrl(options), {
-    method: 'POST',
+    method: 'PUT',
     body: JSON.stringify(schema),
     headers: {
       authorization: `Basic ${encodeAuth(options.auth)}`,
       'content-type': 'application/json',
       'user-agent': `Elastic/Synthetics ${version}`,
+      'kbn-xsrf': 'true',
     },
   });
+}
+
+type APIMonitorError = {
+  id: string;
+  reason: string;
+  details: string;
+};
+
+export function formatAPIError(
+  statuCode: number,
+  error: string,
+  message: string
+) {
+  let outer = `${symbols['failed']} ${bold('Error')}\n`;
+  let inner = bold(
+    `${symbols['failed']} monitor creation failed - ${statuCode}:${error}\n`
+  );
+  inner += indent(message, '    ');
+  outer += indent(inner);
+  return outer;
+}
+
+export function formatFailedMonitors(errors: APIMonitorError[]) {
+  let outer = `${symbols['failed']} ${bold('Error')}\n`;
+  for (const error of errors) {
+    const monitorId = error.id ? `: monitor(${error.id})` : '';
+    let inner = bold(`> ${error.reason}${monitorId}\n`);
+    inner += indent(error.details, '    ');
+    outer += indent(inner) + '\n';
+    outer += '\n';
+  }
+  return outer;
+}
+
+export function formatStaleMonitors() {
+  let outer = bold(yellow(`${symbols['warning']} Found stale monitors\n`));
+  const inner = gray(`Please pass --delete to remove the stale monitors.`);
+  outer += indent(inner, '   ');
+  return outer;
 }

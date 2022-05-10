@@ -49,7 +49,7 @@ function translateLocation(locations: MonitorConfig['locations']) {
   return locations.map(loc => LocationsMap[loc]).filter(Boolean);
 }
 
-export async function createMonitorSchema(monitors: Monitor[]) {
+export async function buildMonitorSchema(monitors: Monitor[]) {
   if (monitors.length == 0) {
     throw new Error('No Monitors found');
   }
@@ -73,6 +73,5 @@ export async function createMonitorSchema(monitors: Monitor[]) {
       filter: filter,
     });
   }
-  schemas.forEach(console.log);
   return schemas;
 }

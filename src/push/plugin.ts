@@ -30,7 +30,7 @@ import * as esbuild from 'esbuild';
 export function commonOptions(): esbuild.BuildOptions {
   return {
     bundle: true,
-    external: ['@elastic/synthetics'],
+    external: ['node_modules', '@elastic/synthetics'],
     minify: false,
     platform: 'node',
     format: 'esm',

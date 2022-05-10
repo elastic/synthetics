@@ -23,26 +23,53 @@
  *
  */
 
-import { cyan, red } from 'kleur/colors';
-import { createMonitor } from './request';
+import { bold, cyan, green, red } from 'kleur/colors';
+import {
+  createMonitors,
+  ok,
+  formatAPIError,
+  formatFailedMonitors,
+  formatStaleMonitors,
+} from './request';
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { createMonitorSchema } from './monitor';
+import { buildMonitorSchema } from './monitor';
+import { symbols } from '../helpers';
 
-function progress(message) {
-  process.stderr.write(`> ${cyan(message)} \n`);
+function write(message: string) {
+  process.stderr.write(message + '\n');
 }
 
-function error(message) {
-  process.stderr.write(red(message) + '\n');
+function progress(message: string) {
+  write(cyan(bold(`${symbols.progress} ${message}`)));
+}
+
+function error(message: string) {
+  write(red(message));
+}
+
+function done(message: string) {
+  write(bold(green(`${symbols['succeeded']} ${message}`)));
 }
 
 export async function push(monitors: Monitor[], options: PushOptions) {
-  const schemas = await createMonitorSchema(monitors);
   progress(`preparing all monitors`);
+  const schemas = await buildMonitorSchema(monitors);
   try {
     progress(`creating all monitors`);
-    await createMonitor(schemas, options);
+    const { body, statusCode } = await createMonitors(schemas, options);
+    if (!ok(statusCode)) {
+      const { error, message } = await body.json();
+      throw formatAPIError(statusCode, error, message);
+    }
+    const { staleMonitors, failedMonitors } = await body.json();
+    if (failedMonitors.length > 0) {
+      throw formatFailedMonitors(failedMonitors);
+    }
+    if (staleMonitors.length > 0) {
+      write(formatStaleMonitors());
+    }
+    done('Pushed');
   } catch (e) {
     error(e);
   }

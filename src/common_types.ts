@@ -33,7 +33,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
-import { Monitor, MonitorConfig } from './dsl/monitor';
+import { MonitorConfig } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
