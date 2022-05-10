@@ -46,6 +46,8 @@ echo $(docker logs elastic-package-stack_elasticsearch_1)
 
 echo "Disk usage..."
 df -h
+docker ps -a
+docker stats --no-stream  --no-trunc
 
 # Take the stack down
 elastic-package stack down

@@ -30,4 +30,7 @@ echo $(docker logs elastic-package-stack_kibana_1)
 echo "Disk usage..."
 df -h
 
+docker ps -a
+docker stats --no-stream  --no-trunc
+
 exit $status
