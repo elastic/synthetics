@@ -24,11 +24,11 @@
  */
 
 import path from 'path';
-import fs, { unlink } from 'fs/promises';
+import { unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
-import { commonOptions, Plugin, PluginData } from './plugin';
+import { commonOptions, MultiAssetPlugin, PluginData } from './plugin';
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
@@ -49,7 +49,7 @@ export class Bundler {
         entryPoints: {
           [absPath]: absPath,
         },
-        plugins: [Plugin(addToMap)],
+        plugins: [MultiAssetPlugin(addToMap)],
       },
     };
     try {
@@ -63,7 +63,7 @@ export class Bundler {
     }
   }
 
-  zip(outputPath: string) {
+  async zip(outputPath: string) {
     return new Promise((fulfill, reject) => {
       const output = createWriteStream(outputPath);
       const archive = archiver('zip', {
@@ -83,14 +83,13 @@ export class Bundler {
   async build(entry: string, output: string) {
     await this.prepare(entry);
     await this.zip(output);
-    const data = this.encode(output);
+    const data = await this.encode(output);
     await this.cleanup(output);
     return data;
   }
 
   async encode(outputPath: string) {
-    const encoded = await fs.readFile(outputPath, 'base64');
-    return encoded.toString();
+    return await readFile(outputPath, 'base64');
   }
 
   async cleanup(outputPath: string) {

@@ -47,7 +47,7 @@ export type PluginData = {
 };
 export type PluginCallback = (data: PluginData) => void;
 
-export function Plugin(callback: PluginCallback): esbuild.Plugin {
+export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
   const isBare = (str: string) => {
     if (str.startsWith('/') || str.startsWith('./') || str.startsWith('../')) {
       return true;

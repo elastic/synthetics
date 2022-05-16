@@ -77,7 +77,7 @@ export async function createMonitors(
   });
 }
 
-type APIMonitorError = {
+export type APIMonitorError = {
   id: string;
   reason: string;
   details: string;
@@ -111,7 +111,7 @@ export function formatFailedMonitors(errors: APIMonitorError[]) {
 
 export function formatStaleMonitors() {
   let outer = bold(yellow(`${symbols['warning']} Found stale monitors\n`));
-  const inner = gray(`Please pass --delete to remove the stale monitors.`);
+  const inner = gray(`Pass --delete to remove all the stale monitors.`);
   outer += indent(inner, '   ');
   return outer;
 }

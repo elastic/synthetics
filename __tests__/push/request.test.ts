@@ -23,30 +23,19 @@
  *
  */
 
-import { join } from 'path';
-import { Monitor } from '../../src/dsl/monitor';
 import { buildMonitorSchema } from '../../src/push/monitor';
-import { createMonitors } from '../../src/push/request';
+import {
+  APIMonitorError,
+  createMonitors,
+  formatAPIError,
+  formatFailedMonitors,
+  formatStaleMonitors,
+} from '../../src/push/request';
 import { Server } from '../utils/server';
+import { createTestMonitor } from '../utils/test-config';
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-
-function createTestMonitor(filename: string) {
-  const monitor = new Monitor({
-    id: 'test-monitor',
-    name: 'test',
-    schedule: 10,
-    locations: ['EU West'],
-  });
-  monitor.setSource({
-    file: join(FIXTURES_DIR, filename),
-    line: 0,
-    column: 0,
-  });
-  return monitor;
-}
-
-describe('Push', () => {
+describe('Push api request', () => {
+  const monitor = createTestMonitor('example.journey.ts');
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
@@ -55,9 +44,9 @@ describe('Push', () => {
     await server.close();
   });
 
-  it('creates monitor', async () => {
+  it('api schema', async () => {
     server.route(
-      '/s/default/api/synthetics/service/push/monitors',
+      '/s/dummy/api/synthetics/service/push/monitors',
       (req, res) => {
         let data = '';
         req.on('data', chunks => {
@@ -70,32 +59,52 @@ describe('Push', () => {
       }
     );
 
-    const monitor = createTestMonitor('example.journey.ts');
     const schema = await buildMonitorSchema([monitor]);
-    expect(schema[0]).toMatchObject({
-      id: 'test-monitor',
-      name: 'test',
-      schedule: 10,
-      locations: ['europe-west2-a'],
-      content: expect.any(String),
-    });
     const { statusCode, body } = await createMonitors(schema, {
       url: `${server.PREFIX}`,
       auth: 'foo:bar',
       project: 'blah',
-      space: 'default',
+      space: 'dummy',
       delete: false,
     });
 
     expect(statusCode).toBe(200);
-    let data = '';
-    for await (const chunk of body) {
-      data += chunk;
-    }
-    expect(JSON.parse(data)).toEqual({
+    expect(await body.json()).toEqual({
       project: 'blah',
       keep_stale: true,
       monitors: schema,
     });
+  });
+
+  it('format api error', () => {
+    const { statusCode, error, message } = {
+      statusCode: 401,
+      error: 'Unauthorized',
+      message:
+        '[security_exception: [security_exception] Reason: unable to authenticate user',
+    };
+
+    expect(formatAPIError(statusCode, error, message)).toMatchSnapshot();
+  });
+
+  it('format failed monitors', () => {
+    const errors: APIMonitorError[] = [
+      {
+        id: 'monitor-without-schedule',
+        reason: 'Failed to save or update monitor. Configuration is not valid',
+        details: `Invalid value "undefined" supplied to "schedule"`,
+      },
+      {
+        id: 'monitor-without-id',
+        reason: 'Failed to save or update monitor. Configuration is not valid',
+        details: `Invalid value "undefined" supplied to "id"`,
+      },
+    ];
+
+    expect(formatFailedMonitors(errors)).toMatchSnapshot();
+  });
+
+  it('stale monitor error', () => {
+    expect(formatStaleMonitors()).toMatchSnapshot();
   });
 });

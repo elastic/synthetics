@@ -159,7 +159,7 @@ program
   )
   .requiredOption(
     '--project <id/name>',
-    'project/repository that is used for grouping the pushed monitors.'
+    'project/repository that will be used for grouping the monitors.'
   )
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(

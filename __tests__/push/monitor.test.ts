@@ -23,25 +23,23 @@
  *
  */
 
-import { join } from 'path';
-import { Monitor } from '../../dist/dsl/monitor';
+import { buildMonitorSchema } from '../../src/push/monitor';
+import { createTestMonitor } from '../utils/test-config';
 
-export const wsEndpoint = process.env.WSENDPOINT;
-
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-export function createTestMonitor(filename: string) {
-  const monitor = new Monitor({
-    id: 'test-monitor',
-    name: 'test',
-    schedule: 10,
-    enabled: true,
-    locations: ['EU West'],
+describe('Monitor schema', () => {
+  it('build monitor schema monitor', async () => {
+    const monitor = createTestMonitor('example.journey.ts');
+    const schema = await buildMonitorSchema([monitor]);
+    expect(schema[0]).toEqual({
+      id: 'test-monitor',
+      name: 'test',
+      schedule: 10,
+      enabled: true,
+      locations: ['europe-west2-a'],
+      content: expect.any(String),
+      filter: {
+        match: 'test',
+      },
+    });
   });
-  monitor.setSource({
-    file: join(FIXTURES_DIR, filename),
-    line: 0,
-    column: 0,
-  });
-  monitor.setFilter({ match: 'test' });
-  return monitor;
-}
+});
