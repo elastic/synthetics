@@ -1,23 +1,23 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Push api request format api error 1`] = `
-"[31m✖[39m [1mError[22m
-   [1m[31m✖[39m monitor creation failed - 401:Unauthorized
-   [22m    [security_exception: [security_exception] Reason: unable to authenticate user"
+"✖ Error
+   ✖ monitor creation failed - 401:Unauthorized
+       [security_exception: [security_exception] Reason: unable to authenticate user"
 `;
 
 exports[`Push api request format failed monitors 1`] = `
-"[31m✖[39m [1mError[22m
-   [1m> Failed to save or update monitor. Configuration is not valid: monitor(monitor-without-schedule)
-   [22m    Invalid value \\"undefined\\" supplied to \\"schedule\\"
+"✖ Error
+   > Failed to save or update monitor. Configuration is not valid: monitor(monitor-without-schedule)
+       Invalid value \\"undefined\\" supplied to \\"schedule\\"
 
-   [1m> Failed to save or update monitor. Configuration is not valid: monitor(monitor-without-id)
-   [22m    Invalid value \\"undefined\\" supplied to \\"id\\"
+   > Failed to save or update monitor. Configuration is not valid
+       Invalid value \\"undefined\\" supplied to \\"id\\"
 
 "
 `;
 
 exports[`Push api request stale monitor error 1`] = `
-"[1m[33m[33m⚠[39m[33m Found stale monitors
-[39m[22m   [90mPass --delete to remove all the stale monitors.[39m"
+"⚠ Found stale monitors
+   Pass --delete to remove all the stale monitors."
 `;

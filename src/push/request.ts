@@ -78,7 +78,7 @@ export async function createMonitors(
 }
 
 export type APIMonitorError = {
-  id: string;
+  id?: string;
   reason: string;
   details: string;
 };
@@ -88,7 +88,7 @@ export function formatAPIError(
   error: string,
   message: string
 ) {
-  let outer = `${symbols['failed']} ${bold('Error')}\n`;
+  let outer = bold(`${symbols['failed']} Error\n`);
   let inner = bold(
     `${symbols['failed']} monitor creation failed - ${statuCode}:${error}\n`
   );
@@ -98,7 +98,7 @@ export function formatAPIError(
 }
 
 export function formatFailedMonitors(errors: APIMonitorError[]) {
-  let outer = `${symbols['failed']} ${bold('Error')}\n`;
+  let outer = bold(`${symbols['failed']} Error\n`);
   for (const error of errors) {
     const monitorId = error.id ? `: monitor(${error.id})` : '';
     let inner = bold(`> ${error.reason}${monitorId}\n`);

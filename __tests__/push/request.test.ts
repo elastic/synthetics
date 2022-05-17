@@ -23,6 +23,8 @@
  *
  */
 
+process.env.NO_COLOR = '1';
+
 import { buildMonitorSchema } from '../../src/push/monitor';
 import {
   APIMonitorError,
@@ -42,6 +44,7 @@ describe('Push api request', () => {
   });
   afterAll(async () => {
     await server.close();
+    process.env.NO_COLOR = '';
   });
 
   it('api schema', async () => {
@@ -95,7 +98,6 @@ describe('Push api request', () => {
         details: `Invalid value "undefined" supplied to "schedule"`,
       },
       {
-        id: 'monitor-without-id',
         reason: 'Failed to save or update monitor. Configuration is not valid',
         details: `Invalid value "undefined" supplied to "id"`,
       },
