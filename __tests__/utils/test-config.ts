@@ -23,6 +23,7 @@
  *
  */
 
+import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { Monitor } from '../../dist/dsl/monitor';
 
@@ -44,4 +45,91 @@ export function createTestMonitor(filename: string) {
   });
   monitor.setFilter({ match: 'test' });
   return monitor;
+}
+
+export class CLIMock {
+  private process: ChildProcess;
+  private data = '';
+  private chunks: Array<string> = [];
+  private waitForText: string;
+  private waitForPromise: () => void;
+  private cliArgs: string[];
+  private stdinStr?: string;
+  private stderrStr: string;
+  exitCode: Promise<number>;
+
+  constructor(public debug: boolean = false) {}
+
+  args(a: string[]): CLIMock {
+    this.cliArgs = a;
+    return this;
+  }
+
+  stdin(s: string): CLIMock {
+    this.stdinStr = s;
+    return this;
+  }
+
+  run(spawnOverrides?: { cwd?: string }): CLIMock {
+    this.process = spawn(
+      'node',
+      [join(__dirname, '..', '..', 'dist', 'cli.js'), ...this.cliArgs],
+      {
+        env: process.env,
+        stdio: 'pipe',
+        ...spawnOverrides,
+      }
+    );
+
+    if (this.stdinStr) {
+      this.process.stdin.setDefaultEncoding('utf8');
+      this.process.stdin.write(this.stdinStr);
+      this.process.stdin.end();
+    }
+
+    const dataListener = data => {
+      this.data = data.toString();
+      if (this.debug) {
+        console.log('CLIMock.stdout:', this.data);
+      }
+      this.chunks.push(this.data);
+      if (this.waitForPromise && this.data.includes(this.waitForText)) {
+        this.process.stdout.off('data', dataListener);
+        this.waitForPromise();
+      }
+    };
+    this.process.stdout.on('data', dataListener);
+
+    this.exitCode = new Promise(res => {
+      this.process.stderr.on('data', data => {
+        this.stderrStr += data;
+        if (this.debug) {
+          console.log('CLIMock.stderr:', data.toString());
+        }
+      });
+      this.process.on('exit', code => res(code));
+    });
+
+    return this;
+  }
+
+  async waitFor(text: string): Promise<void> {
+    this.waitForText = text;
+    return new Promise(r => (this.waitForPromise = r));
+  }
+
+  output() {
+    return this.data;
+  }
+
+  buffer() {
+    // Merge all the interleaved chunks from stdout and
+    // split them on new line as synthetics runner writes the
+    // JSON output in separate lines for every event.
+    return this.chunks.join('').split('\n').filter(Boolean);
+  }
+
+  stderr() {
+    return this.stderrStr.toString();
+  }
 }

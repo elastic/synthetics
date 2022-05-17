@@ -1,6 +1,12 @@
-import { journey, step, expect } from '@elastic/synthetics';
+import { journey, step, monitor, expect } from '@elastic/synthetics';
 
-journey('TodoMVC Synthetics test', ({ page, params }) => {
+journey('TodoMVC Synthetics', ({ page, params }) => {
+  // Only relevant for the push command to create
+  // monitors in Kibana
+  monitor.use({
+    id: 'todomvc',
+    schedule: 10,
+  });
   step('launch application', async () => {
     await page.goto(params.url);
   });
