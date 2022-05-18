@@ -81,7 +81,7 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
    */
   const files =
     args.length > 0 ? args : (await readStdin()).split('\n').filter(Boolean);
-  const suites = await prepareSuites(files, options);
+  const suites = await prepareSuites(files, options.pattern);
   requireSuites(suites);
 }
 
@@ -123,7 +123,7 @@ function requireSuites(suites: Iterable<string>) {
  * Handle both directory and files that are passed through TTY
  * and add them to suites
  */
-async function prepareSuites(inputs: string[], cliArgs: CliArgs) {
+async function prepareSuites(inputs: string[], filePattern?: string) {
   const suites = new Set<string>();
   const addSuite = absPath => {
     log(`Processing file: ${absPath}`);
@@ -133,8 +133,8 @@ async function prepareSuites(inputs: string[], cliArgs: CliArgs) {
    * Match all files inside the directory with the
    * .journey.{mjs|cjs|js|ts) extensions
    */
-  const pattern = cliArgs.pattern
-    ? new RegExp(cliArgs.pattern, 'i')
+  const pattern = filePattern
+    ? new RegExp(filePattern, 'i')
     : /.+\.journey\.([mc]js|[jt]s?)$/;
   /**
    * Ignore node_modules by default when running suites

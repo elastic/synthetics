@@ -142,7 +142,7 @@ export function getDefaultMonitorConfig(): MonitorConfig {
   return {
     throttling: DEFAULT_THROTTLING_OPTIONS,
     locations: ['US East'],
-    schedule: '10m',
+    schedule: 10,
   };
 }
 

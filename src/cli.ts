@@ -26,12 +26,14 @@
  */
 
 import { program, Option } from 'commander';
-import { CliArgs } from './common_types';
+import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
 import { normalizeOptions, parseThrottling } from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
+import { SyntheticsLocations } from './dsl/monitor';
+import { push } from './push';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -145,20 +147,38 @@ program
     'Push monitors to create new montors with Kibana monitor management UI'
   )
   .option(
-    '--schedule <time>',
-    "The default interval for the pushed monitors. Setting `10m`, for example, configures monitors which don't have a specified interval defined to run every 10 minutes."
+    '--schedule <time-in-minutes>',
+    "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
+    parseInt
+  )
+  .addOption(
+    new Option(
+      '--locations <locations...>',
+      'The default list of locations from which your monitors will run.'
+    ).choices(SyntheticsLocations)
+  )
+  .requiredOption(
+    '--project <id/name>',
+    'project/repository that will be used for grouping the monitors.'
+  )
+  .requiredOption('--url <url>', 'kibana URL to upload the monitors')
+  .requiredOption(
+    '--auth <auth>',
+    'user authentication (in user:password format) or API key that will be used to communicate with Kibana.'
   )
   .option(
-    '--locations <locations...>',
-    'The default list of locations from which your monitors will run.'
+    '--space <space>',
+    'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.',
+    'default'
   )
-  .action(async (files, cmdOpts) => {
+  .option('--delete', 'automatically delete the stale monitors.')
+  .action(async (files, cmdOpts: PushOptions) => {
     try {
       const cliArgs = { inline: false };
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
-      runner.buildMonitors(options);
-      // TODO: Push logic will be implemented in follow up PR's
+      const monitors = runner.buildMonitors(options);
+      await push(monitors, cmdOpts);
     } catch (e) {
       console.error(e);
       process.exit(1);

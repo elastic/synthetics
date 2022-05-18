@@ -61,6 +61,7 @@ const NO_UTF8_SUPPORT = process.platform === 'win32';
 export const symbols = {
   warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
+  progress: cyan('>'),
   succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),
   failed: red(NO_UTF8_SUPPORT ? 'x' : '✖'),
 };

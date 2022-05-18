@@ -23,25 +23,36 @@
  *
  */
 
+import { createReadStream, createWriteStream, unlinkSync } from 'fs';
+import unzipper from 'unzipper';
 import { join } from 'path';
-import { Monitor } from '../../dist/dsl/monitor';
+import { generateTempPath } from '../../src/helpers';
+import { Bundler } from '../../src/push/bundler';
 
-export const wsEndpoint = process.env.WSENDPOINT;
+const journeyFile = join(__dirname, '..', 'e2e', 'uptime.journey.ts');
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-export function createTestMonitor(filename: string) {
-  const monitor = new Monitor({
-    id: 'test-monitor',
-    name: 'test',
-    schedule: 10,
-    enabled: true,
-    locations: ['EU West'],
-  });
-  monitor.setSource({
-    file: join(FIXTURES_DIR, filename),
-    line: 0,
-    column: 0,
-  });
-  monitor.setFilter({ match: 'test' });
-  return monitor;
+async function validateZip(content) {
+  const decoded = Buffer.from(content, 'base64');
+  const pathToZip = generateTempPath();
+  const writeStr = createWriteStream(pathToZip);
+  writeStr.write(decoded);
+
+  const files = [];
+  const entries = createReadStream(pathToZip).pipe(
+    unzipper.Parse({ forceStream: true })
+  );
+  for await (const entry of entries) {
+    files.push(entry.path);
+  }
+
+  expect(files).toEqual(['__tests__/e2e/uptime.journey.ts']);
+  unlinkSync(pathToZip);
 }
+
+describe('Bundler', () => {
+  it('build journey', async () => {
+    const bundler = new Bundler();
+    const content = await bundler.build(journeyFile, generateTempPath());
+    await validateZip(content);
+  });
+});

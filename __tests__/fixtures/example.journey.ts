@@ -23,7 +23,7 @@
  *
  */
 
-import { journey, step } from '../../';
+import { journey, step } from '../../src/index';
 
 journey('example journey', ({ page, params }) => {
   step('go to test page', async () => {

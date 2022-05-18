@@ -23,25 +23,27 @@
  *
  */
 
+import * as esbuild from 'esbuild';
 import { join } from 'path';
-import { Monitor } from '../../dist/dsl/monitor';
+import {
+  MultiAssetPlugin,
+  commonOptions,
+  PluginData,
+} from '../../src/push/plugin';
 
-export const wsEndpoint = process.env.WSENDPOINT;
+const E2E_DIR = join(__dirname, '..', 'e2e');
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-export function createTestMonitor(filename: string) {
-  const monitor = new Monitor({
-    id: 'test-monitor',
-    name: 'test',
-    schedule: 10,
-    enabled: true,
-    locations: ['EU West'],
+describe('Plugin', () => {
+  it('bundle jouneys', async () => {
+    const callback = (data: PluginData) => {
+      expect(data.path).toContain('e2e/uptime.journey.ts');
+      expect(data.contents).toMatchSnapshot();
+    };
+
+    await esbuild.build({
+      ...commonOptions(),
+      entryPoints: [join(E2E_DIR, 'uptime.journey.ts')],
+      plugins: [MultiAssetPlugin(callback)],
+    });
   });
-  monitor.setSource({
-    file: join(FIXTURES_DIR, filename),
-    line: 0,
-    column: 0,
-  });
-  monitor.setFilter({ match: 'test' });
-  return monitor;
-}
+});

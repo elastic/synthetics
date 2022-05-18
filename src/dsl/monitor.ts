@@ -24,18 +24,37 @@
  */
 
 import merge from 'deepmerge';
-import { ThrottlingOptions } from '../common_types';
+import {
+  ThrottlingOptions,
+  Location,
+  ScreenshotOptions,
+  Params,
+  PlaywrightOptions,
+} from '../common_types';
 
-export type SyntheticsLocations = 'US East' | 'EU West';
+export const SyntheticsLocations = ['US East', 'EU West'] as const;
+export type SyntheticsLocationsType = typeof SyntheticsLocations[number];
 export type MonitorConfig = {
   id?: string;
   name?: string;
-  schedule?: string;
-  locations?: SyntheticsLocations[];
+  tags?: string[];
+  schedule?: number;
+  enabled?: boolean;
+  locations?: SyntheticsLocationsType[];
   throttling?: ThrottlingOptions;
+  screenshot?: ScreenshotOptions;
+  params?: Params;
+  playwrightOptions?: PlaywrightOptions;
+};
+
+type MonitorFilter = {
+  match: string;
+  tags?: string[];
 };
 
 export class Monitor {
+  source?: Location;
+  filter: MonitorFilter;
   constructor(public config: MonitorConfig = {}) {}
   /**
    * Treat the creation time config with `monitor.use` as source of truth by
@@ -47,5 +66,18 @@ export class Monitor {
         return [...new Set(source)];
       },
     });
+  }
+
+  setSource(source: Location) {
+    this.source = source;
+  }
+  /**
+   * If journey files are colocated within the same file during
+   * push command, when we invoke synthetics from HB we rely on
+   * this filter for running that specific journey alone instead of
+   * all journeys on the file
+   */
+  setFilter(filter: MonitorFilter) {
+    this.filter = filter;
   }
 }
