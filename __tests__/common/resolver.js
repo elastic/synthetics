@@ -23,16 +23,20 @@
  *
  */
 
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  resolver: `${__dirname}/__tests__/common/resolver.js`,
-  clearMocks: true,
-  coverageDirectory: 'coverage',
-  coverageProvider: 'v8',
-  testPathIgnorePatterns: ['dist'],
-  modulePathIgnorePatterns: ['/e2e/', '/utils/', '/common/', '/fixtures/'],
-  globalSetup: `${__dirname}/__tests__/utils/jest-global-setup.ts`,
-  globalTeardown: `${__dirname}/__tests__/utils/jest-global-teardown.ts`,
-  testTimeout: 15000,
+module.exports = (path, options) => {
+  // Call the defaultResolver, so we leverage its cache, error handling, etc.
+  return options.defaultResolver(path, {
+    ...options,
+    // Use packageFilter to process parsed `package.json` before the resolution
+    packageFilter: pkg => {
+      // This workaround prevents Jest from considering playwright-core module-based exports at all;
+      // it falls back to playwright-core CommonJS+node "main" property.
+      // The reason being we are using unexported modules from the
+      // playwright-core and would like it work in Jest environment
+      if (pkg.name === 'playwright-core') {
+        delete pkg['exports'];
+      }
+      return pkg;
+    },
+  });
 };
