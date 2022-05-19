@@ -23,7 +23,8 @@
  *
  */
 
-import { createReadStream, createWriteStream, unlinkSync } from 'fs';
+import { createReadStream } from 'fs';
+import { writeFile, unlink } from 'fs/promises';
 import unzipper from 'unzipper';
 import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
@@ -34,8 +35,7 @@ const journeyFile = join(__dirname, '..', 'e2e', 'uptime.journey.ts');
 async function validateZip(content) {
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
-  const writeStr = createWriteStream(pathToZip);
-  writeStr.write(decoded);
+  await writeFile(pathToZip, decoded);
 
   const files = [];
   const entries = createReadStream(pathToZip).pipe(
@@ -46,7 +46,7 @@ async function validateZip(content) {
   }
 
   expect(files).toEqual(['__tests__/e2e/uptime.journey.ts']);
-  unlinkSync(pathToZip);
+  await unlink(pathToZip);
 }
 
 describe('Bundler', () => {
