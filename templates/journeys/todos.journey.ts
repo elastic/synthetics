@@ -1,10 +1,10 @@
 import { journey, step, monitor, expect } from '@elastic/synthetics';
 
-journey('TodoMVC Synthetics', ({ page, params }) => {
+journey('My Example Journey', ({ page, params }) => {
   // Only relevant for the push command to create
   // monitors in Kibana
   monitor.use({
-    id: 'todomvc',
+    id: 'example',
     schedule: 10,
   });
   step('launch application', async () => {
@@ -13,6 +13,6 @@ journey('TodoMVC Synthetics', ({ page, params }) => {
 
   step('assert title', async () => {
     const header = await page.$('h1');
-    expect(await header.textContent()).toBe('todos');
+    expect(await header.textContent()).toBe('Example Domain');
   });
 });

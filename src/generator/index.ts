@@ -25,7 +25,7 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
-import { bold, cyan } from 'kleur/colors';
+import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
 import { progress, write as stdWrite } from '../helpers';
 import { getPackageManager, runCommand } from './utils';
@@ -122,7 +122,7 @@ export class Generator {
 
     // Add push command
     const project = basename(this.projectDir);
-    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth elastic:changeme`;
+    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth <apiKey|basic-auth>`;
 
     await this.createFile(
       filename,
@@ -139,6 +139,10 @@ All set, you can run below commands inside: ${this.projectDir}:
   Run synthetic tests: ${cyan(runCommand(this.pkgManager, 'test'))}
 
   Push monitors to Kibana: ${cyan(runCommand(this.pkgManager, 'push'))}
+
+  ${yellow(
+    'Make sure to update the Kibana url and authentication info before pushing monitors to Kibana.'
+  )}
 
 Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.html to learn more.
     `)

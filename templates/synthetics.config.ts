@@ -3,14 +3,15 @@ import type { SyntheticsConfig } from '@elastic/synthetics';
 export default env => {
   const config: SyntheticsConfig = {
     params: {
-      url: 'https://elastic.github.io/synthetics-demo/',
+      url: 'https://example.com',
     },
     playwrightOptions: {
-      ignoreHTTPSErrors: true,
+      ignoreHTTPSErrors: false,
     },
   };
   if (env !== 'development') {
-    config.params.url = 'https://elastic.github.io/synthetics-demo/';
+    // Override configuration specific to environment
+    config.params.url = 'https://example.org';
   }
   return config;
 };
