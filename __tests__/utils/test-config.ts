@@ -53,7 +53,7 @@ export class CLIMock {
   private chunks: Array<string> = [];
   private waitForText: string;
   private waitForPromise: () => void;
-  private cliArgs: string[];
+  private cliArgs: string[] = [];
   private stdinStr?: string;
   private stderrStr: string;
   exitCode: Promise<number>;
@@ -61,7 +61,12 @@ export class CLIMock {
   constructor(public debug: boolean = false) {}
 
   args(a: string[]): CLIMock {
-    this.cliArgs = a;
+    this.cliArgs.push(...a);
+    // Screenshots is `on` by default in CLI, so we
+    // disable it for all tests, unless enabled explicity
+    if (!(a.includes('--rich-events') || a.includes('--screenshots'))) {
+      this.cliArgs.push('--screenshots', 'off');
+    }
     return this;
   }
 

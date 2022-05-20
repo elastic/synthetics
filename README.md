@@ -3,7 +3,7 @@
 # Experimental Synthetics Agent
 
 Synthetic Monitoring with Real Browsers.
-**Please note this is an unsupported experimental project. Expect things to break and change!**
+**Please note this is project is in beta status. Expect things to break and change!**
 
 ## Usage
 
