@@ -47,7 +47,7 @@ function encodeAuth(auth: string) {
 
 function getAPIUrl(options: PushOptions) {
   return (
-    options.url + `/s/${options.space}/api/synthetics/service/push/monitors`
+    options.url + `/s/${options.space}/api/synthetics/service/project/monitors`
   );
 }
 
