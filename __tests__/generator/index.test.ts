@@ -50,7 +50,7 @@ describe('Generator', () => {
     expect(existsSync(join(scaffoldDir, 'package-lock.json'))).toBeTruthy();
     expect(existsSync(join(scaffoldDir, '.gitignore'))).toBeTruthy();
     expect(
-      existsSync(join(scaffoldDir, 'journeys', 'todos.journey.ts'))
+      existsSync(join(scaffoldDir, 'journeys', 'example.journey.ts'))
     ).toBeTruthy();
     expect(existsSync(join(scaffoldDir, 'synthetics.config.ts'))).toBeTruthy();
 

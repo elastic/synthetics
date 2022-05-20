@@ -4,7 +4,7 @@ journey('My Example Journey', ({ page, params }) => {
   // Only relevant for the push command to create
   // monitors in Kibana
   monitor.use({
-    id: 'example',
+    id: 'example-monitor',
     schedule: 10,
   });
   step('launch application', async () => {
@@ -13,6 +13,6 @@ journey('My Example Journey', ({ page, params }) => {
 
   step('assert title', async () => {
     const header = await page.$('h1');
-    expect(await header.textContent()).toBe('Example Domain');
+    expect(await header.textContent()).toBe('todos');
   });
 });

@@ -54,7 +54,7 @@ export class Generator {
     );
 
     // Setup example journey file
-    const journeyFile = 'journeys/todos.journey.ts';
+    const journeyFile = 'journeys/example.journey.ts';
     fileMap.set(
       journeyFile,
       await readFile(join(templateDir, journeyFile), 'utf-8')
@@ -122,7 +122,7 @@ export class Generator {
 
     // Add push command
     const project = basename(this.projectDir);
-    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth <apiKey|basic-auth>`;
+    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth basic-auth`;
 
     await this.createFile(
       filename,
