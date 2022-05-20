@@ -49,7 +49,7 @@ describe('Push api request', () => {
 
   it('api schema', async () => {
     server.route(
-      '/s/dummy/api/synthetics/service/push/monitors',
+      '/s/dummy/api/synthetics/service/project/monitors',
       (req, res) => {
         let data = '';
         req.on('data', chunks => {
