@@ -23,7 +23,7 @@
  *
  */
 
-import { red, green, yellow, cyan } from 'kleur/colors';
+import { red, green, yellow, cyan, bold } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
 import fs from 'fs';
@@ -320,4 +320,21 @@ export function wrapFnWithLocation<A extends unknown[], R>(
     Error.prepareStackTrace = _prepareStackTrace;
     return func(location, ...args);
   };
+}
+
+// Console helpers
+export function write(message: string) {
+  process.stderr.write(message + '\n');
+}
+
+export function progress(message: string) {
+  write(cyan(bold(`${symbols.progress} ${message}`)));
+}
+
+export function error(message: string) {
+  write(red(message));
+}
+
+export function done(message: string) {
+  write(bold(green(`${symbols['succeeded']} ${message}`)));
 }

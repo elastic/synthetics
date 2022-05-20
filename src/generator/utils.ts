@@ -23,37 +23,19 @@
  *
  */
 
-import {
-  createMonitors,
-  ok,
-  formatAPIError,
-  formatFailedMonitors,
-  formatStaleMonitors,
-} from './request';
-import { Monitor } from '../dsl/monitor';
-import { PushOptions } from '../common_types';
-import { buildMonitorSchema } from './monitor';
-import { progress, error, done, write } from '../helpers';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
-export async function push(monitors: Monitor[], options: PushOptions) {
-  progress(`preparing all monitors`);
-  const schemas = await buildMonitorSchema(monitors);
-  try {
-    progress(`creating all monitors`);
-    const { body, statusCode } = await createMonitors(schemas, options);
-    if (!ok(statusCode)) {
-      const { error, message } = await body.json();
-      throw formatAPIError(statusCode, error, message);
-    }
-    const { staleMonitors, failedMonitors } = await body.json();
-    if (failedMonitors.length > 0) {
-      throw formatFailedMonitors(failedMonitors);
-    }
-    if (staleMonitors.length > 0) {
-      write(formatStaleMonitors());
-    }
-    done('Pushed');
-  } catch (e) {
-    error(e);
+export async function getPackageManager(dir: string) {
+  if (existsSync(join(dir, 'yarn.lock'))) {
+    return 'yarn';
   }
+  return 'npm';
+}
+
+export function runCommand(pkgManager: string, command: string) {
+  if (pkgManager === 'yarn') {
+    return `yarn ${command}`;
+  }
+  return `npm run ${command}`;
 }

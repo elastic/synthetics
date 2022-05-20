@@ -34,6 +34,9 @@ import { run } from './';
 import { runner } from './core';
 import { SyntheticsLocations } from './dsl/monitor';
 import { push } from './push';
+import { resolve } from 'path';
+import { Generator } from './generator';
+import { error } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -141,6 +144,7 @@ program
     }
   });
 
+// Push command
 program
   .command('push [files...]')
   .description(
@@ -181,6 +185,20 @@ program
       await push(monitors, cmdOpts);
     } catch (e) {
       console.error(e);
+      process.exit(1);
+    }
+  });
+
+// Init command
+program
+  .command('init <project-dir>')
+  .description('Initalize Elastic synthetics project')
+  .action(async (dir: string) => {
+    try {
+      const generator = await new Generator(resolve(process.cwd(), dir));
+      await generator.setup();
+    } catch (e) {
+      error(e);
       process.exit(1);
     }
   });
