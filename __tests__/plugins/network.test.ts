@@ -264,8 +264,8 @@ describe('network', () => {
       waitUntil: 'networkidle',
     });
     await driver.page.reload();
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     const resources = netinfo.filter(req =>
       req.url.includes(`${server.PREFIX}/test.js`)
     );
