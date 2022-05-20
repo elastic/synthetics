@@ -83,6 +83,12 @@ export type APIMonitorError = {
   details: string;
 };
 
+export function formatNotFoundError(message: string) {
+  return bold(
+    `${symbols['failed']} Please check your kibana url and try again - 404:${message}`
+  );
+}
+
 export function formatAPIError(
   statuCode: number,
   error: string,

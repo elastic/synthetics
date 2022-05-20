@@ -31,6 +31,7 @@ import {
   createMonitors,
   formatAPIError,
   formatFailedMonitors,
+  formatNotFoundError,
   formatStaleMonitors,
 } from '../../src/push/request';
 import { Server } from '../utils/server';
@@ -88,6 +89,11 @@ describe('Push api request', () => {
     };
 
     expect(formatAPIError(statusCode, error, message)).toMatchSnapshot();
+  });
+
+  it('format 404 error', () => {
+    const message = 'Not Found';
+    expect(formatNotFoundError(message)).toMatchSnapshot();
   });
 
   it('format failed monitors', () => {

@@ -30,6 +30,7 @@ import {
   formatAPIError,
   formatFailedMonitors,
   formatStaleMonitors,
+  formatNotFoundError,
 } from './request';
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
@@ -58,6 +59,9 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   try {
     progress(`creating all monitors`);
     const { body, statusCode } = await createMonitors(schemas, options);
+    if (statusCode === 404) {
+      throw formatNotFoundError(await body.text());
+    }
     if (!ok(statusCode)) {
       const { error, message } = await body.json();
       throw formatAPIError(statusCode, error, message);
