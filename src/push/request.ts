@@ -38,13 +38,6 @@ export type APISchema = {
   monitors: MonitorSchema[];
 };
 
-function encodeAuth(auth: string) {
-  if (auth.includes(':')) {
-    return Buffer.from(auth).toString('base64');
-  }
-  return auth;
-}
-
 function getAPIUrl(options: PushOptions) {
   return (
     options.url + `/s/${options.space}/api/synthetics/service/project/monitors`
@@ -69,7 +62,7 @@ export async function createMonitors(
     method: 'PUT',
     body: JSON.stringify(schema),
     headers: {
-      authorization: `Basic ${encodeAuth(options.auth)}`,
+      authorization: `ApiKey ${options.auth}`,
       'content-type': 'application/json',
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',

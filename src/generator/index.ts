@@ -122,7 +122,7 @@ export class Generator {
 
     // Add push command
     const project = basename(this.projectDir);
-    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth basic-auth`;
+    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth apiKey`;
 
     await this.createFile(
       filename,
@@ -141,7 +141,7 @@ All set, you can run below commands inside: ${this.projectDir}:
   Push monitors to Kibana: ${cyan(runCommand(this.pkgManager, 'push'))}
 
   ${yellow(
-    'Make sure to update the Kibana url and authentication info before pushing monitors to Kibana.'
+    'Make sure to update the Kibana url and api keys before pushing monitors to Kibana.'
   )}
 
 Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.html to learn more.
