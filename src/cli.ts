@@ -158,7 +158,7 @@ program
   .addOption(
     new Option(
       '--locations <locations...>',
-      'The default list of locations from which your monitors will run.'
+      'default list of locations from which your monitors will run.'
     ).choices(SyntheticsLocations)
   )
   .requiredOption(
@@ -168,7 +168,7 @@ program
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(
     '--auth <auth>',
-    'user authentication (in user:password format) or API key that will be used to communicate with Kibana.'
+    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
   )
   .option(
     '--space <space>',
