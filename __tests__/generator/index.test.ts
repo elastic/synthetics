@@ -24,7 +24,7 @@
  */
 
 import { existsSync } from 'fs';
-import { rm } from 'fs/promises';
+import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { CLIMock } from '../utils/test-config';
 
@@ -49,6 +49,15 @@ describe('Generator', () => {
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
     expect(existsSync(join(scaffoldDir, 'package-lock.json'))).toBeTruthy();
     expect(existsSync(join(scaffoldDir, '.gitignore'))).toBeTruthy();
+
+    // Verify gitignore contents
+    expect(await readFile(join(scaffoldDir, '.gitignore'), 'utf-8'))
+      .toMatchInlineSnapshot(`
+      "node_modules/
+      .synthetics/
+      "
+    `);
+
     expect(
       existsSync(join(scaffoldDir, 'journeys', 'example.journey.ts'))
     ).toBeTruthy();

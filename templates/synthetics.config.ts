@@ -8,6 +8,10 @@ export default env => {
     playwrightOptions: {
       ignoreHTTPSErrors: false,
     },
+    /**
+     * Configure global monitor settings
+     */
+    monitor: {},
   };
   if (env !== 'development') {
     /**

@@ -59,11 +59,6 @@ export class Generator {
       journeyFile,
       await readFile(join(templateDir, journeyFile), 'utf-8')
     );
-    // Setup gitignore
-    fileMap.set(
-      '.gitignore',
-      await readFile(join(templateDir, '.gitignore'), 'utf-8')
-    );
 
     // Create files
     for (const [relativePath, content] of fileMap) {
@@ -131,6 +126,20 @@ export class Generator {
     );
   }
 
+  async patchGitIgnore() {
+    const gitIgnorePath = join(this.projectDir, '.gitignore');
+    let gitIgnore = '';
+    if (existsSync(gitIgnorePath)) {
+      const contents = await readFile(gitIgnorePath, 'utf-8');
+      gitIgnore += contents.trimEnd() + '\n';
+    }
+    if (!gitIgnore.includes('node_modules')) {
+      gitIgnore += 'node_modules/\n';
+    }
+    gitIgnore += '.synthetics/\n';
+    await writeFile(gitIgnorePath, gitIgnore, 'utf-8');
+  }
+
   banner() {
     stdWrite(
       bold(`
@@ -154,6 +163,7 @@ Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.h
     await this.package();
     await this.files();
     await this.patchPkgJSON();
+    await this.patchGitIgnore();
     this.banner();
   }
 }
