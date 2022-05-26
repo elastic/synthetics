@@ -51,6 +51,38 @@ docker stats --no-stream  --no-trunc
 
 curl http://elastic:changeme@localhost:9200/_cat/shards?v
 
+curl -X GET "http://elastic:changeme@localhost:9200/_cluster/allocation/explain?pretty" -H 'Content-Type: application/json' -d'
+{
+  "index": ".kibana_8.3.0_001",
+  "shard": 0,
+  "primary": true
+}
+'
+
+curl -X GET "http://elastic:changeme@localhost:9200/_cluster/allocation/explain?pretty" -H 'Content-Type: application/json' -d'
+{
+  "index": ".kibana_8.3.0_001",
+  "shard": 0,
+  "primary": false
+}
+'
+
+curl -X GET "http://elastic:changeme@localhost:9200/_cluster/allocation/explain?pretty" -H 'Content-Type: application/json' -d'
+{
+  "index": ".kibana_task_manager_8.3.0_001",
+  "shard": 0,
+  "primary": true
+}
+'
+
+curl -X GET "http://elastic:changeme@localhost:9200/_cluster/allocation/explain?pretty" -H 'Content-Type: application/json' -d'
+{
+  "index": ".kibana_task_manager_8.3.0_001",
+  "shard": 0,
+  "primary": false
+}
+'
+
 # Take the stack down
 elastic-package stack down
 
