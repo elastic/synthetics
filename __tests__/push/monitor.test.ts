@@ -35,7 +35,7 @@ describe('Monitor schema', () => {
       name: 'test',
       schedule: 10,
       enabled: true,
-      locations: ['europe-west2-a'],
+      locations: ['europe-west2-a', 'australia-southeast1-a'],
       content: expect.any(String),
       filter: {
         match: 'test',

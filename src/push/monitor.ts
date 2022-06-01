@@ -27,11 +27,7 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Bundler } from './bundler';
 import { CACHE_PATH } from '../helpers';
-import {
-  Monitor,
-  MonitorConfig,
-  SyntheticsLocationsType,
-} from '../dsl/monitor';
+import { Monitor, MonitorConfig, LocationsMap } from '../dsl/monitor';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content: string;
@@ -39,12 +35,6 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   filter: Monitor['filter'];
 };
 
-// Internal representation of Locations that would be used when
-// talking to the Kibana API
-const LocationsMap: Record<SyntheticsLocationsType, string> = {
-  'US East': 'us-east4-a',
-  'EU West': 'europe-west2-a',
-};
 function translateLocation(locations: MonitorConfig['locations']) {
   return locations.map(loc => LocationsMap[loc]).filter(Boolean);
 }

@@ -32,8 +32,25 @@ import {
   PlaywrightOptions,
 } from '../common_types';
 
-export const SyntheticsLocations = ['US East', 'EU West'] as const;
-export type SyntheticsLocationsType = typeof SyntheticsLocations[number];
+// Internal representation of Locations that would be used when
+// talking to the Kibana API
+export const LocationsMap = {
+  Japan: 'asia-northeast1-a',
+  India: 'asia-south1-a',
+  Singapore: 'asia-southeast1-a',
+  'Australia East': 'australia-southeast1-a',
+  'United Kingdom': 'europe-west2-a',
+  Germany: 'europe-west3-a',
+  'Canada East': 'northamerica-northeast1-a',
+  Brazil: 'southamerica-east1-a',
+  'US East': 'us-east4-a',
+  'US West': 'us-west1-a',
+};
+export type SyntheticsLocationsType = keyof typeof LocationsMap;
+export const SyntheticsLocations = Object.keys(
+  LocationsMap
+) as SyntheticsLocationsType[];
+
 export type MonitorConfig = {
   id?: string;
   name?: string;
