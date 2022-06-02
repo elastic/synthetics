@@ -676,7 +676,11 @@ describe('runner', () => {
   it('runner - build monitors with local config', async () => {
     const j1 = new Journey({ name: 'j1' }, noop);
     const j2 = new Journey({ name: 'j2' }, noop);
-    j1.updateMonitor({ id: 'test-j1', schedule: 2, locations: ['EU West'] });
+    j1.updateMonitor({
+      id: 'test-j1',
+      schedule: 2,
+      locations: ['united_kingdom'],
+    });
     j2.updateMonitor({ throttling: { latency: 1000 } });
     runner.addJourney(j1);
     runner.addJourney(j2);
@@ -689,14 +693,14 @@ describe('runner', () => {
       id: 'test-j1',
       name: 'j1',
       tags: [],
-      locations: ['EU West'],
+      locations: ['united_kingdom'],
       schedule: 2,
       params: undefined,
       playwrightOptions: undefined,
       throttling: { download: 5, latency: 20, upload: 3 },
     });
     expect(monitors[1].config).toMatchObject({
-      locations: ['US East'],
+      locations: ['us_east'],
       schedule: 10,
       throttling: { latency: 1000 },
     });
@@ -712,7 +716,11 @@ describe('runner', () => {
 
     const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
     const j2 = new Journey({ name: 'j2' }, noop);
-    j1.updateMonitor({ id: 'test-j1', schedule: 2, locations: ['EU West'] });
+    j1.updateMonitor({
+      id: 'test-j1',
+      schedule: 2,
+      locations: ['united_kingdom'],
+    });
     j2.updateMonitor({ throttling: { latency: 1000 } });
     runner.addJourney(j1);
     runner.addJourney(j2);
@@ -725,14 +733,14 @@ describe('runner', () => {
       id: 'test-j1',
       name: 'j1',
       tags: ['foo*'],
-      locations: ['EU West'],
+      locations: ['united_kingdom'],
       schedule: 2,
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
       throttling: { download: 100, latency: 20, upload: 50 },
     });
     expect(monitors[1].config).toMatchObject({
-      locations: ['US East'],
+      locations: ['us_east'],
       schedule: 5,
       throttling: { latency: 1000 },
     });

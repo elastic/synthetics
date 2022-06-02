@@ -23,23 +23,16 @@
  *
  */
 
-import { buildMonitorSchema } from '../../src/push/monitor';
-import { createTestMonitor } from '../utils/test-config';
-
-describe('Monitor schema', () => {
-  it('build monitor schema monitor', async () => {
-    const monitor = createTestMonitor('example.journey.ts');
-    const schema = await buildMonitorSchema([monitor]);
-    expect(schema[0]).toEqual({
-      id: 'test-monitor',
-      name: 'test',
-      schedule: 10,
-      enabled: true,
-      locations: ['europe-west2-a', 'australia-southeast1-a'],
-      content: expect.any(String),
-      filter: {
-        match: 'test',
-      },
-    });
-  });
-});
+// DO NOT EDIT - UPDATE WITH `npm run build:locations`
+export const LocationsMap = {
+  japan: 'asia-northeast1-a',
+  india: 'asia-south1-a',
+  singapore: 'asia-southeast1-a',
+  australia_east: 'australia-southeast1-a',
+  united_kingdom: 'europe-west2-a',
+  germany: 'europe-west3-a',
+  canada_east: 'northamerica-northeast1-a',
+  brazil: 'southamerica-east1-a',
+  us_east: 'us-east4-a',
+  us_west: 'us-west1-a',
+};

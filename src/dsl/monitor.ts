@@ -31,9 +31,13 @@ import {
   Params,
   PlaywrightOptions,
 } from '../common_types';
+import { LocationsMap } from './locations';
 
-export const SyntheticsLocations = ['US East', 'EU West'] as const;
-export type SyntheticsLocationsType = typeof SyntheticsLocations[number];
+export type SyntheticsLocationsType = keyof typeof LocationsMap;
+export const SyntheticsLocations = Object.keys(
+  LocationsMap
+) as SyntheticsLocationsType[];
+
 export type MonitorConfig = {
   id?: string;
   name?: string;

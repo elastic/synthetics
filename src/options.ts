@@ -141,7 +141,7 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
 export function getDefaultMonitorConfig(): MonitorConfig {
   return {
     throttling: DEFAULT_THROTTLING_OPTIONS,
-    locations: ['US East'],
+    locations: ['us_east'],
     schedule: 10,
   };
 }
