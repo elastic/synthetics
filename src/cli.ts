@@ -162,8 +162,8 @@ program
     ).choices(SyntheticsLocations)
   )
   .requiredOption(
-    '--project <id/name>',
-    'project/repository that will be used for grouping the monitors.'
+    '--project <project-id>',
+    'project/repository id that will be used for grouping the monitors.'
   )
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(
@@ -184,7 +184,7 @@ program
       const monitors = runner.buildMonitors(options);
       await push(monitors, cmdOpts);
     } catch (e) {
-      console.error(e);
+      e && console.error(e);
       process.exit(1);
     }
   });
@@ -198,7 +198,7 @@ program
       const generator = await new Generator(resolve(process.cwd(), dir));
       await generator.setup();
     } catch (e) {
-      error(e);
+      e && error(e);
       process.exit(1);
     }
   });

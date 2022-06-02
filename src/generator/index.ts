@@ -52,12 +52,14 @@ export class Generator {
   }
 
   async questions() {
+    if (process.env.TEST_QUESTIONS) {
+      return JSON.parse(process.env.TEST_QUESTIONS);
+    }
     const question = [
       {
         type: 'select',
         name: 'locations',
-        message:
-          'Select the default location from which your monitors will run.',
+        message: 'Select the default location where you want to run monitors.',
         choices: SyntheticsLocations,
       },
       {
@@ -189,8 +191,8 @@ Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.h
 
   async setup() {
     await this.directory();
-    await this.package();
     const answers = await this.questions();
+    await this.package();
     await this.files(answers);
     await this.patchPkgJSON();
     await this.patchGitIgnore();

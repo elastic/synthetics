@@ -75,7 +75,7 @@ export class CLIMock {
     return this;
   }
 
-  run(spawnOverrides?: { cwd?: string }): CLIMock {
+  run(spawnOverrides?: { cwd?: string; env?: NodeJS.ProcessEnv }): CLIMock {
     this.process = spawn(
       'node',
       [join(__dirname, '..', '..', 'dist', 'cli.js'), ...this.cliArgs],
