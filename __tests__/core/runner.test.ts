@@ -29,10 +29,13 @@ import Runner from '../../src/core/runner';
 import { step, journey } from '../../src/core';
 import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
-import { generateTempPath, noop } from '../../src/helpers';
+import {
+  DEFAULT_THROTTLING_OPTIONS,
+  generateTempPath,
+  noop,
+} from '../../src/helpers';
 import { wsEndpoint } from '../utils/test-config';
 import { Reporter } from '../../src/reporters';
-import { getDefaultMonitorConfig } from '../../src/options';
 import {
   JourneyEndResult,
   JourneyStartResult,
@@ -686,7 +689,7 @@ describe('runner', () => {
     runner.addJourney(j2);
 
     const monitors = runner.buildMonitors({
-      ...getDefaultMonitorConfig(),
+      throttling: DEFAULT_THROTTLING_OPTIONS,
     });
     expect(monitors.length).toBe(2);
     expect(monitors[0].config).toEqual({
@@ -700,8 +703,6 @@ describe('runner', () => {
       throttling: { download: 5, latency: 20, upload: 3 },
     });
     expect(monitors[1].config).toMatchObject({
-      locations: ['us_east'],
-      schedule: 10,
       throttling: { latency: 1000 },
     });
   });
@@ -709,6 +710,7 @@ describe('runner', () => {
   it('runner - build monitors with global config', async () => {
     runner.updateMonitor({
       schedule: 5,
+      locations: ['us_east'],
       throttling: { download: 100, upload: 50 },
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
@@ -726,7 +728,7 @@ describe('runner', () => {
     runner.addJourney(j2);
 
     const monitors = runner.buildMonitors({
-      ...getDefaultMonitorConfig(),
+      throttling: DEFAULT_THROTTLING_OPTIONS,
     });
     expect(monitors.length).toBe(2);
     expect(monitors[0].config).toEqual({

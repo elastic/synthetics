@@ -46,7 +46,7 @@ describe('Generator', () => {
       env: {
         ...process.env,
         TEST_QUESTIONS: JSON.stringify({
-          locations: 'US East',
+          locations: 'us_east',
           schedule: 30,
         }),
       },
@@ -75,7 +75,7 @@ describe('Generator', () => {
       join(scaffoldDir, 'synthetics.config.ts'),
       'utf-8'
     );
-    expect(configFile).toContain(`locations: ["US East"]`);
+    expect(configFile).toContain(`locations: ["us_east"]`);
     expect(configFile).toContain(`schedule: 30`);
 
     // Verify stdout
