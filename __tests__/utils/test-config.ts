@@ -36,7 +36,7 @@ export function createTestMonitor(filename: string) {
     name: 'test',
     schedule: 10,
     enabled: true,
-    locations: ['United Kingdom', 'Australia East'],
+    locations: ['Europe - United Kingdom', 'Asia/Pacific - Australia East'],
   });
   monitor.setSource({
     file: join(FIXTURES_DIR, filename),
