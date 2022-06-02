@@ -27,7 +27,6 @@ import merge from 'deepmerge';
 import { readConfig } from './config';
 import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
-import { MonitorConfig } from './dsl/monitor';
 
 /**
  * Set debug based on DEBUG ENV and -d flags

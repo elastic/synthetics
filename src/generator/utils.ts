@@ -39,3 +39,16 @@ export function runCommand(pkgManager: string, command: string) {
   }
   return `npm run ${command}`;
 }
+
+export function replaceTemplates(input: string, literals: Record<string, any>) {
+  for (const key in literals) {
+    const finalValue = literals[key];
+    input = input.replace(new RegExp(`'{{` + key + `}}'`, 'g'), () => {
+      if (typeof finalValue == 'number') {
+        return Number(finalValue);
+      }
+      return finalValue;
+    });
+  }
+  return input;
+}
