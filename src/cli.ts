@@ -181,6 +181,15 @@ program
       const cliArgs = { inline: false };
       await loadTestFiles(cliArgs, files);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
+      if (!options.schedule) {
+        throw error(`Set default schedule in minutes for all monitors via '--schedule <time-in-minutes>' OR
+  configure via Synthetics config file under 'monitors.schedule' field.`);
+      }
+
+      if (!options.locations) {
+        throw error(`Set default location for all monitors via CLI as '--locations <locations...>' OR
+  configure via Synthetics config file under 'monitors.locations' field.`);
+      }
       const monitors = runner.buildMonitors(options);
       await push(monitors, cmdOpts);
     } catch (e) {

@@ -25,11 +25,7 @@
 
 import merge from 'deepmerge';
 import { readConfig } from './config';
-import {
-  getNetworkConditions,
-  DEFAULT_THROTTLING_OPTIONS,
-  error,
-} from './helpers';
+import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
 
 /**
@@ -130,16 +126,7 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   }
 
   options.schedule = cliArgs.schedule ?? monitor?.schedule;
-  if (!options.schedule) {
-    throw error(`Set default schedule in minutes for all monitors via '--schedule <time-in-minutes>' OR
-configure via Synthetics config file under 'monitors.schedule' field.`);
-  }
-
   options.locations = cliArgs.locations ?? monitor?.locations;
-  if (!options.locations) {
-    throw error(`Set default location for all monitors via CLI as '--locations <locations...>' OR
-configure via Synthetics config file under 'monitors.locations' field.`);
-  }
 
   return options;
 }
