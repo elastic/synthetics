@@ -38,7 +38,7 @@ describe('Push CLI', () => {
     'test',
   ];
   const journeyFile = join(FIXTURES_DIR, 'example.journey.ts');
-  it('erorr when no journey files are passed', async () => {
+  it('errors when no journey files are passed', async () => {
     const cli = new CLIMock().args(['push', ...args]).run();
     expect(await cli.exitCode).toBe(1);
 
@@ -56,7 +56,7 @@ describe('Push CLI', () => {
     );
   });
 
-  it('erorr when locations option is empty', async () => {
+  it('errors when locations option is empty', async () => {
     const cli = new CLIMock()
       .args(['push', journeyFile, ...args, '--schedule', '20'])
       .run();

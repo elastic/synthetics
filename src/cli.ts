@@ -169,7 +169,7 @@ program
   )
   .requiredOption(
     '--project <project-id>',
-    'project/repository id that will be used for grouping the monitors.'
+    'id that will be used for logically grouping monitors'
   )
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(
