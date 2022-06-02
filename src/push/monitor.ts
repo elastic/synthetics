@@ -27,7 +27,8 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Bundler } from './bundler';
 import { CACHE_PATH } from '../helpers';
-import { Monitor, MonitorConfig, LocationsMap } from '../dsl/monitor';
+import { LocationsMap } from '../dsl/locations';
+import { Monitor, MonitorConfig } from '../dsl/monitor';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content: string;
