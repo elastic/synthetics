@@ -55,7 +55,7 @@ export class CLIMock {
   private waitForPromise: () => void;
   private cliArgs: string[] = [];
   private stdinStr?: string;
-  private stderrStr: string;
+  private stderrStr = '';
   exitCode: Promise<number>;
 
   constructor(public debug: boolean = false) {}
