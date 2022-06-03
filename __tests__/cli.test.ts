@@ -383,9 +383,24 @@ describe('CLI', () => {
       );
     });
 
-    it('succeeds succeeds with --ignore-https-errors', async () => {
+    it('succeeds with --ignore-https-errors', async () => {
       const cli = new CLIMock()
         .args(cliArgs.concat('--ignore-https-errors'))
+        .run();
+      expect(await cli.exitCode).toBe(0);
+      expect(JSON.parse(cli.output()).journey).toEqual(
+        expect.objectContaining({ status: 'succeeded' })
+      );
+    });
+
+    it('succeeds with --playwright-options', async () => {
+      const cli = new CLIMock()
+        .args(
+          cliArgs.concat(
+            '--playwright-options',
+            JSON.stringify({ ignoreHTTPSErrors: true })
+          )
+        )
         .run();
       expect(await cli.exitCode).toBe(0);
       expect(JSON.parse(cli.output()).journey).toEqual(

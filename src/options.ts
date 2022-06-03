@@ -99,15 +99,21 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
    */
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
 
-  options.playwrightOptions = merge.all([
-    config.playwrightOptions || {},
-    cliArgs.playwrightOptions || {},
-    {
-      headless: cliArgs.headless,
-      chromiumSandbox: cliArgs.sandbox,
-      ignoreHTTPSErrors: cliArgs.ignoreHttpsErrors,
-    },
-  ]);
+  /**
+   * Merge playwright options from CLI and Synthetics config
+   * and prefer individual options over other option
+   */
+  const playwrightOpts = merge(
+    config.playwrightOptions,
+    cliArgs.playwrightOptions || {}
+  );
+  options.playwrightOptions = {
+    ...playwrightOpts,
+    headless: cliArgs.headless,
+    chromiumSandbox: cliArgs.sandbox ?? playwrightOpts?.chromiumSandbox,
+    ignoreHTTPSErrors:
+      cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
+  };
 
   /**
    * Get the default monitor config from synthetics.config.ts file

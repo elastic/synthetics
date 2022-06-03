@@ -65,7 +65,7 @@ program
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--no-headless', 'run browser in headful mode')
-  .option('--sandbox', 'enable chromium sandboxing', false)
+  .option('--sandbox', 'enable chromium sandboxing')
   .option('--rich-events', 'Mimics a heartbeat run')
   .option(
     '--capability <features...>',
