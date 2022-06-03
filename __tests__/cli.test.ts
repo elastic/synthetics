@@ -250,7 +250,7 @@ describe('CLI', () => {
   it('pass dynamic config to journey params', async () => {
     // jest by default sets NODE_ENV to `test`
     const original = process.env['NODE_ENV'];
-    const output = async () => {
+    const getJourneyStart = async () => {
       const cli = new CLIMock()
         .args([
           join(FIXTURES_DIR, 'fake.journey.ts'),
@@ -265,11 +265,14 @@ describe('CLI', () => {
       return cli.output();
     };
 
-    expect(JSON.parse(await output()).payload).toMatchObject({
+    let [output] = safeParse([await getJourneyStart()]);
+    expect(output.payload).toMatchObject({
       params: { url: 'non-dev' },
     });
+
     process.env['NODE_ENV'] = 'development';
-    expect(JSON.parse(await output()).payload).toMatchObject({
+    [output] = safeParse([await getJourneyStart()]);
+    expect(output.payload).toMatchObject({
       params: { url: 'dev' },
     });
     process.env['NODE_ENV'] = original;
@@ -368,8 +371,6 @@ describe('CLI', () => {
         JSON.stringify({ url: tlsServer.TEST_PAGE }),
         '--reporter',
         'json',
-        '--screenshots',
-        'off',
       ];
     });
 
@@ -378,17 +379,35 @@ describe('CLI', () => {
     it('fails by default', async () => {
       const cli = new CLIMock().args(cliArgs).run();
       expect(await cli.exitCode).toBe(1);
-      expect(JSON.parse(cli.output()).journey).toEqual(
+      const [output] = safeParse([cli.output()]);
+      expect(output.journey).toEqual(
         expect.objectContaining({ status: 'failed' })
       );
     });
 
-    it('succeeds succeeds with --ignore-https-errors', async () => {
+    it('succeeds with --ignore-https-errors', async () => {
       const cli = new CLIMock()
         .args(cliArgs.concat('--ignore-https-errors'))
         .run();
       expect(await cli.exitCode).toBe(0);
-      expect(JSON.parse(cli.output()).journey).toEqual(
+      const [output] = safeParse([cli.output()]);
+      expect(output.journey).toEqual(
+        expect.objectContaining({ status: 'succeeded' })
+      );
+    });
+
+    it('succeeds with --playwright-options', async () => {
+      const cli = new CLIMock()
+        .args(
+          cliArgs.concat(
+            '--playwright-options',
+            JSON.stringify({ ignoreHTTPSErrors: true })
+          )
+        )
+        .run();
+      expect(await cli.exitCode).toBe(0);
+      const [output] = safeParse([cli.output()]);
+      expect(output.journey).toEqual(
         expect.objectContaining({ status: 'succeeded' })
       );
     });
