@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+**For detailed release notes, please refer to the [GitHub releases](https://github.com/elastic/synthetics/releases) page.**
+
+## v1.0.0-beta.27 (2022-06-03)
+
+### Features
+
+- Use Kibana Uptime APIKeys instead of Basic Auth for pushing monitors #512
+- Update all the available Synthetics test node locations #515
+- Interactive scaffolding using the `npx @elastic/synthetics init <dir>`
+  command, allows users to choose default test location and schedule for the
+  monitors to be pushed to Kibana #508
+
+### Bug fixes
+
+- Write `.gitignore` files for scaffolding instead of managing under assets #510
+- Preserve the original User-Agent string if the user configured the value and
+  do not append 'Elastic/Synthetics' identifier #514
+- Override the PlaywrightOptions when configured via CLI and Synthetics config
+  file #517
+
+## v1.0.0-beta.26 (2022-05-20)
+
+### Features
+
+- Introduce new `npx @elastic/synthetics push` command that allows users to
+  manage the monitors in the Kibana Monitor Management UI from the command line #482
+- Allow users to scaffolding a brand new Synthetics project from scratch using
+  the `npx @elastic/synthetics init` command #502
+- Custom Reporter interface that allows for more extensability when building new
+  reporters for the Synthetics runner #492
+- Expose monitor DSL along with journey and step that allows configuring
+  each individual monitors #493
+
 ## v1.0.0-beta.25 (2022-04-12)
 
 ### Features
