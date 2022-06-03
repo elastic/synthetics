@@ -52,7 +52,7 @@
     "micromatch": "^4.0.4",
     "playwright-chromium": "^1.20.1",
     "playwright-core": "^1.20.1",
-    "sharp": "^0.30.1",
+    "sharp": "^0.30.6",
     "snakecase-keys": "^3.2.1",
     "sonic-boom": "^2.6.0",
     "ts-node": "^10.7.0",
