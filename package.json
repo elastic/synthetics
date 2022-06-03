@@ -44,6 +44,7 @@
     "archiver": "^5.3.0",
     "commander": "^9.0.0",
     "deepmerge": "^4.2.2",
+    "enquirer": "^2.3.6",
     "esbuild": "^0.14.27",
     "expect": "^27.0.2",
     "http-proxy": "^1.18.1",

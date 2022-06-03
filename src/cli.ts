@@ -25,7 +25,7 @@
  *
  */
 
-import { program, Option } from 'commander';
+import { program, Option, Argument } from 'commander';
 import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
 import { normalizeOptions, parseThrottling } from './options';
@@ -146,9 +146,15 @@ program
 
 // Push command
 program
-  .command('push [files...]')
+  .command('push')
+  .addArgument(
+    new Argument(
+      '[journeys...]',
+      'file path to journey directory and individual files'
+    ).argRequired()
+  )
   .description(
-    'Push monitors to create new montors with Kibana monitor management UI'
+    'Push journeys to create montors within Kibana monitor management UI'
   )
   .option(
     '--schedule <time-in-minutes>',
@@ -162,8 +168,8 @@ program
     ).choices(SyntheticsLocations)
   )
   .requiredOption(
-    '--project <id/name>',
-    'project/repository that will be used for grouping the monitors.'
+    '--project <project-id>',
+    'id that will be used for logically grouping monitors'
   )
   .requiredOption('--url <url>', 'kibana URL to upload the monitors')
   .requiredOption(
@@ -176,15 +182,23 @@ program
     'default'
   )
   .option('--delete', 'automatically delete the stale monitors.')
-  .action(async (files, cmdOpts: PushOptions) => {
+  .action(async (journeys, cmdOpts: PushOptions) => {
     try {
-      const cliArgs = { inline: false };
-      await loadTestFiles(cliArgs, files);
+      await loadTestFiles({ inline: false }, journeys);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
+      if (!options.schedule) {
+        throw error(`Set default schedule in minutes for all monitors via '--schedule <time-in-minutes>' OR
+  configure via Synthetics config file under 'monitors.schedule' field.`);
+      }
+
+      if (!options.locations) {
+        throw error(`Set default location for all monitors via CLI as '--locations <locations...>' OR
+  configure via Synthetics config file under 'monitors.locations' field.`);
+      }
       const monitors = runner.buildMonitors(options);
       await push(monitors, cmdOpts);
     } catch (e) {
-      console.error(e);
+      e && console.error(e);
       process.exit(1);
     }
   });
@@ -198,7 +212,7 @@ program
       const generator = await new Generator(resolve(process.cwd(), dir));
       await generator.setup();
     } catch (e) {
-      error(e);
+      e && error(e);
       process.exit(1);
     }
   });

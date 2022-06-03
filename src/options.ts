@@ -27,7 +27,6 @@ import merge from 'deepmerge';
 import { readConfig } from './config';
 import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
-import { MonitorConfig } from './dsl/monitor';
 
 /**
  * Set debug based on DEBUG ENV and -d flags
@@ -110,11 +109,14 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     },
   ]);
 
-  const defaults = getDefaultMonitorConfig();
+  /**
+   * Get the default monitor config from synthetics.config.ts file
+   */
+  const monitor = config.monitor;
   if (cliArgs.throttling) {
     const throttleConfig = merge.all([
-      defaults.throttling,
-      config.monitor?.throttling || {},
+      DEFAULT_THROTTLING_OPTIONS,
+      monitor?.throttling || {},
       cliArgs.throttling as ThrottlingOptions,
     ]);
     options.throttling = throttleConfig;
@@ -126,24 +128,10 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     options.throttling = {};
   }
 
-  options.locations =
-    cliArgs.locations ?? config.monitor?.locations ?? defaults.locations;
-
-  options.schedule =
-    cliArgs.schedule ?? config.monitor?.schedule ?? defaults.schedule;
+  options.schedule = cliArgs.schedule ?? monitor?.schedule;
+  options.locations = cliArgs.locations ?? monitor?.locations;
 
   return options;
-}
-
-/**
- * Get the default monitor configuration for all journeys
- */
-export function getDefaultMonitorConfig(): MonitorConfig {
-  return {
-    throttling: DEFAULT_THROTTLING_OPTIONS,
-    locations: ['us_east'],
-    schedule: 10,
-  };
 }
 
 /**

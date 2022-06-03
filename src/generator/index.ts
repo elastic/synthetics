@@ -27,12 +27,19 @@ import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
+import { prompt } from 'enquirer';
+import { SyntheticsLocations } from '../dsl/monitor';
 import { progress, write as stdWrite } from '../helpers';
-import { getPackageManager, runCommand } from './utils';
+import { getPackageManager, replaceTemplates, runCommand } from './utils';
 
 // Templates that are required for setting up new
 // synthetics project
 const templateDir = join(__dirname, '..', '..', 'templates');
+
+type PromptOptions = {
+  locations: string;
+  schedule: number;
+};
 
 export class Generator {
   pkgManager = 'npm';
@@ -44,13 +51,37 @@ export class Generator {
     }
   }
 
-  async files() {
+  async questions() {
+    if (process.env.TEST_QUESTIONS) {
+      return JSON.parse(process.env.TEST_QUESTIONS);
+    }
+    const question = [
+      {
+        type: 'select',
+        name: 'locations',
+        message: 'Select the default location where you want to run monitors.',
+        choices: SyntheticsLocations,
+      },
+      {
+        type: 'numeral',
+        name: 'schedule',
+        message: 'Set default schedule in minutes for all monitors',
+        initial: 10,
+      },
+    ];
+    return await prompt<PromptOptions>(question);
+  }
+
+  async files(answers: PromptOptions) {
     const fileMap = new Map<string, string>();
     // Setup Synthetics config file
     const configFile = 'synthetics.config.ts';
     fileMap.set(
       configFile,
-      await readFile(join(templateDir, configFile), 'utf-8')
+      replaceTemplates(
+        await readFile(join(templateDir, configFile), 'utf-8'),
+        answers
+      )
     );
 
     // Setup example journey file
@@ -160,8 +191,9 @@ Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.h
 
   async setup() {
     await this.directory();
+    const answers = await this.questions();
     await this.package();
-    await this.files();
+    await this.files(answers);
     await this.patchPkgJSON();
     await this.patchGitIgnore();
     this.banner();

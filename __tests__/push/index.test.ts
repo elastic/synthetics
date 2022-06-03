@@ -23,32 +23,45 @@
  *
  */
 
-import { existsSync } from 'fs';
 import { join } from 'path';
+import { CLIMock } from '../utils/test-config';
 
-export async function getPackageManager(dir: string) {
-  if (existsSync(join(dir, 'yarn.lock'))) {
-    return 'yarn';
-  }
-  return 'npm';
-}
+const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
-export function runCommand(pkgManager: string, command: string) {
-  if (pkgManager === 'yarn') {
-    return `yarn ${command}`;
-  }
-  return `npm run ${command}`;
-}
+describe('Push CLI', () => {
+  const args = [
+    '--url',
+    'http://localhost:8000',
+    '--auth',
+    'foo',
+    '--project',
+    'test',
+  ];
+  const journeyFile = join(FIXTURES_DIR, 'example.journey.ts');
+  it('errors when no journey files are passed', async () => {
+    const cli = new CLIMock().args(['push', ...args]).run();
+    expect(await cli.exitCode).toBe(1);
 
-export function replaceTemplates(input: string, literals: Record<string, any>) {
-  for (const key in literals) {
-    const finalValue = literals[key];
-    input = input.replace(new RegExp(`'{{` + key + `}}'`, 'g'), () => {
-      if (typeof finalValue == 'number') {
-        return Number(finalValue);
-      }
-      return finalValue;
-    });
-  }
-  return input;
-}
+    expect(cli.stderr()).toContain(
+      `error: missing required argument 'journeys'`
+    );
+  });
+
+  it('erorr when schedule option is empty', async () => {
+    const cli = new CLIMock().args(['push', journeyFile, ...args]).run();
+    expect(await cli.exitCode).toBe(1);
+
+    expect(cli.stderr()).toContain(
+      `Set default schedule in minutes for all monitors`
+    );
+  });
+
+  it('errors when locations option is empty', async () => {
+    const cli = new CLIMock()
+      .args(['push', journeyFile, ...args, '--schedule', '20'])
+      .run();
+    expect(await cli.exitCode).toBe(1);
+
+    expect(cli.stderr()).toContain(`Set default location for all monitors`);
+  });
+});

@@ -75,15 +75,12 @@ describe('options', () => {
 
   it('normalize monitor configs', () => {
     expect(normalizeOptions({ throttling: false })).toMatchObject({
-      locations: ['us_east'],
-      schedule: 10,
       throttling: {},
     });
 
     expect(
       normalizeOptions({ throttling: { download: 50 }, schedule: 2 })
     ).toMatchObject({
-      locations: ['us_east'],
       schedule: 2,
       throttling: {
         download: 50,

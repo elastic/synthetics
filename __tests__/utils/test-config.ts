@@ -55,7 +55,7 @@ export class CLIMock {
   private waitForPromise: () => void;
   private cliArgs: string[] = [];
   private stdinStr?: string;
-  private stderrStr: string;
+  private stderrStr = '';
   exitCode: Promise<number>;
 
   constructor(public debug: boolean = false) {}
@@ -75,7 +75,7 @@ export class CLIMock {
     return this;
   }
 
-  run(spawnOverrides?: { cwd?: string }): CLIMock {
+  run(spawnOverrides?: { cwd?: string; env?: NodeJS.ProcessEnv }): CLIMock {
     this.process = spawn(
       'node',
       [join(__dirname, '..', '..', 'dist', 'cli.js'), ...this.cliArgs],

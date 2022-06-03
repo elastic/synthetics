@@ -42,7 +42,15 @@ describe('Generator', () => {
     });
   });
   it('generate synthetics project - NPM', async () => {
-    const cli = new CLIMock().args(['init', scaffoldDir]).run();
+    const cli = new CLIMock().args(['init', scaffoldDir]).run({
+      env: {
+        ...process.env,
+        TEST_QUESTIONS: JSON.stringify({
+          locations: 'us_east',
+          schedule: 30,
+        }),
+      },
+    });
     expect(await cli.exitCode).toBe(0);
 
     // Verify files
@@ -62,6 +70,13 @@ describe('Generator', () => {
       existsSync(join(scaffoldDir, 'journeys', 'example.journey.ts'))
     ).toBeTruthy();
     expect(existsSync(join(scaffoldDir, 'synthetics.config.ts'))).toBeTruthy();
+    // Verify schedule and locations
+    const configFile = await readFile(
+      join(scaffoldDir, 'synthetics.config.ts'),
+      'utf-8'
+    );
+    expect(configFile).toContain(`locations: ["us_east"]`);
+    expect(configFile).toContain(`schedule: 30`);
 
     // Verify stdout
     const stderr = cli.stderr();

@@ -11,7 +11,10 @@ export default env => {
     /**
      * Configure global monitor settings
      */
-    monitor: {},
+    monitor: {
+      schedule: '{{schedule}}',
+      locations: ["'{{locations}}'"],
+    },
   };
   if (env !== 'development') {
     /**
