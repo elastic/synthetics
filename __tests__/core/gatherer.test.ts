@@ -117,7 +117,7 @@ describe('Gatherer', () => {
   });
 
   describe('Elastic UA identifier', () => {
-    it('works on a single page', async () => {
+    it('present when UA is not overriden', async () => {
       const driver = await Gatherer.setupDriver({ wsEndpoint });
       expect(await driver.page.evaluate(() => navigator.userAgent)).toContain(
         ' Elastic/Synthetics'
@@ -126,29 +126,26 @@ describe('Gatherer', () => {
       await Gatherer.stop();
     });
 
-    it('works with device emulation', async () => {
+    it('not present when UA is modified - emulated', async () => {
       const driver = await Gatherer.setupDriver({
         wsEndpoint,
         playwrightOptions: { ...devices['iPhone 12 Pro Max'] },
       });
       const userAgent = await driver.page.evaluate(() => navigator.userAgent);
-      expect(userAgent).toContain('Elastic/Synthetics');
+      expect(userAgent).not.toContain('Elastic/Synthetics');
       expect(userAgent).toContain('iPhone');
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
 
-    it('works with popup window', async () => {
+    it('present on popup windows', async () => {
       const driver = await Gatherer.setupDriver({
         wsEndpoint,
-        playwrightOptions: { ...devices['Galaxy S9+'] },
       });
       const { page, context } = driver;
       await page.goto(server.TEST_PAGE);
       context.on('request', request => {
-        expect(request.headers()['user-agent']).toContain(
-          ' Elastic/Synthetics'
-        );
+        expect(request.headers()['user-agent']).toContain('Elastic/Synthetics');
       });
       await page.setContent(
         '<a target=_blank rel=noopener href="/popup.html">popup</a>'
@@ -159,7 +156,7 @@ describe('Gatherer', () => {
       ]);
       await page1.waitForLoadState();
       expect(await page1.evaluate(() => navigator.userAgent)).toContain(
-        ' Elastic/Synthetics'
+        'Elastic/Synthetics'
       );
       expect(await page1.textContent('body')).toEqual('Not found');
       await Gatherer.dispose(driver);

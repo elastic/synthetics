@@ -65,12 +65,12 @@ export class Gatherer {
   }
 
   static async getUserAgent(userAgent?: string) {
-    const syntheticsIdentifier = ' Elastic/Synthetics';
     if (!userAgent) {
       const session = await Gatherer.browser.newBrowserCDPSession();
       ({ userAgent } = await session.send('Browser.getVersion'));
+      return userAgent + ' Elastic/Synthetics';
     }
-    return userAgent + syntheticsIdentifier;
+    return userAgent;
   }
 
   static setNetworkConditions(
