@@ -41,6 +41,15 @@ type PromptOptions = {
   schedule: number;
 };
 
+// exported for testing
+export const regularFiles = [
+  '.github/workflows/run-synthetics.yml',
+  'README.md',
+  'journeys/example.journey.ts',
+  'journeys/advanced-example.journey.ts',
+  'journeys/advanced-example-helpers.ts',
+];
+
 export class Generator {
   pkgManager = 'npm';
   constructor(public projectDir: string) {}
@@ -84,12 +93,14 @@ export class Generator {
       )
     );
 
-    // Setup example journey file
-    const journeyFile = 'journeys/example.journey.ts';
-    fileMap.set(
-      journeyFile,
-      await readFile(join(templateDir, journeyFile), 'utf-8')
-    );
+    // Setup non-templated files
+    Promise.all(
+      regularFiles.map(async fn => {
+        fileMap.set(fn, await readFile(join(templateDir, fn), 'utf-8'));
+      })
+    ).catch(e => {
+      throw e;
+    });
 
     // Create files
     for (const [relativePath, content] of fileMap) {
