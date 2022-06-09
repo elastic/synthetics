@@ -36,6 +36,7 @@ describe('Push CLI', () => {
     'foo',
     '--project',
     'test',
+    '.',
   ];
 
   it('errors when schedule option is empty', async () => {

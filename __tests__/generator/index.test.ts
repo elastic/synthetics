@@ -54,7 +54,12 @@ describe('Generator', () => {
         }),
       },
     });
-    expect(await cli.exitCode).toBe(0);
+    const output = await cli.buffer().join('\n');
+    const exitCode = await cli.exitCode;
+    // This check is lame, but showing the exit code does nothing to diagnose the issue
+    if (exitCode !== 0) {
+      expect(output).toBe('');
+    }
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
