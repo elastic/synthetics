@@ -34,13 +34,18 @@ import {
 } from '../src/helpers';
 
 const safeParse = (chunks: string[]) => {
-  return chunks.map(data => {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      throw `Error ${e} could not parse data '${data}'`;
-    }
-  });
+  // chunks may not be at proper newline boundaries, so we make sure everything is split
+  // on proper newlines
+  const lines = chunks.join('\n').split(/\r?\n/);
+  return lines
+    .filter(l => l.match(/\S/)) // remove blank lines
+    .map(data => {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        throw `Error ${e} could not parse data '${data}'`;
+      }
+    });
 };
 
 describe('CLI', () => {
