@@ -748,6 +748,30 @@ describe('runner', () => {
     });
   });
 
+  it('runner - build monitors filtered through "match"', async () => {
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const j2 = new Journey({ name: 'j2' }, noop);
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+
+    const monitors = runner.buildMonitors({ match: 'j1' });
+    expect(monitors.length).toBe(1);
+    expect(monitors[0].config.name).toBe('j1');
+  });
+
+  it('runner - build monitors filtered through "tags"', async () => {
+    const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
+    const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
+    const j3 = new Journey({ name: 'j3' }, noop);
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+    runner.addJourney(j3);
+
+    const monitors = runner.buildMonitors({ tags: ['first'] });
+    expect(monitors.length).toBe(1);
+    expect(monitors[0].config.name).toBe('j1');
+  });
+
   /**
    * Its really hard to ensure the journey/end is called for a real world page
    * without actually testing on a real world webpage.

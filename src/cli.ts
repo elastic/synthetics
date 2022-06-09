@@ -25,7 +25,8 @@
  *
  */
 
-import { program, Option, Argument } from 'commander';
+import { program, Option } from 'commander';
+import { cwd } from 'process';
 import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
 import { normalizeOptions, parseThrottling } from './options';
@@ -81,12 +82,12 @@ program
     "don't actually execute anything, report only registered journeys"
   )
   .option(
-    '--match <name>',
-    'run only journeys with a name or tags that matches the glob'
+    '--tags <name...>',
+    'run only journeys with a tag that matches the glob'
   )
   .option(
-    '--tags <name...>',
-    'run only journeys with the given tag(s), or globs'
+    '--match <name>',
+    'run only journeys with a name or tag that matches the glob'
   )
   .option(
     '--outfd <fd>',
@@ -147,14 +148,20 @@ program
 // Push command
 program
   .command('push')
-  .addArgument(
-    new Argument(
-      '[journeys...]',
-      'file path to journey directory and individual files'
-    ).argRequired()
-  )
   .description(
-    'Push journeys to create montors within Kibana monitor management UI'
+    'Push journeys in the current directory to create montors within the Kibana monitor management UI'
+  )
+  .option(
+    '--pattern <pattern>',
+    'RegExp file patterns to push inside current directory'
+  )
+  .option(
+    '--tags <name...>',
+    'push only journeys with a tag that matches the glob'
+  )
+  .option(
+    '--match <name>',
+    'push only journeys with a name or tag that matches the glob'
   )
   .option(
     '--schedule <time-in-minutes>',
@@ -182,9 +189,9 @@ program
     'default'
   )
   .option('--delete', 'automatically delete the stale monitors.')
-  .action(async (journeys, cmdOpts: PushOptions) => {
+  .action(async (cmdOpts: PushOptions) => {
     try {
-      await loadTestFiles({ inline: false }, journeys);
+      await loadTestFiles({ inline: false }, [cwd()]);
       const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
       if (!options.schedule) {
         throw error(`Set default schedule in minutes for all monitors via '--schedule <time-in-minutes>' OR
