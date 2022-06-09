@@ -18,5 +18,4 @@ To run the tests here simply use the following command:
 npx @elastic/synthetics .
 ```
 
-Curious to learn more? [Read the docs](https://www.elastic.co/guide/en/observability/current/monitor-uptime-synthetics.html) to learn about pushing configurations to an Elastic
-cloud stack and more!
+Curious to learn more? [Read the docs](https://www.elastic.co/guide/en/observability/current/monitor-uptime-synthetics.html) to learn about pushing configurations to an Elastic cloud stack and more!
