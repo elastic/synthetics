@@ -42,6 +42,9 @@ describe('Generator', () => {
     });
   });
   it('generate synthetics project - NPM', async () => {
+    // In a few development environments, this test may take
+    // a few millisseconds more than the default 15000ms timeout
+    jest.setTimeout(30000);
     const cli = new CLIMock().args(['init', scaffoldDir]).run({
       env: {
         ...process.env,
@@ -51,7 +54,12 @@ describe('Generator', () => {
         }),
       },
     });
-    expect(await cli.exitCode).toBe(0);
+    const output = await cli.buffer().join('\n');
+    const exitCode = await cli.exitCode;
+    // This check is lame, but showing the exit code does nothing to diagnose the issue
+    if (exitCode !== 0) {
+      expect(output).toBe('');
+    }
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();

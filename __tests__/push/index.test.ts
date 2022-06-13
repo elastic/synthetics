@@ -36,19 +36,13 @@ describe('Push CLI', () => {
     'foo',
     '--project',
     'test',
+    '.',
   ];
-  const journeyFile = join(FIXTURES_DIR, 'example.journey.ts');
-  it('errors when no journey files are passed', async () => {
-    const cli = new CLIMock().args(['push', ...args]).run();
-    expect(await cli.exitCode).toBe(1);
 
-    expect(cli.stderr()).toContain(
-      `error: missing required argument 'journeys'`
-    );
-  });
-
-  it('erorr when schedule option is empty', async () => {
-    const cli = new CLIMock().args(['push', journeyFile, ...args]).run();
+  it('errors when schedule option is empty', async () => {
+    const cli = new CLIMock()
+      .args(['push', ...args])
+      .run({ cwd: FIXTURES_DIR });
     expect(await cli.exitCode).toBe(1);
 
     expect(cli.stderr()).toContain(
@@ -58,8 +52,8 @@ describe('Push CLI', () => {
 
   it('errors when locations option is empty', async () => {
     const cli = new CLIMock()
-      .args(['push', journeyFile, ...args, '--schedule', '20'])
-      .run();
+      .args(['push', ...args, '--schedule', '20'])
+      .run({ cwd: FIXTURES_DIR });
     expect(await cli.exitCode).toBe(1);
 
     expect(cli.stderr()).toContain(`Set default location for all monitors`);

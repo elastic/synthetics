@@ -397,9 +397,16 @@ export default class Runner {
       playwrightOptions: options.playwrightOptions,
     });
 
+    const { match, tags } = options;
+
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
+      if (!journey.isMatch(match, tags)) {
+        continue;
+      }
+
       this.#currentJourney = journey;
+
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
