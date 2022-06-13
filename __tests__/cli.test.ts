@@ -34,13 +34,18 @@ import {
 } from '../src/helpers';
 
 const safeParse = (chunks: string[]) => {
-  return chunks.map(data => {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      throw `Error ${e} could not parse data '${data}'`;
-    }
-  });
+  // chunks may not be at proper newline boundaries, so we make sure everything is split
+  // on proper newlines
+  const lines = chunks.join('\n').split(/\r?\n/);
+  return lines
+    .filter(l => l.match(/\S/)) // remove blank lines
+    .map(data => {
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        throw `Error ${e} could not parse data '${data}'`;
+      }
+    });
 };
 
 describe('CLI', () => {
@@ -53,6 +58,29 @@ describe('CLI', () => {
   afterAll(async () => await server.close());
 
   const FIXTURES_DIR = join(__dirname, 'fixtures');
+
+  // jest by default sets NODE_ENV to `test`
+  const originalNodeEnv = process.env['NODE_ENV'];
+
+  afterEach(() => {
+    process.env['NODE_ENV'] = originalNodeEnv;
+  });
+
+  const getJourneyStart = output => {
+    return getEvent(output, 'journey/start');
+  };
+
+  const getStepEnd = output => {
+    return getEvent(output, 'step/end');
+  };
+
+  const getEvent = (output, eventName) => {
+    const parsedLines = output
+      .split('\n')
+      .filter(line => !!line)
+      .map(JSON.parse);
+    return parsedLines.find(e => e.type === eventName);
+  };
 
   describe('for inline tests', () => {
     it('runs inline tests', async () => {
@@ -89,8 +117,6 @@ describe('CLI', () => {
     });
 
     it('does not load a configuration file without a config param', async () => {
-      // jest by default sets NODE_ENV to `test`
-      const original = process.env['NODE_ENV'];
       const output = async () => {
         const cli = new CLIMock()
           .stdin(`step('fake step', async () => {})`)
@@ -98,22 +124,19 @@ describe('CLI', () => {
           .run({ cwd: FIXTURES_DIR });
         await cli.waitFor('journey/start');
         expect(await cli.exitCode).toBe(0);
-        return cli.output();
+        return getJourneyStart(cli.output());
       };
 
-      expect(JSON.parse(await output()).payload).not.toMatchObject({
+      expect((await output()).payload).not.toMatchObject({
         params: { url: 'non-dev' },
       });
       process.env['NODE_ENV'] = 'development';
-      expect(JSON.parse(await output()).payload).not.toMatchObject({
+      expect((await output()).payload).not.toMatchObject({
         params: { url: 'dev' },
       });
-      process.env['NODE_ENV'] = original;
     });
 
     it('loads a configuration file when passing a config param', async () => {
-      // jest by default sets NODE_ENV to `test`
-      const original = process.env['NODE_ENV'];
       const output = async () => {
         const cli = new CLIMock()
           .stdin(`step('fake step', async () => {})`)
@@ -127,17 +150,16 @@ describe('CLI', () => {
           .run({ cwd: FIXTURES_DIR });
         await cli.waitFor('journey/start');
         expect(await cli.exitCode).toBe(0);
-        return cli.output();
+        return getJourneyStart(cli.output());
       };
 
-      expect(JSON.parse(await output()).payload).toMatchObject({
+      expect((await output()).payload).toMatchObject({
         params: { url: 'non-dev' },
       });
       process.env['NODE_ENV'] = 'development';
-      expect(JSON.parse(await output()).payload).toMatchObject({
+      expect((await output()).payload).toMatchObject({
         params: { url: 'dev' },
       });
-      process.env['NODE_ENV'] = original;
     });
   });
 
@@ -248,8 +270,6 @@ describe('CLI', () => {
   });
 
   it('pass dynamic config to journey params', async () => {
-    // jest by default sets NODE_ENV to `test`
-    const original = process.env['NODE_ENV'];
     const getJourneyStart = async () => {
       const cli = new CLIMock()
         .args([
@@ -275,7 +295,6 @@ describe('CLI', () => {
     expect(output.payload).toMatchObject({
       params: { url: 'dev' },
     });
-    process.env['NODE_ENV'] = original;
   });
 
   it('params wins over config params', async () => {
@@ -291,9 +310,9 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/start');
-    const output = cli.output();
+    const output = getJourneyStart(cli.output());
     expect(await cli.exitCode).toBe(0);
-    expect(JSON.parse(output).payload).toMatchObject({
+    expect(output.payload).toMatchObject({
       params: { url: 'suite-url' },
     });
   });
@@ -327,7 +346,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('step/end');
-    const output = JSON.parse(cli.output());
+    const output = getStepEnd(cli.output());
     expect(output.payload.pagemetrics).toBeDefined();
     expect(await cli.exitCode).toBe(0);
   });
