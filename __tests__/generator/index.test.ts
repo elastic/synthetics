@@ -27,6 +27,7 @@ import { existsSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { CLIMock } from '../utils/test-config';
+import { regularFiles } from '../../src/generator';
 
 describe('Generator', () => {
   const scaffoldDir = join(__dirname, 'scaffold-test');
@@ -74,9 +75,9 @@ describe('Generator', () => {
       "
     `);
 
-    expect(
-      existsSync(join(scaffoldDir, 'journeys', 'example.journey.ts'))
-    ).toBeTruthy();
+    regularFiles.forEach(fn => {
+      expect(existsSync(join(scaffoldDir, fn))).toBeTruthy();
+    });
     expect(existsSync(join(scaffoldDir, 'synthetics.config.ts'))).toBeTruthy();
     // Verify schedule and locations
     const configFile = await readFile(
