@@ -9,7 +9,7 @@ You can always use this command to create new projects.
 Key places to look:
 
 - The `synthetics.config.ts` file contains configuration for your project.
-- The `journeys` directory contains both basic and more advanced examples of using synthetics. It tests  a publicly hosted [Todos List](https://elastic.github.io/synthetics-demo/).
+- The `journeys` directory contains both basic and more advanced examples of using synthetics. It tests a publicly hosted [Todos List](https://elastic.github.io/synthetics-demo/).
 - The `.github` directory contains an example github action, demonstrating the use of a CI service for automatically running tests on merges and PR creation.
 
 To run the tests here simply use the following command:
