@@ -149,7 +149,7 @@ program
 program
   .command('push')
   .description(
-    'Push journeys in the current directory to create montors within the Kibana monitor management UI'
+    'Push journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
   .option(
     '--pattern <pattern>',
