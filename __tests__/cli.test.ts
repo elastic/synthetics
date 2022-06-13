@@ -398,8 +398,12 @@ describe('CLI', () => {
     it('fails by default', async () => {
       const cli = new CLIMock().args(cliArgs).run();
       expect(await cli.exitCode).toBe(1);
-      const [output] = safeParse([cli.output()]);
-      expect(output.journey).toEqual(
+
+      const journeyEnd = safeParse(cli.buffer()).find(
+        ({ type }) => type === 'journey/end'
+      );
+
+      expect(journeyEnd.journey).toEqual(
         expect.objectContaining({ status: 'failed' })
       );
     });
@@ -409,8 +413,12 @@ describe('CLI', () => {
         .args(cliArgs.concat('--ignore-https-errors'))
         .run();
       expect(await cli.exitCode).toBe(0);
-      const [output] = safeParse([cli.output()]);
-      expect(output.journey).toEqual(
+
+      const journeyEnd = safeParse(cli.buffer()).find(
+        ({ type }) => type === 'journey/end'
+      );
+
+      expect(journeyEnd.journey).toEqual(
         expect.objectContaining({ status: 'succeeded' })
       );
     });
@@ -425,8 +433,12 @@ describe('CLI', () => {
         )
         .run();
       expect(await cli.exitCode).toBe(0);
-      const [output] = safeParse([cli.output()]);
-      expect(output.journey).toEqual(
+
+      const journeyEnd = safeParse(cli.buffer()).find(
+        ({ type }) => type === 'journey/end'
+      );
+
+      expect(journeyEnd.journey).toEqual(
         expect.objectContaining({ status: 'succeeded' })
       );
     });
