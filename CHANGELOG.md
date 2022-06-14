@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 **For detailed release notes, please refer to the [GitHub releases](https://github.com/elastic/synthetics/releases) page.**
 
+
+## v1.0.0-beta.28 (2022-06-13)
+
+### Features
+
+- Now that push only supports configurations in the current working directory, it also allows users to use the `--match`, `--pattern` and `--tags` flags to filter which journeys to push #523
+- The `init` command now generates more detailed examples, and includes documentation reference #524
+
+### Bug fixes
+
+- Upgrade sharp version to avoid known vulnerabilities #519 
+- Update `source-map-support` so that we use correct filepaths when bundling and pushing monitors #520
+
 ## v1.0.0-beta.27 (2022-06-03)
 
 ### Features
