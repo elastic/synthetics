@@ -33,6 +33,7 @@ export function commonOptions(): esbuild.BuildOptions {
     external: ['node_modules', '@elastic/synthetics'],
     minify: false,
     platform: 'node',
+    logLevel: 'silent',
     format: 'esm',
     write: false,
     outExtension: {
