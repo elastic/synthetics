@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Bug fixes
 
-- Upgrade sharp version to avoid known vulnerabilities
+- Upgrade sharp version to avoid known vulnerabilities #519 
 - Update `source-map-support` so that we use correct filepaths when bundling and pushing monitors #520
 
 ## v1.0.0-beta.27 (2022-06-03)
