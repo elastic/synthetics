@@ -52,15 +52,11 @@ export class Bundler {
         plugins: [MultiAssetPlugin(addToMap)],
       },
     };
-    try {
-      const result = await esbuild.build(options);
-      if (result.errors.length > 0) {
-        throw result.errors;
-      }
-      this.moduleMap.set(absPath, result.outputFiles[0].text);
-    } catch (e) {
-      console.error(e);
+    const result = await esbuild.build(options);
+    if (result.errors.length > 0) {
+      throw result.errors;
     }
+    this.moduleMap.set(absPath, result.outputFiles[0].text);
   }
 
   async zip(outputPath: string) {
