@@ -13,8 +13,6 @@ elastic-package stack down
 # start elastic-package
 env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1
 
-status=$?
-
 echo "Fleet server commit: \n$(docker inspect --format='{{index .Config.Labels "org.label-schema.vcs-ref"}}' elastic-package-stack_fleet-server_1)"
 echo "Fetching Fleet server logs... \n"
 echo $(docker logs elastic-package-stack_fleet-server_1)
@@ -55,5 +53,6 @@ curl -X PUT "http://elastic:changeme@localhost:9200/*/_settings?expand_wildcards
 
 env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1
 
+status=$?
 
 exit $status
