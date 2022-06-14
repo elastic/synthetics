@@ -10,6 +10,8 @@ eval "$(elastic-package stack shellinit)"
 # Take the stack down
 elastic-package stack down
 
+docker rmi docker.elastic.co/beats/elastic-agent-complete:$1 docker.elastic.co/elasticsearch/elasticsearch:$1 docker.elastic.co/kibana/kibana:$1 elastic-package-stack_package-registry:latest || echo "FAILED"
+
 # start elastic-package
 env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1
 
