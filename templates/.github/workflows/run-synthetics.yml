@@ -1,21 +1,19 @@
-name: Synthetics Run
+name: Elastic Synthetics Tests
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
+    branches: [main, master]
   schedule:
     - cron: '* 0 * * *'
 jobs:
-  todos_tests:
+  test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 'todos/synthetics-tests'
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
-          node-version: '12.22.3'
+          node-version: 16
       - run: npm install
       - run: "SYNTHETICS_JUNIT_FILE='junit-synthetics.xml' npx @elastic/synthetics . --reporter=junit"
         continue-on-error: true
@@ -24,5 +22,5 @@ jobs:
         if: always()
         with:
           files: '**/junit-*.xml'
-          fail_on: "test failures"
-          check_name: Todos Unit Tests
+          fail_on: 'test failures'
+          check_name: Elastic Synthetics Tests
