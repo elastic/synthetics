@@ -644,6 +644,36 @@ describe('runner', () => {
     });
   });
 
+  it('run - use step timeouts', async () => {
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    server.route('/delay500', async (req, res) => {
+      await delay(500);
+      res.end('delay 500');
+    });
+    const j1 = journey('timeout', async ({ page }) => {
+      step('delayed step', async () => {
+        // keep 200ms timeout for navigation
+        await page.goto(server.PREFIX + '/delay500', { timeout: 200 });
+      });
+    });
+    await runner.addJourney(j1);
+
+    class StepCheckReporter implements Reporter {
+      onStepEnd(j, s, result: StepEndResult) {
+        const durationMs = (result.end - result.start) * 1000;
+        // Should not wait till the page is loaded which is after 500ms delay
+        // ideally should be in the ~200ms range
+        expect(durationMs).not.toBeGreaterThan(500);
+      }
+    }
+    const result = await runner.run({
+      ...defaultRunOptions,
+      screenshots: 'off',
+      reporter: StepCheckReporter,
+    });
+    expect(result[j1.name].error?.message).toContain('Timeout 200ms exceeded');
+  });
+
   it('run - timestamps must be in order', async () => {
     const j1 = journey('journey1', async ({ page }) => {
       step('step1', async () => {
