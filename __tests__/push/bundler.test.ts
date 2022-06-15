@@ -26,7 +26,7 @@
 import { createReadStream } from 'fs';
 import { writeFile, unlink } from 'fs/promises';
 import unzipper from 'unzipper';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
@@ -54,5 +54,17 @@ describe('Bundler', () => {
     const bundler = new Bundler();
     const content = await bundler.build(journeyFile, generateTempPath());
     await validateZip(content);
+  });
+
+  it('throw errors on incorrect path', async () => {
+    const bundler = new Bundler();
+    try {
+      await bundler.build(
+        join(dirname(journeyFile), 'blah.ts'),
+        generateTempPath()
+      );
+    } catch (e) {
+      expect(e.message).toContain('ENOENT');
+    }
   });
 });
