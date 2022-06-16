@@ -39,3 +39,5 @@ if [ $status -eq 1 ]; then
 
     echo "Fetching Kibana logs... \n$(docker logs elastic-package-stack_kibana_1)"
 fi
+
+exit 0
