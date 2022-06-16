@@ -243,7 +243,6 @@ export type PushOptions = {
   url: string;
   project: string;
   space: string;
-  delete: boolean;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
 };

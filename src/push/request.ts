@@ -34,7 +34,6 @@ const { version } = require('../../package.json');
 
 export type APISchema = {
   project: string;
-  keep_stale: boolean;
   monitors: MonitorSchema[];
 };
 
@@ -54,7 +53,6 @@ export async function createMonitors(
 ) {
   const schema: APISchema = {
     project: options.project,
-    keep_stale: !options.delete,
     monitors,
   };
 
