@@ -49,12 +49,9 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       const { error, message } = await body.json();
       throw formatAPIError(statusCode, error, message);
     }
-    const { staleMonitors, failedMonitors } = await body.json();
+    const { failedMonitors } = await body.json();
     if (failedMonitors.length > 0) {
       throw formatFailedMonitors(failedMonitors);
-    }
-    if (staleMonitors.length > 0) {
-      write(formatStaleMonitors());
     }
     done('Pushed');
   } catch (e) {

@@ -105,10 +105,3 @@ export function formatFailedMonitors(errors: APIMonitorError[]) {
   }
   return outer;
 }
-
-export function formatStaleMonitors() {
-  let outer = bold(yellow(`${symbols['warning']} Found stale monitors\n`));
-  const inner = gray(`Pass --delete to remove all the stale monitors.`);
-  outer += indent(inner, '   ');
-  return outer;
-}
