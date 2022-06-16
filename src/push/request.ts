@@ -23,7 +23,7 @@
  *
  */
 
-import { bold, gray, yellow } from 'kleur/colors';
+import { bold } from 'kleur/colors';
 import { request } from 'undici';
 import { PushOptions } from '../common_types';
 import { indent, symbols } from '../helpers';
@@ -34,6 +34,7 @@ const { version } = require('../../package.json');
 
 export type APISchema = {
   project: string;
+  keep_stale: boolean;
   monitors: MonitorSchema[];
 };
 
@@ -53,6 +54,7 @@ export async function createMonitors(
 ) {
   const schema: APISchema = {
     project: options.project,
+    keep_stale: false,
     monitors,
   };
 

@@ -28,13 +28,12 @@ import {
   ok,
   formatAPIError,
   formatFailedMonitors,
-  formatStaleMonitors,
   formatNotFoundError,
 } from './request';
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import { buildMonitorSchema } from './monitor';
-import { progress, error, done, write } from '../helpers';
+import { progress, error, done } from '../helpers';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   progress(`preparing all monitors`);

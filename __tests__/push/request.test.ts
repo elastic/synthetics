@@ -73,6 +73,7 @@ describe('Push api request', () => {
     expect(statusCode).toBe(200);
     expect(await body.json()).toEqual({
       project: 'blah',
+      keep_stale: false,
       monitors: schema,
     });
   });
