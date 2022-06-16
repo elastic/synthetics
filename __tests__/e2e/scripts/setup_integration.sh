@@ -9,7 +9,7 @@ eval "$(elastic-package stack shellinit)"
 elastic-package stack down
 
 # start elastic-package
-env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "kibana,elasticsearch"
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elasticsearch"
 
 curl -X PUT "http://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'
 {
@@ -21,7 +21,16 @@ curl -X PUT "http://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H
 }
 '
 
+curl -X PUT "http://elastic:changeme@localhost:9200/*/_settings?expand_wildcards=all&pretty" -H 'Content-Type: application/json' -d'
+{
+  "index.blocks.read_only_allow_delete": null
+}
+'
+
+
 env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elastic-agent"
+
+status=$?
 
 if [ $status -eq 1 ]; then
     echo "Fetching Fleet server logs... \n$(docker logs elastic-package-stack_fleet-server_1)"
