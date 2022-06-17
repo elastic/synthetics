@@ -18,8 +18,3 @@ exports[`Push api request format failed monitors 1`] = `
 
 "
 `;
-
-exports[`Push api request stale monitor error 1`] = `
-"⚠ Found stale monitors
-   Pass --delete to remove all the stale monitors."
-`;

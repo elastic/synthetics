@@ -23,7 +23,7 @@
  *
  */
 
-import { bold, gray, yellow } from 'kleur/colors';
+import { bold } from 'kleur/colors';
 import { request } from 'undici';
 import { PushOptions } from '../common_types';
 import { indent, symbols } from '../helpers';
@@ -54,7 +54,7 @@ export async function createMonitors(
 ) {
   const schema: APISchema = {
     project: options.project,
-    keep_stale: !options.delete,
+    keep_stale: false,
     monitors,
   };
 
@@ -105,12 +105,5 @@ export function formatFailedMonitors(errors: APIMonitorError[]) {
     outer += indent(inner) + '\n';
     outer += '\n';
   }
-  return outer;
-}
-
-export function formatStaleMonitors() {
-  let outer = bold(yellow(`${symbols['warning']} Found stale monitors\n`));
-  const inner = gray(`Pass --delete to remove all the stale monitors.`);
-  outer += indent(inner, '   ');
   return outer;
 }

@@ -188,7 +188,6 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.',
     'default'
   )
-  .option('--delete', 'automatically delete the stale monitors.')
   .action(async (cmdOpts: PushOptions) => {
     try {
       await loadTestFiles({ inline: false }, [cwd()]);

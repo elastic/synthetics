@@ -32,7 +32,6 @@ import {
   formatAPIError,
   formatFailedMonitors,
   formatNotFoundError,
-  formatStaleMonitors,
 } from '../../src/push/request';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
@@ -69,13 +68,12 @@ describe('Push api request', () => {
       auth: 'foo:bar',
       project: 'blah',
       space: 'dummy',
-      delete: false,
     });
 
     expect(statusCode).toBe(200);
     expect(await body.json()).toEqual({
       project: 'blah',
-      keep_stale: true,
+      keep_stale: false,
       monitors: schema,
     });
   });
@@ -110,9 +108,5 @@ describe('Push api request', () => {
     ];
 
     expect(formatFailedMonitors(errors)).toMatchSnapshot();
-  });
-
-  it('stale monitor error', () => {
-    expect(formatStaleMonitors()).toMatchSnapshot();
   });
 });
