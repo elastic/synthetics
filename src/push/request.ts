@@ -39,8 +39,10 @@ export type APISchema = {
 };
 
 function getAPIUrl(options: PushOptions) {
+  // remove trialing / as well
   return (
-    options.url + `/s/${options.space}/api/synthetics/service/project/monitors`
+    options.url.replace(/\/+$/, '') +
+    `/s/${options.space}/api/synthetics/service/project/monitors`
   );
 }
 
