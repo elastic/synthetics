@@ -97,11 +97,11 @@ export default class Runner {
   }
 
   async captureScreenshot(page: Driver['page'], step: Step) {
-    await page.waitForLoadState('load');
     const buffer = await page
       .screenshot({
         type: 'jpeg',
         quality: 80,
+        timeout: 5000,
       })
       .catch(() => {});
     /**
