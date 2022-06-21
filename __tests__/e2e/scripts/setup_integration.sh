@@ -9,7 +9,17 @@ eval "$(elastic-package stack shellinit)"
 elastic-package stack down
 
 # start elastic-package
-env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elasticsearch"
+
+curl -X PUT "http://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'
+{
+    "persistent" : {
+      "cluster.routing.allocation.disk.threshold_enabled" : false
+    }
+}
+'
+
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elastic-agent"
 
 status=$?
 
@@ -19,6 +29,6 @@ if [ $status -eq 1 ]; then
     echo "Fetching Elastic Agent logs... \n$(docker logs elastic-package-stack_elastic-agent_1)"
 
     echo "Fetching Kibana logs... \n$(docker logs elastic-package-stack_kibana_1)"
-
-    exit $status
 fi
+
+exit 0
