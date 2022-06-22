@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 **For detailed release notes, please refer to the [GitHub releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta.29 (2022-06-21)
+
+## Bug fixes
+
+- Setup github workflow template correctly #529
+- Stop pushing monitors on bundle errors #530
+- Delete stale monitors by default on push command #534
+- Allow controlling timeouts via actions #532
+- Remove trailing slash from Kibana host #536
 
 ## v1.0.0-beta.28 (2022-06-13)
 
