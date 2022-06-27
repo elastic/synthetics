@@ -195,7 +195,7 @@ All set, you can run below commands inside: ${this.projectDir}:
     'Make sure to update the Kibana url and api keys before pushing monitors to Kibana.'
   )}
 
-Visit https://www.elastic.co/guide/en/observability/master/synthetics-journeys.html to learn more.
+Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.html to learn more.
     `)
     );
   }
