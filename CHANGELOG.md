@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-**For detailed release notes, please refer to the [GitHub releases](https://github.com/elastic/synthetics/releases) page.**
+**For detailed release notes, please refer to the [GitHub
+releases](https://github.com/elastic/synthetics/releases) page.**
+
+## v1.0.0-beta.30 (2022-06-28)
+
+## Bug fixes
+
+- Use fixed playwright version to avoid running in to dependency issues #540
 
 ## v1.0.0-beta.29 (2022-06-21)
 
@@ -23,7 +30,7 @@ All notable changes to this project will be documented in this file.
 
 ### Bug fixes
 
-- Upgrade sharp version to avoid known vulnerabilities #519 
+- Upgrade sharp version to avoid known vulnerabilities #519
 - Update `source-map-support` so that we use correct filepaths when bundling and pushing monitors #520
 
 ## v1.0.0-beta.27 (2022-06-03)
