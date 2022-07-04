@@ -23,15 +23,10 @@
  *
  */
 
-import { beforeAll, journey, step } from '@elastic/synthetics';
-import axios from 'axios';
+import { journey, step } from '@elastic/synthetics';
 import semver from 'semver';
 
 const stackVersion = process.env.STACK_VERSION.split('-')[0];
-
-beforeAll(async () => {
-  await waitForElasticSearch();
-});
 
 async function logIn(page) {
   await page.fill('[data-test-subj="loginUsername"]', 'elastic');
@@ -41,8 +36,8 @@ async function logIn(page) {
 
 async function goToSyntheticsIntegrationPage(page) {
   console.info('Navigating to Elastic Synthetics Integration page')
-  await page.goto('http://localhost:5601/app/integrations/detail/synthetics/overview');
-  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 10000 });
+  await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview');
+  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 30000 });
   const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
   if (isUnauthenticated) {
     await logIn(page);
@@ -57,7 +52,7 @@ async function goToSyntheticsIntegrationPage(page) {
 
 async function goToUptime(page) {
   console.info('Navigating to Uptime overview page')
-  await page.goto('http://localhost:5601/app/uptime');
+  await page.goto('https://localhost:5601/app/uptime');
 }
 
 async function selectAgentPolicy({ page }) {
@@ -231,23 +226,4 @@ if (semver.satisfies(stackVersion, '>=8.0.1')) {
       await checkForSyntheticsData({ page, journeyName });
     });
   });
-}
-
-async function waitForElasticSearch() {
-  console.info('Waiting for Elastic Search  to start');
-  let esStatus = false;
-
-  while (!esStatus) {
-    try {
-      const { data } = await axios.get('http://localhost:9200/_cluster/health', {
-        auth: {
-          username: 'elastic',
-          password: 'changeme'
-        }
-      });
-      esStatus = data?.status !== 'red';
-    } catch (e) {
-      throw new Error(e);
-    }
-  }
 }
