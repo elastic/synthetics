@@ -49,8 +49,10 @@ export type PluginData = {
 export type PluginCallback = (data: PluginData) => void;
 
 export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
+  // Check that the path isn't in an external package by making sure it's at a standard
+  // local filesystem location
   const isBare = (str: string) => {
-    if (str.startsWith('/') || str.startsWith('./') || str.startsWith('../')) {
+    if (path.isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
       return true;
     }
     return false;
@@ -66,6 +68,12 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
           build.initialOptions.external?.includes(args.path) ||
           !isBare(args.path)
         ) {
+          console.log('MARKING AS EXTERNAL', {
+            match: build.initialOptions.external?.includes(args.path),
+            inoext: build.initialOptions,
+            ibare: !isBare(args.path),
+            ap: args.path,
+          });
           return {
             external: true,
           };
