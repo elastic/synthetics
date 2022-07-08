@@ -68,12 +68,6 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
           build.initialOptions.external?.includes(args.path) ||
           !isBare(args.path)
         ) {
-          console.log('MARKING AS EXTERNAL', {
-            match: build.initialOptions.external?.includes(args.path),
-            inoext: build.initialOptions,
-            ibare: !isBare(args.path),
-            ap: args.path,
-          });
           return {
             external: true,
           };
