@@ -30,6 +30,7 @@ import {
   ChromiumBrowser,
   ChromiumBrowserContext,
   Page,
+  APIRequestContext,
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
@@ -62,6 +63,7 @@ export type Driver = {
   context: ChromiumBrowserContext;
   page: Page;
   client: CDPSession;
+  apiContext: APIRequestContext;
 };
 
 export type TraceOutput = {

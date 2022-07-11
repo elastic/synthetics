@@ -99,7 +99,9 @@ export class CLIMock {
       }
       this.chunks.push(this.data);
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
-        this.process.stdout.off('data', dataListener);
+        if (!this.debug) {
+          this.process.stdout.off('data', dataListener);
+        }
         this.waitForPromise();
       }
     };

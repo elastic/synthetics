@@ -98,6 +98,20 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('provides an apiContext object for inline tests', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `step('check body', async () => {
+          const resp = await apiContext.get(params.url);
+          expect((await resp.body()).toString()).toMatch(/Synthetics/);
+        })`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline');
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('exit with 1 on syntax errors', async () => {
       const cli = new CLIMock()
         .stdin(`step('syntax error', async () => {}})`)
@@ -178,6 +192,20 @@ describe('CLI', () => {
       .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(1);
+  });
+
+  it('runs a browser test with apiContext correctly', async () => {
+    const cli = new CLIMock(false)
+      .args([
+        join(FIXTURES_DIR, 'browser-with-api.journey.ts'),
+        '--params',
+        JSON.stringify(serverParams),
+      ])
+
+      .run();
+    await cli.waitFor('Journey: browser with apicontext');
+    expect(cli.output()).toContain('browser with apicontext');
+    expect(await cli.exitCode).toBe(0);
   });
 
   it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {
