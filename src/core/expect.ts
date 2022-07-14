@@ -28,6 +28,8 @@ import type {
   AsymmetricMatcher,
   MatcherState,
   ExpectedAssertionsErrors,
+  Inverse,
+  PromiseMatchers,
 } from 'expect/build/types';
 
 // Copied source code from expect/build/types.d.ts
@@ -61,99 +63,122 @@ declare global {
       /**
        * If you know how to test something, `.not` lets you test its opposite.
        */
-      not: Matchers<R>;
+      not: Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Use resolves to unwrap the value of a fulfilled promise so any other
        * matcher can be chained. If the promise is rejected the assertion fails.
        */
-      resolves: Matchers<Promise<R>>;
+      resolves: Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Unwraps the reason of a rejected promise so any other matcher can be chained.
        * If the promise is fulfilled the assertion fails.
        */
-      rejects: Matchers<Promise<R>>;
+      rejects: Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Checks that a value is what you expect. It uses `===` to check strict equality.
        * Don't use `toBe` with floating-point numbers.
        */
-      toBe(expected: unknown): R;
+      toBe(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Using exact equality with floating point numbers is a bad idea.
        * Rounding means that intuitive things fail.
        * The default for numDigits is 2.
        */
-      toBeCloseTo(expected: number, numDigits?: number): R;
+      toBeCloseTo(
+        expected: number,
+        numDigits?: number
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Ensure that a variable is not undefined.
        */
-      toBeDefined(): R;
+      toBeDefined(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * When you don't care what a value is, you just want to
        * ensure a value is false in a boolean context.
        */
-      toBeFalsy(): R;
+      toBeFalsy(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * For comparing floating point numbers.
        */
-      toBeGreaterThan(expected: number | bigint): R;
+      toBeGreaterThan(
+        expected: number | bigint
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * For comparing floating point numbers.
        */
-      toBeGreaterThanOrEqual(expected: number | bigint): R;
+      toBeGreaterThanOrEqual(
+        expected: number | bigint
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Ensure that an object is an instance of a class.
        * This matcher uses `instanceof` underneath.
        */
       /* eslint-disable-next-line */
-      toBeInstanceOf(expected: Function): R;
+      toBeInstanceOf(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * For comparing floating point numbers.
        */
-      toBeLessThan(expected: number | bigint): R;
+      toBeLessThan(
+        expected: number | bigint
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * For comparing floating point numbers.
        */
-      toBeLessThanOrEqual(expected: number | bigint): R;
+      toBeLessThanOrEqual(
+        expected: number | bigint
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * This is the same as `.toBe(null)` but the error messages are a bit nicer.
        * So use `.toBeNull()` when you want to check that something is null.
        */
-      toBeNull(): R;
+      toBeNull(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Use when you don't care what a value is, you just want to ensure a value
        * is true in a boolean context. In JavaScript, there are six falsy values:
        * `false`, `0`, `''`, `null`, `undefined`, and `NaN`. Everything else is truthy.
        */
-      toBeTruthy(): R;
+      toBeTruthy(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used to check that a variable is undefined.
        */
-      toBeUndefined(): R;
+      toBeUndefined(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used to check that a variable is NaN.
        */
-      toBeNaN(): R;
+      toBeNaN(): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used when you want to check that an item is in a list.
        * For testing the items in the list, this uses `===`, a strict equality check.
        */
-      toContain(expected: unknown): R;
+      toContain(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used when you want to check that an item is in a list.
        * For testing the items in the list, this  matcher recursively checks the
        * equality of all fields, rather than checking for object identity.
        */
-      toContainEqual(expected: unknown): R;
+      toContainEqual(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used when you want to check that two objects have the same value.
        * This matcher recursively checks the equality of all fields, rather than checking for object identity.
        */
-      toEqual(expected: unknown): R;
+      toEqual(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used to check that an object has a `.length` property
        * and it is set to a certain numeric value.
        */
-      toHaveLength(expected: number): R;
+      toHaveLength(
+        expected: number
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Use to check if property at provided reference keyPath exists for an object.
        * For checking deeply nested properties in an object you may use dot notation or an array containing
@@ -167,19 +192,28 @@ declare global {
        *
        * expect(houseForSale).toHaveProperty('kitchen.area', 20);
        */
-      toHaveProperty(keyPath: string | Array<string>, value?: unknown): R;
+      toHaveProperty(
+        keyPath: string | Array<string>,
+        value?: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Check that a string matches a regular expression.
        */
-      toMatch(expected: string | RegExp): R;
+      toMatch(
+        expected: string | RegExp
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Used to check that a JavaScript object matches a subset of the properties of an object
        */
-      toMatchObject(expected: Record<string, unknown> | Array<unknown>): R;
+      toMatchObject(
+        expected: Record<string, unknown> | Array<unknown>
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
       /**
        * Use to test that objects have the same types as well as structure.
        */
-      toStrictEqual(expected: unknown): R;
+      toStrictEqual(
+        expected: unknown
+      ): Matchers<R> & Inverse<Matchers<R>> & PromiseMatchers;
     }
   }
 }
