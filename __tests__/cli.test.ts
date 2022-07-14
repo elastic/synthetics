@@ -201,7 +201,6 @@ describe('CLI', () => {
         '--params',
         JSON.stringify(serverParams),
       ])
-
       .run();
     await cli.waitFor('Journey: browser with apicontext');
     expect(cli.output()).toContain('browser with apicontext');
