@@ -49,8 +49,13 @@ export type PluginData = {
 export type PluginCallback = (data: PluginData) => void;
 
 export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
+  // Check that the path isn't in an external package by making sure it's at a standard
+  // local filesystem location
   const isBare = (str: string) => {
-    if (str.startsWith('/') || str.startsWith('./') || str.startsWith('../')) {
+    // Note that we use `isAbsolute` to handle UNC/windows style paths like C:\path\to\thing
+    // This is not necessary for relative directories since `.\file` is not supported as an import
+    // nor is `~/path/to/file`.
+    if (path.isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
       return true;
     }
     return false;
