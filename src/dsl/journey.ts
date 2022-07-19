@@ -49,7 +49,7 @@ export type JourneyCallback = (options: {
   browser: Browser;
   client: CDPSession;
   params: Params;
-  apiContext: APIRequestContext;
+  request: APIRequestContext;
 }) => void;
 
 export class Journey {

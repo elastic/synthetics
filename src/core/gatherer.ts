@@ -27,7 +27,7 @@ import {
   chromium,
   ChromiumBrowser,
   BrowserContext,
-  request,
+  request as apiRequest,
 } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
@@ -66,8 +66,8 @@ export class Gatherer {
 
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
-    const apiContext = await request.newContext();
-    return { browser: Gatherer.browser, context, page, client, apiContext };
+    const request = await apiRequest.newContext({ ...playwrightOptions });
+    return { browser: Gatherer.browser, context, page, client, request };
   }
 
   static async getUserAgent(userAgent?: string) {
@@ -120,6 +120,7 @@ export class Gatherer {
   }
 
   static async dispose(driver: Driver) {
+    await driver.request.dispose();
     await driver.context.close();
   }
 

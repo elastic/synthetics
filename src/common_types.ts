@@ -63,7 +63,7 @@ export type Driver = {
   context: ChromiumBrowserContext;
   page: Page;
   client: CDPSession;
-  apiContext: APIRequestContext;
+  request: APIRequestContext;
 };
 
 export type TraceOutput = {

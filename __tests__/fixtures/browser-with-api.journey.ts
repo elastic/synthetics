@@ -23,11 +23,11 @@
  *
  */
 
-import { journey, step, expect } from '../../src/index';
+import { journey, step, expect } from '../../';
 
-journey('browser with apicontext', ({ params, apiContext }) => {
+journey('browser with request', ({ params, request }) => {
   step('go to test page', async () => {
-    const resp = await apiContext.get(params.url);
+    const resp = await request.get(params.url);
     expect((await resp.body()).toString()).toMatch(/Synthetics/);
   });
 });

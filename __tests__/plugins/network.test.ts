@@ -278,4 +278,18 @@ describe('network', () => {
       expect(timing.total).toBeLessThan(50);
     });
   });
+
+  it("doesn't capture network info from request context", async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    await driver.request.get(server.TEST_PAGE);
+    const netinfo = await network.stop();
+    expect(netinfo.length).toBe(0);
+    await Gatherer.dispose(driver);
+    await Gatherer.stop();
+  });
 });
