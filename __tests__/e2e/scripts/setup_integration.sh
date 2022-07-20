@@ -11,7 +11,7 @@ elastic-package stack down
 # start elastic-package
 env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elasticsearch"
 
-curl -X PUT "http://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'
+curl -k -X PUT "https://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'
 {
     "persistent" : {
       "cluster.routing.allocation.disk.threshold_enabled" : false
