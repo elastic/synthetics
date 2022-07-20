@@ -24,7 +24,7 @@
  */
 
 import { devices } from 'playwright-chromium';
-import type { SyntheticsConfig } from '../..';
+import type { SyntheticsConfig } from '../../src';
 
 module.exports = env => {
   const config: SyntheticsConfig = {
