@@ -210,6 +210,7 @@ type BaseArgs = {
   throttling?: ThrottlingOptions;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
+  privateLocations?: MonitorConfig['privateLocations'];
 };
 
 export type CliArgs = BaseArgs & {

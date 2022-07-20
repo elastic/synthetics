@@ -393,6 +393,7 @@ export default class Runner {
       throttling: options.throttling,
       schedule: options.schedule,
       locations: options.locations,
+      privateLocations: options.privateLocations,
       params: options.params,
       playwrightOptions: options.playwrightOptions,
     });

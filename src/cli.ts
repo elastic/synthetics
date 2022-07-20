@@ -174,6 +174,12 @@ program
       'default list of locations from which your monitors will run.'
     ).choices(SyntheticsLocations)
   )
+  .addOption(
+    new Option(
+      '--privateLocations <locations...>',
+      'default list of private locations from which your monitors will run.'
+    )
+  )
   .requiredOption(
     '--project <project-id>',
     'id that will be used for logically grouping monitors'
