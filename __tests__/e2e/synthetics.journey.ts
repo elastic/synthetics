@@ -41,8 +41,8 @@ async function logIn(page) {
 
 async function goToSyntheticsIntegrationPage(page) {
   console.info('Navigating to Elastic Synthetics Integration page')
-  await page.goto('http://localhost:5601/app/integrations/detail/synthetics/overview');
-  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 10000 });
+  await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview');
+  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 50000 });
   const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
   if (isUnauthenticated) {
     await logIn(page);
