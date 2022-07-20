@@ -230,10 +230,14 @@ describe('Gatherer', () => {
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
+  });
 
-    it('provides an API context', async () => {
+  describe('API Request Context', () => {
+    it('exposes request', async () => {
       const driver = await Gatherer.setupDriver({ wsEndpoint });
-      expect(driver.apiContext).not.toBeNull();
+      expect(driver.request).not.toBeNull();
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
     });
   });
 });

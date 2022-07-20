@@ -98,17 +98,16 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
-    it('provides an apiContext object for inline tests', async () => {
+    it('provides request context', async () => {
       const cli = new CLIMock()
         .stdin(
           `step('check body', async () => {
-          const resp = await apiContext.get(params.url);
+          const resp = await request.get(params.url);
           expect((await resp.body()).toString()).toMatch(/Synthetics/);
         })`
         )
         .args(['--inline', '--params', JSON.stringify(serverParams)])
         .run();
-      await cli.waitFor('Journey: inline');
       expect(await cli.exitCode).toBe(0);
     });
 
@@ -194,7 +193,7 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(1);
   });
 
-  it('runs a browser test with apiContext correctly', async () => {
+  it('runs a browser test with request correctly', async () => {
     const cli = new CLIMock(false)
       .args([
         join(FIXTURES_DIR, 'browser-with-api.journey.ts'),
@@ -202,8 +201,8 @@ describe('CLI', () => {
         JSON.stringify(serverParams),
       ])
       .run();
-    await cli.waitFor('Journey: browser with apicontext');
-    expect(cli.output()).toContain('browser with apicontext');
+    await cli.waitFor('Journey: browser with request');
+    expect(cli.output()).toContain('browser with request');
     expect(await cli.exitCode).toBe(0);
   });
 

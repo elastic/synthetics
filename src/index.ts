@@ -52,6 +52,7 @@ export type {
   ChromiumBrowser,
   ChromiumBrowserContext,
   CDPSession,
+  APIRequestContext,
 } from 'playwright-chromium';
 
 /**

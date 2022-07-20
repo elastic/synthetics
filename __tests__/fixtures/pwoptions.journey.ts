@@ -23,7 +23,7 @@
  *
  */
 
-import { journey, step, expect } from '../../dist';
+import { journey, step, expect } from '../../';
 
 journey('launch with viewport', ({ page }) => {
   step('Ensure viewport width', () => {
