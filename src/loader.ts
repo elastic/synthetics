@@ -93,10 +93,19 @@ const loadInlineScript = source => {
     'browser',
     'params',
     'expect',
+    'request',
     source
   );
-  journey('inline', ({ page, context, browser, params }) => {
-    scriptFn.apply(null, [step, page, context, browser, params, expect]);
+  journey('inline', ({ page, context, browser, params, request }) => {
+    scriptFn.apply(null, [
+      step,
+      page,
+      context,
+      browser,
+      params,
+      expect,
+      request,
+    ]);
   });
 };
 

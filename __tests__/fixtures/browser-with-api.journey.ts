@@ -25,12 +25,9 @@
 
 import { journey, step, expect } from '../../';
 
-journey('launch with viewport', ({ page }) => {
-  step('Ensure viewport width', () => {
-    expect(page.viewportSize()).toEqual({
-      height: 658,
-      width: 320,
-    });
-    expect(page.touchscreen).toBeDefined();
+journey('browser with request', ({ params, request }) => {
+  step('go to test page', async () => {
+    const resp = await request.get(params.url);
+    expect((await resp.body()).toString()).toMatch(/Synthetics/);
   });
 });

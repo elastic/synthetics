@@ -231,4 +231,13 @@ describe('Gatherer', () => {
       await Gatherer.stop();
     });
   });
+
+  describe('API Request Context', () => {
+    it('exposes request', async () => {
+      const driver = await Gatherer.setupDriver({ wsEndpoint });
+      expect(driver.request).not.toBeNull();
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
 });

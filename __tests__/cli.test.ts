@@ -98,6 +98,19 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('provides request context', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `step('check body', async () => {
+          const resp = await request.get(params.url);
+          expect((await resp.body()).toString()).toMatch(/Synthetics/);
+        })`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('exit with 1 on syntax errors', async () => {
       const cli = new CLIMock()
         .stdin(`step('syntax error', async () => {}})`)
@@ -178,6 +191,19 @@ describe('CLI', () => {
       .run();
     await cli.waitFor('boom');
     expect(await cli.exitCode).toBe(1);
+  });
+
+  it('runs a browser test with request correctly', async () => {
+    const cli = new CLIMock(false)
+      .args([
+        join(FIXTURES_DIR, 'browser-with-api.journey.ts'),
+        '--params',
+        JSON.stringify(serverParams),
+      ])
+      .run();
+    await cli.waitFor('Journey: browser with request');
+    expect(cli.output()).toContain('browser with request');
+    expect(await cli.exitCode).toBe(0);
   });
 
   it('runs the suites with --quiet-exit-code, always exiting with 0', async () => {

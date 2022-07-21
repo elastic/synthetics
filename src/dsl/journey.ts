@@ -23,7 +23,13 @@
  *
  */
 
-import { Browser, Page, BrowserContext, CDPSession } from 'playwright-chromium';
+import {
+  Browser,
+  Page,
+  BrowserContext,
+  CDPSession,
+  APIRequestContext,
+} from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
@@ -43,6 +49,7 @@ export type JourneyCallback = (options: {
   browser: Browser;
   client: CDPSession;
   params: Params;
+  request: APIRequestContext;
 }) => void;
 
 export class Journey {
