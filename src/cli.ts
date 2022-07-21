@@ -203,9 +203,9 @@ program
   configure via Synthetics config file under 'monitors.schedule' field.`);
       }
 
-      if (!options.locations) {
-        throw error(`Set default location for all monitors via CLI as '--locations <locations...>' OR
-  configure via Synthetics config file under 'monitors.locations' field.`);
+      if (!options.locations && !options.privateLocations) {
+        throw error(`Set default location for all monitors via CLI as '--locations <locations...> or --privateLocations <locations...>' OR
+  configure via Synthetics config file under 'monitors.locations'| 'monitors.privateLocations' field.`);
       }
       const monitors = runner.buildMonitors(options);
       await push(monitors, cmdOpts);
