@@ -37,8 +37,7 @@ async function logIn(page) {
 async function goToSyntheticsIntegrationPage(page) {
   console.info('Navigating to Elastic Synthetics Integration page')
   await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview');
-  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 50000 });
-  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 30000 });
+  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 40000 });
   const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
   if (isUnauthenticated) {
     await logIn(page);
@@ -78,7 +77,7 @@ async function createIntegrationPolicyName({ page, policyName }) {
 
 async function confirmAndSavePolicy(page) {
   await page.click('[data-test-subj="createPackagePolicySaveButton"]');
-  await Promise.all([page.waitForNavigation(), page.click('[data-test-subj="confirmModalConfirmButton"]')]);
+  await Promise.all([page.waitForNavigation({ timeout: 40 * 1000}), page.click('[data-test-subj="confirmModalConfirmButton"]')]);
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
