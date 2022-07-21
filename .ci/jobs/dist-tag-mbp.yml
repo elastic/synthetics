@@ -13,7 +13,7 @@
           discover-pr-origin: merge-current
           discover-tags: false
           disable-pr-notifications: true
-          head-filter-regex: '^main|PR-562$'
+          head-filter-regex: '^(main|PR-562)$'
           notification-context: 'elastic-synthetics'
           repo: synthetics
           repo-owner: elastic
