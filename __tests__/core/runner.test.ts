@@ -801,25 +801,4 @@ describe('runner', () => {
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });
-
-  /**
-   * Its really hard to ensure the journey/end is called for a real world page
-   * without actually testing on a real world webpage.
-   */
-  it('run - ensure journey/end is written for real world pages', async () => {
-    const j1 = journey('journey1', async ({ page }) => {
-      step('load homepage', async () => {
-        await page.goto('https://www.elastic.co');
-      });
-    });
-    runner.addJourney(j1);
-    await runner.run({
-      ...defaultRunOptions,
-      reporter: 'json',
-      network: true,
-      trace: true,
-    });
-    const events = readAndCloseStreamJson().map(event => event.type);
-    expect(events[events.length - 1]).toBe('journey/end');
-  });
 });
