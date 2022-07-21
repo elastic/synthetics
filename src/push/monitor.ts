@@ -36,7 +36,8 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   filter: Monitor['filter'];
 };
 
-function translateLocation(locations: MonitorConfig['locations']) {
+function translateLocation(locations?: MonitorConfig['locations']) {
+  if (!locations) return [];
   return locations.map(loc => LocationsMap[loc]).filter(Boolean);
 }
 
