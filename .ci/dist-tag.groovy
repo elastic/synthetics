@@ -10,6 +10,7 @@ pipeline {
     NPMRC_SECRET = 'secret/jenkins-ci/npmjs/elasticmachine'
     TOTP_SECRET = 'totp/code/npmjs-elasticmachine'
     NPM_PACKAGE = '@elastic/synthetics'
+    SLACK_CHANNEL = '#synthetics-user_experience-uptime'
   }
   options {
     timeout(time: 1, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
@@ -51,6 +52,11 @@ pipeline {
           }
         }
       }
+    }
+  }
+  post {
+    cleanup {
+      notifyBuildResult(slackComment: true)
     }
   }
 }
