@@ -33,10 +33,10 @@ pipeline {
         timeout(5)
       }
       steps {
-        whenTrue(isNullOrEmpty(env.VERSION)) {
+        whenTrue(isEmpty(env.VERSION)) {
           error("VERSION cannot be empty")
         }
-        whenTrue(isNullOrEmpty(env.DIST_TAG)) {
+        whenTrue(isEmpty(env.DIST_TAG)) {
           error("DIST_TAG cannot be empty")
         }
       }
@@ -73,8 +73,4 @@ pipeline {
       notifyBuildResult(slackComment: true)
     }
   }
-}
-
-def isNullOrEmpty(String value) {
-  return value == null || value.trim().isEmpty()
 }
