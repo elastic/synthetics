@@ -36,7 +36,7 @@ async function logIn(page) {
 
 async function goToSyntheticsIntegrationPage(page) {
   console.info('Navigating to Elastic Synthetics Integration page')
-  await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview');
+  await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview', { timeout: 40000 });
   await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 40000 });
   const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
   if (isUnauthenticated) {
@@ -95,7 +95,7 @@ async function checkForSyntheticsData({ page, journeyName }) {
     isTableVisible = await checkForTable();
   }
   await page.fill('[data-test-subj="queryInput"]', journeyName);
-  await page.click(`a:has-text("${journeyName}")`, { timeout: 300 * 1000 });
+  await page.click(`a:has-text("${journeyName}")`, { timeout: 30 * 1000 });
   console.info(`Data for ${journeyName} indexed successfully`)
 }
 
