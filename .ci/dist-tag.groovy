@@ -27,6 +27,20 @@ pipeline {
     string(name: 'DIST_TAG', defaultValue: '', description: 'Dist tag to use.')
   }
   stages {
+    stage('Checks') {
+      options {
+        skipDefaultCheckout()
+        timeout(5)
+      }
+      steps {
+        whenTrue(isNullOrEmpty(env.VERSION)) {
+          error("VERSION cannot be empty")
+        }
+        whenTrue(isNullOrEmpty(env.DIST_TAG)) {
+          error("DIST_TAG cannot be empty")
+        }
+      }
+    }
     stage('Checkout') {
       options {
         skipDefaultCheckout()
@@ -59,4 +73,8 @@ pipeline {
       notifyBuildResult(slackComment: true)
     }
   }
+}
+
+def isNullOrEmpty(String value) {
+  return value == null || value.trim().isEmpty()
 }
