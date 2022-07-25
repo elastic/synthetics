@@ -11,6 +11,8 @@ pipeline {
     TOTP_SECRET = 'totp/code/npmjs-elasticmachine'
     NPM_PACKAGE = '@elastic/synthetics'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
+    VERSION = "${params.VERSION}"
+    DIST_TAG = "${params.DIST_TAG}"
   }
   options {
     timeout(time: 1, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
