@@ -174,6 +174,12 @@ program
       'default list of locations from which your monitors will run.'
     ).choices(SyntheticsLocations)
   )
+  .addOption(
+    new Option(
+      '--privateLocations <locations...>',
+      'default list of private locations from which your monitors will run.'
+    )
+  )
   .requiredOption(
     '--project <project-id>',
     'id that will be used for logically grouping monitors'
@@ -197,9 +203,9 @@ program
   configure via Synthetics config file under 'monitors.schedule' field.`);
       }
 
-      if (!options.locations) {
-        throw error(`Set default location for all monitors via CLI as '--locations <locations...>' OR
-  configure via Synthetics config file under 'monitors.locations' field.`);
+      if (!options.locations && !options.privateLocations) {
+        throw error(`Set default location for all monitors via CLI as '--locations <locations...> or --privateLocations <locations...>' OR
+  configure via Synthetics config file under 'monitors.locations'| 'monitors.privateLocations' field.`);
       }
       const monitors = runner.buildMonitors(options);
       await push(monitors, cmdOpts);

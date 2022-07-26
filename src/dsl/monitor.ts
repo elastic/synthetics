@@ -45,6 +45,7 @@ export type MonitorConfig = {
   schedule?: number;
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];
+  privateLocations?: string[];
   throttling?: ThrottlingOptions;
   screenshot?: ScreenshotOptions;
   params?: Params;

@@ -741,6 +741,7 @@ describe('runner', () => {
     runner.updateMonitor({
       schedule: 5,
       locations: ['us_east'],
+      privateLocations: ['germany'],
       throttling: { download: 100, upload: 50 },
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
@@ -752,6 +753,7 @@ describe('runner', () => {
       id: 'test-j1',
       schedule: 2,
       locations: ['united_kingdom'],
+      privateLocations: ['spain'],
     });
     j2.updateMonitor({ throttling: { latency: 1000 } });
     runner.addJourney(j1);
@@ -766,6 +768,7 @@ describe('runner', () => {
       name: 'j1',
       tags: ['foo*'],
       locations: ['united_kingdom'],
+      privateLocations: ['spain'],
       schedule: 2,
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
@@ -773,6 +776,7 @@ describe('runner', () => {
     });
     expect(monitors[1].config).toMatchObject({
       locations: ['us_east'],
+      privateLocations: ["germany"],
       schedule: 5,
       throttling: { latency: 1000 },
     });
