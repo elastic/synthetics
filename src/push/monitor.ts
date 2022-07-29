@@ -23,17 +23,25 @@
  *
  */
 
-import { mkdir } from 'fs/promises';
+import { mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { Bundler } from './bundler';
-import { CACHE_PATH } from '../helpers';
+import { sendRequest } from './request';
+import { removeTrailingSlash, SYNTHETICS_PATH } from '../helpers';
 import { LocationsMap } from '../dsl/locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { PushOptions } from '../common_types';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content: string;
   locations: string[];
   filter: Monitor['filter'];
+};
+
+type APISchema = {
+  project: string;
+  keep_stale: boolean;
+  monitors: MonitorSchema[];
 };
 
 function translateLocation(locations?: MonitorConfig['locations']) {
@@ -49,7 +57,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
    * Set up the bundle artifacts path which can be used to
    * create the bundles required for uploading journeys
    */
-  const bundlePath = join(CACHE_PATH, 'bundles');
+  const bundlePath = join(SYNTHETICS_PATH, 'bundles');
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
   const schemas: MonitorSchema[] = [];
@@ -65,5 +73,27 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
       filter: filter,
     });
   }
+
+  await rm(bundlePath, { recursive: true });
   return schemas;
+}
+
+export async function createMonitors(
+  monitors: MonitorSchema[],
+  options: PushOptions
+) {
+  const schema: APISchema = {
+    project: options.project,
+    keep_stale: false,
+    monitors,
+  };
+
+  return await sendRequest({
+    url:
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/synthetics/service/project/monitors`,
+    method: 'PUT',
+    auth: options.auth,
+    body: JSON.stringify(schema),
+  });
 }

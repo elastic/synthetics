@@ -27,16 +27,27 @@ import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
-import { prompt } from 'enquirer';
-import { SyntheticsLocations } from '../dsl/monitor';
+// @ts-ignore-next-line: has no exported member 'Input'
+import { prompt, Input } from 'enquirer';
 import { progress, write as stdWrite } from '../helpers';
-import { getPackageManager, replaceTemplates, runCommand } from './utils';
+import {
+  getPackageManager,
+  replaceTemplates,
+  runCommand,
+  cloudIDToKibanaURL,
+} from './utils';
+import { formatLocations, getLocations } from '../locations';
 
-// Templates that are required for setting up new
-// synthetics project
+// Templates that are required for setting up new synthetics project
 const templateDir = join(__dirname, '..', '..', 'templates');
 
-type PromptOptions = {
+export type ProjectSettings = {
+  url: string;
+  space: string;
+  project: string;
+};
+
+type PromptOptions = ProjectSettings & {
   locations: string;
   schedule: number;
 };
@@ -55,6 +66,11 @@ export class Generator {
   constructor(public projectDir: string) {}
 
   async directory() {
+    progress(
+      `Initializing Synthetics project in '${
+        relative(process.cwd(), this.projectDir) || '.'
+      }'`
+    );
     if (!existsSync(this.projectDir)) {
       await mkdir(this.projectDir);
     }
@@ -64,12 +80,48 @@ export class Generator {
     if (process.env.TEST_QUESTIONS) {
       return JSON.parse(process.env.TEST_QUESTIONS);
     }
-    const question = [
+
+    const { onCloud } = await prompt<{ onCloud: string }>({
+      type: 'confirm',
+      name: 'onCloud',
+      message: 'Do you use Elastic Cloud',
+    });
+    const url = await new Input({
+      type: 'input',
+      header: onCloud
+        ? yellow(
+            'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
+          )
+        : '',
+      message: onCloud
+        ? 'What is your cloud.id'
+        : 'What is the url of your Kibana instance',
+      name: 'url',
+      required: true,
+      result(value) {
+        return onCloud ? cloudIDToKibanaURL(value) : value;
+      },
+    }).run();
+
+    const auth = await new Input({
+      type: 'input',
+      name: 'auth',
+      header: yellow(
+        `Generate API key from Kibana ${url}/app/uptime/manage-monitors/all`
+      ),
+      required: true,
+      message: 'What is your API key',
+    }).run();
+    const locations = await getLocations({ url, auth });
+
+    const monitorQues = [
       {
         type: 'select',
         name: 'locations',
-        message: 'Select the default location where you want to run monitors.',
-        choices: SyntheticsLocations,
+        message: 'Select the default location where you want to run monitors',
+        choices: formatLocations(locations),
+        required: true,
+        multiple: true,
       },
       {
         type: 'numeral',
@@ -77,12 +129,37 @@ export class Generator {
         message: 'Set default schedule in minutes for all monitors',
         initial: 10,
       },
+      {
+        type: 'input',
+        name: 'project',
+        message: 'Choose project id to logically group monitors',
+        initial: basename(this.projectDir),
+      },
+      {
+        type: 'input',
+        name: 'space',
+        message: 'Choose the target Kibana space',
+        initial: 'default',
+      },
     ];
-    return await prompt<PromptOptions>(question);
+
+    return { ...(await prompt<PromptOptions>(monitorQues)), url };
   }
 
   async files(answers: PromptOptions) {
     const fileMap = new Map<string, string>();
+
+    // Setup project.json
+    const projectJSON = {
+      url: answers.url,
+      space: answers.space,
+      project: answers.project,
+    };
+    fileMap.set(
+      '.synthetics/project.json',
+      JSON.stringify(projectJSON, null, 2) + '\n'
+    );
+
     // Setup Synthetics config file
     const configFile = 'synthetics.config.ts';
     fileMap.set(
@@ -95,8 +172,8 @@ export class Generator {
 
     // Setup non-templated files
     Promise.all(
-      regularFiles.map(async fn => {
-        fileMap.set(fn, await readFile(join(templateDir, fn), 'utf-8'));
+      regularFiles.map(async file => {
+        fileMap.set(file, await readFile(join(templateDir, file), 'utf-8'));
       })
     ).catch(e => {
       throw e;
@@ -110,11 +187,20 @@ export class Generator {
 
   async createFile(relativePath: string, content: string, override = false) {
     const absolutePath = join(this.projectDir, relativePath);
-    if (override || !existsSync(absolutePath)) {
-      progress(`Writing ${relative(process.cwd(), absolutePath)}.`);
-      await mkdir(dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, content, 'utf-8');
+
+    if (!override && existsSync(absolutePath)) {
+      const { override } = await prompt<{ override: boolean }>({
+        type: 'confirm',
+        name: 'override',
+        message: `File ${relativePath} already exists. Override it?`,
+        initial: false,
+      });
+      if (!override) return;
     }
+
+    progress(`Writing ${relative(process.cwd(), absolutePath)}.`);
+    await mkdir(dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, content, 'utf-8');
   }
 
   async package() {
@@ -158,8 +244,7 @@ export class Generator {
     pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
 
     // Add push command
-    const project = basename(this.projectDir);
-    pkgJSON.scripts.push = `npx @elastic/synthetics push journeys --project ${project} --url http://localhost:5601 --auth apiKey`;
+    pkgJSON.scripts.push = `npx @elastic/synthetics push --auth $SYNTHETICS_API_KEY`;
 
     await this.createFile(
       filename,
@@ -189,10 +274,12 @@ All set, you can run below commands inside: ${this.projectDir}:
 
   Run synthetic tests: ${cyan(runCommand(this.pkgManager, 'test'))}
 
-  Push monitors to Kibana: ${cyan(runCommand(this.pkgManager, 'push'))}
+  Push monitors to Kibana: ${cyan(
+    'SYNTHETICS_API_KEY=<value> ' + runCommand(this.pkgManager, 'push')
+  )}
 
   ${yellow(
-    'Make sure to update the Kibana url and api keys before pushing monitors to Kibana.'
+    'Make sure to configure the SYNTHETICS_API_KEY before pushing monitors to Kibana.'
   )}
 
 Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.html to learn more.

@@ -13,7 +13,7 @@ export default env => {
      */
     monitor: {
       schedule: '{{schedule}}',
-      locations: ["'{{locations}}'"],
+      locations: ['{{locations}}'],
     },
   };
   if (env !== 'development') {

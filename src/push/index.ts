@@ -23,8 +23,11 @@
  *
  */
 
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
+import { prompt } from 'enquirer';
 import {
-  createMonitors,
   ok,
   formatAPIError,
   formatFailedMonitors,
@@ -32,8 +35,9 @@ import {
 } from './request';
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { buildMonitorSchema } from './monitor';
-import { progress, error, done } from '../helpers';
+import { buildMonitorSchema, createMonitors } from './monitor';
+import { progress, error, done, SYNTHETICS_PATH } from '../helpers';
+import { ProjectSettings } from '../generator';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   progress(`preparing all monitors`);
@@ -55,5 +59,77 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     done('Pushed');
   } catch (e) {
     error(e);
+  }
+}
+
+const PROJECT_SETTINGS_PATH = join(SYNTHETICS_PATH, 'project.json');
+const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to configure with default settings.`;
+
+export async function loadSettings() {
+  if (!existsSync(PROJECT_SETTINGS_PATH)) {
+    throw error(`Aborted. Synthetics project not set up.
+
+${INSTALLATION_HELP}`);
+  }
+
+  const contents = await readFile(PROJECT_SETTINGS_PATH, 'utf-8');
+  return JSON.parse(contents) as ProjectSettings;
+}
+
+export function validateSettings(opts: PushOptions) {
+  const INVALID = 'Aborted. Invalid synthetics project settings.';
+
+  let reason = '';
+  if (!opts.project) {
+    reason = 'Set project id via CLI as `--project <id>`';
+  }
+
+  if (!opts.locations && !opts.privateLocations) {
+    reason = `Set default location for all monitors via
+  - CLI as '--locations <values...> or --privateLocations <values...>'
+  - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field`;
+  }
+
+  if (!opts.schedule) {
+    reason = `Set default schedule in minutes for all monitors via
+  - CLI as '--schedule <mins>'
+  - Synthetics config file 'monitors.schedule' field`;
+  }
+
+  if (!reason) return;
+
+  throw error(`${INVALID}
+
+${reason}
+
+${INSTALLATION_HELP}`);
+}
+
+async function overwriteSettings(project: string) {
+  const settings = JSON.parse(await readFile(PROJECT_SETTINGS_PATH, 'utf-8'));
+  settings.project = project;
+
+  await writeFile(
+    PROJECT_SETTINGS_PATH,
+    JSON.stringify(settings, null, 2),
+    'utf-8'
+  );
+}
+
+export async function catchIncorrectSettings(
+  settings: ProjectSettings,
+  options: PushOptions
+) {
+  let override = !settings.project;
+  if (settings.project && settings.project !== options.project) {
+    ({ override } = await prompt<{ override: boolean }>({
+      type: 'confirm',
+      name: 'override',
+      message: `Monitors were pushed under the '${settings.project}' project. Are you sure you want to push them under the new '${options.project}' (note that this will duplicate the monitors, the old ones being orphaned)`,
+      initial: false,
+    }));
+  }
+  if (override) {
+    await overwriteSettings(options.project);
   }
 }

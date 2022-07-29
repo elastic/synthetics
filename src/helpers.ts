@@ -27,7 +27,7 @@ import { red, green, yellow, cyan, bold } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
 import fs from 'fs';
-import { promisify } from 'util';
+import { lstat, readdir } from 'fs/promises';
 import { performance } from 'perf_hooks';
 import sourceMapSupport from '@cspotcode/source-map-support';
 import {
@@ -37,13 +37,6 @@ import {
   Location,
   ThrottlingOptions,
 } from './common_types';
-
-const lstatAsync = promisify(fs.lstat);
-const readdirAsync = promisify(fs.readdir);
-
-export const readFileAsync = promisify(fs.readFile);
-export const writeFileAsync = promisify(fs.writeFile);
-export const mkdirAsync = promisify(fs.mkdir);
 
 const SEPARATOR = '\n';
 
@@ -177,11 +170,11 @@ export async function totalist(
   pre = ''
 ) {
   dir = resolve('.', dir);
-  await readdirAsync(dir).then(arr => {
+  await readdir(dir).then(arr => {
     return Promise.all(
       arr.map(str => {
         const abs = join(dir, str);
-        return lstatAsync(abs).then(stats =>
+        return lstat(abs).then(stats =>
           stats.isDirectory()
             ? totalist(abs, callback, join(pre, str))
             : callback(join(pre, str), abs)
@@ -255,11 +248,17 @@ export function formatError(error: Error) {
 
 const cwd = process.cwd();
 /**
+ * All the settings that are related to the Synthetics is stored
+ * under this directory
+ * Examples: Screenshots, Project setup
+ */
+export const SYNTHETICS_PATH = join(cwd, '.synthetics');
+/**
  * Synthetics cache path that is based on the process id to make sure
  * each process does not modify the caching layer used by other process
  * once we move to executing journeys in parallel
  */
-export const CACHE_PATH = join(cwd, '.synthetics', process.pid.toString());
+export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
 
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
@@ -337,4 +336,8 @@ export function error(message: string) {
 
 export function done(message: string) {
   write(bold(green(`${symbols['succeeded']} ${message}`)));
+}
+
+export function removeTrailingSlash(url: string) {
+  return url.replace(/\/+$/, '');
 }

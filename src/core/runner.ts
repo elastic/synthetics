@@ -24,7 +24,7 @@
  */
 
 import { join } from 'path';
-import { rm } from 'fs/promises';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
@@ -34,8 +34,6 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
-  mkdirAsync,
-  writeFileAsync,
 } from '../helpers';
 import {
   HooksCallback,
@@ -87,7 +85,7 @@ export default class Runner {
      * For each journey we create the screenshots folder for
      * caching all screenshots and clear them at end of each journey
      */
-    await mkdirAsync(this.screenshotPath, { recursive: true });
+    await mkdir(this.screenshotPath, { recursive: true });
     return {
       start,
       params: options.params,
@@ -116,7 +114,7 @@ export default class Runner {
         timestamp: getTimestamp(),
         data: buffer.toString('base64'),
       };
-      await writeFileAsync(
+      await writeFile(
         join(Runner.screenshotPath, fileName),
         JSON.stringify(screenshot)
       );
@@ -381,7 +379,7 @@ export default class Runner {
     /**
      * Set up the directory for caching screenshots
      */
-    await mkdirAsync(CACHE_PATH, { recursive: true });
+    await mkdir(CACHE_PATH, { recursive: true });
   }
 
   buildMonitors(options: RunOptions) {

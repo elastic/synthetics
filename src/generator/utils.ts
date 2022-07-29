@@ -40,10 +40,15 @@ export function runCommand(pkgManager: string, command: string) {
   return `npm run ${command}`;
 }
 
-export function replaceTemplates(input: string, literals: Record<string, any>) {
-  for (const key in literals) {
-    const finalValue = literals[key];
+export function replaceTemplates(input: string, values: Record<string, any>) {
+  for (const key in values) {
+    const finalValue = values[key];
     input = input.replace(new RegExp(`'{{` + key + `}}'`, 'g'), () => {
+      if (Array.isArray(finalValue)) {
+        return String(finalValue)
+          .split(',')
+          .map(f => `'${f}'`);
+      }
       if (typeof finalValue == 'number') {
         return Number(finalValue);
       }
@@ -51,4 +56,25 @@ export function replaceTemplates(input: string, literals: Record<string, any>) {
     });
   }
   return input;
+}
+
+export function cloudIDToKibanaURL(id: string) {
+  const ID_SEPARATOR = ':';
+  const VALUE_SEPARATOR = '$';
+  // Ignore values before the separator
+  const index = id.lastIndexOf(ID_SEPARATOR);
+  if (index >= 0) {
+    id = id.substring(index + 1);
+  }
+
+  // Decode the base64 string
+  const decoded = Buffer.from(id, 'base64').toString();
+  const words = decoded.split(VALUE_SEPARATOR);
+
+  // construct the kibana and ES urls from decoded value
+  const [host, port = '443'] = words[0].split(ID_SEPARATOR);
+  const [kibanaId, kibanaPort = port] = words[2].split(ID_SEPARATOR);
+  const kibanaURL = `https://${kibanaId}.${host}:${kibanaPort}`;
+
+  return kibanaURL;
 }

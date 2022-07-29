@@ -24,45 +24,23 @@
  */
 
 import { bold } from 'kleur/colors';
-import { request } from 'undici';
-import { PushOptions } from '../common_types';
+import { Dispatcher, request } from 'undici';
 import { indent, symbols } from '../helpers';
-import { MonitorSchema } from './monitor';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version } = require('../../package.json');
 
-export type APISchema = {
-  project: string;
-  keep_stale: boolean;
-  monitors: MonitorSchema[];
+export type APIRequestOptions = {
+  url: string;
+  method: Dispatcher.HttpMethod;
+  auth: string;
+  body?: string;
 };
 
-function getAPIUrl(options: PushOptions) {
-  // remove trialing / as well
-  return (
-    options.url.replace(/\/+$/, '') +
-    `/s/${options.space}/api/synthetics/service/project/monitors`
-  );
-}
-
-export function ok(statusCode: number) {
-  return statusCode >= 200 && statusCode <= 299;
-}
-
-export async function createMonitors(
-  monitors: MonitorSchema[],
-  options: PushOptions
-) {
-  const schema: APISchema = {
-    project: options.project,
-    keep_stale: false,
-    monitors,
-  };
-
-  return await request(getAPIUrl(options), {
-    method: 'PUT',
-    body: JSON.stringify(schema),
+export async function sendRequest(options: APIRequestOptions) {
+  return await request(options.url, {
+    method: options.method,
+    body: options.body,
     headers: {
       authorization: `ApiKey ${options.auth}`,
       'content-type': 'application/json',
@@ -70,6 +48,10 @@ export async function createMonitors(
       'kbn-xsrf': 'true',
     },
   });
+}
+
+export function ok(statusCode: number) {
+  return statusCode >= 200 && statusCode <= 299;
 }
 
 export type APIMonitorError = {
