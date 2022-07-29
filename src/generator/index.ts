@@ -216,9 +216,7 @@ export class Generator {
     this.pkgManager = await getPackageManager(this.projectDir);
     const commands = new Map<string, string>();
     commands.set(
-      `Initializing Synthetics project using ${
-        this.pkgManager == 'yarn' ? 'Yarn' : 'NPM'
-      }`,
+      `Setting up project using ${this.pkgManager == 'yarn' ? 'Yarn' : 'NPM'}`,
       this.pkgManager == 'yarn' ? 'yarn init -y' : 'npm init -y'
     );
 
