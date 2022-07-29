@@ -81,14 +81,14 @@ export function formatLocations(locations: Array<LocationMetadata>) {
   return formatted;
 }
 
-export function SplitLocations(locations: Array<string>) {
-  const formatted = { locations: [], privateLocations: [] };
+export function groupLocations(locations: Array<string>) {
+  const grouped = { locations: [], privateLocations: [] };
   for (const loc of locations) {
     if (loc.includes(PRIVATE_KEYWORD)) {
-      formatted.privateLocations.push(loc);
+      grouped.privateLocations.push(loc);
     } else {
-      formatted.locations.push(loc);
+      grouped.locations.push(loc);
     }
   }
-  return formatted;
+  return grouped;
 }

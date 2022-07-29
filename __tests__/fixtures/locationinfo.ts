@@ -23,29 +23,27 @@
  *
  */
 
-import { join } from 'path';
-import { CLIMock } from '../utils/test-config';
+import { LocationAPIResponse } from '../../src/locations';
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-
-describe('Push CLI', () => {
-  const args = ['--auth', 'foo'];
-
-  it('error when auth is ignored', async () => {
-    const cli = new CLIMock().args(['push']).run({ cwd: FIXTURES_DIR });
-    expect(await cli.exitCode).toBe(1);
-
-    expect(cli.stderr()).toContain(
-      `required option '--auth <auth>' not specified`
-    );
-  });
-
-  it('error when project is not setup', async () => {
-    const cli = new CLIMock()
-      .args(['push', ...args])
-      .run({ cwd: FIXTURES_DIR });
-    expect(await cli.exitCode).toBe(1);
-
-    expect(cli.stderr()).toContain('Aborted. Synthetics project not set up');
-  });
-});
+export const LOCATIONS: LocationAPIResponse['locations'] = [
+  {
+    id: 'asia-northeast1-a',
+    label: 'Asia/Pacific - Japan',
+    isServiceManaged: true,
+  },
+  {
+    id: 'private-node-1',
+    label: 'custom location 1',
+    isServiceManaged: false,
+  },
+  {
+    id: 'private-node-2',
+    label: 'custom location 2',
+    isServiceManaged: false,
+  },
+  {
+    id: 'us-west1-a',
+    label: 'North America - US West',
+    isServiceManaged: true,
+  },
+];

@@ -84,7 +84,7 @@ describe('Generator', () => {
       join(scaffoldDir, 'synthetics.config.ts'),
       'utf-8'
     );
-    expect(configFile).toContain(`locations: ["us_east"]`);
+    expect(configFile).toContain(`locations: [us_east]`);
     expect(configFile).toContain(`schedule: 30`);
 
     // Verify stdout

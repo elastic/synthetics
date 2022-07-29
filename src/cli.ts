@@ -244,7 +244,7 @@ program
   )
   .action(async (cmdOpts: LocationCmdOptions) => {
     try {
-      await getLocations(cmdOpts);
+      console.log(await getLocations(cmdOpts));
       // TODO: Display list of locations
     } catch (e) {
       e && error(e);

@@ -36,7 +36,7 @@ import {
   runCommand,
   cloudIDToKibanaURL,
 } from './utils';
-import { formatLocations, getLocations, SplitLocations } from '../locations';
+import { formatLocations, getLocations, groupLocations } from '../locations';
 
 // Templates that are required for setting up new synthetics project
 const templateDir = join(__dirname, '..', '..', 'templates');
@@ -149,9 +149,9 @@ export class Generator {
       },
     ];
 
-    // Split private and public locations from the answered list.
+    // Split and group private and public locations from the answered list.
     const answers = await prompt<PromptOptions>(monitorQues);
-    const { locations, privateLocations } = SplitLocations(answers.locations);
+    const { locations, privateLocations } = groupLocations(answers.locations);
     return { ...answers, url, locations, privateLocations };
   }
 
@@ -226,8 +226,8 @@ export class Generator {
     commands.set(
       `Installing @elastic/synthetics library`,
       this.pkgManager == 'yarn'
-        ? `yarn add -dev ${pkgName}`
-        : `npm i -d ${pkgName}`
+        ? `yarn add -dev ${pkgName} --silent`
+        : `npm i -d ${pkgName} --quiet`
     );
 
     // Execute commands

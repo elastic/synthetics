@@ -25,59 +25,14 @@
 
 process.env.NO_COLOR = '1';
 
-import { buildMonitorSchema } from '../../src/push/monitor';
 import {
   APIMonitorError,
-  createMonitors,
   formatAPIError,
   formatFailedMonitors,
   formatNotFoundError,
 } from '../../src/push/request';
-import { Server } from '../utils/server';
-import { createTestMonitor } from '../utils/test-config';
 
 describe('Push api request', () => {
-  const monitor = createTestMonitor('example.journey.ts');
-  let server: Server;
-  beforeAll(async () => {
-    server = await Server.create();
-  });
-  afterAll(async () => {
-    await server.close();
-    process.env.NO_COLOR = '';
-  });
-
-  it('api schema', async () => {
-    server.route(
-      '/s/dummy/api/synthetics/service/project/monitors',
-      (req, res) => {
-        let data = '';
-        req.on('data', chunks => {
-          data += chunks;
-        });
-        req.on('end', () => {
-          // Write the post data back
-          res.end(data.toString());
-        });
-      }
-    );
-
-    const schema = await buildMonitorSchema([monitor]);
-    const { statusCode, body } = await createMonitors(schema, {
-      url: `${server.PREFIX}`,
-      auth: 'foo:bar',
-      project: 'blah',
-      space: 'dummy',
-    });
-
-    expect(statusCode).toBe(200);
-    expect(await body.json()).toEqual({
-      project: 'blah',
-      keep_stale: false,
-      monitors: schema,
-    });
-  });
-
   it('format api error', () => {
     const { statusCode, error, message } = {
       statusCode: 401,

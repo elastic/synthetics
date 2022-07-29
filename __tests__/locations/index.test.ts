@@ -23,65 +23,55 @@
  *
  */
 
-import { buildMonitorSchema, createMonitors } from '../../src/push/monitor';
 import { Server } from '../utils/server';
-import { createTestMonitor } from '../utils/test-config';
+import {
+  formatLocations,
+  getLocations,
+  groupLocations,
+} from '../../src/locations';
+import { LOCATIONS } from '../fixtures/locationinfo';
 
-describe('Monitors', () => {
-  const monitor = createTestMonitor('example.journey.ts');
+describe('Locations', () => {
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
+    server.route('/internal/uptime/service/locations', (req, res) => {
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ locations: LOCATIONS }));
+    });
   });
   afterAll(async () => {
     await server.close();
     process.env.NO_COLOR = '';
   });
 
-  it('build monitor schema monitor', async () => {
-    const schema = await buildMonitorSchema([monitor]);
-    expect(schema[0]).toEqual({
-      id: 'test-monitor',
-      name: 'test',
-      schedule: 10,
-      enabled: true,
-      locations: ['europe-west2-a', 'australia-southeast1-a'],
-      privateLocations: ['germany'],
-      content: expect.any(String),
-      filter: {
-        match: 'test',
-      },
-    });
-  });
-
-  it('api schema', async () => {
-    server.route(
-      '/s/dummy/api/synthetics/service/project/monitors',
-      (req, res) => {
-        let data = '';
-        req.on('data', chunks => {
-          data += chunks;
-        });
-        req.on('end', () => {
-          // Write the post data back
-          res.end(data.toString());
-        });
-      }
-    );
-
-    const schema = await buildMonitorSchema([monitor]);
-    const { statusCode, body } = await createMonitors(schema, {
+  it('get locations', async () => {
+    const locations = await getLocations({
       url: `${server.PREFIX}`,
       auth: 'apiKey',
-      project: 'blah',
-      space: 'dummy',
     });
+    expect(locations.length).toBe(4);
+  });
 
-    expect(statusCode).toBe(200);
-    expect(await body.json()).toEqual({
-      project: 'blah',
-      keep_stale: false,
-      monitors: schema,
+  it('format and group locations by labels', async () => {
+    const locations = await getLocations({
+      url: `${server.PREFIX}`,
+      auth: 'apiKey',
+    });
+    const formatted = formatLocations(locations);
+    expect(formatted).toEqual([
+      'japan',
+      'custom location 1(private)',
+      'custom location 2(private)',
+      'us_west',
+    ]);
+
+    expect(groupLocations(formatted)).toEqual({
+      locations: ['japan', 'us_west'],
+      privateLocations: [
+        'custom location 1(private)',
+        'custom location 2(private)',
+      ],
     });
   });
 });
