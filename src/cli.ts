@@ -40,7 +40,7 @@ import {
   validateSettings,
   catchIncorrectSettings,
 } from './push';
-import { formatLocations, getLocations, LocationCmdOptions } from './locations';
+import { getLocations, LocationCmdOptions } from './locations';
 import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';

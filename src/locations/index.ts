@@ -23,13 +23,13 @@
  *
  */
 
-import { removeTrailingSlash } from '../helpers';
 import {
   formatAPIError,
   formatNotFoundError,
   sendRequest,
   ok,
 } from '../push/request';
+import { removeTrailingSlash } from '../helpers';
 
 export type LocationCmdOptions = {
   auth: string;
@@ -46,6 +46,8 @@ export type LocationAPIResponse = {
   locations: Array<LocationMetadata>;
 };
 
+const PRIVATE_KEYWORD = 'private';
+
 export async function getLocations(options: LocationCmdOptions) {
   const url =
     removeTrailingSlash(options.url) + '/internal/uptime/service/locations';
@@ -61,19 +63,32 @@ export async function getLocations(options: LocationCmdOptions) {
     const { error, message } = await body.json();
     throw formatAPIError(statusCode, error, message);
   }
-  const resp: LocationAPIResponse = await body.json();
-  return resp.locations;
+  return ((await body.json()) as LocationAPIResponse).locations;
 }
 
 export function formatLocations(locations: Array<LocationMetadata>) {
   const formatted: Array<string> = [];
   for (const location of locations) {
-    let [, name] = location.label.split('-');
-    name = name.toLowerCase().trim().split(' ').join('_');
-    if (!location.isServiceManaged) {
-      name = `${name}(private)`;
+    let name = location.label;
+    if (location.isServiceManaged) {
+      [, name] = name.split('-');
+      name = name.toLowerCase().trim().split(' ').join('_');
+    } else {
+      name = `${name}(${PRIVATE_KEYWORD})`;
     }
     formatted.push(name);
+  }
+  return formatted;
+}
+
+export function SplitLocations(locations: Array<string>) {
+  const formatted = { locations: [], privateLocations: [] };
+  for (const loc of locations) {
+    if (loc.includes(PRIVATE_KEYWORD)) {
+      formatted.privateLocations.push(loc);
+    } else {
+      formatted.locations.push(loc);
+    }
   }
   return formatted;
 }

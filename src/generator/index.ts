@@ -36,7 +36,7 @@ import {
   runCommand,
   cloudIDToKibanaURL,
 } from './utils';
-import { formatLocations, getLocations } from '../locations';
+import { formatLocations, getLocations, SplitLocations } from '../locations';
 
 // Templates that are required for setting up new synthetics project
 const templateDir = join(__dirname, '..', '..', 'templates');
@@ -48,7 +48,8 @@ export type ProjectSettings = {
 };
 
 type PromptOptions = ProjectSettings & {
-  locations: string;
+  locations: Array<string>;
+  privateLocations: Array<string>;
   schedule: number;
 };
 
@@ -112,15 +113,20 @@ export class Generator {
       required: true,
       message: 'What is your API key',
     }).run();
-    const locations = await getLocations({ url, auth });
+
+    const allLocations = await getLocations({ url, auth });
+    const locChoices = formatLocations(allLocations);
+    if (locChoices.length === 0) {
+      // TODO - Add link to docs
+      throw 'Follow the docs to set up your first private locations - <link>';
+    }
 
     const monitorQues = [
       {
         type: 'select',
         name: 'locations',
         message: 'Select the default location where you want to run monitors',
-        choices: formatLocations(locations),
-        required: true,
+        choices: locChoices,
         multiple: true,
       },
       {
@@ -143,7 +149,10 @@ export class Generator {
       },
     ];
 
-    return { ...(await prompt<PromptOptions>(monitorQues)), url };
+    // Split private and public locations from the answered list.
+    const answers = await prompt<PromptOptions>(monitorQues);
+    const { locations, privateLocations } = SplitLocations(answers.locations);
+    return { ...answers, url, locations, privateLocations };
   }
 
   async files(answers: PromptOptions) {

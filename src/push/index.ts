@@ -33,10 +33,17 @@ import {
   formatFailedMonitors,
   formatNotFoundError,
 } from './request';
-import { Monitor } from '../dsl/monitor';
-import { PushOptions } from '../common_types';
 import { buildMonitorSchema, createMonitors } from './monitor';
-import { progress, error, done, SYNTHETICS_PATH } from '../helpers';
+import { Monitor } from '../dsl/monitor';
+import {
+  progress,
+  write,
+  error,
+  done,
+  SYNTHETICS_PATH,
+  aborted,
+} from '../helpers';
+import { PushOptions } from '../common_types';
 import { ProjectSettings } from '../generator';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
@@ -122,12 +129,18 @@ export async function catchIncorrectSettings(
 ) {
   let override = !settings.project;
   if (settings.project && settings.project !== options.project) {
+    // Add an extra line to make it easier to read the prompt
+    write('');
     ({ override } = await prompt<{ override: boolean }>({
       type: 'confirm',
       name: 'override',
       message: `Monitors were pushed under the '${settings.project}' project. Are you sure you want to push them under the new '${options.project}' (note that this will duplicate the monitors, the old ones being orphaned)`,
       initial: false,
     }));
+
+    if (!override) {
+      throw aborted('Push command Aborted');
+    }
   }
   if (override) {
     await overwriteSettings(options.project);

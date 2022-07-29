@@ -14,6 +14,7 @@ export default env => {
     monitor: {
       schedule: '{{schedule}}',
       locations: ['{{locations}}'],
+      privateLocations: ['{{privateLocations}}'],
     },
   };
   if (env !== 'development') {

@@ -338,6 +338,10 @@ export function done(message: string) {
   write(bold(green(`${symbols['succeeded']} ${message}`)));
 }
 
+export function aborted(message: string) {
+  write(bold(yellow(`${symbols['warning']} ${message}`)));
+}
+
 export function removeTrailingSlash(url: string) {
   return url.replace(/\/+$/, '');
 }
