@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Push CLI abort on push with different project id 1`] = `
+"⚠ Push command Aborted
+"
+`;
+
+exports[`Push CLI error on empty project id 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Set project id via CLI as \`--project <id>\`
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push CLI error on invalid location 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Set default location for all monitors via
+  - CLI as '--locations <values...> or --privateLocations <values...>'
+  - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push CLI error on invalid schedule 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Set default schedule in minutes for all monitors via
+  - CLI as '--schedule <mins>'
+  - Synthetics config file 'monitors.schedule' field
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;

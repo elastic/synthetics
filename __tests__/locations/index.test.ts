@@ -42,7 +42,6 @@ describe('Locations', () => {
   });
   afterAll(async () => {
     await server.close();
-    process.env.NO_COLOR = '';
   });
 
   it('get locations', async () => {

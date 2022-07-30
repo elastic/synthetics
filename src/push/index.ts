@@ -70,7 +70,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 }
 
 const PROJECT_SETTINGS_PATH = join(SYNTHETICS_PATH, 'project.json');
-const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to configure with default settings.`;
+const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project with default settings.`;
 
 export async function loadSettings() {
   if (!existsSync(PROJECT_SETTINGS_PATH)) {
@@ -89,15 +89,11 @@ export function validateSettings(opts: PushOptions) {
   let reason = '';
   if (!opts.project) {
     reason = 'Set project id via CLI as `--project <id>`';
-  }
-
-  if (!opts.locations && !opts.privateLocations) {
+  } else if (!opts.locations && !opts.privateLocations) {
     reason = `Set default location for all monitors via
   - CLI as '--locations <values...> or --privateLocations <values...>'
   - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field`;
-  }
-
-  if (!opts.schedule) {
+  } else if (!opts.schedule) {
     reason = `Set default schedule in minutes for all monitors via
   - CLI as '--schedule <mins>'
   - Synthetics config file 'monitors.schedule' field`;
@@ -112,7 +108,7 @@ ${reason}
 ${INSTALLATION_HELP}`);
 }
 
-async function overwriteSettings(project: string) {
+async function overrideSettings(project: string) {
   const settings = JSON.parse(await readFile(PROJECT_SETTINGS_PATH, 'utf-8'));
   settings.project = project;
 
@@ -129,20 +125,23 @@ export async function catchIncorrectSettings(
 ) {
   let override = !settings.project;
   if (settings.project && settings.project !== options.project) {
-    // Add an extra line to make it easier to read the prompt
-    write('');
-    ({ override } = await prompt<{ override: boolean }>({
-      type: 'confirm',
-      name: 'override',
-      message: `Monitors were pushed under the '${settings.project}' project. Are you sure you want to push them under the new '${options.project}' (note that this will duplicate the monitors, the old ones being orphaned)`,
-      initial: false,
-    }));
-
+    if (typeof process.env.TEST_OVERRIDE != null) {
+      override = Boolean(process.env.TEST_OVERRIDE);
+    } else {
+      // Add an extra line to make it easier to read the prompt
+      write('');
+      ({ override } = await prompt<{ override: boolean }>({
+        type: 'confirm',
+        name: 'override',
+        message: `Monitors were pushed under the '${settings.project}' project. Are you sure you want to push them under the new '${options.project}' (note that this will duplicate the monitors, the old ones being orphaned)`,
+        initial: false,
+      }));
+    }
     if (!override) {
       throw aborted('Push command Aborted');
     }
   }
   if (override) {
-    await overwriteSettings(options.project);
+    await overrideSettings(options.project);
   }
 }
