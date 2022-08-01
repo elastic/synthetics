@@ -33,9 +33,19 @@ import {
 import { Monitor } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import { buildMonitorSchema } from './monitor';
-import { progress, error, done } from '../helpers';
+import { progress, error, done, indent } from '../helpers';
+import { bold } from 'kleur/colors';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
+  if (monitors.length === 0) {
+    throw 'No Monitors found';
+  }
+
+  const duplicates = trackDuplicates(monitors);
+  if (duplicates.size > 0) {
+    throw error(formatDuplicateError(duplicates));
+  }
+
   progress(`preparing all monitors`);
   const schemas = await buildMonitorSchema(monitors);
   try {
@@ -56,4 +66,30 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   } catch (e) {
     error(e);
   }
+}
+
+function trackDuplicates(monitors: Monitor[]) {
+  const monitorMap: Map<string, Monitor> = new Map();
+  const duplicates: Set<Monitor> = new Set();
+  for (const monitor of monitors) {
+    const id = monitor.config.id;
+    if (monitorMap.has(id)) {
+      duplicates.add(monitorMap.get(id));
+      duplicates.add(monitor);
+    }
+    monitorMap.set(id, monitor);
+  }
+  return duplicates;
+}
+
+export function formatDuplicateError(monitors: Set<Monitor>) {
+  let outer = bold(`Aborted: Duplicate monitors found\n`);
+
+  let inner = '';
+  for (const monitor of monitors) {
+    const { config, source } = monitor;
+    inner += `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+  }
+  outer += indent(inner);
+  return outer;
 }
