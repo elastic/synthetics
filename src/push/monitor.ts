@@ -50,9 +50,6 @@ function translateLocation(locations?: MonitorConfig['locations']) {
 }
 
 export async function buildMonitorSchema(monitors: Monitor[]) {
-  if (monitors.length == 0) {
-    throw new Error('No Monitors found');
-  }
   /**
    * Set up the bundle artifacts path which can be used to
    * create the bundles required for uploading journeys

@@ -25,11 +25,18 @@
 
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { Monitor } from '../../src/dsl/monitor';
+import { formatDuplicateError } from '../../src/push';
 import { CLIMock } from '../utils/test-config';
 
-describe('Push CLI', () => {
+process.env.NO_COLOR = '1';
+
+describe('Push', () => {
+  afterAll(() => (process.env.NO_COLOR = ''));
+
   const PROJECT_DIR = join(__dirname, 'new-project');
   const DEFAULT_ARGS = ['--auth', 'foo'];
+  const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
   async function runPush(args = DEFAULT_ARGS, env?) {
     const cli = new CLIMock()
@@ -118,5 +125,30 @@ describe('Push CLI', () => {
       }
     );
     expect(output).toContain('No Monitors found');
+  });
+
+  it('errors on duplicate monitors', async () => {
+    const cli = new CLIMock()
+      .args(['push', ...args, '--schedule', '20', '--locations', 'us_east'])
+      .run({ cwd: FIXTURES_DIR });
+    expect(await cli.exitCode).toBe(1);
+    const error = cli.stderr();
+    expect(error).toContain(`Aborted: Duplicate monitors found`);
+    expect(error).toContain(`duplicate id`);
+    expect(error).toContain(`duplicate name`);
+  });
+
+  it('format duplicate monitors', () => {
+    const duplicates = new Set([
+      {
+        config: { id: 'test' },
+        source: { file: 'journey1.ts', line: 2, column: 5 },
+      },
+      {
+        config: { id: 'test' },
+        source: { file: 'journey2.ts', line: 10, column: 5 },
+      },
+    ]);
+    expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
   });
 });

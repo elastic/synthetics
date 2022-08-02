@@ -34,4 +34,9 @@ Set default schedule in minutes for all monitors via
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "
+exports[`Push format duplicate monitors 1`] = `
+"Aborted: Duplicate monitors found
+   * test - journey1.ts:2:5
+   * test - journey2.ts:10:5
+   "
 `;
