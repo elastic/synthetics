@@ -25,6 +25,8 @@
 
 import { journey, monitor } from '../../src';
 
-journey('journey 1', () => monitor.use({ id: 'duplicate' }));
+journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
+journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
 
-journey('journey 2', () => monitor.use({ id: 'duplicate' }));
+journey('duplicate name', () => monitor.use({ schedule: 10 }));
+journey('duplicate name', () => monitor.use({ schedule: 20 }));

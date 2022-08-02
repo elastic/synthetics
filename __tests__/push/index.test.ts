@@ -70,8 +70,10 @@ describe('Push', () => {
       .args(['push', ...args, '--schedule', '20', '--locations', 'us_east'])
       .run({ cwd: FIXTURES_DIR });
     expect(await cli.exitCode).toBe(1);
-
-    expect(cli.stderr()).toContain(`Aborted: Duplicate monitors found`);
+    const error = cli.stderr();
+    expect(error).toContain(`Aborted: Duplicate monitors found`);
+    expect(error).toContain(`duplicate id`);
+    expect(error).toContain(`duplicate name`);
   });
 
   it('format duplicate monitors', () => {
