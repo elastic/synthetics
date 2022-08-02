@@ -88,7 +88,6 @@ export class Generator {
       message: 'Do you use Elastic Cloud',
     });
     const url = await new Input({
-      type: 'input',
       header: onCloud
         ? yellow(
             'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
@@ -105,7 +104,6 @@ export class Generator {
     }).run();
 
     const auth = await new Input({
-      type: 'input',
       name: 'auth',
       header: yellow(
         `Generate API key from Kibana ${url}/app/uptime/manage-monitors/all`
@@ -125,9 +123,13 @@ export class Generator {
       {
         type: 'select',
         name: 'locations',
-        message: 'Select the default location where you want to run monitors',
+        hint: '(Use <space> to select, <return> to submit)',
+        message: 'Select the locations where you want to run monitors',
         choices: locChoices,
         multiple: true,
+        validate(value) {
+          return value.length === 0 ? `Select at least one option.` : true;
+        },
       },
       {
         type: 'numeral',
