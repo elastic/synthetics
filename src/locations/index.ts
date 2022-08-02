@@ -46,7 +46,7 @@ export type LocationAPIResponse = {
   locations: Array<LocationMetadata>;
 };
 
-const PRIVATE_KEYWORD = 'private';
+const PRIVATE_KEYWORD = '(private)';
 
 export async function getLocations(options: LocationCmdOptions) {
   const url =
@@ -74,7 +74,7 @@ export function formatLocations(locations: Array<LocationMetadata>) {
       [, name] = name.split('-');
       name = name.toLowerCase().trim().split(' ').join('_');
     } else {
-      name = `${name}(${PRIVATE_KEYWORD})`;
+      name = `${name}${PRIVATE_KEYWORD}`;
     }
     formatted.push(name);
   }
@@ -85,7 +85,7 @@ export function groupLocations(locations: Array<string>) {
   const grouped = { locations: [], privateLocations: [] };
   for (const loc of locations) {
     if (loc.includes(PRIVATE_KEYWORD)) {
-      grouped.privateLocations.push(loc);
+      grouped.privateLocations.push(loc.replace(PRIVATE_KEYWORD, ''));
     } else {
       grouped.locations.push(loc);
     }

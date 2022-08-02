@@ -67,10 +67,7 @@ describe('Locations', () => {
 
     expect(groupLocations(formatted)).toEqual({
       locations: ['japan', 'us_west'],
-      privateLocations: [
-        'custom location 1(private)',
-        'custom location 2(private)',
-      ],
+      privateLocations: ['custom location 1', 'custom location 2'],
     });
   });
 });
