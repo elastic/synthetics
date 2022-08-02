@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  *
  */
+process.env.NO_COLOR = '1';
 
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -29,14 +30,9 @@ import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
 import { CLIMock } from '../utils/test-config';
 
-process.env.NO_COLOR = '1';
-
 describe('Push', () => {
-  afterAll(() => (process.env.NO_COLOR = ''));
-
   const PROJECT_DIR = join(__dirname, 'new-project');
   const DEFAULT_ARGS = ['--auth', 'foo'];
-  const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
   async function runPush(args = DEFAULT_ARGS, env?) {
     const cli = new CLIMock()
@@ -60,11 +56,10 @@ describe('Push', () => {
   }
 
   beforeAll(async () => {
-    process.env.NO_COLOR = '1';
     await mkdir(PROJECT_DIR, { recursive: true });
   });
   afterAll(async () => {
-    process.env.NO_COLOR = '0';
+    process.env.NO_COLOR = '';
     await rm(PROJECT_DIR, { recursive: true, force: true });
   });
 
@@ -128,14 +123,24 @@ describe('Push', () => {
   });
 
   it('errors on duplicate monitors', async () => {
-    const cli = new CLIMock()
-      .args(['push', ...args, '--schedule', '20', '--locations', 'us_east'])
-      .run({ cwd: FIXTURES_DIR });
-    expect(await cli.exitCode).toBe(1);
-    const error = cli.stderr();
-    expect(error).toContain(`Aborted: Duplicate monitors found`);
-    expect(error).toContain(`duplicate id`);
-    expect(error).toContain(`duplicate name`);
+    await fakeProjectSetup(
+      { project: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+
+    await writeFile(
+      join(PROJECT_DIR, 'duplicate.journey.ts'),
+      `import {journey, monitor} from '../../../src';
+journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
+journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
+
+journey('duplicate name', () => monitor.use({ schedule: 10 }));
+journey('duplicate name', () => monitor.use({ schedule: 20 }));`
+    );
+    const output = await runPush();
+    expect(output).toContain(`Aborted: Duplicate monitors found`);
+    expect(output).toContain(`duplicate id`);
+    expect(output).toContain(`duplicate name`);
   });
 
   it('format duplicate monitors', () => {

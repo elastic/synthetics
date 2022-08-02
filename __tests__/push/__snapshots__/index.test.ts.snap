@@ -1,11 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Push CLI abort on push with different project id 1`] = `
+exports[`Push abort on push with different project id 1`] = `
 "⚠ Push command Aborted
 "
 `;
 
-exports[`Push CLI error on empty project id 1`] = `
+exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set project id via CLI as \`--project <id>\`
@@ -14,7 +14,7 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 "
 `;
 
-exports[`Push CLI error on invalid location 1`] = `
+exports[`Push error on invalid location 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set default location for all monitors via
@@ -25,7 +25,7 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 "
 `;
 
-exports[`Push CLI error on invalid schedule 1`] = `
+exports[`Push error on invalid schedule 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set default schedule in minutes for all monitors via
@@ -34,6 +34,8 @@ Set default schedule in minutes for all monitors via
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "
+`;
+
 exports[`Push format duplicate monitors 1`] = `
 "Aborted: Duplicate monitors found
    * test - journey1.ts:2:5
