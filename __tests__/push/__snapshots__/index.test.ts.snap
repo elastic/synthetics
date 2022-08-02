@@ -1,0 +1,8 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Push format duplicate monitors 1`] = `
+"Aborted: Duplicate monitors found
+   * test - journey1.ts:2:5
+   * test - journey2.ts:10:5
+   "
+`;
