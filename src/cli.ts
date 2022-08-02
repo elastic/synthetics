@@ -40,10 +40,16 @@ import {
   validateSettings,
   catchIncorrectSettings,
 } from './push';
-import { getLocations, LocationCmdOptions } from './locations';
+import {
+  formatLocations,
+  getLocations,
+  renderLocations,
+  LocationCmdOptions,
+} from './locations';
 import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';
+import { LocationsMap } from './locations/public-locations';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -236,16 +242,22 @@ program
 // Locations command
 program
   .command('locations')
-  .description('List all locations to run the synthetics monitors')
-  .option('--url <url>', 'kibana URL to upload the monitors')
-  .requiredOption(
+  .description(
+    `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
+  )
+  .option('--url <url>', 'Kibana URL to fetch all public and private locations')
+  .option(
     '--auth <auth>',
     'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
   )
   .action(async (cmdOpts: LocationCmdOptions) => {
     try {
-      console.log(await getLocations(cmdOpts));
-      // TODO: Display list of locations
+      let locations = Object.keys(LocationsMap);
+      if (cmdOpts.auth && cmdOpts.url) {
+        const allLocations = await getLocations(cmdOpts);
+        locations = formatLocations(allLocations);
+      }
+      renderLocations(locations);
     } catch (e) {
       e && error(e);
       process.exit(1);
