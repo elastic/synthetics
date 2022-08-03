@@ -248,6 +248,7 @@ export type PushOptions = {
   space: string;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
+  privateLocations?: MonitorConfig['privateLocations'];
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;

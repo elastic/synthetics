@@ -23,10 +23,27 @@
  *
  */
 
-import { journey, monitor } from '../../src';
+import { LocationAPIResponse } from '../../src/locations';
 
-journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
-journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
-
-journey('duplicate name', () => monitor.use({ schedule: 10 }));
-journey('duplicate name', () => monitor.use({ schedule: 20 }));
+export const LOCATIONS: LocationAPIResponse['locations'] = [
+  {
+    id: 'asia-northeast1-a',
+    label: 'Asia/Pacific - Japan',
+    isServiceManaged: true,
+  },
+  {
+    id: 'private-node-1',
+    label: 'custom location 1',
+    isServiceManaged: false,
+  },
+  {
+    id: 'private-node-2',
+    label: 'custom location 2',
+    isServiceManaged: false,
+  },
+  {
+    id: 'us-west1-a',
+    label: 'North America - US West',
+    isServiceManaged: true,
+  },
+];

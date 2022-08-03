@@ -34,7 +34,13 @@ import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
 import { SyntheticsLocations } from './dsl/monitor';
-import { push } from './push';
+import {
+  push,
+  loadSettings,
+  validateSettings,
+  catchIncorrectSettings,
+} from './push';
+import { getLocations, LocationCmdOptions } from './locations';
 import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';
@@ -151,6 +157,10 @@ program
   .description(
     'Push journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
+  .requiredOption(
+    '--auth <auth>',
+    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+  )
   .option(
     '--pattern <pattern>',
     'RegExp file patterns to push inside current directory'
@@ -176,39 +186,32 @@ program
   )
   .addOption(
     new Option(
-      '--privateLocations <locations...>',
+      '--private-locations <locations...>',
       'default list of private locations from which your monitors will run.'
     )
   )
-  .requiredOption(
-    '--project <project-id>',
+  .option('--url <url>', 'kibana URL to upload the monitors')
+  .option(
+    '--project <id>',
     'id that will be used for logically grouping monitors'
-  )
-  .requiredOption('--url <url>', 'kibana URL to upload the monitors')
-  .requiredOption(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
   )
   .option(
     '--space <space>',
-    'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.',
-    'default'
+    'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .action(async (cmdOpts: PushOptions) => {
     try {
+      const settings = await loadSettings();
       await loadTestFiles({ inline: false }, [cwd()]);
-      const options = normalizeOptions({ ...program.opts(), ...cmdOpts });
-      if (!options.schedule) {
-        throw error(`Set default schedule in minutes for all monitors via '--schedule <time-in-minutes>' OR
-  configure via Synthetics config file under 'monitors.schedule' field.`);
-      }
-
-      if (!options.locations && !options.privateLocations) {
-        throw error(`Set default location for all monitors via CLI as '--locations <locations...> or --privateLocations <locations...>' OR
-  configure via Synthetics config file under 'monitors.locations'| 'monitors.privateLocations' field.`);
-      }
+      const options = normalizeOptions({
+        ...program.opts(),
+        ...settings,
+        ...cmdOpts,
+      }) as PushOptions;
+      validateSettings(options);
+      await catchIncorrectSettings(settings, options);
       const monitors = runner.buildMonitors(options);
-      await push(monitors, cmdOpts);
+      await push(monitors, options);
     } catch (e) {
       e && console.error(e);
       process.exit(1);
@@ -217,12 +220,32 @@ program
 
 // Init command
 program
-  .command('init <project-dir>')
-  .description('Initalize Elastic synthetics project')
-  .action(async (dir: string) => {
+  .command('init [dir]')
+  .description('Initialize Elastic synthetics project')
+  .action(async (dir = '') => {
     try {
+      console.log(dir);
       const generator = await new Generator(resolve(process.cwd(), dir));
       await generator.setup();
+    } catch (e) {
+      e && error(e);
+      process.exit(1);
+    }
+  });
+
+// Locations command
+program
+  .command('locations')
+  .description('List all locations to run the synthetics monitors')
+  .option('--url <url>', 'kibana URL to upload the monitors')
+  .requiredOption(
+    '--auth <auth>',
+    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+  )
+  .action(async (cmdOpts: LocationCmdOptions) => {
+    try {
+      console.log(await getLocations(cmdOpts));
+      // TODO: Display list of locations
     } catch (e) {
       e && error(e);
       process.exit(1);

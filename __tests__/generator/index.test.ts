@@ -50,7 +50,8 @@ describe('Generator', () => {
       env: {
         ...process.env,
         TEST_QUESTIONS: JSON.stringify({
-          locations: 'us_east',
+          locations: ['us_east'],
+          privateLocations: ['custom'],
           schedule: 30,
         }),
       },
@@ -61,6 +62,11 @@ describe('Generator', () => {
     if (exitCode !== 0) {
       expect(output).toBe('');
     }
+
+    // Project setup file
+    expect(
+      existsSync(join(scaffoldDir, '.synthetics', 'project.json'))
+    ).toBeTruthy();
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
@@ -84,12 +90,13 @@ describe('Generator', () => {
       join(scaffoldDir, 'synthetics.config.ts'),
       'utf-8'
     );
-    expect(configFile).toContain(`locations: ["us_east"]`);
+    expect(configFile).toContain(`locations: ['us_east']`);
+    expect(configFile).toContain(`privateLocations: ['custom']`);
     expect(configFile).toContain(`schedule: 30`);
 
     // Verify stdout
     const stderr = cli.stderr();
-    expect(stderr).toContain('Initializing Synthetics project using NPM');
+    expect(stderr).toContain('Setting up project using NPM');
     expect(stderr).toContain('Installing @elastic/synthetics library');
     expect(stderr).toContain('All set, you can run below commands');
   }, 30000);

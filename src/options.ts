@@ -136,7 +136,8 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
 
   options.schedule = cliArgs.schedule ?? monitor?.schedule;
   options.locations = cliArgs.locations ?? monitor?.locations;
-  options.privateLocations = cliArgs.privateLocations ?? monitor?.privateLocations;
+  options.privateLocations =
+    cliArgs.privateLocations ?? monitor?.privateLocations;
 
   return options;
 }

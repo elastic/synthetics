@@ -22,58 +22,125 @@
  * THE SOFTWARE.
  *
  */
-
 process.env.NO_COLOR = '1';
 
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
 import { CLIMock } from '../utils/test-config';
 
-const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-
 describe('Push', () => {
-  afterAll(() => (process.env.NO_COLOR = ''));
+  const PROJECT_DIR = join(__dirname, 'new-project');
+  const DEFAULT_ARGS = ['--auth', 'foo'];
 
-  const args = [
-    '--url',
-    'http://localhost:8000',
-    '--auth',
-    'foo',
-    '--project',
-    'test',
-    '.',
-  ];
-
-  it('errors when schedule option is empty', async () => {
+  async function runPush(args = DEFAULT_ARGS, env?) {
     const cli = new CLIMock()
       .args(['push', ...args])
-      .run({ cwd: FIXTURES_DIR });
+      .run({ cwd: PROJECT_DIR, env: { ...process.env, ...env } });
     expect(await cli.exitCode).toBe(1);
+    return cli.stderr();
+  }
 
-    expect(cli.stderr()).toContain(
-      `Set default schedule in minutes for all monitors`
+  async function fakeProjectSetup(settings, monitor) {
+    await mkdir(join(PROJECT_DIR, '.synthetics'), { recursive: true });
+    await writeFile(
+      join(PROJECT_DIR, '.synthetics', 'project.json'),
+      JSON.stringify(settings, null, 2)
     );
+
+    await writeFile(
+      join(PROJECT_DIR, 'synthetics.config.ts'),
+      `export default { monitor: ${JSON.stringify(monitor)} }`
+    );
+  }
+
+  beforeAll(async () => {
+    await mkdir(PROJECT_DIR, { recursive: true });
+  });
+  afterAll(async () => {
+    process.env.NO_COLOR = '';
+    await rm(PROJECT_DIR, { recursive: true, force: true });
   });
 
-  it('errors when locations option is empty', async () => {
-    const cli = new CLIMock()
-      .args(['push', ...args, '--schedule', '20'])
-      .run({ cwd: FIXTURES_DIR });
-    expect(await cli.exitCode).toBe(1);
+  it('error when auth is ignored', async () => {
+    const output = await runPush([]);
+    expect(output).toContain(`required option '--auth <auth>' not specified`);
+  });
 
-    expect(cli.stderr()).toContain(`Set default location for all monitors`);
+  it('error when project is not setup', async () => {
+    const output = await runPush();
+    expect(output).toContain('Aborted. Synthetics project not set up');
+  });
+
+  it('error on empty project id', async () => {
+    await fakeProjectSetup({}, {});
+    const output = await runPush();
+    expect(output).toMatchSnapshot();
+  });
+
+  it('error on invalid location', async () => {
+    await fakeProjectSetup({ project: 'test-project' }, {});
+    const output = await runPush();
+    expect(output).toMatchSnapshot();
+  });
+
+  it('error on invalid schedule', async () => {
+    await fakeProjectSetup(
+      { project: 'test-project' },
+      { locations: ['test-loc'] }
+    );
+    const output = await runPush();
+    expect(output).toMatchSnapshot();
+  });
+
+  it('abort on push with different project id', async () => {
+    await fakeProjectSetup(
+      { project: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+    const output = await runPush(
+      [...DEFAULT_ARGS, '--project', 'new-project'],
+      {
+        TEST_OVERRIDE: '',
+      }
+    );
+    expect(output).toMatchSnapshot();
+  });
+
+  it('push with different id when overriden', async () => {
+    await fakeProjectSetup(
+      { project: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+    const output = await runPush(
+      [...DEFAULT_ARGS, '--project', 'new-project'],
+      {
+        TEST_OVERRIDE: 'true',
+      }
+    );
+    expect(output).toContain('No Monitors found');
   });
 
   it('errors on duplicate monitors', async () => {
-    const cli = new CLIMock()
-      .args(['push', ...args, '--schedule', '20', '--locations', 'us_east'])
-      .run({ cwd: FIXTURES_DIR });
-    expect(await cli.exitCode).toBe(1);
-    const error = cli.stderr();
-    expect(error).toContain(`Aborted: Duplicate monitors found`);
-    expect(error).toContain(`duplicate id`);
-    expect(error).toContain(`duplicate name`);
+    await fakeProjectSetup(
+      { project: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+
+    await writeFile(
+      join(PROJECT_DIR, 'duplicate.journey.ts'),
+      `import {journey, monitor} from '../../../src';
+journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
+journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
+
+journey('duplicate name', () => monitor.use({ schedule: 10 }));
+journey('duplicate name', () => monitor.use({ schedule: 20 }));`
+    );
+    const output = await runPush();
+    expect(output).toContain(`Aborted: Duplicate monitors found`);
+    expect(output).toContain(`duplicate id`);
+    expect(output).toContain(`duplicate name`);
   });
 
   it('format duplicate monitors', () => {
