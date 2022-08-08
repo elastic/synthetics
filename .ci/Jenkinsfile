@@ -163,26 +163,27 @@ pipeline {
       }
       agent { label 'ubuntu-18 && immutable' }
       stages {
-        stage('Notify') {
+        stage('Approve to Release') {
           options { skipDefaultCheckout() }
           steps {
             notifyStatus(slackStatus: 'warning', subject: "[${env.REPO}] Release ready to be pushed",
                          body: "Please go to (<${env.BUILD_URL}input|here>) to approve or reject within 12 hours.")
+            setEnvVar('RELEASE', prompt(message: 'Should we release a new version?'))
           }
         }
         stage('Release CI') {
-          options { skipDefaultCheckout() }
-          input {
-            message 'Should we release a new version?'
-            ok 'Yes, we should.'
+          when {
+            beforeAgent true
+            expression { return env.RELEASE == 'true' }
           }
+          options { skipDefaultCheckout() }
           environment {
             NPM_PACKAGE = '@elastic/synthetics'
           }
           steps {
             cleanup()
-            withNodeJSEnv(){
-              dir("${BASE_DIR}"){
+            withNodeJSEnv() {
+              dir("${BASE_DIR}") {
                 withNpmrc(secret: "${env.NPMRC_SECRET}", path: "${env.WORKSPACE}/${env.BASE_DIR}") {
                   withGitRelease(credentialsId: '2a9602aa-ab9f-4e52-baf3-b71ca88469c7-UserAndToken') {
                     sh(script: 'npm run clean', label: 'clean release')
@@ -211,41 +212,29 @@ pipeline {
                 currentBuild.description = "${currentBuild.description?.trim() ? currentBuild.description : ''} released"
               }
             }
+            failure {
+              notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Release '${env.VERSION?.trim()}' failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
+            }
           }
         }
-      }
-      post {
-        failure {
-          notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Release '${env.VERSION?.trim()}' failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
-        }
-      }
-    }
-    stage('Stack Release Tag') {
-      options {
-        skipDefaultCheckout()
-      }
-      when {
-        beforeAgent true
-        allOf {
-          branch 'main'
-          expression { return params.release }
-        }
-      }
-      agent { label 'ubuntu-18 && immutable' }
-      stages {
-        stage('Notify') {
+        stage('Approve to Stack Release') {
+          when {
+            beforeAgent true
+            expression { return env.RELEASE == 'true' }
+          }
           options { skipDefaultCheckout() }
           steps {
             notifyStatus(slackStatus: 'warning', subject: "[${env.REPO}] Stack Release ready to be pushed",
                          body: "Please go to (<${env.BUILD_URL}input|here>) to approve or reject within 12 hours.")
+            setEnvVar('STACK_RELEASE', prompt(message: 'Should we tag the current version as a stack release?'))
           }
         }
         stage('Stack Release CI') {
-          options { skipDefaultCheckout() }
-          input {
-            message 'Should we tag the current version as a stack release?'
-            ok 'Yes, we should.'
+          when {
+            beforeAgent true
+            expression { return env.RELEASE == 'true' && env.STACK_RELEASE == 'true' }
           }
+          options { skipDefaultCheckout() }
           environment {
             NPM_PACKAGE = '@elastic/synthetics'
           }
@@ -271,12 +260,10 @@ pipeline {
                 currentBuild.description = "${currentBuild.description?.trim() ? currentBuild.description : ''} released"
               }
             }
+            failure {
+              notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Stack Release '${env.VERSION?.trim()}' failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
+            }
           }
-        }
-      }
-      post {
-        failure {
-          notifyStatus(slackStatus: 'danger', subject: "[${env.REPO}] Stack Release '${env.VERSION?.trim()}' failed", body: "(<${env.RUN_DISPLAY_URL}|Open>)")
         }
       }
     }
@@ -289,13 +276,13 @@ pipeline {
 }
 
 def cleanup(){
-  dir("${BASE_DIR}"){
+  dir("${BASE_DIR}") {
     deleteDir()
   }
   unstash 'source'
 }
 
-def withNodeInDockerEnv(Map args=[:], Closure body){
+def withNodeInDockerEnv(Map args=[:], Closure body) {
   docker.image("${NODE_DOCKER_IMAGE}").inside(" --security-opt seccomp=${SECCOMP_FILE}"){
     withEnv(["HOME=${WORKSPACE}"]) {
       body()
