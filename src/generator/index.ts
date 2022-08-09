@@ -54,13 +54,18 @@ type PromptOptions = ProjectSettings & {
 };
 
 // exported for testing
-export const regularFiles = [
+export const REGULAR_FILES_PATH = [
+  'journeys/example.journey.ts',
+  'journeys/advanced-example-helpers.ts',
+  'journeys/advanced-example.journey.ts',
   '.github/workflows/run-synthetics.yml',
   'README.md',
-  'journeys/example.journey.ts',
-  'journeys/advanced-example.journey.ts',
-  'journeys/advanced-example-helpers.ts',
 ];
+export const SETTINGS_PATH = '.synthetics/project.json';
+export const CONFIG_PATH = 'synthetics.config.ts';
+
+// Files to be overriden by default if the project is initialized multiple times
+const DEFAULT_OVERRIDES = [SETTINGS_PATH, CONFIG_PATH];
 
 export class Generator {
   pkgManager = 'npm';
@@ -169,24 +174,20 @@ export class Generator {
       space: answers.space,
       project: answers.project,
     };
-    fileMap.set(
-      '.synthetics/project.json',
-      JSON.stringify(projectJSON, null, 2) + '\n'
-    );
+    fileMap.set(SETTINGS_PATH, JSON.stringify(projectJSON, null, 2) + '\n');
 
     // Setup Synthetics config file
-    const configFile = 'synthetics.config.ts';
     fileMap.set(
-      configFile,
+      CONFIG_PATH,
       replaceTemplates(
-        await readFile(join(templateDir, configFile), 'utf-8'),
+        await readFile(join(templateDir, CONFIG_PATH), 'utf-8'),
         answers
       )
     );
 
     // Setup non-templated files
     Promise.all(
-      regularFiles.map(async file => {
+      REGULAR_FILES_PATH.map(async file => {
         fileMap.set(file, await readFile(join(templateDir, file), 'utf-8'));
       })
     ).catch(e => {
@@ -202,7 +203,11 @@ export class Generator {
   async createFile(relativePath: string, content: string, override = false) {
     const absolutePath = join(this.projectDir, relativePath);
 
-    if (!override && existsSync(absolutePath)) {
+    if (
+      !override &&
+      !DEFAULT_OVERRIDES.includes(relativePath) &&
+      existsSync(absolutePath)
+    ) {
       const { override } = await prompt<{ override: boolean }>({
         type: 'confirm',
         name: 'override',

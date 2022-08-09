@@ -46,7 +46,7 @@ type APISchema = {
 
 function translateLocation(locations?: MonitorConfig['locations']) {
   if (!locations) return [];
-  return locations.map(loc => LocationsMap[loc]).filter(Boolean);
+  return locations.map(loc => LocationsMap[loc] || loc).filter(Boolean);
 }
 
 export async function buildMonitorSchema(monitors: Monitor[]) {

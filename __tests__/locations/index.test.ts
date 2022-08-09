@@ -49,7 +49,7 @@ describe('Locations', () => {
       url: `${server.PREFIX}`,
       auth: 'apiKey',
     });
-    expect(locations.length).toBe(4);
+    expect(locations.length).toBe(5);
   });
 
   it('format and group locations by labels', async () => {
@@ -60,13 +60,14 @@ describe('Locations', () => {
     const formatted = formatLocations(locations);
     expect(formatted).toEqual([
       'japan',
+      'new_location',
       'custom location 1(private)',
       'custom location 2(private)',
       'us_west',
     ]);
 
     expect(groupLocations(formatted)).toEqual({
-      locations: ['japan', 'us_west'],
+      locations: ['japan', 'new_location', 'us_west'],
       privateLocations: ['custom location 1', 'custom location 2'],
     });
   });
