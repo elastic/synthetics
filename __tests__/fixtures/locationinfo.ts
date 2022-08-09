@@ -32,6 +32,11 @@ export const LOCATIONS: LocationAPIResponse['locations'] = [
     isServiceManaged: true,
   },
   {
+    id: 'new-location',
+    label: 'New Location',
+    isServiceManaged: true,
+  },
+  {
     id: 'private-node-1',
     label: 'custom location 1',
     isServiceManaged: false,

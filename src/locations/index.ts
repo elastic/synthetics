@@ -71,7 +71,7 @@ export function formatLocations(locations: Array<LocationMetadata>) {
   for (const location of locations) {
     let name = location.label;
     if (location.isServiceManaged) {
-      [, name] = name.split('-');
+      [, name] = name.includes('-') ? name.split('-') : [, name];
       name = name.toLowerCase().trim().split(' ').join('_');
     } else {
       name = `${name}${PRIVATE_KEYWORD}`;

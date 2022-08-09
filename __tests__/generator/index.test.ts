@@ -27,7 +27,11 @@ import { existsSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { CLIMock } from '../utils/test-config';
-import { regularFiles } from '../../src/generator';
+import {
+  REGULAR_FILES_PATH,
+  CONFIG_PATH,
+  SETTINGS_PATH,
+} from '../../src/generator';
 
 describe('Generator', () => {
   const scaffoldDir = join(__dirname, 'scaffold-test');
@@ -64,9 +68,7 @@ describe('Generator', () => {
     }
 
     // Project setup file
-    expect(
-      existsSync(join(scaffoldDir, '.synthetics', 'project.json'))
-    ).toBeTruthy();
+    expect(existsSync(join(scaffoldDir, SETTINGS_PATH))).toBeTruthy();
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
@@ -81,15 +83,12 @@ describe('Generator', () => {
       "
     `);
 
-    regularFiles.forEach(fn => {
+    REGULAR_FILES_PATH.forEach(fn => {
       expect(existsSync(join(scaffoldDir, fn))).toBeTruthy();
     });
-    expect(existsSync(join(scaffoldDir, 'synthetics.config.ts'))).toBeTruthy();
+    expect(existsSync(join(scaffoldDir, CONFIG_PATH))).toBeTruthy();
     // Verify schedule and locations
-    const configFile = await readFile(
-      join(scaffoldDir, 'synthetics.config.ts'),
-      'utf-8'
-    );
+    const configFile = await readFile(join(scaffoldDir, CONFIG_PATH), 'utf-8');
     expect(configFile).toContain(`locations: ['us_east']`);
     expect(configFile).toContain(`privateLocations: ['custom']`);
     expect(configFile).toContain(`schedule: 30`);
