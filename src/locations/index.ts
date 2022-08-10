@@ -29,7 +29,7 @@ import {
   sendRequest,
   ok,
 } from '../push/request';
-import { removeTrailingSlash } from '../helpers';
+import { indent, removeTrailingSlash, write } from '../helpers';
 
 export type LocationCmdOptions = {
   auth: string;
@@ -91,4 +91,18 @@ export function groupLocations(locations: Array<string>) {
     }
   }
   return grouped;
+}
+
+export function renderLocations(locations: Array<string>) {
+  let outer = 'Available locations: \n';
+  let inner = '';
+  for (const location of locations) {
+    inner += `* ${location}\n`;
+  }
+  outer += indent(inner);
+  outer += `\nSet default location for monitors via
+  - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
+  - Monitor API 'monitor.use({ locations: ["japan"], privateLocations: ["custom-location"] }')`;
+
+  write(outer);
 }

@@ -28,7 +28,7 @@ import { join } from 'path';
 import { Bundler } from './bundler';
 import { sendRequest } from './request';
 import { removeTrailingSlash, SYNTHETICS_PATH } from '../helpers';
-import { LocationsMap } from '../dsl/locations';
+import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 

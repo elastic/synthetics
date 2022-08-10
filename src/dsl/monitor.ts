@@ -31,7 +31,7 @@ import {
   Params,
   PlaywrightOptions,
 } from '../common_types';
-import { LocationsMap } from './locations';
+import { LocationsMap } from '../locations/public-locations';
 
 export type SyntheticsLocationsType = keyof typeof LocationsMap;
 export const SyntheticsLocations = Object.keys(

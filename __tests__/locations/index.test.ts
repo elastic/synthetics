@@ -23,15 +23,17 @@
  *
  */
 
-import { Server } from '../utils/server';
 import {
   formatLocations,
   getLocations,
   groupLocations,
 } from '../../src/locations';
 import { LOCATIONS } from '../fixtures/locationinfo';
+import { Server } from '../utils/server';
+import { CLIMock } from '../utils/test-config';
 
 describe('Locations', () => {
+  const apiKey = 'foo';
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
@@ -47,7 +49,7 @@ describe('Locations', () => {
   it('get locations', async () => {
     const locations = await getLocations({
       url: `${server.PREFIX}`,
-      auth: 'apiKey',
+      auth: apiKey,
     });
     expect(locations.length).toBe(5);
   });
@@ -55,7 +57,7 @@ describe('Locations', () => {
   it('format and group locations by labels', async () => {
     const locations = await getLocations({
       url: `${server.PREFIX}`,
-      auth: 'apiKey',
+      auth: apiKey,
     });
     const formatted = formatLocations(locations);
     expect(formatted).toEqual([
@@ -69,6 +71,30 @@ describe('Locations', () => {
     expect(groupLocations(formatted)).toEqual({
       locations: ['japan', 'new_location', 'us_west'],
       privateLocations: ['custom location 1', 'custom location 2'],
+    });
+  });
+
+  describe('CLI command', () => {
+    const runLocations = async (args: Array<string> = []) => {
+      const cli = new CLIMock()
+        .args(['locations', ...args])
+        .run({ cwd: __dirname });
+      expect(await cli.exitCode).toBe(0);
+      return cli.stderr();
+    };
+    it('render public locations by default', async () => {
+      const output = await runLocations();
+      expect(output).not.toContain(`custom location`);
+    });
+
+    it('render private locations when options are provided', async () => {
+      const output = await runLocations([
+        '--url',
+        server.PREFIX,
+        '--auth',
+        apiKey,
+      ]);
+      expect(output).toContain(`custom location 1(private)`);
     });
   });
 });
