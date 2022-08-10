@@ -29,7 +29,11 @@ import { program, Option } from 'commander';
 import { cwd } from 'process';
 import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
-import { normalizeOptions, parseThrottling } from './options';
+import {
+  normalizeOptions,
+  parseThrottling,
+  getCommonCommandOpts,
+} from './options';
 import { loadTestFiles } from './loader';
 import { run } from './';
 import { runner } from './core';
@@ -48,6 +52,8 @@ import { error } from './helpers';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
+const { params, pattern, tags, match, playwrightOpts } = getCommonCommandOpts();
+
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
@@ -55,19 +61,14 @@ program
     '-c, --config <path>',
     'configuration path (default: synthetics.config.js)'
   )
-  .option(
-    '-p, --params <jsonstring>',
-    'JSON object that gets injected to all journeys',
-    JSON.parse
-  )
+  .addOption(pattern)
+  .addOption(tags)
+  .addOption(match)
+  .addOption(params)
   .addOption(
     new Option('--reporter <value>', `output repoter format`).choices(
       Object.keys(reporters)
     )
-  )
-  .option(
-    '--pattern <pattern>',
-    'RegExp file patterns to search inside directory'
   )
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
@@ -86,14 +87,6 @@ program
   .option(
     '--dry-run',
     "don't actually execute anything, report only registered journeys"
-  )
-  .option(
-    '--tags <name...>',
-    'run only journeys with a tag that matches the glob'
-  )
-  .option(
-    '--match <name>',
-    'run only journeys with a name or tag that matches the glob'
   )
   .option(
     '--outfd <fd>',
@@ -123,11 +116,7 @@ program
     {}
   )
   .option('--no-throttling', 'Turns off default network throttling.')
-  .option(
-    '--playwright-options <jsonstring>',
-    'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file. Options defined via --playwright-options take precedence.',
-    JSON.parse
-  )
+  .addOption(playwrightOpts)
   .version(version)
   .description('Run synthetic tests')
   .action(async (cliArgs: CliArgs) => {
@@ -155,23 +144,11 @@ program
 program
   .command('push')
   .description(
-    'Push journeys in the current directory to create monitors within the Kibana monitor management UI'
+    'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
   .requiredOption(
     '--auth <auth>',
     'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-  )
-  .option(
-    '--pattern <pattern>',
-    'RegExp file patterns to push inside current directory'
-  )
-  .option(
-    '--tags <name...>',
-    'push only journeys with a tag that matches the glob'
-  )
-  .option(
-    '--match <name>',
-    'push only journeys with a name or tag that matches the glob'
   )
   .option(
     '--schedule <time-in-minutes>',
@@ -184,13 +161,11 @@ program
       'default list of locations from which your monitors will run.'
     ).choices(SyntheticsLocations)
   )
-  .addOption(
-    new Option(
-      '--private-locations <locations...>',
-      'default list of private locations from which your monitors will run.'
-    )
+  .option(
+    '--private-locations <locations...>',
+    'default list of private locations from which your monitors will run.'
   )
-  .option('--url <url>', 'kibana URL to upload the monitors')
+  .option('--url <url>', 'Kibana URL to upload the monitors')
   .option(
     '--project <id>',
     'id that will be used for logically grouping monitors'
@@ -199,6 +174,11 @@ program
     '--space <space>',
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
+  .addOption(pattern)
+  .addOption(tags)
+  .addOption(match)
+  .addOption(params)
+  .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
     try {
       const settings = await loadSettings();
@@ -224,7 +204,6 @@ program
   .description('Initialize Elastic synthetics project')
   .action(async (dir = '') => {
     try {
-      console.log(dir);
       const generator = await new Generator(resolve(process.cwd(), dir));
       await generator.setup();
     } catch (e) {

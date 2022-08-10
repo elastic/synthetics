@@ -24,6 +24,7 @@
  */
 
 import merge from 'deepmerge';
+import { createOption } from 'commander';
 import { readConfig } from './config';
 import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
@@ -172,4 +173,39 @@ export function parseThrottling(value: string, prev?: string) {
     return throttling;
   }
   return JSON.parse(value || prev);
+}
+
+export function getCommonCommandOpts() {
+  const params = createOption(
+    '-p, --params <jsonstring>',
+    'JSON object that gets injected to all journeys'
+  );
+  params.argParser(JSON.parse);
+
+  const playwrightOpts = createOption(
+    '--playwright-options <jsonstring>',
+    'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file.'
+  );
+  playwrightOpts.argParser(JSON.parse);
+
+  const pattern = createOption(
+    '--pattern <pattern>',
+    'RegExp file patterns to search inside directory'
+  );
+  const tags = createOption(
+    '--tags <name...>',
+    'run only journeys with a tag that matches the glob'
+  );
+  const match = createOption(
+    '--match <name>',
+    'run only journeys with a name or tag that matches the glob'
+  );
+
+  return {
+    params,
+    playwrightOpts,
+    pattern,
+    tags,
+    match,
+  };
 }
