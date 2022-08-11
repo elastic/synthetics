@@ -68,7 +68,6 @@ describe('Monitors', () => {
         });
       }
     );
-
     const schema = await buildMonitorSchema([monitor]);
     const { statusCode, body } = await createMonitors(schema, {
       url: `${server.PREFIX}`,

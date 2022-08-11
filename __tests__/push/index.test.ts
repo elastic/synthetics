@@ -28,6 +28,7 @@ import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
+import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
 
 describe('Push', () => {
@@ -38,7 +39,7 @@ describe('Push', () => {
     const cli = new CLIMock()
       .args(['push', ...args])
       .run({ cwd: PROJECT_DIR, env: { ...process.env, ...env } });
-    expect(await cli.exitCode).toBe(1);
+    await cli.exitCode;
     return cli.stderr();
   }
 
@@ -128,8 +129,9 @@ describe('Push', () => {
       { locations: ['test-loc'], schedule: 2 }
     );
 
+    const dupJourney = join(PROJECT_DIR, 'duplicate.journey.ts');
     await writeFile(
-      join(PROJECT_DIR, 'duplicate.journey.ts'),
+      dupJourney,
       `import {journey, monitor} from '../../../src';
 journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
 journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
@@ -141,6 +143,7 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
     expect(output).toContain(`Aborted: Duplicate monitors found`);
     expect(output).toContain(`duplicate id`);
     expect(output).toContain(`duplicate name`);
+    await rm(dupJourney, { force: true });
   });
 
   it('format duplicate monitors', () => {
@@ -155,5 +158,63 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
       },
     ]);
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
+  });
+
+  describe('API', () => {
+    let server: Server;
+    beforeAll(async () => {
+      server = await Server.create();
+      server.route(
+        '/sync/s/dummy/api/synthetics/service/project/monitors',
+        (req, res) => {
+          res.end(JSON.stringify({ failedMonitors: [] }));
+        }
+      );
+      server.route(
+        '/stream/s/dummy/api/synthetics/service/project/monitors',
+        async (req, res) => {
+          res.write(JSON.stringify('chunk 1'));
+          await new Promise(r => setTimeout(r, 20));
+          // Interleaved
+          res.write(JSON.stringify('chunk 2') + '\n');
+          res.write(JSON.stringify('chunk 3') + '\n');
+          res.end(JSON.stringify({ failedMonitors: [] }));
+        }
+      );
+      await fakeProjectSetup(
+        {
+          project: 'test-project',
+          space: 'dummy',
+        },
+        { locations: ['test-loc'], schedule: 2 }
+      );
+
+      await writeFile(
+        join(PROJECT_DIR, 'test.journey.ts'),
+        `import {journey, monitor} from '../../../src/index';
+journey('journey 1', () => monitor.use({ id: 'j1' }));
+journey('journey 2', () => monitor.use({ id: 'j2' }));`
+      );
+    });
+    afterAll(async () => {
+      await server.close();
+    });
+
+    it('handle sync response', async () => {
+      const output = await runPush([
+        '--url',
+        server.PREFIX + '/sync',
+        ...DEFAULT_ARGS,
+      ]);
+      expect(output).toMatchSnapshot();
+    });
+    it('handle streamed response', async () => {
+      const output = await runPush([
+        '--url',
+        server.PREFIX + '/stream',
+        ...DEFAULT_ARGS,
+      ]);
+      expect(output).toMatchSnapshot();
+    });
   });
 });
