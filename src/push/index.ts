@@ -70,7 +70,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       const { error, message } = await body.json();
       throw formatAPIError(statusCode, error, message);
     }
-    body.on('data', async data => {
+    for await (const data of body) {
       const { failedMonitors, createdMonitors } = await JSON.parse(data);
       if (failedMonitors && failedMonitors.length > 0) {
         throw formatFailedMonitors(failedMonitors);
@@ -79,7 +79,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       } else {
         progress(JSON.parse(data));
       }
-    });
+    }
   } catch (e) {
     error(e);
   }
