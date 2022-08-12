@@ -329,11 +329,11 @@ export function safeNDJSONParse(chunks: string[]) {
   const lines = chunks.join('\n').split(/\r?\n/);
   return lines
     .filter(l => l.match(/\S/)) // remove blank lines
-    .map(data => {
+    .map(line => {
       try {
-        return JSON.parse(data);
+        return JSON.parse(line);
       } catch (e) {
-        throw `Error ${e} could not parse data '${data}'`;
+        throw `Error ${e} could not parse data '${line}'`;
       }
     });
 }
