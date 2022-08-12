@@ -45,6 +45,7 @@ import {
   aborted,
   indent,
   safeNDJSONParse,
+  done,
 } from '../helpers';
 import type { PushOptions } from '../common_types';
 
@@ -87,6 +88,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
         }
       }
     }
+    done('Pushed');
   } catch (e) {
     error(e);
   }
