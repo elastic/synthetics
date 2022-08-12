@@ -31,22 +31,8 @@ import {
   DEFAULT_THROTTLING_OPTIONS,
   getNetworkConditions,
   megabitsToBytes,
+  safeNDJSONParse,
 } from '../src/helpers';
-
-const safeParse = (chunks: string[]) => {
-  // chunks may not be at proper newline boundaries, so we make sure everything is split
-  // on proper newlines
-  const lines = chunks.join('\n').split(/\r?\n/);
-  return lines
-    .filter(l => l.match(/\S/)) // remove blank lines
-    .map(data => {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        throw `Error ${e} could not parse data '${data}'`;
-      }
-    });
-};
 
 describe('CLI', () => {
   let server: Server;
@@ -241,7 +227,7 @@ describe('CLI', () => {
     await cli.waitFor('journey/end');
     expect(await cli.exitCode).toBe(0);
 
-    const data = safeParse(cli.buffer());
+    const data = safeNDJSONParse(cli.buffer());
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );
@@ -266,7 +252,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const screenshots = safeParse(cli.buffer()).find(
+    const screenshots = safeNDJSONParse(cli.buffer()).find(
       ({ type }) => type === 'step/screenshot_ref'
     );
     expect(screenshots).not.toBeDefined();
@@ -283,7 +269,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const data = safeParse(cli.buffer());
+    const data = safeNDJSONParse(cli.buffer());
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );
@@ -311,13 +297,13 @@ describe('CLI', () => {
       return cli.output();
     };
 
-    let [output] = safeParse([await getJourneyStart()]);
+    let [output] = safeNDJSONParse([await getJourneyStart()]);
     expect(output.payload).toMatchObject({
       params: { url: 'non-dev' },
     });
 
     process.env['NODE_ENV'] = 'development';
-    [output] = safeParse([await getJourneyStart()]);
+    [output] = safeNDJSONParse([await getJourneyStart()]);
     expect(output.payload).toMatchObject({
       params: { url: 'dev' },
     });
@@ -352,7 +338,7 @@ describe('CLI', () => {
       ])
       .run();
     expect(await cli.exitCode).toBe(1);
-    const [output] = safeParse([cli.output()]);
+    const [output] = safeNDJSONParse([cli.output()]);
     expect(output.error).toMatchObject({
       name: 'TypeError',
       message: 'Cannot add property foo, object is not extensible',
@@ -425,7 +411,7 @@ describe('CLI', () => {
       const cli = new CLIMock().args(cliArgs).run();
       expect(await cli.exitCode).toBe(1);
 
-      const journeyEnd = safeParse(cli.buffer()).find(
+      const journeyEnd = safeNDJSONParse(cli.buffer()).find(
         ({ type }) => type === 'journey/end'
       );
 
@@ -440,7 +426,7 @@ describe('CLI', () => {
         .run();
       expect(await cli.exitCode).toBe(0);
 
-      const journeyEnd = safeParse(cli.buffer()).find(
+      const journeyEnd = safeNDJSONParse(cli.buffer()).find(
         ({ type }) => type === 'journey/end'
       );
 
@@ -460,7 +446,7 @@ describe('CLI', () => {
         .run();
       expect(await cli.exitCode).toBe(0);
 
-      const journeyEnd = safeParse(cli.buffer()).find(
+      const journeyEnd = safeNDJSONParse(cli.buffer()).find(
         ({ type }) => type === 'journey/end'
       );
 

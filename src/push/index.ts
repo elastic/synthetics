@@ -41,10 +41,10 @@ import {
   progress,
   write,
   error,
-  done,
   SYNTHETICS_PATH,
   aborted,
   indent,
+  safeNDJSONParse,
 } from '../helpers';
 import type { PushOptions } from '../common_types';
 
@@ -70,14 +70,21 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       const { error, message } = await body.json();
       throw formatAPIError(statusCode, error, message);
     }
+    body.setEncoding('utf-8');
     for await (const data of body) {
-      const { failedMonitors, createdMonitors } = await JSON.parse(data);
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      } else if (createdMonitors) {
-        done('Pushed');
-      } else {
-        progress(JSON.parse(data));
+      // Its kind of hacky for now where Kibana streams the response by
+      // writing the data as NDJSON events (data can be interleaved), we
+      // distinguish the final data by checking if the event was a progress vs complete event
+      const chunks = safeNDJSONParse(data);
+      for (const chunk of chunks) {
+        if (typeof chunk === 'string') {
+          progress(chunk);
+          continue;
+        }
+        const { failedMonitors } = chunk;
+        if (failedMonitors && failedMonitors.length > 0) {
+          throw formatFailedMonitors(failedMonitors);
+        }
       }
     }
   } catch (e) {
