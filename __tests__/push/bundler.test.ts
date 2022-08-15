@@ -24,15 +24,13 @@
  */
 
 import { createReadStream } from 'fs';
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, unlink, mkdir, rm } from 'fs/promises';
 import unzipper from 'unzipper';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
-const journeyFile = join(__dirname, '..', 'e2e', 'uptime.journey.ts');
-
-async function validateZip(content) {
+async function validateZip(content, file) {
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
@@ -45,24 +43,45 @@ async function validateZip(content) {
     files.push(entry.path);
   }
 
-  expect(files).toEqual(['__tests__/e2e/uptime.journey.ts']);
+  expect(files).toEqual(['__tests__/push/test-bundler/bundle.journey.ts']);
   await unlink(pathToZip);
 }
 
 describe('Bundler', () => {
+  const PROJECT_DIR = join(__dirname, 'test-bundler');
+  const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
+  const bundler = new Bundler();
+
+  beforeAll(async () => {
+    await mkdir(PROJECT_DIR, { recursive: true });
+    await writeFile(
+      journeyFile,
+      `import {journey, step, monitor} from '@elastic/synthetics';
+journey('journey 1', () => {
+  monitor.use({ id: 'duplicate id' })
+  step("step1", () => {})
+});`
+    );
+  });
+
+  afterAll(async () => {
+    await rm(PROJECT_DIR, { recursive: true });
+  });
+
   it('build journey', async () => {
-    const bundler = new Bundler();
     const content = await bundler.build(journeyFile, generateTempPath());
-    await validateZip(content);
+    await validateZip(content, journeyFile);
+  });
+
+  it('bundle should be idempotent', async () => {
+    const content1 = await bundler.build(journeyFile, generateTempPath());
+    const content2 = await bundler.build(journeyFile, generateTempPath());
+    expect(content1).toEqual(content2);
   });
 
   it('throw errors on incorrect path', async () => {
-    const bundler = new Bundler();
     try {
-      await bundler.build(
-        join(dirname(journeyFile), 'blah.ts'),
-        generateTempPath()
-      );
+      await bundler.build(join(PROJECT_DIR, 'blah.ts'), generateTempPath());
     } catch (e) {
       expect(e.message).toContain('ENOENT');
     }

@@ -65,12 +65,17 @@ export class Bundler {
       const archive = archiver('zip', {
         zlib: { level: 9 },
       });
-      archive.on('error', err => reject(err));
+      archive.on('error', reject);
       output.on('close', fulfill);
       archive.pipe(output);
       for (const [path, content] of this.moduleMap.entries()) {
         const relativePath = relativeToCwd(path);
-        archive.append(content, { name: relativePath });
+        // Date is fixed to Unix epoch so the file metadata is
+        // not modified everytime when files are bundled
+        archive.append(content, {
+          name: relativePath,
+          date: new Date('1970-01-01'),
+        });
       }
       archive.finalize();
     });
