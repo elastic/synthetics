@@ -30,7 +30,7 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
-async function validateZip(content, file) {
+async function validateZip(content) {
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
@@ -70,7 +70,7 @@ journey('journey 1', () => {
 
   it('build journey', async () => {
     const content = await bundler.build(journeyFile, generateTempPath());
-    await validateZip(content, journeyFile);
+    await validateZip(content);
   });
 
   it('bundle should be idempotent', async () => {
