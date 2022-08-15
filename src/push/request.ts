@@ -80,8 +80,8 @@ export function formatAPIError(
   return outer;
 }
 
-export function formatFailedMonitors(errors: APIMonitorError[]) {
-  let outer = bold(`${symbols['failed']} Error\n`);
+function formatMonitorError(errors: APIMonitorError[]) {
+  let outer = '';
   for (const error of errors) {
     const monitorId = error.id ? `: monitor(${error.id})` : '';
     let inner = bold(`> ${error.reason}${monitorId}\n`);
@@ -90,4 +90,14 @@ export function formatFailedMonitors(errors: APIMonitorError[]) {
     outer += '\n';
   }
   return outer;
+}
+
+export function formatFailedMonitors(errors: APIMonitorError[]) {
+  const heading = bold(`${symbols['failed']} Error\n`);
+  return heading + formatMonitorError(errors);
+}
+
+export function formatStaleMonitors(errors: APIMonitorError[]) {
+  const heading = bold(`${symbols['warning']} Warnings\n`);
+  return heading + formatMonitorError(errors);
 }

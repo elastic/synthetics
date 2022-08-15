@@ -30,6 +30,7 @@ import {
   formatAPIError,
   formatFailedMonitors,
   formatNotFoundError,
+  formatStaleMonitors,
 } from '../../src/push/request';
 
 describe('Push api request', () => {
@@ -63,5 +64,22 @@ describe('Push api request', () => {
     ];
 
     expect(formatFailedMonitors(errors)).toMatchSnapshot();
+  });
+
+  it('format failed stale monitors', () => {
+    const errors: APIMonitorError[] = [
+      {
+        id: 'monitor-1',
+        reason: 'Failed to delete monitor.',
+        details: `downstream erorr`,
+      },
+      {
+        id: 'monitor-2',
+        reason: 'Failed to delete monitor.',
+        details: `downstream erorr`,
+      },
+    ];
+
+    expect(formatStaleMonitors(errors)).toMatchSnapshot();
   });
 });

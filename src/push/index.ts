@@ -27,12 +27,13 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold } from 'kleur/colors';
+import { bold, yellow } from 'kleur/colors';
 import {
   ok,
   formatAPIError,
   formatFailedMonitors,
   formatNotFoundError,
+  formatStaleMonitors,
 } from './request';
 import { buildMonitorSchema, createMonitors } from './monitor';
 import { ProjectSettings } from '../generator';
@@ -82,9 +83,12 @@ export async function push(monitors: Monitor[], options: PushOptions) {
           progress(chunk);
           continue;
         }
-        const { failedMonitors } = chunk;
+        const { failedMonitors, failedStaleMonitors } = chunk;
         if (failedMonitors && failedMonitors.length > 0) {
           throw formatFailedMonitors(failedMonitors);
+        }
+        if (failedStaleMonitors.length > 0) {
+          write(yellow(formatStaleMonitors(failedStaleMonitors)));
         }
       }
     }
