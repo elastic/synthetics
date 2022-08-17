@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bundler build journey 1`] = `
+"nullvar __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === \\"object\\" || typeof from === \\"function\\") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, \\"default\\", { value: mod, enumerable: true }) : target, mod));
+
+// node_modules/is-positive/index.js
+var require_is_positive = __commonJS({
+  \\"node_modules/is-positive/index.js\\"(exports, module) {
+    \\"use strict\\";
+    module.exports = function(n) {
+      return toString.call(n) === \\"[object Number]\\" && n > 0;
+    };
+  }
+});
+
+// asset:/Users/lucasfcosta/Repositories/synthetics/__tests__/push/test-bundler/bundle.journey.ts
+var import_is_positive = __toESM(require_is_positive());
+import { journey, step, monitor } from \\"@elastic/synthetics\\";
+journey(\\"journey 1\\", () => {
+  monitor.use({ id: \\"duplicate id\\" });
+  step(\\"step1\\", () => {
+    (0, import_is_positive.default)(-1);
+  });
+});
+"
+`;

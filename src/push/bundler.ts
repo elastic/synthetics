@@ -27,6 +27,7 @@ import path from 'path';
 import { unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
+import NodeResolve from '@esbuild-plugins/node-resolve';
 import archiver from 'archiver';
 import { commonOptions, MultiAssetPlugin, PluginData } from './plugin';
 
@@ -49,7 +50,12 @@ export class Bundler {
         entryPoints: {
           [absPath]: absPath,
         },
-        plugins: [MultiAssetPlugin(addToMap)],
+        plugins: [
+          MultiAssetPlugin(addToMap),
+          NodeResolve({
+            extensions: ['.ts', '.js'],
+          }),
+        ],
       },
     };
     const result = await esbuild.build(options);

@@ -30,26 +30,43 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
+const PROJECT_DIR = join(__dirname, 'test-bundler');
+const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
+
 async function validateZip(content) {
+  const partialPath = join(
+    '__tests__',
+    'push',
+    'test-bundler',
+    'bundle.journey.ts'
+  );
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
 
   const files = [];
+
   const entries = createReadStream(pathToZip).pipe(
     unzipper.Parse({ forceStream: true })
   );
+
+  let targetFileContent = null;
   for await (const entry of entries) {
     files.push(entry.path);
+
+    if (entry.path === partialPath) {
+      entry.on('data', d => (targetFileContent += d));
+    }
   }
 
-  expect(files).toEqual(['__tests__/push/test-bundler/bundle.journey.ts']);
+  console.log(partialPath);
+  expect(files).toEqual([partialPath]);
+  expect(targetFileContent).toMatchSnapshot();
+
   await unlink(pathToZip);
 }
 
 describe('Bundler', () => {
-  const PROJECT_DIR = join(__dirname, 'test-bundler');
-  const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
   const bundler = new Bundler();
 
   beforeAll(async () => {
@@ -57,9 +74,13 @@ describe('Bundler', () => {
     await writeFile(
       journeyFile,
       `import {journey, step, monitor} from '@elastic/synthetics';
+import isPositive from 'is-positive';
+
 journey('journey 1', () => {
   monitor.use({ id: 'duplicate id' })
-  step("step1", () => {})
+  step("step1", () => {
+    isPositive(-1);
+  })
 });`
     );
   });
