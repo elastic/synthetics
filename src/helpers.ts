@@ -321,6 +321,23 @@ export function wrapFnWithLocation<A extends unknown[], R>(
   };
 }
 
+// Safely parse ND JSON (Newline delimitted JSON) chunks
+export function safeNDJSONParse(chunks: string[]) {
+  // chunks may not be at proper newline boundaries, so we make sure everything is split
+  // on proper newlines
+  chunks = Array.isArray(chunks) ? chunks : [chunks];
+  const lines = chunks.join('\n').split(/\r?\n/);
+  return lines
+    .filter(l => l.match(/\S/)) // remove blank lines
+    .map(line => {
+      try {
+        return JSON.parse(line);
+      } catch (e) {
+        throw `Error ${e} could not parse data '${line}'`;
+      }
+    });
+}
+
 // Console helpers
 export function write(message: string) {
   process.stderr.write(message + '\n');

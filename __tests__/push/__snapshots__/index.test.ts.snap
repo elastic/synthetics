@@ -1,5 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Push API handle streamed response 1`] = `
+"> preparing all monitors
+> creating all monitors
+> chunk 1
+> chunk 2
+> chunk 3
+✓ Pushed
+"
+`;
+
+exports[`Push API handle sync response 1`] = `
+"> preparing all monitors
+> creating all monitors
+✓ Pushed
+"
+`;
+
 exports[`Push abort on push with different project id 1`] = `
 "⚠ Push command Aborted
 "
