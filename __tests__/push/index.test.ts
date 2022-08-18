@@ -164,10 +164,11 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
     let server: Server;
     beforeAll(async () => {
       server = await Server.create();
+      const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
       server.route(
         '/sync/s/dummy/api/synthetics/service/project/monitors',
         (req, res) => {
-          res.end(JSON.stringify({ failedMonitors: [] }));
+          res.end(JSON.stringify(apiRes));
         }
       );
       server.route(
@@ -178,7 +179,7 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
           // Interleaved
           res.write(JSON.stringify('chunk 2') + '\n');
           res.write(JSON.stringify('chunk 3') + '\n');
-          res.end(JSON.stringify({ failedMonitors: [] }));
+          res.end(JSON.stringify(apiRes));
         }
       );
       await fakeProjectSetup(
