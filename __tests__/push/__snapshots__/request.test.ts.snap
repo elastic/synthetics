@@ -18,3 +18,14 @@ exports[`Push api request format failed monitors 1`] = `
 
 "
 `;
+
+exports[`Push api request format failed stale monitors 1`] = `
+"⚠ Warnings
+   > Failed to delete monitor.: monitor(monitor-1)
+       downstream erorr
+
+   > Failed to delete monitor.: monitor(monitor-2)
+       downstream erorr
+
+"
+`;
