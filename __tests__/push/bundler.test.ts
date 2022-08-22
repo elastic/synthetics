@@ -59,9 +59,10 @@ async function validateZip(content) {
     }
   }
 
-  console.log(partialPath);
   expect(files).toEqual([partialPath]);
-  expect(targetFileContent).toMatchSnapshot();
+
+  expect(targetFileContent).toContain('__toESM');
+  expect(targetFileContent).toContain('node_modules/is-positive/index.js');
 
   await unlink(pathToZip);
 }
