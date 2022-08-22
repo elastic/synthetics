@@ -48,6 +48,7 @@ describe('Plugin', () => {
         MultiAssetPlugin(callback),
         NodeResolve({
           extensions: ['.ts', '.js'],
+          resolveOptions: { basedir: E2E_DIR },
         }),
       ],
     });
