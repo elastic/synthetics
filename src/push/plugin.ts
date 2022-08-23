@@ -27,10 +27,11 @@ import path from 'path';
 import fs from 'fs/promises';
 import * as esbuild from 'esbuild';
 
-const sourceSyntheticsPath = path.resolve(`${__dirname}/../..`);
+const sourceSyntheticsPath = path.join(path.resolve(`${__dirname}/../..`), '/');
 const sourceNodeModules = path.join(
   path.resolve(`${__dirname}/../..`),
-  'node_modules'
+  'node_modules',
+  '/'
 );
 
 export function commonOptions(): esbuild.BuildOptions {
@@ -96,7 +97,11 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
           };
         }
 
-        if (!isBare(args.path) || isLocalSyntheticsModule(args.importer)) {
+        if (
+          !isBare(args.path) ||
+          args.importer.includes('/node_modules/') ||
+          isLocalSyntheticsModule(args.importer)
+        ) {
           return;
         }
 
