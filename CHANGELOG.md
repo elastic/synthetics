@@ -5,15 +5,79 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta.32 (2022-08-24)
+
+### Features
+
+- Improve the scaffolding experience of `init` command by setting up a brand new
+  synthetics project by automatically connecting to your Kibana instance. With
+  this, creating synthetics monitors and pushing them to Kibana becomes a lot
+  easier #566
+
+```sh
+npx @elastic/synthetics init [project]
+
+cd <project> && SYNTHETICS_API_KEY=<api-key> npm run push
+```
+
+Setting up the project is a one time operation, Once the init command is done,
+Synthetics agent stores the project releated settings under `project.json` file.
+From then, users can push all the synthetics monitors by specifying just the
+authentication key. If users want to push the monitors under different Kibana
+instance, project, spaces etc. They can do so by passing the CLI options
+explicitly.
+
+```sh
+npx @elastic/synthetics --url <url> --project <name> --space <kibana-spaces>
+```
+
+- Introduce a new CLI command `locations` to list all the available public
+  and private locations for running synthetic monitoring across the globe #571
+
+```sh
+// List all the available global locations managed by Elastic for
+// running synthetics monitors
+npx @elastic/synthetics locations
+
+
+// List all managed locations as well as custom private locations
+npx @elastic/synthetics locations --url <kibana-host> --auth <api-key>
+```
+
+- Warns when users accidently trying to push same sets of monitors
+  under different project name #566
+- Push command now can display progress in the terminal whenever monitors are
+  created, updated and deleted along with errors #576
+
+### Bug Fixes
+
+- Report error when monitors with duplicate ids are pushed to Kibana #568
+- Allow CLI sub commands(push, locations, init) to receive common options #572
+- Bundled push monitor contents must be idempotent, this caused performance
+  issues in the Kibana side when monitors were updated everytime user ran the
+  push command #579
+- Report warnings in the terminal when Kibana fails to delete stale monitors #565
+
+## v1.0.0-beta.31 (2022-07-27)
+
+### Features
+
+- Expose request context as part of the Journey if you want to make calls to the
+  HTTP API of your application #555
+
+### Bug Fixes
+
+- Push command fails to push the monitors in windows platform #553
+
 ## v1.0.0-beta.30 (2022-06-28)
 
-## Bug fixes
+### Bug fixes
 
 - Use fixed playwright version to avoid running in to dependency issues #540
 
 ## v1.0.0-beta.29 (2022-06-21)
 
-## Bug fixes
+### Bug fixes
 
 - Setup github workflow template correctly #529
 - Stop pushing monitors on bundle errors #530
