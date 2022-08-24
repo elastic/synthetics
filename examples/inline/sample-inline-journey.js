@@ -3,14 +3,14 @@ step('Go to home page', async () => {
 });
 
 step('Go to login page', async () => {
-  await page.click('#navbarSupportedContent > ul > li:nth-child(2) > a');
+  await page.locator('text=Login').click();
 });
 
 step('Enter username and password', async () => {
-  await page.fill('input[data-test-id=login-username]', 'hamid');
+  await page.fill('input[data-test-id=login-username]', 'test-username');
   await page.fill('input[data-test-id=login-password]', 'test-pass');
 });
 
 step('submit form', async () => {
-  await (await page.$('form')).evaluate(form => form.submit());
+  await (await page.locator('form')).evaluate(form => form.submit());
 });

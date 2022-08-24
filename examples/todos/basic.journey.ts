@@ -6,7 +6,7 @@ journey('check if title is present', ({ page, params }) => {
   });
 
   step('assert title', async () => {
-    const header = await page.$('h1');
+    const header = await page.locator('h1');
     expect(await header.textContent()).toBe('todos');
   });
 });
@@ -17,7 +17,7 @@ journey('check if input placeholder is correct', ({ page, params }) => {
   });
 
   step('assert placeholder value', async () => {
-    const input = await page.$('input.new-todo');
+    const input = await page.locator('input.new-todo');
     expect(await input.getAttribute('placeholder')).toBe(
       'What needs to be done?'
     );

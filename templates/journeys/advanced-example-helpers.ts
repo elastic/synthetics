@@ -12,7 +12,7 @@ export const loadAppStep = (page: Page, url: string) => {
 
 export const addTaskStep = (page: Page, task: string) => {
   step(`add task ${task}`, async () => {
-    const input = await page.$('input.new-todo');
+    const input = await page.locator('input.new-todo');
     await input.type(task);
     await input.press('Enter');
   });
@@ -21,12 +21,13 @@ export const addTaskStep = (page: Page, task: string) => {
 const todosSelector = 'ul.todo-list li.todo';
 
 export const findTask = async (page: Page, task: string) => {
-  return await page.waitForSelector(`${todosSelector} >> text="${task}"`);
+  return await page.locator(`${todosSelector} >> text="${task}"`);
 };
 
-export const assertTaskListSizeStep = async (page: Page, size: number) => {
-  step(`check that task list has exactly ${size} elements`, async () => {
-    expect((await page.$$(todosSelector)).length).toBe(size);
+export const assertTaskListCountStep = async (page: Page, count: number) => {
+  step(`check that task list has exactly ${count} elements`, async () => {
+    const tasks = await page.locator(todosSelector);
+    expect(await tasks.count()).toBe(count);
   });
 };
 
@@ -40,14 +41,13 @@ export const destroyTaskStep = async (page: Page, task: string) => {
   step(`destroy task '${task}'`, async () => {
     const label = await findTask(page, task);
     // xpath indexes arrays starting at 1!!! Easy to forget!
-    const li = await label.$('xpath=ancestor::li[1]');
-    const destroyButton = await li.$('button');
-
+    const li = await label.locator('xpath=ancestor::li[1]');
+    const destroyButton = await li.locator('button');
     // The destroy button is not visible until hovered. Setup a click test which
     // will wait up to 30s for the button to be visible.
     const clickFuture = destroyButton.click();
     // now hover, making the destroy button clickable
-    li.hover();
+    await li.hover();
     // now we are done
     await clickFuture;
   });
