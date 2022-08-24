@@ -12,7 +12,7 @@ journey('My Example Journey', ({ page, params }) => {
   });
 
   step('assert title', async () => {
-    const header = await page.$('h1');
+    const header = await page.locator('h1');
     expect(await header.textContent()).toBe('todos');
   });
 });

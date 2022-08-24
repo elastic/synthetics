@@ -2,7 +2,7 @@ import { journey } from '@elastic/synthetics';
 import {
   loadAppStep,
   addTaskStep,
-  assertTaskListSizeStep,
+  assertTaskListCountStep,
   checkForTaskStep,
   destroyTaskStep,
 } from './advanced-example-helpers';
@@ -17,10 +17,10 @@ journey('addition and completion of single task', ({ page, params }) => {
 
   loadAppStep(page, params.url);
   addTaskStep(page, testText);
-  assertTaskListSizeStep(page, 1);
+  assertTaskListCountStep(page, 1);
   checkForTaskStep(page, testText);
   destroyTaskStep(page, testText);
-  assertTaskListSizeStep(page, 0);
+  assertTaskListCountStep(page, 0);
 });
 
 journey('adding and removing multiple tasks', ({ page, params }) => {
@@ -31,13 +31,13 @@ journey('adding and removing multiple tasks', ({ page, params }) => {
     addTaskStep(page, t);
   });
 
-  assertTaskListSizeStep(page, 3);
+  assertTaskListCountStep(page, 3);
 
   // remove the middle task and check that it worked
   destroyTaskStep(page, testTasks[1]);
-  assertTaskListSizeStep(page, 2);
+  assertTaskListCountStep(page, 2);
 
   // add a new task and check it exists
   addTaskStep(page, 'Task 4');
-  assertTaskListSizeStep(page, 3);
+  assertTaskListCountStep(page, 3);
 });
