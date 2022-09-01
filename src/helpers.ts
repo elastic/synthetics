@@ -23,7 +23,7 @@
  *
  */
 
-import { red, green, yellow, cyan, bold, black, grey } from 'kleur/colors';
+import { red, green, yellow, cyan, bold, grey } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
 import fs from 'fs';
