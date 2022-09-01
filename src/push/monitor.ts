@@ -38,7 +38,7 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   filter: Monitor['filter'];
 };
 
-type APISchema = {
+export type APISchema = {
   project: string;
   keep_stale: boolean;
   monitors: MonitorSchema[];
@@ -78,7 +78,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
 export async function createMonitors(
   monitors: MonitorSchema[],
   options: PushOptions,
-  keepStale: boolean,
+  keepStale: boolean
 ) {
   const schema: APISchema = {
     project: options.project,

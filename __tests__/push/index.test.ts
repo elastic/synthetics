@@ -28,6 +28,7 @@ import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
+import { APISchema } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
 
@@ -174,12 +175,14 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
       server.route(
         '/stream/s/dummy/api/synthetics/service/project/monitors',
         async (req, res) => {
-          res.write(JSON.stringify('chunk 1'));
           await new Promise(r => setTimeout(r, 20));
-          // Interleaved
-          res.write(JSON.stringify('chunk 2') + '\n');
-          res.write(JSON.stringify('chunk 3') + '\n');
-          res.end(JSON.stringify(apiRes));
+          req.on('data', chunks => {
+            const schema = JSON.parse(chunks.toString()) as APISchema;
+            res.write(JSON.stringify(schema.monitors[0].name) + '\n');
+          });
+          req.on('end', () => {
+            res.end(JSON.stringify(apiRes));
+          });
         }
       );
       await fakeProjectSetup(

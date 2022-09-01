@@ -40,6 +40,7 @@ import { ProjectSettings } from '../generator';
 import { Monitor } from '../dsl/monitor';
 import {
   progress,
+  apiProgress,
   write,
   error,
   SYNTHETICS_PATH,
@@ -66,8 +67,8 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   for (const schema of schemas) {
     await pushMonitors({ schemas: [schema], keepStale: true, options });
   }
-  
-  progress(`deleting stale monitors and reporting summary:\n`);
+
+  progress(`deleting all stale monitors`);
   await pushMonitors({ schemas, keepStale: false, options });
   done('Pushed');
 }
@@ -79,10 +80,14 @@ export async function pushMonitors({
 }: {
   schemas: MonitorSchema[];
   keepStale: boolean;
-  options: PushOptions
+  options: PushOptions;
 }) {
   try {
-    const { body, statusCode } = await createMonitors(schemas, options, keepStale);
+    const { body, statusCode } = await createMonitors(
+      schemas,
+      options,
+      keepStale
+    );
     if (statusCode === 404) {
       throw formatNotFoundError(await body.text());
     }
@@ -98,7 +103,9 @@ export async function pushMonitors({
       const chunks = safeNDJSONParse(data);
       for (const chunk of chunks) {
         if (typeof chunk === 'string') {
-          progress(chunk);
+          // TODO: add progress back for all states once we get the fix
+          // on kibana side
+          keepStale && apiProgress(chunk);
           continue;
         }
         const { failedMonitors, failedStaleMonitors } = chunk;

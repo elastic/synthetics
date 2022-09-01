@@ -3,9 +3,9 @@
 exports[`Push API handle streamed response 1`] = `
 "> preparing all monitors
 > creating all monitors
-> chunk 1
-> chunk 2
-> chunk 3
+> journey 1
+> journey 2
+> deleting all stale monitors
 ✓ Pushed
 "
 `;
@@ -13,6 +13,7 @@ exports[`Push API handle streamed response 1`] = `
 exports[`Push API handle sync response 1`] = `
 "> preparing all monitors
 > creating all monitors
+> deleting all stale monitors
 ✓ Pushed
 "
 `;
