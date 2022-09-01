@@ -35,7 +35,7 @@ import {
   formatNotFoundError,
   formatStaleMonitors,
 } from './request';
-import { buildMonitorSchema, createMonitors } from './monitor';
+import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
 import { ProjectSettings } from '../generator';
 import { Monitor } from '../dsl/monitor';
 import {
@@ -54,7 +54,6 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   if (monitors.length === 0) {
     throw 'No Monitors found';
   }
-
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
@@ -62,9 +61,28 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
   progress(`preparing all monitors`);
   const schemas = await buildMonitorSchema(monitors);
+
+  progress(`creating all monitors`);
+  for (const schema of schemas) {
+    await pushMonitors({ schemas: [schema], keepStale: true, options });
+  }
+  
+  progress(`deleting stale monitors and reporting summary:\n`);
+  await pushMonitors({ schemas, keepStale: false, options });
+  done('Pushed');
+}
+
+export async function pushMonitors({
+  schemas,
+  keepStale,
+  options,
+}: {
+  schemas: MonitorSchema[];
+  keepStale: boolean;
+  options: PushOptions
+}) {
   try {
-    progress(`creating all monitors`);
-    const { body, statusCode } = await createMonitors(schemas, options);
+    const { body, statusCode } = await createMonitors(schemas, options, keepStale);
     if (statusCode === 404) {
       throw formatNotFoundError(await body.text());
     }
@@ -92,7 +110,6 @@ export async function push(monitors: Monitor[], options: PushOptions) {
         }
       }
     }
-    done('Pushed');
   } catch (e) {
     error(e);
   }
