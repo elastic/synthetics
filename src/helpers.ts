@@ -23,7 +23,7 @@
  *
  */
 
-import { red, green, yellow, cyan, bold } from 'kleur/colors';
+import { red, green, yellow, cyan, bold, grey } from 'kleur/colors';
 import os from 'os';
 import { resolve, join, dirname } from 'path';
 import fs from 'fs';
@@ -345,6 +345,10 @@ export function write(message: string) {
 
 export function progress(message: string) {
   write(cyan(bold(`${symbols.progress} ${message}`)));
+}
+
+export function apiProgress(message: string) {
+  write(grey(`> ${message}`));
 }
 
 export function error(message: string) {

@@ -47,6 +47,7 @@ export async function sendRequest(options: APIRequestOptions) {
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',
     },
+    headersTimeout: 60 * 1000
   });
 }
 
