@@ -69,12 +69,16 @@ describe('Monitors', () => {
       }
     );
     const schema = await buildMonitorSchema([monitor]);
-    const { statusCode, body } = await createMonitors(schema, {
-      url: `${server.PREFIX}`,
-      auth: 'apiKey',
-      project: 'blah',
-      space: 'dummy',
-    });
+    const { statusCode, body } = await createMonitors(
+      schema,
+      {
+        url: `${server.PREFIX}`,
+        auth: 'apiKey',
+        project: 'blah',
+        space: 'dummy',
+      },
+      false
+    );
 
     expect(statusCode).toBe(200);
     expect(await body.json()).toEqual({
