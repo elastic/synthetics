@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta.33 (2022-09-06)
+
+- Issue individual requests when pushing monitors to Kibana. This is to avoid
+  timeout issues when monitors are pushed without streaming support #586
+
 ## v1.0.0-beta.32 (2022-08-24)
 
 ### Features
