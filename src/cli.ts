@@ -72,7 +72,7 @@ program
   .addOption(match)
   .addOption(params)
   .addOption(
-    new Option('--reporter <value>', `output repoter format`).choices(
+    new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)
     )
   )
@@ -146,16 +146,20 @@ program
     }
   });
 
+const requiredAuthOption = new Option(
+  '--auth <auth>',
+  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+).env('SYNTHETICS_API_KEY');
+
+requiredAuthOption.mandatory = true;
+
 // Push command
 program
   .command('push')
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .requiredOption(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-  )
+  .addOption(requiredAuthOption)
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
