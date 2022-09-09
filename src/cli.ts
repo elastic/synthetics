@@ -72,7 +72,7 @@ program
   .addOption(match)
   .addOption(params)
   .addOption(
-    new Option('--reporter <value>', `output repoter format`).choices(
+    new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)
     )
   )
@@ -152,9 +152,13 @@ program
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .requiredOption(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+  .addOption(
+    new Option(
+      '--auth <auth>',
+      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+    )
+      .env('SYNTHETICS_API_KEY')
+      .makeOptionMandatory(true)
   )
   .option(
     '--schedule <time-in-minutes>',
