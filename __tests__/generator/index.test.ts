@@ -27,11 +27,7 @@ import { existsSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { CLIMock } from '../utils/test-config';
-import {
-  REGULAR_FILES_PATH,
-  CONFIG_PATH,
-  SETTINGS_PATH,
-} from '../../src/generator';
+import { REGULAR_FILES_PATH, CONFIG_PATH } from '../../src/generator';
 
 describe('Generator', () => {
   const scaffoldDir = join(__dirname, 'scaffold-test');
@@ -66,9 +62,6 @@ describe('Generator', () => {
     if (exitCode !== 0) {
       expect(output).toBe('');
     }
-
-    // Project setup file
-    expect(existsSync(join(scaffoldDir, SETTINGS_PATH))).toBeTruthy();
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();

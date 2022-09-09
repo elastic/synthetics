@@ -66,9 +66,11 @@ describe('Push', () => {
     expect(output).toContain(`required option '--auth <auth>' not specified`);
   });
 
-  it.skip('error when project is not setup', async () => {
+  it('error when project is not setup', async () => {
     const output = await runPush();
-    expect(output).toContain('Aborted. Synthetics project not set up');
+    expect(output).toContain(
+      'Aborted (missing synthetics config file), Project not set up corrrectly.'
+    );
   });
 
   it('error on empty project id', async () => {

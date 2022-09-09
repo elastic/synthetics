@@ -26,7 +26,9 @@ exports[`Push abort on push with different project id 1`] = `
 exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 
-Set project id via CLI as \`--id <id>\`
+Set project id via
+  - CLI '--id <id>'
+  - Config file 'project.id' field
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "
@@ -36,8 +38,8 @@ exports[`Push error on invalid location 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set default location for all monitors via
-  - CLI as '--locations <values...> or --privateLocations <values...>'
-  - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
+  - CLI '--locations <values...> or --privateLocations <values...>'
+  - Config file 'monitors.locations' | 'monitors.privateLocations' field
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "
@@ -47,8 +49,8 @@ exports[`Push error on invalid schedule 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set default schedule in minutes for all monitors via
-  - CLI as '--schedule <mins>'
-  - Synthetics config file 'monitors.schedule' field
+  - CLI '--schedule <mins>'
+  - Config file 'monitors.schedule' field
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "

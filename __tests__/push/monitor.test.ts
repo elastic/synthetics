@@ -74,7 +74,7 @@ describe('Monitors', () => {
       {
         url: `${server.PREFIX}`,
         auth: 'apiKey',
-        project: 'blah',
+        id: 'blah',
         space: 'dummy',
       },
       false

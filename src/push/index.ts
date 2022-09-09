@@ -149,10 +149,14 @@ const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project 
 
 export async function loadSettings() {
   try {
-    const config = await readConfig('');
-    return config.project || { space: '', id: '', url: '' };
+    const config = await readConfig('asd');
+    // Missing config file, fake throw to capture as missing file
+    if (Object.keys(config).length === 0) {
+      throw '';
+    }
+    return config.project || ({} as ProjectSettings);
   } catch (e) {
-    throw error(`Aborted. Synthetics project not set up corrrectly.
+    throw error(`Aborted (missing synthetics config file), Project not set up corrrectly.
 
 ${INSTALLATION_HELP}`);
   }
@@ -163,15 +167,17 @@ export function validateSettings(opts: PushOptions) {
 
   let reason = '';
   if (!opts.id) {
-    reason = 'Set project id via CLI as `--id <id>`';
+    reason = `Set project id via
+  - CLI '--id <id>'
+  - Config file 'project.id' field`;
   } else if (!opts.locations && !opts.privateLocations) {
     reason = `Set default location for all monitors via
-  - CLI as '--locations <values...> or --privateLocations <values...>'
-  - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field`;
+  - CLI '--locations <values...> or --privateLocations <values...>'
+  - Config file 'monitors.locations' | 'monitors.privateLocations' field`;
   } else if (!opts.schedule) {
     reason = `Set default schedule in minutes for all monitors via
-  - CLI as '--schedule <mins>'
-  - Synthetics config file 'monitors.schedule' field`;
+  - CLI '--schedule <mins>'
+  - Config file 'monitors.schedule' field`;
   }
 
   if (!reason) return;
