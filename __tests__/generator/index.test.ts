@@ -53,6 +53,9 @@ describe('Generator', () => {
           locations: ['us_east'],
           privateLocations: ['custom'],
           schedule: 30,
+          id: 'test',
+          space: 'kbn',
+          url: 'foo:bar',
         }),
       },
     });
@@ -80,11 +83,14 @@ describe('Generator', () => {
       expect(existsSync(join(scaffoldDir, fn))).toBeTruthy();
     });
     expect(existsSync(join(scaffoldDir, CONFIG_PATH))).toBeTruthy();
-    // Verify schedule and locations
+    // Verify project and monitor settings
     const configFile = await readFile(join(scaffoldDir, CONFIG_PATH), 'utf-8');
     expect(configFile).toContain(`locations: ['us_east']`);
     expect(configFile).toContain(`privateLocations: ['custom']`);
     expect(configFile).toContain(`schedule: 30`);
+    expect(configFile).toContain(`id: 'test'`);
+    expect(configFile).toContain(`url: 'foo:bar'`);
+    expect(configFile).toContain(`space: 'kbn'`);
 
     // Verify stdout
     const stderr = cli.stderr();
