@@ -92,6 +92,7 @@ export class Journey {
     this.monitor = new Monitor({
       name: this.name,
       id: this.id,
+      type: 'browser',
       tags: this.tags ?? [],
       ...config,
     });

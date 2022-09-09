@@ -26,6 +26,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold } from 'kleur/colors';
+import yaml from 'yaml';
 import {
   ok,
   formatAPIError,
@@ -44,6 +45,7 @@ import {
   indent,
   safeNDJSONParse,
   done,
+  totalist,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -86,6 +88,39 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   await pushMonitors({ schemas, keepStale: false, options });
 
   done('Pushed');
+}
+
+export async function createLightweightMonitors(options: PushOptions) {
+  const lwFiles = new Set<string>();
+  await totalist(process.cwd(), (rel, abs) => {
+    if (/.(yml|yaml)$/.test(rel)) {
+      lwFiles.add(abs);
+    }
+  });
+
+  const monitors: Monitor[] = [];
+  for (const file of lwFiles.values()) {
+    const content = await readFile(file, 'utf-8');
+    const parsedYml = yaml.parseDocument(content);
+    // Skip other yml files that are not relevant
+    if (!parsedYml.has('heartbeat.monitors')) {
+      continue;
+    }
+    const lwMonitors = parsedYml.toJSON()['heartbeat.monitors'];
+    for (const lwMonitor of lwMonitors) {
+      // TODO - Parse the CRON schedule
+      const mon = new Monitor({
+        schedule: options.schedule,
+        locations: options.locations,
+        privateLocations: options.privateLocations,
+        ...lwMonitor,
+      });
+      // TODO: fix line and column no which helps in finding duplicates
+      mon.setSource({ file, line: 1, column: 1 });
+      monitors.push(mon);
+    }
+  }
+  return monitors;
 }
 
 export async function pushMonitors({

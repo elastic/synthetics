@@ -41,6 +41,7 @@ export const SyntheticsLocations = Object.keys(
 export type MonitorConfig = {
   id?: string;
   name?: string;
+  type?: string;
   tags?: string[];
   schedule?: number;
   enabled?: boolean;
@@ -71,6 +72,10 @@ export class Monitor {
         return [...new Set(source)];
       },
     });
+  }
+
+  get type() {
+    return this.config.type;
   }
 
   setSource(source: Location) {

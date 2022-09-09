@@ -60,9 +60,12 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
   const schemas: MonitorSchema[] = [];
 
   for (const monitor of monitors) {
-    const { source, config, filter } = monitor;
-    const outPath = join(bundlePath, config.name + '.zip');
-    const content = await bundler.build(source.file, outPath);
+    const { source, config, filter, type } = monitor;
+    let content = '';
+    if (type === 'browser') {
+      const outPath = join(bundlePath, config.name + '.zip');
+      content = await bundler.build(source.file, outPath);
+    }
     schemas.push({
       ...config,
       content,
