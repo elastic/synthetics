@@ -146,20 +146,20 @@ program
     }
   });
 
-const requiredAuthOption = new Option(
-  '--auth <auth>',
-  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-).env('SYNTHETICS_API_KEY');
-
-requiredAuthOption.mandatory = true;
-
 // Push command
 program
   .command('push')
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .addOption(requiredAuthOption)
+  .addOption(
+    new Option(
+      '--auth <auth>',
+      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+    )
+      .env('SYNTHETICS_API_KEY')
+      .makeOptionMandatory(true)
+  )
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",

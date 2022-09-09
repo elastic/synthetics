@@ -261,7 +261,7 @@ export class Generator {
     pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
 
     // Add push command
-    pkgJSON.scripts.push = `npx @elastic/synthetics push --auth $SYNTHETICS_API_KEY`;
+    pkgJSON.scripts.push = 'npx @elastic/synthetics push';
 
     await this.createFile(
       filename,
