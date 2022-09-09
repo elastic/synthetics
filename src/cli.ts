@@ -177,8 +177,8 @@ program
   )
   .option('--url <url>', 'Kibana URL to upload the monitors')
   .option(
-    '--project <id>',
-    'id that will be used for logically grouping monitors'
+    '--id <id>',
+    'project id that will be used for logically grouping monitors'
   )
   .option(
     '--space <space>',
@@ -191,8 +191,8 @@ program
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
     try {
-      const settings = await loadSettings();
       await loadTestFiles({ inline: false }, [cwd()]);
+      const settings = await loadSettings();
       const options = normalizeOptions({
         ...program.opts(),
         ...settings,

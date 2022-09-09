@@ -81,7 +81,7 @@ export async function createMonitors(
   keepStale: boolean
 ) {
   const schema: APISchema = {
-    project: options.project,
+    project: options.id,
     keep_stale: keepStale,
     monitors,
   };

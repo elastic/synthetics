@@ -23,8 +23,6 @@
  *
  */
 
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold, yellow } from 'kleur/colors';
@@ -36,20 +34,19 @@ import {
   formatStaleMonitors,
 } from './request';
 import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
-import { ProjectSettings } from '../generator';
 import { Monitor } from '../dsl/monitor';
 import {
   progress,
   apiProgress,
   write,
   error,
-  SYNTHETICS_PATH,
   aborted,
   indent,
   safeNDJSONParse,
   done,
 } from '../helpers';
-import type { PushOptions } from '../common_types';
+import type { PushOptions, ProjectSettings } from '../common_types';
+import { findSyntheticsConfig, readConfig } from '../config';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   if (monitors.length === 0) {
@@ -148,26 +145,25 @@ export function formatDuplicateError(monitors: Set<Monitor>) {
   return outer;
 }
 
-const PROJECT_SETTINGS_PATH = join(SYNTHETICS_PATH, 'project.json');
 const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project with default settings.`;
 
 export async function loadSettings() {
-  if (!existsSync(PROJECT_SETTINGS_PATH)) {
-    throw error(`Aborted. Synthetics project not set up.
+  try {
+    const config = await readConfig('');
+    return config.project || {};
+  } catch (e) {
+    throw error(`Aborted. Synthetics project not set up corrrectly.
 
 ${INSTALLATION_HELP}`);
   }
-
-  const contents = await readFile(PROJECT_SETTINGS_PATH, 'utf-8');
-  return JSON.parse(contents) as ProjectSettings;
 }
 
 export function validateSettings(opts: PushOptions) {
   const INVALID = 'Aborted. Invalid synthetics project settings.';
 
   let reason = '';
-  if (!opts.project) {
-    reason = 'Set project id via CLI as `--project <id>`';
+  if (!opts.id) {
+    reason = 'Set project id via CLI as `--id <id>`';
   } else if (!opts.locations && !opts.privateLocations) {
     reason = `Set default location for all monitors via
   - CLI as '--locations <values...> or --privateLocations <values...>'
@@ -187,24 +183,27 @@ ${reason}
 ${INSTALLATION_HELP}`);
 }
 
-async function overrideSettings(project: string) {
-  const settings = JSON.parse(await readFile(PROJECT_SETTINGS_PATH, 'utf-8'));
-  settings.project = project;
-
-  await writeFile(
-    PROJECT_SETTINGS_PATH,
-    JSON.stringify(settings, null, 2),
-    'utf-8'
+async function overrideSettings(oldValue: string, newValue: string) {
+  const cwd = process.cwd();
+  const configPath = await findSyntheticsConfig(cwd, cwd);
+  if (!configPath) {
+    throw aborted(`Unable to find synthetics config file: ${configPath}`);
+  }
+  const config = await readFile(configPath, 'utf-8');
+  const updatedConfig = config.replace(
+    `id: '${oldValue}'`,
+    `id: '${newValue}'`
   );
+  await writeFile(configPath, updatedConfig, 'utf-8');
 }
 
 export async function catchIncorrectSettings(
   settings: ProjectSettings,
   options: PushOptions
 ) {
-  let override = !settings.project;
-  if (settings.project && settings.project !== options.project) {
-    if (typeof process.env.TEST_OVERRIDE != null) {
+  let override = !settings.id;
+  if (settings.id && settings.id !== options.id) {
+    if (process.env.TEST_OVERRIDE != null) {
       override = Boolean(process.env.TEST_OVERRIDE);
     } else {
       // Add an extra line to make it easier to read the prompt
@@ -212,7 +211,7 @@ export async function catchIncorrectSettings(
       ({ override } = await prompt<{ override: boolean }>({
         type: 'confirm',
         name: 'override',
-        message: `Monitors were pushed under the '${settings.project}' project. Are you sure you want to push them under the new '${options.project}' (note that this will duplicate the monitors, the old ones being orphaned)`,
+        message: `Monitors were pushed under the '${settings.id}' project. Are you sure you want to push them under the new '${options.id}' (note that this will duplicate the monitors, the old ones being orphaned)`,
         initial: false,
       }));
     }
@@ -221,6 +220,6 @@ export async function catchIncorrectSettings(
     }
   }
   if (override) {
-    await overrideSettings(options.project);
+    await overrideSettings(settings.id, options.id);
   }
 }

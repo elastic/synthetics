@@ -80,7 +80,7 @@ function getConfigFile(ext: string) {
   return 'synthetics.config' + ext;
 }
 
-function findSyntheticsConfig(resolvePath, cwd) {
+export function findSyntheticsConfig(resolvePath, cwd) {
   const configPath = ['.js', '.ts']
     .map(ext => resolve(resolvePath, getConfigFile(ext)))
     .find(isFile);

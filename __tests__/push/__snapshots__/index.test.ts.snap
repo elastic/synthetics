@@ -26,7 +26,7 @@ exports[`Push abort on push with different project id 1`] = `
 exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 
-Set project id via CLI as \`--project <id>\`
+Set project id via CLI as \`--id <id>\`
 
 Run 'npx @elastic/synthetics init' to create project with default settings.
 "
