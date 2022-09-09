@@ -243,7 +243,6 @@ export type RunOptions = BaseArgs & {
 
 export type PushOptions = ProjectSettings & {
   auth: string;
-  projectId?: string;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];

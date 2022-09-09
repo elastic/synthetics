@@ -150,7 +150,7 @@ const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project 
 export async function loadSettings() {
   try {
     const config = await readConfig('');
-    return config.project || {};
+    return config.project || { space: '', id: '', url: '' };
   } catch (e) {
     throw error(`Aborted. Synthetics project not set up corrrectly.
 
