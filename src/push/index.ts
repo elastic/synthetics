@@ -26,7 +26,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold } from 'kleur/colors';
-import yaml from 'yaml';
+import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import {
   ok,
   formatAPIError,
@@ -90,9 +90,12 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   done('Pushed');
 }
 
-export async function createLightweightMonitors(options: PushOptions) {
+export async function createLightweightMonitors(
+  workDir: string,
+  options: PushOptions
+) {
   const lwFiles = new Set<string>();
-  await totalist(process.cwd(), (rel, abs) => {
+  await totalist(workDir, (rel, abs) => {
     if (/.(yml|yaml)$/.test(rel)) {
       lwFiles.add(abs);
     }
@@ -101,23 +104,30 @@ export async function createLightweightMonitors(options: PushOptions) {
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
     const content = await readFile(file, 'utf-8');
-    const parsedYml = yaml.parseDocument(content);
+    const lineCounter = new LineCounter();
+    const parsedDoc = parseDocument(content, {
+      lineCounter,
+      keepSourceTokens: true,
+    });
     // Skip other yml files that are not relevant
-    if (!parsedYml.has('heartbeat.monitors')) {
+    if (!parsedDoc.has('heartbeat.monitors')) {
       continue;
     }
-    const lwMonitors = parsedYml.toJSON()['heartbeat.monitors'];
-    for (const lwMonitor of lwMonitors) {
-      // TODO - Parse the CRON schedule
+
+    const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
+    for (const monNode of monitorSeq.items) {
+      const config = monNode.toJSON();
       const mon = new Monitor({
         schedule: options.schedule,
         locations: options.locations,
-        privateLocations: options.privateLocations,
-        ...lwMonitor,
+        privateLocations:
+          config['private_locations'] || options.privateLocations,
+        ...config,
       });
-      // TODO: fix line and column no which helps in finding duplicates
-      mon.setSource({ file, line: 1, column: 1 });
+      const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
+      mon.setSource({ file, line, column: col });
       monitors.push(mon);
+      console.log(mon);
     }
   }
   return monitors;

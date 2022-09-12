@@ -193,7 +193,8 @@ program
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
     try {
-      await loadTestFiles({ inline: false, ...program.opts() }, [cwd()]);
+      const workDir = cwd();
+      await loadTestFiles({ inline: false, ...program.opts() }, [workDir]);
       const settings = await loadSettings();
       const options = normalizeOptions({
         ...program.opts(),
@@ -203,7 +204,7 @@ program
       validateSettings(options);
       await catchIncorrectSettings(settings, options);
       const monitors = runner.buildMonitors(options);
-      monitors.push(...(await createLightweightMonitors(options)));
+      monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
     } catch (e) {
       e && console.error(e);
