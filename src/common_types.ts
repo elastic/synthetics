@@ -239,6 +239,7 @@ export type RunOptions = BaseArgs & {
   playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  apm?: ApmOptions;
 };
 
 export type PushOptions = ProjectSettings & {
@@ -254,12 +255,17 @@ export type ProjectSettings = {
   space: string;
 };
 
+export type ApmOptions = {
+  origins: Array<string | RegExp>;
+};
+
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  apm?: ApmOptions;
 };
 
 /** Runner Payload types */

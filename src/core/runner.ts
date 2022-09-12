@@ -23,6 +23,7 @@
  *
  */
 
+import { randomBytes } from 'crypto';
 import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { Journey } from '../dsl/journey';
@@ -50,6 +51,7 @@ import { PerformanceManager } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { Request, Route } from 'playwright-core';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;

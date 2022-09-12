@@ -140,6 +140,8 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   options.privateLocations =
     cliArgs.privateLocations ?? monitor?.privateLocations;
 
+  options.apm = config.apm;
+
   return options;
 }
 

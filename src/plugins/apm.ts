@@ -23,9 +23,36 @@
  *
  */
 
-export * from './plugin-manager';
-export * from './network';
-export * from './performance';
-export * from './tracing';
-export * from './browser-console';
-export * from './apm';
+import { randomBytes } from 'crypto';
+import { Request, Route } from 'playwright-core';
+import { ApmOptions, Driver } from '../common_types';
+
+export class Apm {
+  constructor(private driver: Driver, private options: ApmOptions) {}
+
+  async traceHandler(route: Route, request: Request) {
+    const traceId = randomBytes(16).toString('hex');
+    // We dont want to track Synthetics, so sending a dummy id
+    const parentId = '0'.repeat(16);
+    const traceparent = `00-${traceId}-${parentId}-01`;
+    const headers = {
+      ...(await request.allHeaders()),
+      traceparent,
+    };
+    route.continue({
+      headers,
+    });
+  }
+
+  async start() {
+    for (const origin of this.options.origins) {
+      await this.driver.context.route(origin, this.traceHandler.bind(this));
+    }
+  }
+
+  async stop() {
+    for (const origin of this.options.origins) {
+      await this.driver.context.unroute(origin, this.traceHandler.bind(this));
+    }
+  }
+}
