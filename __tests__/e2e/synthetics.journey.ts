@@ -95,7 +95,7 @@ async function checkForSyntheticsData({ page, journeyName }) {
     isTableVisible = await checkForTable();
   }
   await page.fill('[data-test-subj="queryInput"]', journeyName);
-  await page.click(`a:has-text("${journeyName}")`, { timeout: 30 * 1000 });
+  await page.click(`a:has-text("${journeyName}")`, { timeout: 60 * 3 * 1000 });
   console.info(`Data for ${journeyName} indexed successfully`)
 }
 
