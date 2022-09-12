@@ -117,20 +117,51 @@ export async function createLightweightMonitors(
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     for (const monNode of monitorSeq.items) {
       const config = monNode.toJSON();
-      const mon = new Monitor({
-        schedule: options.schedule,
-        locations: options.locations,
-        privateLocations:
-          config['private_locations'] || options.privateLocations,
-        ...config,
-      });
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
-      mon.setSource({ file, line, column: col });
-      monitors.push(mon);
-      console.log(mon);
+      try {
+        const schedule = parseSchedule(config.schedule);
+        const mon = new Monitor({
+          locations: options.locations,
+          privateLocations:
+            config['private_locations'] || options.privateLocations,
+          ...config,
+          schedule: schedule || options.schedule,
+        });
+        mon.setSource({ file, line, column: col });
+        monitors.push(mon);
+      } catch (e) {
+        let outer = bold(`Aborted: ${e}\n`);
+        outer += indent(`* ${config.id} - ${file}:${line}:${col}\n`);
+        throw error(outer);
+      }
     }
   }
   return monitors;
+}
+
+function parseSchedule(schedule: string) {
+  const EVERY_SYNTAX = '@every';
+  if (!(schedule + '').startsWith(EVERY_SYNTAX)) {
+    throw `Monitor schedule format(${schedule}) not supported: use '@every' syntax instead`;
+  }
+
+  const duration = schedule.substring(EVERY_SYNTAX.length + 1);
+  // split between non-digit (\D) and a digit (\d)
+  const durations = duration.split(/(?<=\D)(?=\d)/g);
+  let minutes = 0;
+  for (const dur of durations) {
+    // split between a digit and non-digit
+    const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
+    // Calculate
+    if (format === 's') {
+      minutes++;
+    } else if (format === 'm') {
+      minutes += Number(value);
+    } else if (format === 'h') {
+      minutes += Number(value) * 60;
+    }
+  }
+  return minutes;
 }
 
 export async function pushMonitors({
