@@ -52,6 +52,9 @@ export function replaceTemplates(input: string, values: Record<string, any>) {
       if (typeof finalValue == 'number') {
         return Number(finalValue);
       }
+      if (typeof finalValue == 'string') {
+        return `'${finalValue}'`;
+      }
       return finalValue;
     });
   }

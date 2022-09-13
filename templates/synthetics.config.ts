@@ -16,6 +16,14 @@ export default env => {
       locations: ['{{locations}}'],
       privateLocations: ['{{privateLocations}}'],
     },
+    /**
+     * Project monitors settings
+     */
+    project: {
+      id: '{{id}}',
+      url: '{{url}}',
+      space: '{{space}}',
+    },
   };
   if (env !== 'development') {
     /**

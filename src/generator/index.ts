@@ -37,15 +37,10 @@ import {
   cloudIDToKibanaURL,
 } from './utils';
 import { formatLocations, getLocations, groupLocations } from '../locations';
+import type { ProjectSettings } from '../common_types';
 
 // Templates that are required for setting up new synthetics project
 const templateDir = join(__dirname, '..', '..', 'templates');
-
-export type ProjectSettings = {
-  url: string;
-  space: string;
-  project: string;
-};
 
 type PromptOptions = ProjectSettings & {
   locations: Array<string>;
@@ -61,11 +56,10 @@ export const REGULAR_FILES_PATH = [
   '.github/workflows/run-synthetics.yml',
   'README.md',
 ];
-export const SETTINGS_PATH = '.synthetics/project.json';
 export const CONFIG_PATH = 'synthetics.config.ts';
 
 // Files to be overriden by default if the project is initialized multiple times
-const DEFAULT_OVERRIDES = [SETTINGS_PATH, CONFIG_PATH];
+const DEFAULT_OVERRIDES = [CONFIG_PATH];
 
 export class Generator {
   pkgManager = 'npm';
@@ -123,8 +117,7 @@ export class Generator {
     const allLocations = await getLocations({ url, auth });
     const locChoices = formatLocations(allLocations);
     if (locChoices.length === 0) {
-      // TODO - Add link to docs
-      throw 'Follow the docs to set up your first private locations - <link>';
+      throw 'Follow the docs to set up your first private locations - https://www.elastic.co/guide/en/observability/current/uptime-set-up-choose-agent.html#private-locations';
     }
 
     const monitorQues = [
@@ -147,7 +140,7 @@ export class Generator {
       },
       {
         type: 'input',
-        name: 'project',
+        name: 'id',
         message: 'Choose project id to logically group monitors',
         initial: basename(this.projectDir),
       },
@@ -167,14 +160,6 @@ export class Generator {
 
   async files(answers: PromptOptions) {
     const fileMap = new Map<string, string>();
-
-    // Setup project.json
-    const projectJSON = {
-      url: answers.url,
-      space: answers.space,
-      project: answers.project,
-    };
-    fileMap.set(SETTINGS_PATH, JSON.stringify(projectJSON, null, 2) + '\n');
 
     // Setup Synthetics config file
     fileMap.set(

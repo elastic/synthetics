@@ -27,11 +27,7 @@ import { existsSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { CLIMock } from '../utils/test-config';
-import {
-  REGULAR_FILES_PATH,
-  CONFIG_PATH,
-  SETTINGS_PATH,
-} from '../../src/generator';
+import { REGULAR_FILES_PATH, CONFIG_PATH } from '../../src/generator';
 
 describe('Generator', () => {
   const scaffoldDir = join(__dirname, 'scaffold-test');
@@ -57,6 +53,9 @@ describe('Generator', () => {
           locations: ['us_east'],
           privateLocations: ['custom'],
           schedule: 30,
+          id: 'test',
+          space: 'kbn',
+          url: 'foo:bar',
         }),
       },
     });
@@ -66,9 +65,6 @@ describe('Generator', () => {
     if (exitCode !== 0) {
       expect(output).toBe('');
     }
-
-    // Project setup file
-    expect(existsSync(join(scaffoldDir, SETTINGS_PATH))).toBeTruthy();
 
     // Verify files
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
@@ -87,11 +83,14 @@ describe('Generator', () => {
       expect(existsSync(join(scaffoldDir, fn))).toBeTruthy();
     });
     expect(existsSync(join(scaffoldDir, CONFIG_PATH))).toBeTruthy();
-    // Verify schedule and locations
+    // Verify project and monitor settings
     const configFile = await readFile(join(scaffoldDir, CONFIG_PATH), 'utf-8');
     expect(configFile).toContain(`locations: ['us_east']`);
     expect(configFile).toContain(`privateLocations: ['custom']`);
     expect(configFile).toContain(`schedule: 30`);
+    expect(configFile).toContain(`id: 'test'`);
+    expect(configFile).toContain(`url: 'foo:bar'`);
+    expect(configFile).toContain(`space: 'kbn'`);
 
     // Verify stdout
     const stderr = cli.stderr();

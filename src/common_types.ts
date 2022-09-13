@@ -241,14 +241,17 @@ export type RunOptions = BaseArgs & {
   reporter?: BuiltInReporterName | ReporterInstance;
 };
 
-export type PushOptions = {
+export type PushOptions = ProjectSettings & {
   auth: string;
-  url: string;
-  project: string;
-  space: string;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+};
+
+export type ProjectSettings = {
+  id: string;
+  url: string;
+  space: string;
 };
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
@@ -256,6 +259,7 @@ export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
+  project?: ProjectSettings;
 };
 
 /** Runner Payload types */
