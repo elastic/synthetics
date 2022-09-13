@@ -52,12 +52,12 @@
     "micromatch": "^4.0.4",
     "playwright-chromium": "=1.20.1",
     "playwright-core": "=1.20.1",
-    "sharp": "^0.30.6",
+    "sharp": "^0.31.0",
     "snakecase-keys": "^3.2.1",
     "sonic-boom": "^2.6.0",
     "ts-node": "^10.9.0",
     "typescript": "^4.7.4",
-    "undici": "^5.7.0"
+    "undici": "^5.10.0"
   },
   "devDependencies": {
     "@types/jest": "^28.1.3",
