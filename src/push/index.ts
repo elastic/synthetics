@@ -26,7 +26,6 @@
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold } from 'kleur/colors';
-import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import {
   ok,
   formatAPIError,
@@ -45,7 +44,6 @@ import {
   indent,
   safeNDJSONParse,
   done,
-  totalist,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -88,80 +86,6 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   await pushMonitors({ schemas, keepStale: false, options });
 
   done('Pushed');
-}
-
-export async function createLightweightMonitors(
-  workDir: string,
-  options: PushOptions
-) {
-  const lwFiles = new Set<string>();
-  await totalist(workDir, (rel, abs) => {
-    if (/.(yml|yaml)$/.test(rel)) {
-      lwFiles.add(abs);
-    }
-  });
-
-  const monitors: Monitor[] = [];
-  for (const file of lwFiles.values()) {
-    const content = await readFile(file, 'utf-8');
-    const lineCounter = new LineCounter();
-    const parsedDoc = parseDocument(content, {
-      lineCounter,
-      keepSourceTokens: true,
-    });
-    // Skip other yml files that are not relevant
-    if (!parsedDoc.has('heartbeat.monitors')) {
-      continue;
-    }
-
-    const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
-    for (const monNode of monitorSeq.items) {
-      const config = monNode.toJSON();
-      const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
-      try {
-        const schedule = parseSchedule(config.schedule);
-        const mon = new Monitor({
-          locations: options.locations,
-          privateLocations:
-            config['private_locations'] || options.privateLocations,
-          ...config,
-          schedule: schedule || options.schedule,
-        });
-        mon.setSource({ file, line, column: col });
-        monitors.push(mon);
-      } catch (e) {
-        let outer = bold(`Aborted: ${e}\n`);
-        outer += indent(`* ${config.id} - ${file}:${line}:${col}\n`);
-        throw error(outer);
-      }
-    }
-  }
-  return monitors;
-}
-
-function parseSchedule(schedule: string) {
-  const EVERY_SYNTAX = '@every';
-  if (!(schedule + '').startsWith(EVERY_SYNTAX)) {
-    throw `Monitor schedule format(${schedule}) not supported: use '@every' syntax instead`;
-  }
-
-  const duration = schedule.substring(EVERY_SYNTAX.length + 1);
-  // split between non-digit (\D) and a digit (\d)
-  const durations = duration.split(/(?<=\D)(?=\d)/g);
-  let minutes = 0;
-  for (const dur of durations) {
-    // split between a digit and non-digit
-    const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
-    // Calculate
-    if (format === 's') {
-      minutes++;
-    } else if (format === 'm') {
-      minutes += Number(value);
-    } else if (format === 'h') {
-      minutes += Number(value) * 60;
-    }
-  }
-  return minutes;
 }
 
 export async function pushMonitors({
