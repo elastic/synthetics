@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta.34 (2022-09-14)
+
+### Features
+
+- Synthetics push command now supports bundling external packages from `node_modules` folder for browser monitors, users can now use external packages utility packages like `lodash, moment.js, etc,` in their synthetics scripts and push them instantaneously to Kibana. https://github.com/elastic/synthetics/pull/580
+
+  Example journey code below using an external package `is-positive` from NPM.
+
+  ```ts
+  // test.journey.ts
+  import { journey, step, monitor, expect } from '@elastic/synthetics';
+  import isPositive from 'is-positive';
+
+  journey('bundle test', ({ page, params }) => {
+    step('check if positive', () => {
+      expect(isPositive(4)).toBe(true);
+    });
+  });
+  ```
+
+  If you run `npm run push` inside the synthetics project, we would bundle the whole journey file along with the package `is-positive` to make the experience smooth. However, there are a few caveats when pushing external modules.
+
+  1. Packages that use native bindings will not work.
+  2. Users cannot push bundles that are more than `800 Kilobytes`.
+
+- Introduce configuring project monitor settings in the Synthetics config file https://github.com/elastic/synthetics/pull/592. Comes in handy when running `push` command, users would be able to configure project-related settings like `projectId`, `kibana host`, and `schedule` and save them for successive runs.
+
+- Support the `SYNTHETICS_API_KEY` env variable for Kibana authentication when pushing monitors to Kibana https://github.com/elastic/synthetics/pull/588
+
+**Full Changelog**: https://github.com/elastic/synthetics/compare/v1.0.0-beta.33...v1.0.0-beta.34
+
 ## v1.0.0-beta.33 (2022-09-06)
 
 - Issue individual requests when pushing monitors to Kibana. This is to avoid
