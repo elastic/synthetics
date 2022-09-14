@@ -23,14 +23,17 @@
  *
  */
 
-import path from 'path';
+import { isAbsolute, dirname, extname, join } from 'path';
 import fs from 'fs/promises';
 import * as esbuild from 'esbuild';
+
+const SOURCE_DIR = join(__dirname, '..', '..');
+const SOURCE_NODE_MODULES = join(SOURCE_DIR, 'node_modules');
 
 export function commonOptions(): esbuild.BuildOptions {
   return {
     bundle: true,
-    external: ['node_modules', '@elastic/synthetics'],
+    external: ['@elastic/synthetics'],
     minify: false,
     platform: 'node',
     logLevel: 'silent',
@@ -55,10 +58,27 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
     // Note that we use `isAbsolute` to handle UNC/windows style paths like C:\path\to\thing
     // This is not necessary for relative directories since `.\file` is not supported as an import
     // nor is `~/path/to/file`.
-    if (path.isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
+    if (isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
       return true;
     }
     return false;
+  };
+
+  // If we're importing the @elastic/synthetics package
+  // directly from source instead of using the fully
+  // qualified name, we must skip it too. That's just
+  // so it doesn't get bundled on tests or when we locally
+  // refer to the package itself.
+  const isLocalSynthetics = (entryPath: string) => {
+    return entryPath.startsWith(SOURCE_DIR);
+  };
+
+  // When importing the local synthetics module directly
+  // it may import its own local dependencies, so we must
+  // make sure those will be resolved using Node's resolution
+  // algorithm, as they're still "node_modules" that we must bundle
+  const isLocalSyntheticsModule = (str: string) => {
+    return str.startsWith(SOURCE_NODE_MODULES);
   };
 
   return {
@@ -67,13 +87,18 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
       build.onResolve({ filter: /.*?/ }, async args => {
         // External and other packages need be marked external to
         // be removed from the bundle
-        if (
-          build.initialOptions.external?.includes(args.path) ||
-          !isBare(args.path)
-        ) {
+        if (build.initialOptions.external?.includes(args.path)) {
           return {
             external: true,
           };
+        }
+
+        if (
+          !isBare(args.path) ||
+          args.importer.includes('/node_modules/') ||
+          isLocalSyntheticsModule(args.importer)
+        ) {
+          return;
         }
 
         if (args.kind === 'entry-point') {
@@ -86,8 +111,12 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
         // If the modules are resolved locally, then
         // use the imported path to get full path
         const entryPath =
-          path.join(path.dirname(args.importer), args.path) +
-          path.extname(args.importer);
+          join(dirname(args.importer), args.path) + extname(args.importer);
+
+        if (isLocalSynthetics(entryPath)) {
+          return { external: true };
+        }
+
         // Spin off another build to copy over the imported modules without bundling
         const result = await esbuild.build({
           ...commonOptions(),

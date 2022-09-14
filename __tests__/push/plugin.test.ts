@@ -25,6 +25,7 @@
 
 import * as esbuild from 'esbuild';
 import { join } from 'path';
+import NodeResolve from '@esbuild-plugins/node-resolve';
 import {
   MultiAssetPlugin,
   commonOptions,
@@ -43,7 +44,13 @@ describe('Plugin', () => {
     await esbuild.build({
       ...commonOptions(),
       entryPoints: [join(E2E_DIR, 'uptime.journey.ts')],
-      plugins: [MultiAssetPlugin(callback)],
+      plugins: [
+        MultiAssetPlugin(callback),
+        NodeResolve({
+          extensions: ['.ts', '.js'],
+          resolveOptions: { basedir: E2E_DIR },
+        }),
+      ],
     });
   });
 });

@@ -108,6 +108,7 @@ pipeline {
           withNodeJSEnv(){
             dir("${BASE_DIR}"){
               sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
+              sh(label: 'install e2e bundling deps',script: 'npm install --prefix ./__tests__/e2e')
               sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
             }
           }
