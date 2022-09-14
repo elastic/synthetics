@@ -25,7 +25,7 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
-import { Monitor } from '../../dist/dsl/monitor';
+import { Monitor } from '../../src/dsl/monitor';
 
 export const wsEndpoint = process.env.WSENDPOINT;
 
@@ -34,6 +34,7 @@ export function createTestMonitor(filename: string) {
   const monitor = new Monitor({
     id: 'test-monitor',
     name: 'test',
+    type: 'browser',
     schedule: 10,
     enabled: true,
     locations: ['united_kingdom', 'australia_east'],

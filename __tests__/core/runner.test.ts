@@ -725,8 +725,10 @@ describe('runner', () => {
     expect(monitors[0].config).toEqual({
       id: 'test-j1',
       name: 'j1',
+      type: 'browser',
       tags: [],
       locations: ['united_kingdom'],
+      privaateLocations: undefined,
       schedule: 2,
       params: undefined,
       playwrightOptions: undefined,
@@ -766,6 +768,7 @@ describe('runner', () => {
     expect(monitors[0].config).toEqual({
       id: 'test-j1',
       name: 'j1',
+      type: 'browser',
       tags: ['foo*'],
       locations: ['united_kingdom'],
       privateLocations: ['spain'],
@@ -776,7 +779,7 @@ describe('runner', () => {
     });
     expect(monitors[1].config).toMatchObject({
       locations: ['us_east'],
-      privateLocations: ["germany"],
+      privateLocations: ['germany'],
       schedule: 5,
       throttling: { latency: 1000 },
     });

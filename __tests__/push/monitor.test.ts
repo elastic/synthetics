@@ -23,7 +23,15 @@
  *
  */
 
-import { buildMonitorSchema, createMonitors } from '../../src/push/monitor';
+import { mkdir, rm, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { generateTempPath } from '../../src/helpers';
+import {
+  buildMonitorSchema,
+  createMonitors,
+  createLightweightMonitors,
+  parseSchedule,
+} from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 
@@ -44,6 +52,7 @@ describe('Monitors', () => {
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
+      type: 'browser',
       enabled: true,
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
@@ -52,6 +61,19 @@ describe('Monitors', () => {
         match: 'test',
       },
     });
+  });
+
+  it('parse @every schedule format', async () => {
+    expect(() => parseSchedule('* * * *')).toThrowError(
+      `Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
+    );
+    expect(parseSchedule('@every 4s')).toBe(1);
+    expect(parseSchedule('@every 60s')).toBe(1);
+    expect(parseSchedule('@every 1m')).toBe(1);
+    expect(parseSchedule('@every 1m10s')).toBe(2);
+    expect(parseSchedule('@every 2m')).toBe(2);
+    expect(parseSchedule('@every 1h2m')).toBe(62);
+    expect(parseSchedule('@every 1h2m10s')).toBe(63);
   });
 
   it('api schema', async () => {
@@ -85,6 +107,112 @@ describe('Monitors', () => {
       project: 'blah',
       keep_stale: false,
       monitors: schema,
+    });
+  });
+
+  describe('Lightweight monitors', () => {
+    const PROJECT_DIR = generateTempPath();
+    const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
+    beforeEach(async () => {
+      await mkdir(PROJECT_DIR, { recursive: true });
+    });
+    afterEach(async () => {
+      await rm(PROJECT_DIR, { recursive: true });
+    });
+
+    const writeHBFile = async data => {
+      await writeFile(HB_SOURCE, data, 'utf-8');
+    };
+
+    it('abort on schedule format error', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "* * * *"
+  id: "foo"
+      `);
+      expect(
+        createLightweightMonitors(PROJECT_DIR, {} as any)
+      ).rejects.toContain(
+        `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
+      );
+    });
+
+    it('handle when no yml files are present', async () => {
+      const monitors = await createLightweightMonitors(PROJECT_DIR, {
+        locations: ['australia_east'],
+      } as any);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('parses monitor config correctly', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "foo"
+  private_locations:
+    - baz
+      `);
+      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+        locations: ['australia_east'],
+      } as any);
+      expect(monitor.config).toEqual({
+        id: 'foo',
+        type: 'icmp',
+        locations: ['australia_east'],
+        privateLocations: ['baz'],
+        schedule: 5,
+      });
+      expect(monitor.source).toEqual({
+        file: HB_SOURCE,
+        column: 3,
+        line: 3,
+      });
+    });
+
+    it('pass all monitor config as it is', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: @every 5m
+  id: "foo"
+  ssl:
+    certificate_authorities: ['/etc/ca.crt']
+  check.response:
+    status: [200]
+    body:
+      - Saved
+      - saved
+  check.request:
+    method: POST
+    headers:
+      'Content-Type': 'application/x-www-form-urlencoded'
+      `);
+
+      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+        locations: ['australia_east'],
+      } as any);
+      expect(monitor.config).toEqual({
+        id: 'foo',
+        type: 'http',
+        locations: ['australia_east'],
+        privateLocations: undefined,
+        schedule: 5,
+        'check.request': {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          method: 'POST',
+        },
+        'check.response': {
+          body: ['Saved', 'saved'],
+          status: [200],
+        },
+        ssl: {
+          certificate_authorities: ['/etc/ca.crt'],
+        },
+      });
     });
   });
 });

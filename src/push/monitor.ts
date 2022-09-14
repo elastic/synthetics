@@ -34,7 +34,6 @@ import {
   SYNTHETICS_PATH,
   totalist,
   indent,
-  error,
 } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -116,11 +115,14 @@ export async function createLightweightMonitors(
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
       try {
         const schedule = parseSchedule(config.schedule);
+        const privateLocations =
+          config['private_locations'] || options.privateLocations;
+        delete config['private_locations'];
+
         const mon = new Monitor({
           locations: options.locations,
-          privateLocations:
-            config['private_locations'] || options.privateLocations,
           ...config,
+          privateLocations,
           schedule: schedule || options.schedule,
         });
         mon.setSource({ file, line, column: col });
@@ -128,7 +130,7 @@ export async function createLightweightMonitors(
       } catch (e) {
         let outer = bold(`Aborted: ${e}\n`);
         outer += indent(`* ${config.id} - ${file}:${line}:${col}\n`);
-        throw error(outer);
+        throw outer;
       }
     }
   }

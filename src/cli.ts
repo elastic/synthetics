@@ -43,7 +43,6 @@ import {
   loadSettings,
   validateSettings,
   catchIncorrectSettings,
-  createLightweightMonitors,
 } from './push';
 import {
   formatLocations,
@@ -55,6 +54,7 @@ import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';
 import { LocationsMap } from './locations/public-locations';
+import { createLightweightMonitors } from './push/monitor';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
