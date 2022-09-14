@@ -23,16 +23,12 @@
  *
  */
 
-import path from 'path';
+import { isAbsolute, dirname, extname, join } from 'path';
 import fs from 'fs/promises';
 import * as esbuild from 'esbuild';
 
-const sourceSyntheticsPath = path.join(path.resolve(`${__dirname}/../..`), '/');
-const sourceNodeModules = path.join(
-  path.resolve(`${__dirname}/../..`),
-  'node_modules',
-  '/'
-);
+const SOURCE_DIR = join(__dirname, '..', '..');
+const SOURCE_NODE_MODULES = join(SOURCE_DIR, 'node_modules');
 
 export function commonOptions(): esbuild.BuildOptions {
   return {
@@ -62,7 +58,7 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
     // Note that we use `isAbsolute` to handle UNC/windows style paths like C:\path\to\thing
     // This is not necessary for relative directories since `.\file` is not supported as an import
     // nor is `~/path/to/file`.
-    if (path.isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
+    if (isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
       return true;
     }
     return false;
@@ -74,7 +70,7 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
   // so it doesn't get bundled on tests or when we locally
   // refer to the package itself.
   const isLocalSynthetics = (entryPath: string) => {
-    return entryPath.startsWith(sourceSyntheticsPath);
+    return entryPath.startsWith(SOURCE_DIR);
   };
 
   // When importing the local synthetics module directly
@@ -82,7 +78,7 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
   // make sure those will be resolved using Node's resolution
   // algorithm, as they're still "node_modules" that we must bundle
   const isLocalSyntheticsModule = (str: string) => {
-    return str.startsWith(sourceNodeModules);
+    return str.startsWith(SOURCE_NODE_MODULES);
   };
 
   return {
@@ -115,8 +111,7 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
         // If the modules are resolved locally, then
         // use the imported path to get full path
         const entryPath =
-          path.join(path.dirname(args.importer), args.path) +
-          path.extname(args.importer);
+          join(dirname(args.importer), args.path) + extname(args.importer);
 
         if (isLocalSynthetics(entryPath)) {
           return { external: true };
