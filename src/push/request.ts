@@ -23,7 +23,7 @@
  *
  */
 
-import { bold } from 'kleur/colors';
+import { bold, red, yellow } from 'kleur/colors';
 import { Dispatcher, request } from 'undici';
 import { indent, symbols } from '../helpers';
 
@@ -47,7 +47,7 @@ export async function sendRequest(options: APIRequestOptions) {
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',
     },
-    headersTimeout: 60 * 1000
+    headersTimeout: 60 * 1000,
   });
 }
 
@@ -62,8 +62,10 @@ export type APIMonitorError = {
 };
 
 export function formatNotFoundError(message: string) {
-  return bold(
-    `${symbols['failed']} Please check your kibana url and try again - 404:${message}`
+  return red(
+    bold(
+      `${symbols['failed']} Please check your kibana url and try again - 404:${message}`
+    )
   );
 }
 
@@ -78,7 +80,7 @@ export function formatAPIError(
   );
   inner += indent(message, '    ');
   outer += indent(inner);
-  return outer;
+  return red(outer);
 }
 
 function formatMonitorError(errors: APIMonitorError[]) {
@@ -95,10 +97,10 @@ function formatMonitorError(errors: APIMonitorError[]) {
 
 export function formatFailedMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['failed']} Error\n`);
-  return heading + formatMonitorError(errors);
+  return red(heading + formatMonitorError(errors));
 }
 
 export function formatStaleMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['warning']} Warnings\n`);
-  return heading + formatMonitorError(errors);
+  return yellow(heading + formatMonitorError(errors));
 }

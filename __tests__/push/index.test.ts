@@ -99,18 +99,25 @@ describe('Push', () => {
     const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
       TEST_OVERRIDE: '',
     });
-    expect(output).toMatchSnapshot();
+    expect(output).toContain('Push command Aborted');
   });
 
   it('push with different id when overriden', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
       { locations: ['test-loc'], schedule: 2 }
+    );
+    const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../src/index';
+journey('journey 1', () => monitor.use({ id: 'j1' }));`
     );
     const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
       TEST_OVERRIDE: 'true',
     });
-    expect(output).toContain('No Monitors found');
+    expect(output).toContain('preparing all monitors');
+    await rm(testJourney, { force: true });
   });
 
   it('errors on duplicate monitors', async () => {
@@ -148,6 +155,28 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
       },
     ]);
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
+  });
+
+  it('abort when delete is skipped', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+    const output = await runPush([...DEFAULT_ARGS], {
+      TEST_OVERRIDE: '',
+    });
+    expect(output).toContain('Push command Aborted');
+  });
+
+  it('delete entire project ', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+    const output = await runPush([...DEFAULT_ARGS], {
+      TEST_OVERRIDE: 'true',
+    });
+    expect(output).toContain('deleting all stale monitors');
   });
 
   describe('API', () => {

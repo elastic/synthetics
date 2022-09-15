@@ -25,7 +25,7 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold, yellow } from 'kleur/colors';
+import { bold } from 'kleur/colors';
 import {
   ok,
   formatAPIError,
@@ -49,24 +49,42 @@ import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
-  if (monitors.length === 0) {
-    throw 'No Monitors found';
-  }
-  const duplicates = trackDuplicates(monitors);
-  if (duplicates.size > 0) {
-    throw error(formatDuplicateError(duplicates));
-  }
+  let schemas: MonitorSchema[] = [];
+  if (monitors.length > 0) {
+    const duplicates = trackDuplicates(monitors);
+    if (duplicates.size > 0) {
+      throw error(formatDuplicateError(duplicates));
+    }
 
-  progress(`preparing all monitors`);
-  const schemas = await buildMonitorSchema(monitors);
+    progress(`preparing all monitors`);
+    schemas = await buildMonitorSchema(monitors);
 
-  progress(`creating all monitors`);
-  for (const schema of schemas) {
-    await pushMonitors({ schemas: [schema], keepStale: true, options });
+    progress(`creating all monitors`);
+    for (const schema of schemas) {
+      await pushMonitors({ schemas: [schema], keepStale: true, options });
+    }
+  } else {
+    write('');
+    // Makes testing easier with overrides
+    let deleteAll = false;
+    if (process.env.TEST_OVERRIDE != null) {
+      deleteAll = Boolean(process.env.TEST_OVERRIDE);
+    } else {
+      ({ deleteAll } = await prompt<{ deleteAll: boolean }>({
+        type: 'confirm',
+        name: 'deleteAll',
+        message: `Pushing without any monitors would delete all monitors associated with the project.\n Do you want to continue?`,
+        initial: false,
+      }));
+    }
+
+    if (!deleteAll) {
+      throw aborted('Push command Aborted');
+    }
   }
-
   progress(`deleting all stale monitors`);
   await pushMonitors({ schemas, keepStale: false, options });
+
   done('Pushed');
 }
 
@@ -79,43 +97,39 @@ export async function pushMonitors({
   keepStale: boolean;
   options: PushOptions;
 }) {
-  try {
-    const { body, statusCode } = await createMonitors(
-      schemas,
-      options,
-      keepStale
-    );
-    if (statusCode === 404) {
-      throw formatNotFoundError(await body.text());
-    }
-    if (!ok(statusCode)) {
-      const { error, message } = await body.json();
-      throw formatAPIError(statusCode, error, message);
-    }
-    body.setEncoding('utf-8');
-    for await (const data of body) {
-      // Its kind of hacky for now where Kibana streams the response by
-      // writing the data as NDJSON events (data can be interleaved), we
-      // distinguish the final data by checking if the event was a progress vs complete event
-      const chunks = safeNDJSONParse(data);
-      for (const chunk of chunks) {
-        if (typeof chunk === 'string') {
-          // TODO: add progress back for all states once we get the fix
-          // on kibana side
-          keepStale && apiProgress(chunk);
-          continue;
-        }
-        const { failedMonitors, failedStaleMonitors } = chunk;
-        if (failedMonitors && failedMonitors.length > 0) {
-          throw formatFailedMonitors(failedMonitors);
-        }
-        if (failedStaleMonitors.length > 0) {
-          write(yellow(formatStaleMonitors(failedStaleMonitors)));
-        }
+  const { body, statusCode } = await createMonitors(
+    schemas,
+    options,
+    keepStale
+  );
+  if (statusCode === 404) {
+    throw formatNotFoundError(await body.text());
+  }
+  if (!ok(statusCode)) {
+    const { error, message } = await body.json();
+    throw formatAPIError(statusCode, error, message);
+  }
+  body.setEncoding('utf-8');
+  for await (const data of body) {
+    // Its kind of hacky for now where Kibana streams the response by
+    // writing the data as NDJSON events (data can be interleaved), we
+    // distinguish the final data by checking if the event was a progress vs complete event
+    const chunks = safeNDJSONParse(data);
+    for (const chunk of chunks) {
+      if (typeof chunk === 'string') {
+        // TODO: add progress back for all states once we get the fix
+        // on kibana side
+        keepStale && apiProgress(chunk);
+        continue;
+      }
+      const { failedMonitors, failedStaleMonitors } = chunk;
+      if (failedMonitors && failedMonitors.length > 0) {
+        throw formatFailedMonitors(failedMonitors);
+      }
+      if (failedStaleMonitors.length > 0) {
+        throw formatStaleMonitors(failedStaleMonitors);
       }
     }
-  } catch (e) {
-    error(e);
   }
 }
 
@@ -149,7 +163,7 @@ const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project 
 
 export async function loadSettings() {
   try {
-    const config = await readConfig('asd');
+    const config = await readConfig(process.env['NODE_ENV'] || 'development');
     // Missing config file, fake throw to capture as missing file
     if (Object.keys(config).length === 0) {
       throw '';
