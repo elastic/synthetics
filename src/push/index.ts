@@ -73,7 +73,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       ({ deleteAll } = await prompt<{ deleteAll: boolean }>({
         type: 'confirm',
         name: 'deleteAll',
-        message: `Pushing without any monitors would delete all monitors associated with the project.\n Do you want to continue?`,
+        message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
         initial: false,
       }));
     }
