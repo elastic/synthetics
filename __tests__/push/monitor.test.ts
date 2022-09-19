@@ -46,7 +46,7 @@ describe('Monitors', () => {
     process.env.NO_COLOR = '';
   });
 
-  it('build browser monitor schema', async () => {
+  it('build lightweight monitor schema', async () => {
     const schema = await buildMonitorSchema([
       createTestMonitor('heartbeat.yml', 'http'),
     ]);
@@ -61,7 +61,7 @@ describe('Monitors', () => {
     });
   });
 
-  it('build lightweight monitor schema', async () => {
+  it('build browser monitor schema', async () => {
     const schema = await buildMonitorSchema([monitor]);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
@@ -140,21 +140,44 @@ describe('Monitors', () => {
       await writeFile(HB_SOURCE, data, 'utf-8');
     };
 
+    it('handle when no yml files are present', async () => {
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
     it('abort on schedule format error', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: http
   schedule: "* * * *"
   id: "foo"
+  name: "foo"
       `);
       expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
         `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
       );
     });
 
-    it('handle when no yml files are present', async () => {
-      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
-      expect(monitors.length).toBe(0);
+    it('validate id check', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  name: "foo"
+      `);
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+        `Aborted: Monitor id is required`
+      );
+    });
+
+    it('validate name check', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  id: "foo"
+      `);
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+        `Aborted: Monitor name is required`
+      );
     });
 
     it('skip browser monitors', async () => {
@@ -168,12 +191,25 @@ heartbeat.monitors:
       expect(monitors.length).toBe(0);
     });
 
+    it('skip disabled monitors', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "http"
+  enabled: false
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
     it('parses monitor config correctly', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: icmp
   schedule: @every 5m
   id: "foo"
+  name: "with-loc"
   private_locations:
     - baz
       `);
@@ -182,6 +218,7 @@ heartbeat.monitors:
       } as any);
       expect(monitor.config).toEqual({
         id: 'foo',
+        name: 'with-loc',
         type: 'icmp',
         locations: ['australia_east'],
         privateLocations: ['baz'],
@@ -200,6 +237,7 @@ heartbeat.monitors:
 - type: http
   schedule: @every 5m
   id: "foo"
+  name: "with-fields"
   ssl:
     certificate_authorities: ['/etc/ca.crt']
   check.response:
@@ -218,6 +256,7 @@ heartbeat.monitors:
       } as any);
       expect(monitor.config).toEqual({
         id: 'foo',
+        name: 'with-fields',
         type: 'http',
         locations: ['australia_east'],
         privateLocations: undefined,

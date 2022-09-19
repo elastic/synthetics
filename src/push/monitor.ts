@@ -38,6 +38,7 @@ import {
 import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
+import { monitor } from '../core';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
@@ -107,37 +108,55 @@ export async function createLightweightMonitors(
     if (!parsedDoc.has('heartbeat.monitors')) {
       continue;
     }
-
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     for (const monNode of monitorSeq.items) {
-      // Skip browser monitors from Lightweight config
-      if (monNode.get('type') === 'browser') {
+      // Skip browser monitors and disabled monitors from pushing
+      if (
+        monNode.get('type') === 'browser' ||
+        monNode.get('enabled') === false
+      ) {
         continue;
       }
       const config = monNode.toJSON();
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
       try {
-        const schedule = parseSchedule(config.schedule);
-        const privateLocations =
-          config['private_locations'] || options.privateLocations;
-        delete config['private_locations'];
-
-        const mon = new Monitor({
-          locations: options.locations,
-          ...config,
-          privateLocations,
-          schedule: schedule || options.schedule,
-        });
+        const mon = buildMonitorFromYaml(config, options);
         mon.setSource({ file, line, column: col });
         monitors.push(mon);
       } catch (e) {
         let outer = bold(`Aborted: ${e}\n`);
-        outer += indent(`* ${config.id} - ${file}:${line}:${col}\n`);
+        outer += indent(
+          `* ${config.id || config.name} - ${file}:${line}:${col}\n`
+        );
         throw outer;
       }
     }
   }
   return monitors;
+}
+
+const REQUIRED_MONITOR_FIELDS = ['id', 'name'];
+export function buildMonitorFromYaml(
+  config: MonitorConfig,
+  options: PushOptions
+) {
+  // Validate required fields
+  for (const field of REQUIRED_MONITOR_FIELDS) {
+    if (!config[field]) {
+      throw `Monitor ${field} is required`;
+    }
+  }
+  const schedule = parseSchedule(String(config.schedule));
+  const privateLocations =
+    config['private_locations'] || options.privateLocations;
+  delete config['private_locations'];
+
+  return new Monitor({
+    locations: options.locations,
+    ...config,
+    privateLocations,
+    schedule: schedule || options.schedule,
+  });
 }
 
 export function parseSchedule(schedule: string) {
