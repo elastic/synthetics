@@ -26,7 +26,7 @@
 import { mkdir, rm, readFile } from 'fs/promises';
 import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
-import { bold } from 'kleur/colors';
+import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import { sendRequest } from './request';
 import {
@@ -38,7 +38,6 @@ import {
 import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { monitor } from '../core';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
@@ -128,7 +127,7 @@ export async function createLightweightMonitors(
         outer += indent(
           `* ${config.id || config.name} - ${file}:${line}:${col}\n`
         );
-        throw outer;
+        throw red(outer);
       }
     }
   }
