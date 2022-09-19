@@ -65,19 +65,19 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     }
   } else {
     write('');
-    // Makes testing easier with overrides
-    let deleteAll = false;
-    if (process.env.TEST_OVERRIDE != null) {
-      deleteAll = Boolean(process.env.TEST_OVERRIDE);
-    } else {
-      ({ deleteAll } = await prompt<{ deleteAll: boolean }>({
-        type: 'confirm',
-        name: 'deleteAll',
-        message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
-        initial: false,
-      }));
-    }
-
+    const { deleteAll } = await prompt<{ deleteAll: boolean }>({
+      type: 'confirm',
+      skip() {
+        if (options.yes) {
+          this.initial = process.env.TEST_OVERRIDE ?? true;
+          return true;
+        }
+        return false;
+      },
+      name: 'deleteAll',
+      message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+      initial: false,
+    });
     if (!deleteAll) {
       throw aborted('Push command Aborted');
     }
@@ -223,18 +223,21 @@ export async function catchIncorrectSettings(
 ) {
   let override = !settings.id;
   if (settings.id && settings.id !== options.id) {
-    if (process.env.TEST_OVERRIDE != null) {
-      override = Boolean(process.env.TEST_OVERRIDE);
-    } else {
-      // Add an extra line to make it easier to read the prompt
-      write('');
-      ({ override } = await prompt<{ override: boolean }>({
-        type: 'confirm',
-        name: 'override',
-        message: `Monitors were pushed under the '${settings.id}' project. Are you sure you want to push them under the new '${options.id}' (note that this will duplicate the monitors, the old ones being orphaned)`,
-        initial: false,
-      }));
-    }
+    // Add an extra line to make it easier to read the prompt
+    write('');
+    ({ override } = await prompt<{ override: boolean }>({
+      type: 'confirm',
+      name: 'override',
+      skip() {
+        if (options.yes) {
+          this.initial = process.env.TEST_OVERRIDE ?? true;
+          return true;
+        }
+        return false;
+      },
+      message: `Monitors were pushed under the '${settings.id}' project. Are you sure you want to push them under the new '${options.id}' (note that this will duplicate the monitors, the old ones being orphaned)`,
+      initial: false,
+    }));
     if (!override) {
       throw aborted('Push command Aborted');
     }

@@ -246,6 +246,7 @@ export type PushOptions = ProjectSettings & {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  yes?: boolean;
 };
 
 export type ProjectSettings = {
