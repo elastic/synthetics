@@ -96,9 +96,12 @@ describe('Push', () => {
       { id: 'test-project' },
       { locations: ['test-loc'], schedule: 2 }
     );
-    const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
-      TEST_OVERRIDE: '',
-    });
+    const output = await runPush(
+      [...DEFAULT_ARGS, '-y', '--id', 'new-project'],
+      {
+        TEST_OVERRIDE: false,
+      }
+    );
     expect(output).toContain('Push command Aborted');
   });
 
@@ -113,9 +116,12 @@ describe('Push', () => {
       `import {journey, monitor} from '../../../src/index';
 journey('journey 1', () => monitor.use({ id: 'j1' }));`
     );
-    const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
-      TEST_OVERRIDE: 'true',
-    });
+    const output = await runPush(
+      [...DEFAULT_ARGS, '-y', '--id', 'new-project'],
+      {
+        TEST_OVERRIDE: true,
+      }
+    );
     expect(output).toContain('preparing all monitors');
     await rm(testJourney, { force: true });
   });
@@ -162,19 +168,28 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
       { id: 'test-project' },
       { locations: ['test-loc'], schedule: 2 }
     );
-    const output = await runPush([...DEFAULT_ARGS], {
-      TEST_OVERRIDE: '',
+    const output = await runPush([...DEFAULT_ARGS, '-y'], {
+      TEST_OVERRIDE: false,
     });
     expect(output).toContain('Push command Aborted');
   });
 
-  it('delete entire project ', async () => {
+  it('delete entire project with --yes flag', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
       { locations: ['test-loc'], schedule: 2 }
     );
-    const output = await runPush([...DEFAULT_ARGS], {
-      TEST_OVERRIDE: 'true',
+    const output = await runPush([...DEFAULT_ARGS, '-y']);
+    expect(output).toContain('deleting all stale monitors');
+  });
+
+  it('delete entire project with overrides', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+    const output = await runPush([...DEFAULT_ARGS, '-y'], {
+      TEST_OVERRIDE: true,
     });
     expect(output).toContain('deleting all stale monitors');
   });
