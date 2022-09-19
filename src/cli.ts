@@ -184,7 +184,7 @@ program
     '--space <space>',
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
-  .option('-y, --yes', 'skip all questionnaires and run non-interactively')
+  .option('-y, --yes', 'skip all questions and run non-interactively')
   .addOption(pattern)
   .addOption(tags)
   .addOption(match)
