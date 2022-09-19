@@ -18,11 +18,6 @@ exports[`Push API handle sync response 1`] = `
 "
 `;
 
-exports[`Push abort on push with different project id 1`] = `
-"⚠ Push command Aborted
-"
-`;
-
 exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 
