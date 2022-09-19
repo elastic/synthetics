@@ -40,9 +40,9 @@ import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
-  content: string;
   locations: string[];
-  filter: Monitor['filter'];
+  content?: string;
+  filter?: Monitor['filter'];
 };
 
 export type APISchema = {
@@ -68,17 +68,16 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
-    let content = '';
+    const schema = {
+      ...config,
+      locations: translateLocation(config.locations),
+    };
     if (type === 'browser') {
       const outPath = join(bundlePath, config.name + '.zip');
-      content = await bundler.build(source.file, outPath);
+      const content = await bundler.build(source.file, outPath);
+      Object.assign(schema, { content, filter });
     }
-    schemas.push({
-      ...config,
-      content,
-      locations: translateLocation(config.locations),
-      filter: filter,
-    });
+    schemas.push(schema);
   }
 
   await rm(bundlePath, { recursive: true });
@@ -111,6 +110,10 @@ export async function createLightweightMonitors(
 
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     for (const monNode of monitorSeq.items) {
+      // Skip browser monitors from Lightweight config
+      if (monNode.get('type') === 'browser') {
+        continue;
+      }
       const config = monNode.toJSON();
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
       try {

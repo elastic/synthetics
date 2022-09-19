@@ -30,11 +30,11 @@ import { Monitor } from '../../src/dsl/monitor';
 export const wsEndpoint = process.env.WSENDPOINT;
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-export function createTestMonitor(filename: string) {
+export function createTestMonitor(filename: string, type = 'browser') {
   const monitor = new Monitor({
     id: 'test-monitor',
     name: 'test',
-    type: 'browser',
+    type,
     schedule: 10,
     enabled: true,
     locations: ['united_kingdom', 'australia_east'],

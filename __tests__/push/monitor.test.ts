@@ -46,7 +46,22 @@ describe('Monitors', () => {
     process.env.NO_COLOR = '';
   });
 
-  it('build monitor schema monitor', async () => {
+  it('build browser monitor schema', async () => {
+    const schema = await buildMonitorSchema([
+      createTestMonitor('heartbeat.yml', 'http'),
+    ]);
+    expect(schema[0]).toEqual({
+      id: 'test-monitor',
+      name: 'test',
+      schedule: 10,
+      type: 'http',
+      enabled: true,
+      locations: ['europe-west2-a', 'australia-southeast1-a'],
+      privateLocations: ['germany'],
+    });
+  });
+
+  it('build lightweight monitor schema', async () => {
     const schema = await buildMonitorSchema([monitor]);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
@@ -113,6 +128,7 @@ describe('Monitors', () => {
   describe('Lightweight monitors', () => {
     const PROJECT_DIR = generateTempPath();
     const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
+    const opts = { auth: 'foo' };
     beforeEach(async () => {
       await mkdir(PROJECT_DIR, { recursive: true });
     });
@@ -131,17 +147,24 @@ heartbeat.monitors:
   schedule: "* * * *"
   id: "foo"
       `);
-      expect(
-        createLightweightMonitors(PROJECT_DIR, {} as any)
-      ).rejects.toContain(
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
         `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
       );
     });
 
     it('handle when no yml files are present', async () => {
-      const monitors = await createLightweightMonitors(PROJECT_DIR, {
-        locations: ['australia_east'],
-      } as any);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('skip browser monitors', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: browser
+  schedule: "@every 1m"
+  id: "browser-mon"
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
       expect(monitors.length).toBe(0);
     });
 
