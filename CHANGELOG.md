@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta.35 (2022-09-19)
+
+### Features
+
+- Agent now prompts a warning question in interactive mode when users attempt to
+  run push command without any active monitors which would nuke an entire project #598
+- Users can suppress all prompt questions when running push command with `--yes` flag #602
+  ```sh
+  SYNTHETICS_API_KEY="key" npx @ealstic/synthetics push --yes
+  ```
+
 ## v1.0.0-beta.34 (2022-09-14)
 
 ### Features
