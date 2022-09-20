@@ -27,8 +27,12 @@ import { isAbsolute, dirname, extname, join } from 'path';
 import fs from 'fs/promises';
 import * as esbuild from 'esbuild';
 
-const SOURCE_DIR = join(__dirname, '..', '..');
-const SOURCE_NODE_MODULES = join(SOURCE_DIR, 'node_modules');
+// ROOT directory of the Package - /
+const ROOT_DIR = join(__dirname, '..', '..');
+// Source of the package - /src, /dist, etc.
+const SOURCE_DIR = join(__dirname, '..');
+// Node modules directory of the package - /node_modules
+const SOURCE_NODE_MODULES = join(ROOT_DIR, 'node_modules');
 
 export function commonOptions(): esbuild.BuildOptions {
   return {
