@@ -126,7 +126,7 @@ journey('journey 1', () => monitor.use({ id: 'j1' }));`
     await rm(testJourney, { force: true });
   });
 
-  it('errors on duplicate monitors', async () => {
+  it('errors on duplicate browser monitors', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
       { locations: ['test-loc'], schedule: 2 }
@@ -147,6 +147,32 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
     expect(output).toContain(`duplicate id`);
     expect(output).toContain(`duplicate name`);
     await rm(dupJourney, { force: true });
+  });
+
+  it('errors on duplicate browser monitors', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 2 }
+    );
+
+    const heartbeatYml = join(PROJECT_DIR, 'hearbeat.duplicate.yml');
+    await writeFile(
+      heartbeatYml,
+      `
+heartbeat.monitors:
+- type: http
+  schedule: @every 1m
+  id: foo
+  name: foo1
+- type: http
+  schedule: @every 2m
+  id: foo
+  name: foo2
+    `
+    );
+    const output = await runPush();
+    expect(output).toContain(`Aborted: Duplicate monitors found`);
+    await rm(heartbeatYml, { force: true });
   });
 
   it('format duplicate monitors', () => {

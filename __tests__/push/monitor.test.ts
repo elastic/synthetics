@@ -140,7 +140,17 @@ describe('Monitors', () => {
       await writeFile(HB_SOURCE, data, 'utf-8');
     };
 
-    it('handle when no yml files are present', async () => {
+    it('when no yml files are present', async () => {
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('when no monitors are present', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+
+heartbeat.run_once: true
+      `);
       const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
       expect(monitors.length).toBe(0);
     });

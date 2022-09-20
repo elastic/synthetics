@@ -104,10 +104,11 @@ export async function createLightweightMonitors(
       keepSourceTokens: true,
     });
     // Skip other yml files that are not relevant
-    if (!parsedDoc.has('heartbeat.monitors')) {
+    const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
+    if (!monitorSeq) {
       continue;
     }
-    const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
+
     for (const monNode of monitorSeq.items) {
       // Skip browser monitors and disabled monitors from pushing
       if (
