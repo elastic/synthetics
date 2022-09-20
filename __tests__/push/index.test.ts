@@ -149,7 +149,7 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
     await rm(dupJourney, { force: true });
   });
 
-  it('errors on duplicate browser monitors', async () => {
+  it('errors on duplicate lightweight monitors', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
       { locations: ['test-loc'], schedule: 2 }
