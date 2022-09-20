@@ -112,7 +112,7 @@ describe('Gatherer', () => {
     });
     expect(pluginManager).toBeInstanceOf(PluginManager);
     const network = pluginManager.get('network');
-    expect(network.start).toHaveBeenCalled();
+    expect(network?.start).toHaveBeenCalled();
     await Gatherer.stop();
   });
 

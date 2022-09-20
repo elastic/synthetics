@@ -89,7 +89,7 @@ describe('json reporter', () => {
 
   const readAndCloseStreamJson = async () => {
     const buffer = await readAndCloseStream();
-    const out = [];
+    const out: Array<any> = [];
     buffer.split('\n').forEach(l => {
       try {
         out.push(JSON.parse(l));
@@ -265,11 +265,11 @@ describe('json reporter', () => {
   it('idempotent on constructing screenshots blocks', async () => {
     const screenshotsDir = join(FIXTURES_DIR, 'screenshots');
     const collectScreenshots = async () => {
-      const screenshots = [];
+      let screenshot = {};
       await gatherScreenshots(screenshotsDir, async ({ data }) => {
-        const result = await getScreenshotBlocks(Buffer.from(data, 'base64'));
-        screenshots.push(result);
+        screenshot = await getScreenshotBlocks(Buffer.from(data, 'base64'));
       });
+      return screenshot;
     };
     const screenshot1 = await collectScreenshots();
     const screenshot2 = await collectScreenshots();

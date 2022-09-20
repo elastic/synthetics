@@ -28,7 +28,7 @@ import { NetworkInfo } from '../../src/common_types';
 export const NETWORK_INFO: Array<NetworkInfo> = [
   {
     browser: { name: 'HeadlessChrome', version: '94.0.4595.0' },
-    step: null,
+    step: undefined,
     timestamp: 1646782451347652.5,
     url: 'http://localhost:56899/index',
     type: 'Document',
@@ -82,7 +82,7 @@ export const NETWORK_INFO: Array<NetworkInfo> = [
   },
   {
     browser: { name: 'HeadlessChrome', version: '94.0.4595.0' },
-    step: null,
+    step: undefined,
     timestamp: 1646782451408470,
     url: 'http://localhost:56899/delay100',
     type: 'Script',

@@ -129,7 +129,7 @@ it('rewrite error stack from Playwright', () => {
 });
 
 it('does not rewrite non playwright errors', () => {
-  const normalStack = new Error('Tets').stack;
+  const normalStack = new Error('Tets').stack as string;
   const indexes = findPWLogsIndexes(normalStack);
   const newNormalStack = rewriteErrorStack(normalStack, indexes);
   expect(normalStack).toStrictEqual(newNormalStack);

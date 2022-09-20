@@ -49,14 +49,14 @@ describe('tracing', () => {
      * chrome tracer would not have time to capture filmstripms, We account for
      * these scenarios by checking them conditionally
      */
-    if (filmstrips.length > 0) {
+    if (filmstrips && filmstrips.length > 0) {
       expect(filmstrips[0]).toMatchObject({
         blob: expect.any(String),
         mime: 'image/jpeg',
         start: { us: expect.any(Number) },
       });
     }
-    if (traces.length > 0) {
+    if (traces && traces.length > 0) {
       expect(traces[0]).toMatchObject({
         name: 'navigationStart',
         type: 'mark',
