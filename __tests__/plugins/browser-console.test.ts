@@ -84,7 +84,7 @@ describe('BrowserConsole', () => {
       m => m.text.indexOf('that is not defined') >= 0
     );
     expect(referenceError?.error?.stack).toContain(
-      `ReferenceError?: that is not defined\n    at HTMLImageElement.onerror`
+      `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
     );
     expect(referenceError?.type).toEqual('error');
     expect(referenceError?.step).toEqual(currentStep);
@@ -103,7 +103,7 @@ describe('BrowserConsole', () => {
     const messages = browserConsole.stop();
     await Gatherer.stop();
 
-    const unhandledError = messages.find(m => m.text.indexOf('hey') >= 0);
+    const unhandledError = messages.find(m => m.text.indexOf('Boom') >= 0);
     expect(unhandledError?.type).toEqual('error');
     expect(unhandledError?.step).toEqual(currentStep);
     expect(unhandledError?.error?.stack).toContain('Error: Boom');
