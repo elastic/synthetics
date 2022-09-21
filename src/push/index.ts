@@ -50,7 +50,7 @@ import { findSyntheticsConfig, readConfig } from '../config';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
-  const stackVersion = getVersion(options);
+  const stackVersion = await getVersion(options);
   const shouldBatchRequests = semver.satisfies(stackVersion, '>=8.5.0');
   if (monitors.length === 0) {
     write('');
@@ -116,29 +116,31 @@ export async function pushMonitors({
     throw formatAPIError(statusCode, error, message);
   }
   body.setEncoding('utf-8');
+  let completeData = '';
   for await (const data of body) {
-    // Its kind of hacky for now where Kibana streams the response by
-    // writing the data as NDJSON events (data can be interleaved), we
-    // distinguish the final data by checking if the event was a progress vs complete event
-    const chunks = safeNDJSONParse(data);
-    for (const chunk of chunks) {
-      if (typeof chunk === 'string') {
-        // TODO: add progress back for all states once we get the fix
-        // on kibana side
-        if (shouldBatchRequests) {
-          keepStale && apiProgress(chunk);
-        } else {
-          apiProgress(chunk)
-        }
-        continue;
+    completeData += data;
+  }
+  // Its kind of hacky for now where Kibana streams the response by
+  // writing the data as NDJSON events (data can be interleaved), we
+  // distinguish the final data by checking if the event was a progress vs complete event
+  const chunks = safeNDJSONParse([completeData]);
+  for (const chunk of chunks) {
+    if (typeof chunk === 'string') {
+      // TODO: add progress back for all states once we get the fix
+      // on kibana side
+      if (shouldBatchRequests) {
+        keepStale && apiProgress(chunk);
+      } else {
+        apiProgress(chunk)
       }
-      const { failedMonitors, failedStaleMonitors } = chunk;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      if (failedStaleMonitors.length > 0) {
-        throw formatStaleMonitors(failedStaleMonitors);
-      }
+      continue;
+    }
+    const { failedMonitors, failedStaleMonitors } = chunk;
+    if (failedMonitors && failedMonitors.length > 0) {
+      throw formatFailedMonitors(failedMonitors);
+    }
+    if (failedStaleMonitors.length > 0) {
+      throw formatStaleMonitors(failedStaleMonitors);
     }
   }
 }
