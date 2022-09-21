@@ -95,3 +95,17 @@ export async function createMonitors(
     body: JSON.stringify(schema),
   });
 }
+
+export async function getVersion(
+  options: PushOptions,
+) {
+  const { body } = await sendRequest({
+    url:
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/status`,
+    method: 'GET',
+    auth: options.auth,
+  });
+  const data = await body.json();
+  return data.version.number;
+}

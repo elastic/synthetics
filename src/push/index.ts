@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  */
-
+import semver from 'semver';
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold } from 'kleur/colors';
@@ -33,7 +33,7 @@ import {
   formatNotFoundError,
   formatStaleMonitors,
 } from './request';
-import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
+import { buildMonitorSchema, createMonitors, getVersion, MonitorSchema } from './monitor';
 import { Monitor } from '../dsl/monitor';
 import {
   progress,
@@ -50,20 +50,9 @@ import { findSyntheticsConfig, readConfig } from '../config';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
-  if (monitors.length > 0) {
-    const duplicates = trackDuplicates(monitors);
-    if (duplicates.size > 0) {
-      throw error(formatDuplicateError(duplicates));
-    }
-
-    progress(`preparing all monitors`);
-    schemas = await buildMonitorSchema(monitors);
-
-    progress(`creating all monitors`);
-    for (const schema of schemas) {
-      await pushMonitors({ schemas: [schema], keepStale: true, options });
-    }
-  } else {
+  const stackVersion = getVersion(options);
+  const shouldBatchRequests = semver.satisfies(stackVersion, '>=8.5.0');
+  if (monitors.length === 0) {
     write('');
     const { deleteAll } = await prompt<{ deleteAll: boolean }>({
       type: 'confirm',
@@ -81,9 +70,24 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     if (!deleteAll) {
       throw aborted('Push command Aborted');
     }
+  } else {
+    progress(`preparing all monitors`);
+    schemas = await buildMonitorSchema(monitors);
+    const duplicates = trackDuplicates(monitors);
+    if (duplicates.size > 0) {
+      throw error(formatDuplicateError(duplicates));
+    }
   }
+
+  if (monitors.length > 0 && !shouldBatchRequests) {
+    progress(`creating all monitors`);
+    for (const schema of schemas) {
+      await pushMonitors({ schemas: [schema], keepStale: true, options, shouldBatchRequests });
+    }
+  }
+
   progress(`deleting all stale monitors`);
-  await pushMonitors({ schemas, keepStale: false, options });
+  await pushMonitors({ schemas, keepStale: false, options, shouldBatchRequests });
 
   done('Pushed');
 }
@@ -92,10 +96,12 @@ export async function pushMonitors({
   schemas,
   keepStale,
   options,
+  shouldBatchRequests,
 }: {
   schemas: MonitorSchema[];
   keepStale: boolean;
   options: PushOptions;
+  shouldBatchRequests
 }) {
   const { body, statusCode } = await createMonitors(
     schemas,
@@ -119,7 +125,11 @@ export async function pushMonitors({
       if (typeof chunk === 'string') {
         // TODO: add progress back for all states once we get the fix
         // on kibana side
-        keepStale && apiProgress(chunk);
+        if (shouldBatchRequests) {
+          keepStale && apiProgress(chunk);
+        } else {
+          apiProgress(chunk)
+        }
         continue;
       }
       const { failedMonitors, failedStaleMonitors } = chunk;
