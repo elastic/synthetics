@@ -44,7 +44,7 @@ async function validateZip(content) {
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
 
-  const files = [];
+  const files: Array<string> = [];
 
   const entries = createReadStream(pathToZip).pipe(
     unzipper.Parse({ forceStream: true })

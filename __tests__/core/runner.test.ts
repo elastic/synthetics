@@ -432,7 +432,7 @@ describe('runner', () => {
   });
 
   it('run - should preserve order hooks/journeys/steps', async () => {
-    const result = [];
+    const result: Array<string> = [];
     runner.addHook('beforeAll', async () => result.push('beforeAll1'));
     runner.addHook('afterAll', async () => result.push('afterAll1'));
     const j1 = new Journey({ name: 'j1' }, noop);
@@ -464,7 +464,7 @@ describe('runner', () => {
   });
 
   it('run - expose params in all hooks', async () => {
-    const result = [];
+    const result: Array<Record<string, any>> = [];
     runner.addHook('beforeAll', ({ params, env }) =>
       result.push({ name: 'beforeAll', params, env })
     );
@@ -478,7 +478,7 @@ describe('runner', () => {
     j1.addHook('after', ({ params, env }) => {
       result.push({ name: 'after', params, env });
     });
-    j1.addStep('s1', () => result.push('step1'));
+    j1.addStep('s1', () => result.push({ name: 'step1' }));
     runner.addJourney(j1);
 
     const params = {
@@ -493,7 +493,7 @@ describe('runner', () => {
     expect(result).toEqual([
       { name: 'beforeAll', params, env: 'testing' },
       { name: 'before', params },
-      'step1',
+      { name: 'step1' },
       { name: 'after', params, env: 'testing' },
       { name: 'afterAll', params },
     ]);
@@ -504,6 +504,7 @@ describe('runner', () => {
     class CustomReporter implements Reporter {
       messages: string[] = [];
       constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         reporter = this;
       }
       onStart({ numJourneys }: StartEvent) {
@@ -541,7 +542,7 @@ describe('runner', () => {
   const readAndCloseStreamJson = () => {
     const fd = fs.openSync(dest, 'r');
     const buffer = fs.readFileSync(fd, 'utf-8');
-    const out = [];
+    const out: Array<any> = [];
     buffer.split('\n').forEach(l => {
       try {
         out.push(JSON.parse(l));
@@ -635,7 +636,7 @@ describe('runner', () => {
     await Gatherer.stop();
     expect(step1.metrics).toBeUndefined();
     expect(step1.traces).toBeUndefined();
-    expect(step2.traces.length).toBeGreaterThan(0);
+    expect(step2.traces?.length).toBeGreaterThan(0);
     expect(step2.metrics).toMatchObject({
       cls: 0,
       fcp: {
