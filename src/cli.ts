@@ -54,6 +54,7 @@ import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';
 import { LocationsMap } from './locations/public-locations';
+import { createLightweightMonitors } from './push/monitor';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -192,7 +193,8 @@ program
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
     try {
-      await loadTestFiles({ inline: false }, [cwd()]);
+      const workDir = cwd();
+      await loadTestFiles({ inline: false, ...program.opts() }, [workDir]);
       const settings = await loadSettings();
       const options = normalizeOptions({
         ...program.opts(),
@@ -202,6 +204,7 @@ program
       validateSettings(options);
       await catchIncorrectSettings(settings, options);
       const monitors = runner.buildMonitors(options);
+      monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
     } catch (e) {
       e && console.error(e);

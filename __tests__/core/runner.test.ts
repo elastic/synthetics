@@ -726,8 +726,10 @@ describe('runner', () => {
     expect(monitors[0].config).toEqual({
       id: 'test-j1',
       name: 'j1',
+      type: 'browser',
       tags: [],
       locations: ['united_kingdom'],
+      privaateLocations: undefined,
       schedule: 2,
       params: undefined,
       playwrightOptions: undefined,
@@ -767,6 +769,7 @@ describe('runner', () => {
     expect(monitors[0].config).toEqual({
       id: 'test-j1',
       name: 'j1',
+      type: 'browser',
       tags: ['foo*'],
       locations: ['united_kingdom'],
       privateLocations: ['spain'],

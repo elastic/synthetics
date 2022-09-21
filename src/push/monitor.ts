@@ -23,19 +23,26 @@
  *
  */
 
-import { mkdir, rm } from 'fs/promises';
+import { mkdir, rm, readFile } from 'fs/promises';
 import { join } from 'path';
+import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
+import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import { sendRequest } from './request';
-import { removeTrailingSlash, SYNTHETICS_PATH } from '../helpers';
+import {
+  removeTrailingSlash,
+  SYNTHETICS_PATH,
+  totalist,
+  indent,
+} from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
-  content: string;
   locations: string[];
-  filter: Monitor['filter'];
+  content?: string;
+  filter?: Monitor['filter'];
 };
 
 export type APISchema = {
@@ -60,19 +67,121 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
   const schemas: MonitorSchema[] = [];
 
   for (const monitor of monitors) {
-    const { source, config, filter } = monitor;
-    const outPath = join(bundlePath, config.name + '.zip');
-    const content = await bundler.build(source.file, outPath);
-    schemas.push({
+    const { source, config, filter, type } = monitor;
+    const schema = {
       ...config,
-      content,
       locations: translateLocation(config.locations),
-      filter: filter,
-    });
+    };
+    if (type === 'browser') {
+      const outPath = join(bundlePath, config.name + '.zip');
+      const content = await bundler.build(source.file, outPath);
+      Object.assign(schema, { content, filter });
+    }
+    schemas.push(schema);
   }
 
   await rm(bundlePath, { recursive: true });
   return schemas;
+}
+
+export async function createLightweightMonitors(
+  workDir: string,
+  options: PushOptions
+) {
+  const lwFiles = new Set<string>();
+  await totalist(workDir, (rel, abs) => {
+    if (/.(yml|yaml)$/.test(rel)) {
+      lwFiles.add(abs);
+    }
+  });
+
+  const monitors: Monitor[] = [];
+  for (const file of lwFiles.values()) {
+    const content = await readFile(file, 'utf-8');
+    const lineCounter = new LineCounter();
+    const parsedDoc = parseDocument(content, {
+      lineCounter,
+      keepSourceTokens: true,
+    });
+    // Skip other yml files that are not relevant
+    const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
+    if (!monitorSeq) {
+      continue;
+    }
+
+    for (const monNode of monitorSeq.items) {
+      // Skip browser monitors and disabled monitors from pushing
+      if (
+        monNode.get('type') === 'browser' ||
+        monNode.get('enabled') === false
+      ) {
+        continue;
+      }
+      const config = monNode.toJSON();
+      const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
+      try {
+        const mon = buildMonitorFromYaml(config, options);
+        mon.setSource({ file, line, column: col });
+        monitors.push(mon);
+      } catch (e) {
+        let outer = bold(`Aborted: ${e}\n`);
+        outer += indent(
+          `* ${config.id || config.name} - ${file}:${line}:${col}\n`
+        );
+        throw red(outer);
+      }
+    }
+  }
+  return monitors;
+}
+
+const REQUIRED_MONITOR_FIELDS = ['id', 'name'];
+export function buildMonitorFromYaml(
+  config: MonitorConfig,
+  options: PushOptions
+) {
+  // Validate required fields
+  for (const field of REQUIRED_MONITOR_FIELDS) {
+    if (!config[field]) {
+      throw `Monitor ${field} is required`;
+    }
+  }
+  const schedule = parseSchedule(String(config.schedule));
+  const privateLocations =
+    config['private_locations'] || options.privateLocations;
+  delete config['private_locations'];
+
+  return new Monitor({
+    locations: options.locations,
+    ...config,
+    privateLocations,
+    schedule: schedule || options.schedule,
+  });
+}
+
+export function parseSchedule(schedule: string) {
+  const EVERY_SYNTAX = '@every';
+  if (!(schedule + '').startsWith(EVERY_SYNTAX)) {
+    throw `Monitor schedule format(${schedule}) not supported: use '@every' syntax instead`;
+  }
+
+  const duration = schedule.substring(EVERY_SYNTAX.length + 1);
+  // split between non-digit (\D) and a digit (\d)
+  const durations = duration.split(/(?<=\D)(?=\d)/g);
+  let minutes = 0;
+  for (const dur of durations) {
+    // split between a digit and non-digit
+    const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
+    // Calculate
+    if (format === 's') {
+      minutes++;
+    } else if (format === 'm') {
+      minutes += Number(value);
+    } else if (format === 'h') {
+      minutes += Number(value) * 60;
+    }
+  }
+  return minutes;
 }
 
 export async function createMonitors(

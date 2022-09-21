@@ -23,7 +23,15 @@
  *
  */
 
-import { buildMonitorSchema, createMonitors } from '../../src/push/monitor';
+import { mkdir, rm, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { generateTempPath } from '../../src/helpers';
+import {
+  buildMonitorSchema,
+  createMonitors,
+  createLightweightMonitors,
+  parseSchedule,
+} from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 
@@ -38,12 +46,28 @@ describe('Monitors', () => {
     process.env.NO_COLOR = '';
   });
 
-  it('build monitor schema monitor', async () => {
+  it('build lightweight monitor schema', async () => {
+    const schema = await buildMonitorSchema([
+      createTestMonitor('heartbeat.yml', 'http'),
+    ]);
+    expect(schema[0]).toEqual({
+      id: 'test-monitor',
+      name: 'test',
+      schedule: 10,
+      type: 'http',
+      enabled: true,
+      locations: ['europe-west2-a', 'australia-southeast1-a'],
+      privateLocations: ['germany'],
+    });
+  });
+
+  it('build browser monitor schema', async () => {
     const schema = await buildMonitorSchema([monitor]);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
+      type: 'browser',
       enabled: true,
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
@@ -52,6 +76,19 @@ describe('Monitors', () => {
         match: 'test',
       },
     });
+  });
+
+  it('parse @every schedule format', async () => {
+    expect(() => parseSchedule('* * * *')).toThrowError(
+      `Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
+    );
+    expect(parseSchedule('@every 4s')).toBe(1);
+    expect(parseSchedule('@every 60s')).toBe(1);
+    expect(parseSchedule('@every 1m')).toBe(1);
+    expect(parseSchedule('@every 1m10s')).toBe(2);
+    expect(parseSchedule('@every 2m')).toBe(2);
+    expect(parseSchedule('@every 1h2m')).toBe(62);
+    expect(parseSchedule('@every 1h2m10s')).toBe(63);
   });
 
   it('api schema', async () => {
@@ -85,6 +122,169 @@ describe('Monitors', () => {
       project: 'blah',
       keep_stale: false,
       monitors: schema,
+    });
+  });
+
+  describe('Lightweight monitors', () => {
+    const PROJECT_DIR = generateTempPath();
+    const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
+    const opts = { auth: 'foo' };
+    beforeEach(async () => {
+      await mkdir(PROJECT_DIR, { recursive: true });
+    });
+    afterEach(async () => {
+      await rm(PROJECT_DIR, { recursive: true });
+    });
+
+    const writeHBFile = async data => {
+      await writeFile(HB_SOURCE, data, 'utf-8');
+    };
+
+    it('when no yml files are present', async () => {
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('when no monitors are present', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+
+heartbeat.run_once: true
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('abort on schedule format error', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "* * * *"
+  id: "foo"
+  name: "foo"
+      `);
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+        `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
+      );
+    });
+
+    it('validate id check', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  name: "foo"
+      `);
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+        `Aborted: Monitor id is required`
+      );
+    });
+
+    it('validate name check', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  id: "foo"
+      `);
+      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+        `Aborted: Monitor name is required`
+      );
+    });
+
+    it('skip browser monitors', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: browser
+  schedule: "@every 1m"
+  id: "browser-mon"
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('skip disabled monitors', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "http"
+  enabled: false
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
+    });
+
+    it('parses monitor config correctly', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "foo"
+  name: "with-loc"
+  private_locations:
+    - baz
+      `);
+      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+        locations: ['australia_east'],
+      } as any);
+      expect(monitor.config).toEqual({
+        id: 'foo',
+        name: 'with-loc',
+        type: 'icmp',
+        locations: ['australia_east'],
+        privateLocations: ['baz'],
+        schedule: 5,
+      });
+      expect(monitor.source).toEqual({
+        file: HB_SOURCE,
+        column: 3,
+        line: 3,
+      });
+    });
+
+    it('pass all monitor config as it is', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: @every 5m
+  id: "foo"
+  name: "with-fields"
+  ssl:
+    certificate_authorities: ['/etc/ca.crt']
+  check.response:
+    status: [200]
+    body:
+      - Saved
+      - saved
+  check.request:
+    method: POST
+    headers:
+      'Content-Type': 'application/x-www-form-urlencoded'
+      `);
+
+      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+        locations: ['australia_east'],
+      } as any);
+      expect(monitor.config).toEqual({
+        id: 'foo',
+        name: 'with-fields',
+        type: 'http',
+        locations: ['australia_east'],
+        privateLocations: undefined,
+        schedule: 5,
+        'check.request': {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          method: 'POST',
+        },
+        'check.response': {
+          body: ['Saved', 'saved'],
+          status: [200],
+        },
+        ssl: {
+          certificate_authorities: ['/etc/ca.crt'],
+        },
+      });
     });
   });
 });

@@ -241,7 +241,7 @@ export type RunOptions = BaseArgs & {
   reporter?: BuiltInReporterName | ReporterInstance;
 };
 
-export type PushOptions = ProjectSettings & {
+export type PushOptions = Partial<ProjectSettings> & {
   auth: string;
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];

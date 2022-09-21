@@ -58,7 +58,8 @@
     "sonic-boom": "^3.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.3",
-    "undici": "^5.10.0"
+    "undici": "^5.10.0",
+    "yaml": "^2.1.1"
   },
   "devDependencies": {
     "@types/jest": "^28.1.8",
