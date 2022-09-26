@@ -34,6 +34,7 @@ import {
   SYNTHETICS_PATH,
   totalist,
   indent,
+  warn,
 } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -94,6 +95,12 @@ export async function createLightweightMonitors(
       lwFiles.add(abs);
     }
   });
+  // Warn users about schedule that are less than 60 seconds
+  if (lwFiles.size > 0) {
+    warn(
+      'lightweight monitors schedule < 1 minute resolution are not supported, will get reset to their nearest minute interval.'
+    );
+  }
 
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
@@ -146,7 +153,7 @@ export function buildMonitorFromYaml(
       throw `Monitor ${field} is required`;
     }
   }
-  const schedule = parseSchedule(String(config.schedule));
+  const schedule = config.schedule && parseSchedule(String(config.schedule));
   const privateLocations =
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
@@ -172,13 +179,18 @@ export function parseSchedule(schedule: string) {
   for (const dur of durations) {
     // split between a digit and non-digit
     const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
-    // Calculate
-    if (format === 's') {
-      minutes++;
-    } else if (format === 'm') {
-      minutes += Number(value);
-    } else if (format === 'h') {
-      minutes += Number(value) * 60;
+    // Calculate based on the duration symbol
+    const scheduleValue = parseInt(value, 10);
+    switch (format) {
+      case 's':
+        minutes += Math.ceil(scheduleValue / 60);
+        break;
+      case 'm':
+        minutes += scheduleValue;
+        break;
+      case 'h':
+        minutes += scheduleValue * 60;
+        break;
     }
   }
   return minutes;

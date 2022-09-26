@@ -359,7 +359,7 @@ export function done(message: string) {
   write(bold(green(`${symbols['succeeded']} ${message}`)));
 }
 
-export function aborted(message: string) {
+export function warn(message: string) {
   write(bold(yellow(`${symbols['warning']} ${message}`)));
 }
 

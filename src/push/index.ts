@@ -40,7 +40,7 @@ import {
   apiProgress,
   write,
   error,
-  aborted,
+  warn,
   indent,
   safeNDJSONParse,
   done,
@@ -79,7 +79,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       initial: false,
     });
     if (!deleteAll) {
-      throw aborted('Push command Aborted');
+      throw warn('Push command Aborted');
     }
   }
   progress(`deleting all stale monitors`);
@@ -207,7 +207,7 @@ async function overrideSettings(oldValue: string, newValue: string) {
   const cwd = process.cwd();
   const configPath = await findSyntheticsConfig(cwd, cwd);
   if (!configPath) {
-    throw aborted(`Unable to find synthetics config file: ${configPath}`);
+    throw warn(`Unable to find synthetics config file: ${configPath}`);
   }
   const config = await readFile(configPath, 'utf-8');
   const updatedConfig = config.replace(
@@ -239,7 +239,7 @@ export async function catchIncorrectSettings(
       initial: false,
     }));
     if (!override) {
-      throw aborted('Push command Aborted');
+      throw warn('Push command Aborted');
     }
   }
   if (override) {

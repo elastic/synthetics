@@ -40,9 +40,11 @@ describe('Monitors', () => {
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
+    jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
   });
   afterAll(async () => {
     await server.close();
+    jest.resetAllMocks();
     process.env.NO_COLOR = '';
   });
 
@@ -84,6 +86,8 @@ describe('Monitors', () => {
     );
     expect(parseSchedule('@every 4s')).toBe(1);
     expect(parseSchedule('@every 60s')).toBe(1);
+    expect(parseSchedule('@every 70s')).toBe(2);
+    expect(parseSchedule('@every 121s')).toBe(3);
     expect(parseSchedule('@every 1m')).toBe(1);
     expect(parseSchedule('@every 1m10s')).toBe(2);
     expect(parseSchedule('@every 2m')).toBe(2);
@@ -211,6 +215,24 @@ heartbeat.monitors:
       `);
       const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
       expect(monitors.length).toBe(0);
+    });
+
+    it('use schedule from config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  id: foo
+  name: without schedule
+      `);
+      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+        schedule: 10,
+      } as any);
+      expect(monitor.config).toMatchObject({
+        id: 'foo',
+        name: 'without schedule',
+        type: 'icmp',
+        schedule: 10,
+      });
     });
 
     it('parses monitor config correctly', async () => {
