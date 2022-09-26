@@ -263,7 +263,8 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await driver.page.reload();
+    await driver.page.reload({ waitUntil: 'networkidle' });
+    await delay(delayTime);
     const netinfo = await network.stop();
     await Gatherer.stop();
     const resources = netinfo.filter(req =>
