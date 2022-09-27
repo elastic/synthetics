@@ -283,12 +283,12 @@ export class NetworkManager {
         networkEntry.request.body = {
           bytes: sizes.requestBodySize,
         };
-        networkEntry.response.bytes =
-          sizes.responseHeadersSize + sizes.responseBodySize;
+        const transferSize = sizes.responseHeadersSize + sizes.responseBodySize;
+        networkEntry.transferSize = transferSize;
+        networkEntry.response.bytes = transferSize;
         networkEntry.response.body = {
           bytes: sizes.responseBodySize,
         };
-        networkEntry.transferSize = sizes.responseBodySize;
       })
     );
   }
