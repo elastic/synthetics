@@ -116,17 +116,16 @@ describe('network', () => {
     const network = new NetworkManager(driver);
     await network.start();
     server.route('/route1', (_, res) => {
+      res.setHeader('Content-Type', 'text/plain');
       res.end('A'.repeat(10));
     });
     await driver.page.goto(server.PREFIX + '/route1', {
       waitUntil: 'networkidle',
     });
     const netinfo = await network.stop();
-    expect(netinfo[0]).toMatchObject({
-      resourceSize: 0,
-      transferSize: 10,
-    });
     await Gatherer.stop();
+    expect(netinfo[0].response.body?.bytes).toBe(10);
+    expect(netinfo[0].transferSize).toBeGreaterThan(100);
   });
 
   it('timings for aborted requests', async () => {
@@ -200,9 +199,11 @@ describe('network', () => {
       timings: expect.any(Object),
     });
     const timings = netinfo[1].timings;
-    expect(timings.wait).toBeGreaterThan(delayTime);
-    expect(timings.receive).toBeGreaterThan(delayTime);
-    expect(timings.total).toBeGreaterThan(timings.wait + timings.receive);
+    expect(timings.wait).toBeGreaterThanOrEqual(delayTime);
+    expect(timings.receive).toBeGreaterThanOrEqual(delayTime);
+    expect(timings.total).toBeGreaterThanOrEqual(
+      timings.wait + timings.receive
+    );
   });
 
   it('capture network data from popups', async () => {
