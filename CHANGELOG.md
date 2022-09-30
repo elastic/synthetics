@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta-36 (20222-09-30)
+
+### Features
+
+#### Project based lightweight monitors
+
+In addition to pushing Project based browser monitors to Monitor management UI, the agent now supports pushing existing lightweight monitors directly from the `heartbeat.yml` files #542. Users can directly import the existing `heartbeat.yml` files in to their Synthetics project and configure the required project settings (Kibana host, auth key, locations, etc.) and run the `push` command.
+
+1. Create a new Synthetics project using `npx @elastic/synthetics init <dir-name>` and configure the project related settings.
+2. Copy the existing `heartbeat.yml` files in to the synthetics project directory. Example
+
+```yml
+   // heartbeat.yml example
+  - type: http
+    enabled: true
+    id: my-monitor
+    name: My Monitor
+    urls: ["http://localhost:9200"]
+    schedule: @every 10m
+    locations: ["singapore"]
+    timeout: 16s
+```
+
+3. Override the `schedule`, `locations` and `private locations` for specific monitors. Otherwise the defaults would be picked from `synthetics.config.ts` files.
+4. Run the push command `SYNTHETICS_API_KEY=<key> npm run push`.
+
+#### Browser version
+
+- Playwright version has been updated to `1.26.0`, this means the tests will be run on `Google Chrome/106.0.5249.30`.
+
+### Bug Fixes
+
+- Transfer size of network requests now includes both the response header and body sizes #615
+
 ## v1.0.0-beta.35 (2022-09-19)
 
 ### Features
