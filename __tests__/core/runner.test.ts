@@ -712,7 +712,7 @@ describe('runner', () => {
     const j2 = new Journey({ name: 'j2' }, noop);
     j1.updateMonitor({
       id: 'test-j1',
-      schedule: 2,
+      schedule: 3,
       locations: ['united_kingdom'],
     });
     j2.updateMonitor({ throttling: { latency: 1000 } });
@@ -730,7 +730,7 @@ describe('runner', () => {
       tags: [],
       locations: ['united_kingdom'],
       privaateLocations: undefined,
-      schedule: 2,
+      schedule: 3,
       params: undefined,
       playwrightOptions: undefined,
       throttling: { download: 5, latency: 20, upload: 3 },
@@ -754,7 +754,7 @@ describe('runner', () => {
     const j2 = new Journey({ name: 'j2' }, noop);
     j1.updateMonitor({
       id: 'test-j1',
-      schedule: 2,
+      schedule: 3,
       locations: ['united_kingdom'],
       privateLocations: ['spain'],
     });
@@ -773,7 +773,7 @@ describe('runner', () => {
       tags: ['foo*'],
       locations: ['united_kingdom'],
       privateLocations: ['spain'],
-      schedule: 2,
+      schedule: 3,
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
       throttling: { download: 100, latency: 20, upload: 50 },

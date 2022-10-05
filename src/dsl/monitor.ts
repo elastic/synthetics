@@ -96,7 +96,7 @@ export class Monitor {
 
   validate() {
     const schedule = this.config.schedule;
-    if (ALLOWED_SCHEDULES.includes(schedule)) {
+    if (ALLOWED_SCHEDULES.includes(schedule) || !this.source) {
       return;
     }
     const { config, source } = this;
