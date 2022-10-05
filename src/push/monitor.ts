@@ -95,13 +95,8 @@ export async function createLightweightMonitors(
       lwFiles.add(abs);
     }
   });
-  // Warn users about schedule that are less than 60 seconds
-  if (lwFiles.size > 0) {
-    warn(
-      'lightweight monitors schedule < 1 minute resolution are not supported, will get reset to their nearest minute interval.'
-    );
-  }
 
+  let warnOnce = false;
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
     const content = await readFile(file, 'utf-8');
@@ -114,6 +109,13 @@ export async function createLightweightMonitors(
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     if (!monitorSeq) {
       continue;
+    }
+    // Warn users about schedule that are less than 60 seconds
+    if (!warnOnce) {
+      warn(
+        'If you are using lightweight monitors with less than 1 minute resolution, these will be saved to the nearest supported frequency'
+      );
+      warnOnce = true;
     }
 
     for (const monNode of monitorSeq.items) {
@@ -193,7 +195,7 @@ export function parseSchedule(schedule: string) {
         break;
     }
   }
-  return minutes;
+  return minutes as MonitorConfig['schedule'];
 }
 
 export async function createMonitors(

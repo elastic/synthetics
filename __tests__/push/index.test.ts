@@ -85,8 +85,17 @@ describe('Push', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('error on invalid schedule', async () => {
+  it('error when schedule is not present', async () => {
     await fakeProjectSetup({ id: 'test-project' }, { locations: ['test-loc'] });
+    const output = await runPush();
+    expect(output).toMatchSnapshot();
+  });
+
+  it('error on invalid schedule', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 12 }
+    );
     const output = await runPush();
     expect(output).toMatchSnapshot();
   });
@@ -94,7 +103,7 @@ describe('Push', () => {
   it('abort on push with different project id', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush(
       [...DEFAULT_ARGS, '-y', '--id', 'new-project'],
@@ -105,15 +114,31 @@ describe('Push', () => {
     expect(output).toContain('Push command Aborted');
   });
 
-  it('push with different id when overriden', async () => {
+  it('error on invalid schedule in monitor DSL', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
     const testJourney = join(PROJECT_DIR, 'test.journey.ts');
     await writeFile(
       testJourney,
-      `import {journey, monitor} from '../../../src/index';
+      `import {journey, monitor} from '../../../src';
+journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
+    );
+    const output = await runPush();
+    expect(output).toContain('Invalid schedule: 8, allowed values are');
+    await rm(testJourney, { force: true });
+  });
+
+  it('push with different id when overriden', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../src';
 journey('journey 1', () => monitor.use({ id: 'j1' }));`
     );
     const output = await runPush(
@@ -129,7 +154,7 @@ journey('journey 1', () => monitor.use({ id: 'j1' }));`
   it('errors on duplicate browser monitors', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
 
     const dupJourney = join(PROJECT_DIR, 'duplicate.journey.ts');
@@ -140,7 +165,7 @@ journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
 journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
 
 journey('duplicate name', () => monitor.use({ schedule: 10 }));
-journey('duplicate name', () => monitor.use({ schedule: 20 }));`
+journey('duplicate name', () => monitor.use({ schedule: 15 }));`
     );
     const output = await runPush();
     expect(output).toContain(`Aborted: Duplicate monitors found`);
@@ -152,7 +177,7 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
   it('errors on duplicate lightweight monitors', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
 
     const heartbeatYml = join(PROJECT_DIR, 'hearbeat.duplicate.yml');
@@ -192,7 +217,7 @@ heartbeat.monitors:
   it('abort when delete is skipped', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush([...DEFAULT_ARGS, '-y'], {
       TEST_OVERRIDE: false,
@@ -203,7 +228,7 @@ heartbeat.monitors:
   it('delete entire project with --yes flag', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush([...DEFAULT_ARGS, '-y']);
     expect(output).toContain('deleting all stale monitors');
@@ -212,7 +237,7 @@ heartbeat.monitors:
   it('delete entire project with overrides', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush([...DEFAULT_ARGS, '-y'], {
       TEST_OVERRIDE: true,
@@ -249,7 +274,7 @@ heartbeat.monitors:
           id: 'test-project',
           space: 'dummy',
         },
-        { locations: ['test-loc'], schedule: 2 }
+        { locations: ['test-loc'], schedule: 3 }
       );
 
       await writeFile(

@@ -24,6 +24,7 @@
  */
 
 import merge from 'deepmerge';
+import { bold, red } from 'kleur/colors';
 import {
   ThrottlingOptions,
   Location,
@@ -31,19 +32,21 @@ import {
   Params,
   PlaywrightOptions,
 } from '../common_types';
+import { indent } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 
 export type SyntheticsLocationsType = keyof typeof LocationsMap;
 export const SyntheticsLocations = Object.keys(
   LocationsMap
 ) as SyntheticsLocationsType[];
+export const ALLOWED_SCHEDULES = [3, 5, 10, 15, 30, 60, 120, 240] as const;
 
 export type MonitorConfig = {
   id?: string;
   name?: string;
   type?: string;
   tags?: string[];
-  schedule?: number;
+  schedule?: typeof ALLOWED_SCHEDULES[number];
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
@@ -89,5 +92,21 @@ export class Monitor {
    */
   setFilter(filter: MonitorFilter) {
     this.filter = filter;
+  }
+
+  validate() {
+    const schedule = this.config.schedule;
+    if (ALLOWED_SCHEDULES.includes(schedule)) {
+      return;
+    }
+    const { config, source } = this;
+    let outer = bold(
+      `Invalid schedule: ${schedule}, allowed values are ${ALLOWED_SCHEDULES.join(
+        ','
+      )}\n`
+    );
+    const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+    outer += indent(inner);
+    throw red(outer);
   }
 }
