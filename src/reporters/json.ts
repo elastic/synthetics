@@ -224,8 +224,7 @@ function stepInfo(
 }
 
 export async function getScreenshotBlocks(screenshot: Buffer) {
-  const img = sharp(screenshot, { sequentialRead: true });
-  const { width, height } = await img.metadata();
+  const { width, height } = await sharp(screenshot).metadata();
   /**
    * Chop the screenshot image (1280*720) which is the default
    * viewport size in to 64 equal blocks for a given image
@@ -248,7 +247,7 @@ export async function getScreenshotBlocks(screenshot: Buffer) {
     const top = row * blockHeight;
     for (let col = 0; col < divisions; col++) {
       const left = col * blockWidth;
-      const buf = await img
+      const buf = await sharp(screenshot, { sequentialRead: true })
         .extract({ top, left, width: blockWidth, height: blockHeight })
         .jpeg()
         .toBuffer();
