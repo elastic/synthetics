@@ -715,7 +715,7 @@ describe('runner', () => {
       schedule: 3,
       locations: ['united_kingdom'],
     });
-    j2.updateMonitor({ throttling: { latency: 1000 } });
+    j2.updateMonitor({ throttling: { latency: 1000 }, schedule: 1 });
     runner.addJourney(j1);
     runner.addJourney(j2);
 
@@ -792,7 +792,7 @@ describe('runner', () => {
     runner.addJourney(j1);
     runner.addJourney(j2);
 
-    const monitors = runner.buildMonitors({ match: 'j1' });
+    const monitors = runner.buildMonitors({ match: 'j1', schedule: 1 });
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });
@@ -805,7 +805,7 @@ describe('runner', () => {
     runner.addJourney(j2);
     runner.addJourney(j3);
 
-    const monitors = runner.buildMonitors({ tags: ['first'] });
+    const monitors = runner.buildMonitors({ tags: ['first'], schedule: 1 });
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });

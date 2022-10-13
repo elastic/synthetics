@@ -39,7 +39,7 @@ export type SyntheticsLocationsType = keyof typeof LocationsMap;
 export const SyntheticsLocations = Object.keys(
   LocationsMap
 ) as SyntheticsLocationsType[];
-export const ALLOWED_SCHEDULES = [3, 5, 10, 15, 30, 60, 120, 240] as const;
+export const ALLOWED_SCHEDULES = [1, 3, 5, 10, 15, 30, 60] as const;
 
 export type MonitorConfig = {
   id?: string;
@@ -96,7 +96,7 @@ export class Monitor {
 
   validate() {
     const schedule = this.config.schedule;
-    if (ALLOWED_SCHEDULES.includes(schedule) || !this.source) {
+    if (ALLOWED_SCHEDULES.includes(schedule)) {
       return;
     }
     const { config, source } = this;
@@ -105,8 +105,10 @@ export class Monitor {
         ','
       )}\n`
     );
-    const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
-    outer += indent(inner);
+    if (source) {
+      const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+      outer += indent(inner);
+    }
     throw red(outer);
   }
 }

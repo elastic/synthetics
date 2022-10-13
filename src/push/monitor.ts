@@ -37,7 +37,7 @@ import {
   warn,
 } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
@@ -195,7 +195,26 @@ export function parseSchedule(schedule: string) {
         break;
     }
   }
-  return minutes as MonitorConfig['schedule'];
+  return nearestSchedule(minutes);
+}
+
+// Find the nearest schedule that is supported by the platform
+// from the parsed schedule value
+export function nearestSchedule(schedule: number) {
+  let start = 0;
+  let end = ALLOWED_SCHEDULES.length - 1;
+  while (start <= end) {
+    const mid = Math.floor((start + end) / 2);
+    const midValue = ALLOWED_SCHEDULES[mid];
+    if (midValue === schedule) {
+      return midValue;
+    } else if (midValue < schedule) {
+      start = mid + 1;
+    } else {
+      end = mid - 1;
+    }
+  }
+  return ALLOWED_SCHEDULES[end];
 }
 
 export async function createMonitors(
