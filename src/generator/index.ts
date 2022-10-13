@@ -37,6 +37,7 @@ import {
   cloudIDToKibanaURL,
 } from './utils';
 import { formatLocations, getLocations, groupLocations } from '../locations';
+import { ALLOWED_SCHEDULES } from '../dsl/monitor';
 import type { ProjectSettings } from '../common_types';
 
 // Templates that are required for setting up new synthetics project
@@ -133,10 +134,15 @@ export class Generator {
         },
       },
       {
-        type: 'numeral',
+        type: 'select',
         name: 'schedule',
         message: 'Set default schedule in minutes for all monitors',
-        initial: 10,
+        initial: 3, // Index of the third array item which is 10 minutes
+        choices: ALLOWED_SCHEDULES.map(String),
+        required: true,
+        result(value) {
+          return Number(value) as any;
+        },
       },
       {
         type: 'input',

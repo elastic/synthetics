@@ -712,10 +712,10 @@ describe('runner', () => {
     const j2 = new Journey({ name: 'j2' }, noop);
     j1.updateMonitor({
       id: 'test-j1',
-      schedule: 2,
+      schedule: 3,
       locations: ['united_kingdom'],
     });
-    j2.updateMonitor({ throttling: { latency: 1000 } });
+    j2.updateMonitor({ throttling: { latency: 1000 }, schedule: 1 });
     runner.addJourney(j1);
     runner.addJourney(j2);
 
@@ -730,7 +730,7 @@ describe('runner', () => {
       tags: [],
       locations: ['united_kingdom'],
       privaateLocations: undefined,
-      schedule: 2,
+      schedule: 3,
       params: undefined,
       playwrightOptions: undefined,
       throttling: { download: 5, latency: 20, upload: 3 },
@@ -754,7 +754,7 @@ describe('runner', () => {
     const j2 = new Journey({ name: 'j2' }, noop);
     j1.updateMonitor({
       id: 'test-j1',
-      schedule: 2,
+      schedule: 3,
       locations: ['united_kingdom'],
       privateLocations: ['spain'],
     });
@@ -773,7 +773,7 @@ describe('runner', () => {
       tags: ['foo*'],
       locations: ['united_kingdom'],
       privateLocations: ['spain'],
-      schedule: 2,
+      schedule: 3,
       params: { env: 'test' },
       playwrightOptions: { ignoreHTTPSErrors: true },
       throttling: { download: 100, latency: 20, upload: 50 },
@@ -792,7 +792,7 @@ describe('runner', () => {
     runner.addJourney(j1);
     runner.addJourney(j2);
 
-    const monitors = runner.buildMonitors({ match: 'j1' });
+    const monitors = runner.buildMonitors({ match: 'j1', schedule: 1 });
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });
@@ -805,7 +805,7 @@ describe('runner', () => {
     runner.addJourney(j2);
     runner.addJourney(j3);
 
-    const monitors = runner.buildMonitors({ tags: ['first'] });
+    const monitors = runner.buildMonitors({ tags: ['first'], schedule: 1 });
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });

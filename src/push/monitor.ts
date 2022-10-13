@@ -37,7 +37,7 @@ import {
   warn,
 } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
@@ -95,13 +95,8 @@ export async function createLightweightMonitors(
       lwFiles.add(abs);
     }
   });
-  // Warn users about schedule that are less than 60 seconds
-  if (lwFiles.size > 0) {
-    warn(
-      'lightweight monitors schedule < 1 minute resolution are not supported, will get reset to their nearest minute interval.'
-    );
-  }
 
+  let warnOnce = false;
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
     const content = await readFile(file, 'utf-8');
@@ -114,6 +109,13 @@ export async function createLightweightMonitors(
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     if (!monitorSeq) {
       continue;
+    }
+    // Warn users about schedule that are less than 60 seconds
+    if (!warnOnce) {
+      warn(
+        'If you are using lightweight monitors with less than 1 minute resolution, these will be saved to the nearest supported frequency'
+      );
+      warnOnce = true;
     }
 
     for (const monNode of monitorSeq.items) {
@@ -193,7 +195,26 @@ export function parseSchedule(schedule: string) {
         break;
     }
   }
-  return minutes;
+  return nearestSchedule(minutes);
+}
+
+// Find the nearest schedule that is supported by the platform
+// from the parsed schedule value
+export function nearestSchedule(schedule: number) {
+  let start = 0;
+  let end = ALLOWED_SCHEDULES.length - 1;
+  while (start <= end) {
+    const mid = Math.floor((start + end) / 2);
+    const midValue = ALLOWED_SCHEDULES[mid];
+    if (midValue === schedule) {
+      return midValue;
+    } else if (midValue < schedule) {
+      start = mid + 1;
+    } else {
+      end = mid - 1;
+    }
+  }
+  return ALLOWED_SCHEDULES[end];
 }
 
 export async function createMonitors(

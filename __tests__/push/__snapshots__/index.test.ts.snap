@@ -43,6 +43,15 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 exports[`Push error on invalid schedule 1`] = `
 "Aborted. Invalid synthetics project settings.
 
+Set default schedule(12) to one of the allowed values - 1,3,5,10,15,30,60
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push error when schedule is not present 1`] = `
+"Aborted. Invalid synthetics project settings.
+
 Set default schedule in minutes for all monitors via
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field

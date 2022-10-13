@@ -412,6 +412,7 @@ export default class Runner {
        */
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
+      journey.monitor.validate();
       monitors.push(journey.monitor);
     }
     return monitors;

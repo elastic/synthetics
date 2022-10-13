@@ -34,7 +34,7 @@ import {
   formatStaleMonitors,
 } from './request';
 import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
-import { Monitor } from '../dsl/monitor';
+import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
   apiProgress,
@@ -192,6 +192,10 @@ export function validateSettings(opts: PushOptions) {
     reason = `Set default schedule in minutes for all monitors via
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
+  } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
+    reason = `Set default schedule(${
+      opts.schedule
+    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;

@@ -79,9 +79,9 @@ describe('options', () => {
     });
 
     expect(
-      normalizeOptions({ throttling: { download: 50 }, schedule: 2 })
+      normalizeOptions({ throttling: { download: 50 }, schedule: 3 })
     ).toMatchObject({
-      schedule: 2,
+      schedule: 3,
       throttling: {
         download: 50,
         upload: 3,
