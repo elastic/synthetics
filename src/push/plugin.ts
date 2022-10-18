@@ -39,6 +39,11 @@ export function commonOptions(): esbuild.BuildOptions {
     bundle: true,
     external: ['@elastic/synthetics'],
     minify: false,
+    minifyIdentifiers: false,
+    minifySyntax: false,
+    minifyWhitespace: false,
+    treeShaking: false,
+    keepNames: false,
     platform: 'node',
     logLevel: 'silent',
     format: 'esm',
@@ -108,7 +113,7 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
         if (args.kind === 'entry-point') {
           return {
             path: args.path,
-            namespace: 'asset',
+            namespace: 'journey',
           };
         }
 
@@ -142,10 +147,21 @@ export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
         };
       });
 
-      build.onLoad({ filter: /.*?/, namespace: 'asset' }, async args => {
+      build.onLoad({ filter: /.*?/, namespace: 'journey' }, async args => {
         const contents = await fs.readFile(args.path, 'utf-8');
         callback({ path: args.path, contents });
-        return { contents };
+
+        // Use correct loader for the journey entry path
+        let loader: esbuild.Loader = 'default';
+        const ext = extname(args.path).slice(1);
+        if (ext === 'cjs' || ext === 'mjs') {
+          loader = 'js';
+        } else if (ext === 'cts' || ext === 'mts') {
+          loader = 'ts';
+        } else {
+          loader = ext as esbuild.Loader;
+        }
+        return { contents, loader };
       });
     },
   };
