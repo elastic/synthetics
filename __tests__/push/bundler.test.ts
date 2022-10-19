@@ -78,11 +78,15 @@ describe('Bundler', () => {
 import isPositive from 'is-positive';
 
 journey('journey 1', () => {
-  monitor.use({ id: 'duplicate id' })
+  monitor.use({ id: 'duplicate id' });
+  launchStep(-1);
+});
+
+const launchStep = (no: number) => {
   step("step1", () => {
-    isPositive(-1);
+    isPositive(no);
   })
-});`
+};`
     );
   });
 
