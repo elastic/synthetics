@@ -366,3 +366,7 @@ export function warn(message: string) {
 export function removeTrailingSlash(url: string) {
   return url.replace(/\/+$/, '');
 }
+
+export function getMonitorManagementURL(url) {
+  return removeTrailingSlash(url) + '/app/uptime/manage-monitors/all';
+}
