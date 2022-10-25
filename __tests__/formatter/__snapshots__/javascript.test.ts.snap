@@ -15,7 +15,7 @@ journey('Recorded journey', async ({ page, context }) => {
     expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
     const [page1] = await Promise.all([
       page.waitForEvent('popup'),
-      page.locator('text=Babel Minify').click()
+      page.getByText('Babel Minify').click()
     ]);
     await Promise.all([
       page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
