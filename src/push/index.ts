@@ -44,7 +44,6 @@ import {
   indent,
   safeNDJSONParse,
   done,
-  removeTrailingSlash,
   getMonitorManagementURL,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
