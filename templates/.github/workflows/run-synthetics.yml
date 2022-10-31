@@ -8,19 +8,20 @@ on:
     - cron: '* 0 * * *'
 jobs:
   test:
+    defaults:
+      run:
+        working-directory: ./advanced-examples
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - run: npm install
       - run: "SYNTHETICS_JUNIT_FILE='junit-synthetics.xml' npx @elastic/synthetics . --reporter=junit"
-        continue-on-error: true
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1.19
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: '**/junit-*.xml'
-          fail_on: 'test failures'
+          junit_files: '**/junit-*.xml'
           check_name: Elastic Synthetics Tests
