@@ -138,7 +138,7 @@ describe('network', () => {
 
     const delayTime = 20;
     server.route('/abort', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.destroy();
     });
     server.route('/index', async (_, res) => {
@@ -174,12 +174,12 @@ describe('network', () => {
 
     const delayTime = 100;
     server.route('/chunked', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.writeHead(200, {
         'content-type': 'application/javascript',
       });
       res.write('a');
-      await delay(delayTime);
+      await delay(delayTime + 1);
       return res.end('b');
     });
     server.route('/index', async (_, res) => {
@@ -253,7 +253,7 @@ describe('network', () => {
         'content-type': 'application/javascript',
         'cache-control': 'public; max-age=600',
       });
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.end('var a=10');
     });
     server.route('/index', async (_, res) => {
@@ -265,9 +265,8 @@ describe('network', () => {
       waitUntil: 'networkidle',
     });
     await driver.page.reload({ waitUntil: 'networkidle' });
-    await delay(delayTime);
+    await delay(delayTime + 1);
     const netinfo = await network.stop();
-    await Gatherer.stop();
     const resources = netinfo.filter(req =>
       req.url.includes(`${server.PREFIX}/test.js`)
     );
