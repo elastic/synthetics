@@ -56,6 +56,8 @@ async function validateZip(content) {
 
     if (entry.path === partialPath) {
       entry.on('data', d => (targetFileContent += d));
+    } else {
+      entry.autodrain();
     }
   }
 
