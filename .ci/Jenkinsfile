@@ -3,7 +3,7 @@
 @Library('apm@test/node') _
 
 pipeline {
-  agent { label 'ubuntu-2204 && immutable' }
+  agent { label 'ubuntu-22 && immutable' }
   environment {
     REPO = "synthetics"
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
