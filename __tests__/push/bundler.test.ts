@@ -46,8 +46,6 @@ async function validateZip(content) {
 
   const files: Array<string> = [];
 
-  console.log(partialPath);
-
   let targetFileContent = '';
   await new Promise(r => {
     createReadStream(pathToZip)
@@ -61,12 +59,8 @@ async function validateZip(content) {
           entry.autodrain();
         }
       })
-      .on('close', () => {
-        r(null);
-      });
+      .on('close', r);
   });
-
-  console.log('TARGET CONTENTS', targetFileContent);
 
   expect(files).toEqual([partialPath]);
 
