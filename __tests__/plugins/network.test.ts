@@ -84,10 +84,10 @@ describe('network', () => {
     const network = new NetworkManager(driver);
     await network.start();
     await driver.page.goto('data:text/html,<title>Data URI test</title>');
-    const netinfo = await network.stop();
     expect(await driver.page.content()).toContain('Data URI test');
-    expect(netinfo).toEqual([]);
+    const netinfo = await network.stop();
     await Gatherer.stop();
+    expect(netinfo).toEqual([]);
   });
 
   it('produce distinct events for redirects', async () => {
@@ -104,11 +104,11 @@ describe('network', () => {
     });
     await driver.page.goto(server.PREFIX + '/route1');
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toEqual(3);
     expect(netinfo[0].response.status).toBe(302);
     expect(netinfo[1].response.status).toBe(302);
     expect(netinfo[2].response.status).toBe(200);
-    await Gatherer.stop();
   });
 
   it('measure resource and transfer size', async () => {
@@ -138,7 +138,7 @@ describe('network', () => {
 
     const delayTime = 20;
     server.route('/abort', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.destroy();
     });
     server.route('/index', async (_, res) => {
@@ -149,8 +149,8 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/abort`,
@@ -174,12 +174,12 @@ describe('network', () => {
 
     const delayTime = 100;
     server.route('/chunked', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.writeHead(200, {
         'content-type': 'application/javascript',
       });
       res.write('a');
-      await delay(delayTime);
+      await delay(delayTime + 1);
       return res.end('b');
     });
     server.route('/index', async (_, res) => {
@@ -190,8 +190,8 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/chunked`,
@@ -226,8 +226,8 @@ describe('network', () => {
     await page1.waitForLoadState('load');
     expect(await page1.textContent('body')).toEqual('Not found');
 
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo).toMatchObject([
       {
@@ -253,7 +253,7 @@ describe('network', () => {
         'content-type': 'application/javascript',
         'cache-control': 'public; max-age=600',
       });
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.end('var a=10');
     });
     server.route('/index', async (_, res) => {
@@ -265,7 +265,7 @@ describe('network', () => {
       waitUntil: 'networkidle',
     });
     await driver.page.reload({ waitUntil: 'networkidle' });
-    await delay(delayTime);
+    await delay(delayTime + 1);
     const netinfo = await network.stop();
     await Gatherer.stop();
     const resources = netinfo.filter(req =>
@@ -290,8 +290,8 @@ describe('network', () => {
 
     await driver.request.get(server.TEST_PAGE);
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(0);
     await Gatherer.dispose(driver);
-    await Gatherer.stop();
   });
 });

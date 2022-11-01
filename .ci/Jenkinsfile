@@ -3,7 +3,7 @@
 @Library('apm@current') _
 
 pipeline {
-  agent { label 'ubuntu-18 && immutable' }
+  agent { label 'ubuntu-20 && immutable' }
   environment {
     REPO = "synthetics"
     BASE_DIR = "src/github.com/elastic/${env.REPO}"
@@ -121,7 +121,7 @@ pipeline {
       }
     }
     stage('E2e Test') {
-      agent { label 'ubuntu-18 && immutable' }
+      agent { label 'ubuntu-20 && immutable' }
       environment {
         E2E_FOLDER = "__tests__/e2e"
       }
@@ -162,7 +162,7 @@ pipeline {
           expression { return params.release }
         }
       }
-      agent { label 'ubuntu-18 && immutable' }
+      agent { label 'ubuntu-20 && immutable' }
       stages {
         stage('Approve to Release') {
           options { skipDefaultCheckout() }
