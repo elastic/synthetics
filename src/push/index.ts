@@ -25,7 +25,7 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold } from 'kleur/colors';
+import { bold, grey } from 'kleur/colors';
 import {
   ok,
   formatAPIError,
@@ -44,6 +44,7 @@ import {
   indent,
   safeNDJSONParse,
   done,
+  getMonitorManagementURL,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -85,7 +86,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   progress(`deleting all stale monitors`);
   await pushMonitors({ schemas, keepStale: false, options });
 
-  done('Pushed');
+  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
 }
 
 export async function pushMonitors({

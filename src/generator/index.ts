@@ -29,7 +29,11 @@ import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
 // @ts-ignore-next-line: has no exported member 'Input'
 import { prompt, Input } from 'enquirer';
-import { progress, removeTrailingSlash, write as stdWrite } from '../helpers';
+import {
+  getMonitorManagementURL,
+  progress,
+  write as stdWrite,
+} from '../helpers';
 import {
   getPackageManager,
   replaceTemplates,
@@ -107,9 +111,7 @@ export class Generator {
     const auth = await new Input({
       name: 'auth',
       header: yellow(
-        `Generate API key from Kibana ${removeTrailingSlash(
-          url
-        )}/app/uptime/manage-monitors/all`
+        `Generate API key from Kibana ${getMonitorManagementURL(url)}`
       ),
       required: true,
       message: 'What is your API key',

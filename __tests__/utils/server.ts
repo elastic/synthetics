@@ -30,7 +30,7 @@ import { createReadStream, readFileSync } from 'fs';
 import { join } from 'path';
 import { AddressInfo } from 'net';
 
-type CreateOpts = { tls?: boolean };
+type CreateOpts = { tls?: boolean; port?: number };
 
 export class Server {
   PREFIX: string;
@@ -59,7 +59,7 @@ export class Server {
     }
 
     this._server = srvConstructor(this._onRequest.bind(this));
-    this._server.listen(0);
+    this._server.listen(opts?.port || 0);
     const { port } = this._server.address() as AddressInfo;
     const proto = opts?.tls ? 'https' : 'http';
     this.PREFIX = `${proto}://localhost:${port}`;

@@ -6,7 +6,7 @@ exports[`Push API handle streamed response 1`] = `
 > journey 1
 > journey 2
 > deleting all stale monitors
-✓ Pushed
+✓ Pushed: http://localhost:54455/stream/app/uptime/manage-monitors/all
 "
 `;
 
@@ -14,7 +14,7 @@ exports[`Push API handle sync response 1`] = `
 "> preparing all monitors
 > creating all monitors
 > deleting all stale monitors
-✓ Pushed
+✓ Pushed: http://localhost:54455/sync/app/uptime/manage-monitors/all
 "
 `;
 
