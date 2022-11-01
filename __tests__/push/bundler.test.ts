@@ -46,20 +46,27 @@ async function validateZip(content) {
 
   const files: Array<string> = [];
 
-  const entries = createReadStream(pathToZip).pipe(
-    unzipper.Parse({ forceStream: true })
-  );
+  console.log(partialPath);
 
-  let targetFileContent = null;
-  for await (const entry of entries) {
-    files.push(entry.path);
+  let targetFileContent = '';
+  await new Promise(r => {
+    createReadStream(pathToZip)
+      .pipe(unzipper.Parse())
+      .on('entry', function (entry) {
+        const fileName = entry.path;
+        files.push(fileName);
+        if (fileName === partialPath) {
+          entry.on('data', d => (targetFileContent += d));
+        } else {
+          entry.autodrain();
+        }
+      })
+      .on('close', () => {
+        r(null);
+      });
+  });
 
-    if (entry.path === partialPath) {
-      entry.on('data', d => (targetFileContent += d));
-    } else {
-      entry.autodrain();
-    }
-  }
+  console.log('TARGET CONTENTS', targetFileContent);
 
   expect(files).toEqual([partialPath]);
 
