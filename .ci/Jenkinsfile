@@ -162,7 +162,7 @@ pipeline {
           expression { return params.release }
         }
       }
-      agent { label 'ubuntu-18 && immutable' }
+      agent { label 'ubuntu-20 && immutable' }
       stages {
         stage('Approve to Release') {
           options { skipDefaultCheckout() }
