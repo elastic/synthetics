@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta-38 (20222-11-02)
+
+### Features
+
+- Improve the validation of project monitor `schedule` for both browser and
+  lightweight monitors. Error would be thrown if users would configure monitor
+  schedule that are not supported. For lightweight monitors, we would save the
+  schedule to the nearest supported schedule frequency #622
+
+  **Current allowed schedule values are 1, 3, 5, 10, 15, 30, 60 minutes respectively.**
+
+- Improve the push command experience by showing the monitor management URL link
+  once the push has been completed successfully #637
+
+### Bug Fixes
+
+- Pick the correct loader when bundling TypeScript or JavaScript journey files
+  during push command #626
+
+## v1.0.0-beta-37 (20222-10-07)
+
+### Bug Fixes
+
+- fix an issue in newer versions of sharp by creating separate sharp instance to produce screenshots data #623
+
 ## v1.0.0-beta-36 (20222-09-30)
 
 ### Features
