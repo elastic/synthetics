@@ -33,7 +33,13 @@ import {
   formatNotFoundError,
   formatStaleMonitors,
 } from './request';
-import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
+import {
+  buildLocalMonitors,
+  buildMonitorSchema,
+  createMonitors,
+  diffMonitors,
+  MonitorSchema,
+} from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
@@ -48,6 +54,7 @@ import {
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
+import { getAllMonitors } from './curd';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
@@ -56,6 +63,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     if (duplicates.size > 0) {
       throw error(formatDuplicateError(duplicates));
     }
+    const local = buildLocalMonitors(monitors);
+    const remote = await getAllMonitors(options);
+    const { stale, update } = diffMonitors(local, remote);
+    console.log('Stale', stale);
+    console.log('update', update);
 
     progress(`preparing all monitors`);
     schemas = await buildMonitorSchema(monitors);

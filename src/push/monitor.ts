@@ -39,11 +39,13 @@ import {
 import { LocationsMap } from '../locations/public-locations';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
+import { MonitorData } from './curd';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
   content?: string;
   filter?: Monitor['filter'];
+  hash: string;
 };
 
 export type APISchema = {
@@ -55,6 +57,42 @@ export type APISchema = {
 function translateLocation(locations?: MonitorConfig['locations']) {
   if (!locations) return [];
   return locations.map(loc => LocationsMap[loc] || loc).filter(Boolean);
+}
+
+export function diffMonitors(local: MonitorData[], remote: MonitorData[]) {
+  const localMonitors = new Map<string, MonitorData>();
+  for (const monitor of local) {
+    localMonitors.set(monitor.journey_id, monitor);
+  }
+  const remoteMonitors = new Map<string, MonitorData>();
+  for (const monitor of remote) {
+    remoteMonitors.set(monitor.journey_id, monitor);
+  }
+  const update = [];
+  const stale = [];
+  for (const [id, monitor] of localMonitors) {
+    const remoteMonitor = remoteMonitors.get(id);
+    if (!remoteMonitor || monitor.hash !== remoteMonitor.hash) {
+      update.push(id);
+    }
+    remoteMonitors.delete(id);
+  }
+  for (const id of remoteMonitors.keys()) {
+    stale.push(id);
+  }
+  return { stale, update };
+}
+
+export function buildLocalMonitors(monitors: Monitor[]) {
+  const data: MonitorData[] = [];
+
+  for (const monitor of monitors) {
+    data.push({
+      journey_id: monitor.config.id,
+      hash: monitor.createHash(),
+    });
+  }
+  return data;
 }
 
 export async function buildMonitorSchema(monitors: Monitor[]) {
@@ -71,6 +109,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
     const { source, config, filter, type } = monitor;
     const schema = {
       ...config,
+      hash: monitor.createHash(),
       locations: translateLocation(config.locations),
     };
     if (type === 'browser') {
