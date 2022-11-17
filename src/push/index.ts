@@ -27,56 +27,56 @@ import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold, grey } from 'kleur/colors';
 import {
-  ok,
-  formatAPIError,
-  formatFailedMonitors,
-  formatNotFoundError,
-  formatStaleMonitors,
-} from './request';
-import {
   buildLocalMonitors,
   buildMonitorSchema,
-  createMonitors,
-  diffMonitors,
+  diffMonitors as diffMonitorHashIDs,
   MonitorSchema,
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
-  apiProgress,
   write,
   error,
   warn,
   indent,
-  safeNDJSONParse,
   done,
   getMonitorManagementURL,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
-import { getAllMonitors } from './curd';
+import {
+  bulkDeleteMonitors,
+  bulkGetMonitors,
+  bulkPutMonitors,
+} from './kibana_api';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
-  if (monitors.length > 0) {
-    const duplicates = trackDuplicates(monitors);
-    if (duplicates.size > 0) {
-      throw error(formatDuplicateError(duplicates));
-    }
-    const local = buildLocalMonitors(monitors);
-    const remote = await getAllMonitors(options);
-    const { stale, update } = diffMonitors(local, remote);
-    console.log('Stale', stale);
-    console.log('update', update);
 
-    progress(`preparing all monitors`);
-    schemas = await buildMonitorSchema(monitors);
+  const duplicates = trackDuplicates(monitors);
+  if (duplicates.size > 0) {
+    throw error(formatDuplicateError(duplicates));
+  }
+  const local = buildLocalMonitors(monitors);
+  const { monitors: remote } = await bulkGetMonitors(options);
+  const { changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
+    local,
+    remote
+  );
 
-    progress(`creating all monitors`);
-    for (const schema of schemas) {
-      await pushMonitors({ schemas: [schema], keepStale: true, options });
-    }
-  } else {
+  progress(
+    `${changedIDs.size} monitors added/changed, ${unchangedIDs.size} unchanged, ${removedIDs.size} removed`
+  );
+
+  progress('avc-dev-version');
+  const toChange = monitors.filter(m => changedIDs.has(m.config.id));
+  progress(`preparing ${toChange.length} monitors`);
+  schemas = await buildMonitorSchema(toChange);
+
+  progress(`creating ${schemas.length} monitors`);
+  bulkPutMonitors(options, schemas);
+
+  if (removedIDs.size > 0 && changedIDs.size === 0 && unchangedIDs.size === 0) {
     write('');
     const { deleteAll } = await prompt<{ deleteAll: boolean }>({
       type: 'confirm',
@@ -95,55 +95,13 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       throw warn('Push command Aborted');
     }
   }
-  progress(`deleting all stale monitors`);
-  await pushMonitors({ schemas, keepStale: false, options });
+
+  if (removedIDs.size > 0) {
+    progress(`deleting ${removedIDs.size} monitors`);
+    await bulkDeleteMonitors(options, Array.from(removedIDs));
+  }
 
   done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
-}
-
-export async function pushMonitors({
-  schemas,
-  keepStale,
-  options,
-}: {
-  schemas: MonitorSchema[];
-  keepStale: boolean;
-  options: PushOptions;
-}) {
-  const { body, statusCode } = await createMonitors(
-    schemas,
-    options,
-    keepStale
-  );
-  if (statusCode === 404) {
-    throw formatNotFoundError(await body.text());
-  }
-  if (!ok(statusCode)) {
-    const { error, message } = await body.json();
-    throw formatAPIError(statusCode, error, message);
-  }
-  body.setEncoding('utf-8');
-  for await (const data of body) {
-    // Its kind of hacky for now where Kibana streams the response by
-    // writing the data as NDJSON events (data can be interleaved), we
-    // distinguish the final data by checking if the event was a progress vs complete event
-    const chunks = safeNDJSONParse(data);
-    for (const chunk of chunks) {
-      if (typeof chunk === 'string') {
-        // TODO: add progress back for all states once we get the fix
-        // on kibana side
-        keepStale && apiProgress(chunk);
-        continue;
-      }
-      const { failedMonitors, failedStaleMonitors } = chunk;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      if (failedStaleMonitors.length > 0) {
-        throw formatStaleMonitors(failedStaleMonitors);
-      }
-    }
-  }
 }
 
 function trackDuplicates(monitors: Monitor[]) {

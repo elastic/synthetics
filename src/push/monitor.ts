@@ -28,24 +28,23 @@ import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { sendRequest } from './request';
-import {
-  removeTrailingSlash,
-  SYNTHETICS_PATH,
-  totalist,
-  indent,
-  warn,
-} from '../helpers';
+import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { MonitorData } from './curd';
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
   content?: string;
   filter?: Monitor['filter'];
   hash: string;
+};
+
+// Abbreviated monitor info, as often returned by the API,
+// just the journey ID and hash
+export type MonitorHashID = {
+  journey_id?: string;
+  hash?: string;
 };
 
 export type APISchema = {
@@ -59,37 +58,58 @@ function translateLocation(locations?: MonitorConfig['locations']) {
   return locations.map(loc => LocationsMap[loc] || loc).filter(Boolean);
 }
 
-export function diffMonitors(local: MonitorData[], remote: MonitorData[]) {
-  const localMonitors = new Map<string, MonitorData>();
-  for (const monitor of local) {
-    localMonitors.set(monitor.journey_id, monitor);
+class RemoteDiffResult {
+  // Monitor IDs that are different locally than remotely
+  changedIDs: Set<string> = new Set<string>();
+  // Monitor IDs that are no longer present locally
+  removedIDs: Set<string> = new Set<string>();
+  // Monitor IDs that are identical on the remote server
+  unchangedIDs: Set<string> = new Set<string>();
+}
+
+export function diffMonitors(
+  local: MonitorHashID[],
+  remote: MonitorHashID[]
+): RemoteDiffResult {
+  const result = new RemoteDiffResult();
+
+  const localMonitorsIDToHash = new Map<string, string>();
+  for (const hashID of local) {
+    localMonitorsIDToHash.set(hashID.journey_id, hashID.hash);
   }
-  const remoteMonitors = new Map<string, MonitorData>();
-  for (const monitor of remote) {
-    remoteMonitors.set(monitor.journey_id, monitor);
+  const remoteMonitorsIDToHash = new Map<string, string>();
+  for (const hashID of remote) {
+    remoteMonitorsIDToHash.set(hashID.journey_id, hashID.hash);
   }
-  const update = [];
-  const stale = [];
-  for (const [id, monitor] of localMonitors) {
-    const remoteMonitor = remoteMonitors.get(id);
-    if (!remoteMonitor || monitor.hash !== remoteMonitor.hash) {
-      update.push(id);
+
+  // Compare local to remote
+  for (const [localID, localHash] of localMonitorsIDToHash) {
+    const remoteHash = remoteMonitorsIDToHash.get(localID);
+    if (!remoteHash || remoteHash != localHash) {
+      result.changedIDs.add(localID);
+    } else {
+      result.unchangedIDs.add(localID);
     }
-    remoteMonitors.delete(id);
+
+    // We no longer need to process this ID, removing it here
+    // reduces the numbers considered in the next phase
+    remoteMonitorsIDToHash.delete(localID);
   }
-  for (const id of remoteMonitors.keys()) {
-    stale.push(id);
+
+  for (const id in remoteMonitorsIDToHash.keys()) {
+    result.removedIDs.add(id);
   }
-  return { stale, update };
+
+  return result;
 }
 
 export function buildLocalMonitors(monitors: Monitor[]) {
-  const data: MonitorData[] = [];
+  const data: MonitorHashID[] = [];
 
   for (const monitor of monitors) {
     data.push({
       journey_id: monitor.config.id,
-      hash: monitor.createHash(),
+      hash: monitor.hash(),
     });
   }
   return data;
@@ -109,7 +129,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
     const { source, config, filter, type } = monitor;
     const schema = {
       ...config,
-      hash: monitor.createHash(),
+      hash: monitor.hash(),
       locations: translateLocation(config.locations),
     };
     if (type === 'browser') {
@@ -254,25 +274,4 @@ export function nearestSchedule(schedule: number) {
     }
   }
   return ALLOWED_SCHEDULES[end];
-}
-
-export async function createMonitors(
-  monitors: MonitorSchema[],
-  options: PushOptions,
-  keepStale: boolean
-) {
-  const schema: APISchema = {
-    project: options.id,
-    keep_stale: keepStale,
-    monitors,
-  };
-
-  return await sendRequest({
-    url:
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/service/project/monitors`,
-    method: 'PUT',
-    auth: options.auth,
-    body: JSON.stringify(schema),
-  });
 }
