@@ -33,25 +33,49 @@ import {
   sendRequest,
 } from './request';
 
-type BulkPutResponse = {createdMonitors: string[], updatedMonitors: string[], failedMonitors: string[]};
+// Default chunk size for bulk put / delete
+const chunkSize = 125;
+
+type BulkPutResponse = {
+  createdMonitors: string[];
+  updatedMonitors: string[];
+  failedMonitors: string[];
+};
 
 export async function bulkPutMonitors(
   options: PushOptions,
-  schemas: MonitorSchema[],
+  schemas: MonitorSchema[]
 ): Promise<BulkPutResponse> {
-  const reqBody = {monitors: schemas} ;
+  const result: BulkPutResponse = {
+    createdMonitors: [],
+    updatedMonitors: [],
+    failedMonitors: [],
+  };
 
-  const url = removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_update`
+  for (let i = 0; i < schemas.length; i += chunkSize) {
+    const chunk = schemas.slice(i, i + chunkSize);
 
-  const {statusCode, body: respBody} = await sendRequest({
-    url,
-    method: 'PUT',
-    auth: options.auth,
-    body: JSON.stringify(reqBody),
-  });
+    const url =
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_update`;
 
-  return await parseAndCheck(statusCode, respBody) as BulkPutResponse;
+    const { statusCode, body: respBody } = await sendRequest({
+      url,
+      method: 'PUT',
+      auth: options.auth,
+      body: JSON.stringify({ monitors: chunk }),
+    });
+
+    const parsedResp = (await parseAndCheck(
+      statusCode,
+      respBody
+    )) as BulkPutResponse;
+    result.createdMonitors.push(...parsedResp.createdMonitors);
+    result.updatedMonitors.push(...parsedResp.updatedMonitors);
+    result.failedMonitors.push(...parsedResp.failedMonitors);
+  }
+
+  return result;
 }
 
 type GetResponse = {
@@ -60,67 +84,86 @@ type GetResponse = {
 };
 
 type AfterKey = {
-	after_key?: string
-}
+  after_key?: string;
+};
 
-export async function bulkGetMonitors(options: PushOptions): Promise<GetResponse> {
+export async function bulkGetMonitors(
+  options: PushOptions
+): Promise<GetResponse> {
   let afterKey = null;
   let total = 0;
   const monitors: MonitorHashID[] = [];
   do {
-	let url = removeTrailingSlash(options.url) +
-        `/s/${options.space}/api/synthetics/project/${options.id}/monitors`;
-	if (afterKey) {
-		url += `?search_after=${afterKey}`;
-	}
-	const { body, statusCode } = await sendRequest({
-	url,
-    method: 'GET',
-    auth: options.auth,
-	});
-	const resp = await parseAndCheck(statusCode, body) as GetResponse & AfterKey;
-	afterKey = resp.after_key;
+    let url =
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/synthetics/project/${options.id}/monitors`;
+    if (afterKey) {
+      url += `?search_after=${afterKey}`;
+    }
+    const { body, statusCode } = await sendRequest({
+      url,
+      method: 'GET',
+      auth: options.auth,
+    });
+    const resp = (await parseAndCheck(statusCode, body)) as GetResponse &
+      AfterKey;
+    afterKey = resp.after_key;
 
-	// The first page gives the total number of monitors
-	if (total == 0) {
-		total = resp.total;
-	}
-	monitors.push(...resp.monitors)
+    // The first page gives the total number of monitors
+    if (total == 0) {
+      total = resp.total;
+    }
+    monitors.push(...resp.monitors);
+  } while (afterKey);
 
-  } while (afterKey)
-
- return {total, monitors}; 
+  return { total, monitors };
 }
 
 type DeleteResponse = {
-	deleted_monitors: string[];
+  deleted_monitors: string[];
 };
 
-export async function bulkDeleteMonitors(options: PushOptions, monitorIDs: string[]) {
-  const { body, statusCode } = await sendRequest({
-	url: removeTrailingSlash(options.url) +
-        `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`,
-    method: 'DELETE',
-    auth: options.auth,
-	body: JSON.stringify({monitors: monitorIDs})
-  });
+export async function bulkDeleteMonitors(
+  options: PushOptions,
+  monitorIDs: string[]
+): Promise<number> {
+  let totalDeleted = 0;
+  for (let i = 0; i < monitorIDs.length; i += chunkSize) {
+    const chunk = monitorIDs.slice(i, i + chunkSize);
 
-  return await parseAndCheck(statusCode, body) as DeleteResponse;
+    const { body, statusCode } = await sendRequest({
+      url:
+        removeTrailingSlash(options.url) +
+        `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`,
+      method: 'DELETE',
+      auth: options.auth,
+      body: JSON.stringify({ monitors: chunk }),
+    });
+
+    (await parseAndCheck(statusCode, body)) as DeleteResponse;
+    totalDeleted += chunk.length;
+  }
+
+  return totalDeleted;
 }
 
 // Check for any bad status codes and attempt to read the body, returning the parsed JSON
 async function parseAndCheck(statusCode: number, body): Promise<any> {
-	if (statusCode === 404) {
-		throw formatNotFoundError(await body.text());
-	} else if (!ok(statusCode)) {
-		let parsed: {error: string, message: string}
-		try {
-			parsed = await body.json();
-		} catch (e) {
-			throw formatAPIError(statusCode, "unexpected non-JSON error", await body.text())
-		}
-		throw formatAPIError(statusCode, parsed.error, parsed.message);
-	}
+  if (statusCode === 404) {
+    throw formatNotFoundError(await body.text());
+  } else if (!ok(statusCode)) {
+    let parsed: { error: string; message: string };
+    try {
+      parsed = await body.json();
+    } catch (e) {
+      throw formatAPIError(
+        statusCode,
+        'unexpected non-JSON error',
+        await body.text()
+      );
+    }
+    throw formatAPIError(statusCode, parsed.error, parsed.message);
+  }
 
-	return await body.json()
+  return await body.json();
 }

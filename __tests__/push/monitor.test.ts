@@ -28,7 +28,6 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import {
   buildMonitorSchema,
-  createMonitors,
   createLightweightMonitors,
   parseSchedule,
 } from '../../src/push/monitor';
