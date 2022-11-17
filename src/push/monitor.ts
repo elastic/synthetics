@@ -86,8 +86,9 @@ export function diffMonitors(
   for (const [localID, localHash] of localMonitorsIDToHash) {
     const remoteHash = remoteMonitorsIDToHash.get(localID);
     if (!remoteHash || remoteHash != localHash) {
+      console.log(localID);
       result.changedIDs.add(localID);
-    } else {
+    } else if (remoteHash === localHash) {
       result.unchangedIDs.add(localID);
     }
 
@@ -96,7 +97,7 @@ export function diffMonitors(
     remoteMonitorsIDToHash.delete(localID);
   }
 
-  for (const id in remoteMonitorsIDToHash.keys()) {
+  for (const [id] of remoteMonitorsIDToHash) {
     result.removedIDs.add(id);
   }
 

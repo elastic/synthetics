@@ -25,23 +25,14 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold, grey } from 'kleur/colors';
+import { bold, grey, green, red } from 'kleur/colors';
 import {
   buildLocalMonitors,
   buildMonitorSchema,
   diffMonitors as diffMonitorHashIDs,
-  MonitorSchema,
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
-import {
-  progress,
-  write,
-  error,
-  warn,
-  indent,
-  done,
-  getMonitorManagementURL,
-} from '../helpers';
+import { progress, write, error, warn, indent, done } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
 import {
@@ -51,8 +42,6 @@ import {
 } from './kibana_api';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
-  let schemas: MonitorSchema[] = [];
-
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
@@ -65,43 +54,52 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   );
 
   progress(
-    `${changedIDs.size} monitors added/changed, ${unchangedIDs.size} unchanged, ${removedIDs.size} removed`
+    grey('Monitor Diff: ') +
+      green('Added/Updated(' + changedIDs.size) +
+      ') ' +
+      red('Removed(' + removedIDs.size) +
+      ') ' +
+      grey('Unchanged(' + unchangedIDs.size + ')')
   );
 
-  progress('avc-dev-version');
-  const toChange = monitors.filter(m => changedIDs.has(m.config.id));
-  progress(`preparing ${toChange.length} monitors`);
-  schemas = await buildMonitorSchema(toChange);
+  if (changedIDs.size > 0) {
+    const toChange = monitors.filter(m => changedIDs.has(m.config.id));
+    progress(`bundling ${toChange.length} monitors`);
+    const schemas = await buildMonitorSchema(toChange);
 
-  progress(`creating ${schemas.length} monitors`);
-  bulkPutMonitors(options, schemas);
-
-  if (removedIDs.size > 0 && changedIDs.size === 0 && unchangedIDs.size === 0) {
-    write('');
-    const { deleteAll } = await prompt<{ deleteAll: boolean }>({
-      type: 'confirm',
-      skip() {
-        if (options.yes) {
-          this.initial = process.env.TEST_OVERRIDE ?? true;
-          return true;
-        }
-        return false;
-      },
-      name: 'deleteAll',
-      message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
-      initial: false,
-    });
-    if (!deleteAll) {
-      throw warn('Push command Aborted');
-    }
+    progress(`creating ${schemas.length} monitors`);
+    bulkPutMonitors(options, schemas);
   }
 
   if (removedIDs.size > 0) {
+    if (changedIDs.size === 0 && unchangedIDs.size === 0) {
+      await promptConfirmDeleteAll(options);
+    }
     progress(`deleting ${removedIDs.size} monitors`);
     await bulkDeleteMonitors(options, Array.from(removedIDs));
   }
 
-  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+  done(`Pushed: ${grey(options.url)}`);
+}
+
+async function promptConfirmDeleteAll(options: PushOptions) {
+  write('');
+  const { deleteAll } = await prompt<{ deleteAll: boolean }>({
+    type: 'confirm',
+    skip() {
+      if (options.yes) {
+        this.initial = process.env.TEST_OVERRIDE ?? true;
+        return true;
+      }
+      return false;
+    },
+    name: 'deleteAll',
+    message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+    initial: false,
+  });
+  if (!deleteAll) {
+    throw warn('Push command Aborted');
+  }
 }
 
 function trackDuplicates(monitors: Monitor[]) {
