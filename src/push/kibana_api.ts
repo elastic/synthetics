@@ -68,6 +68,7 @@ export async function bulkPutMonitors(
 
     const parsedResp = (await parseAndCheck(
       statusCode,
+      url,
       respBody
     )) as BulkPutResponse;
     result.createdMonitors.push(...parsedResp.createdMonitors);
@@ -105,7 +106,7 @@ export async function bulkGetMonitors(
       method: 'GET',
       auth: options.auth,
     });
-    const resp = (await parseAndCheck(statusCode, body)) as GetResponse &
+    const resp = (await parseAndCheck(statusCode, url, body)) as GetResponse &
       AfterKey;
     afterKey = resp.after_key;
 
@@ -131,16 +132,17 @@ export async function bulkDeleteMonitors(
   for (let i = 0; i < monitorIDs.length; i += chunkSize) {
     const chunk = monitorIDs.slice(i, i + chunkSize);
 
+    const url =
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`;
     const { body, statusCode } = await sendRequest({
-      url:
-        removeTrailingSlash(options.url) +
-        `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`,
+      url,
       method: 'DELETE',
       auth: options.auth,
       body: JSON.stringify({ monitors: chunk }),
     });
 
-    (await parseAndCheck(statusCode, body)) as DeleteResponse;
+    (await parseAndCheck(statusCode, url, body)) as DeleteResponse;
     totalDeleted += chunk.length;
   }
 
@@ -148,9 +150,13 @@ export async function bulkDeleteMonitors(
 }
 
 // Check for any bad status codes and attempt to read the body, returning the parsed JSON
-async function parseAndCheck(statusCode: number, body): Promise<any> {
+async function parseAndCheck(
+  statusCode: number,
+  url: string,
+  body
+): Promise<any> {
   if (statusCode === 404) {
-    throw formatNotFoundError(await body.text());
+    throw formatNotFoundError(url, await body.text());
   } else if (!ok(statusCode)) {
     let parsed: { error: string; message: string };
     try {

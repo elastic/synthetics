@@ -250,25 +250,30 @@ heartbeat.monitors:
     beforeAll(async () => {
       server = await Server.create({ port: 54455 });
       const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
-      server.route(
-        '/sync/s/dummy/api/synthetics/service/project/monitors',
-        (req, res) => {
+      const apiBasePath =
+        '/s/dummy/api/synthetics/service/project/dummy/monitors';
+      server.route(apiBasePath, (req, res) => {
+        res.end(JSON.stringify(apiRes));
+      });
+      server.route(apiBasePath + '/_bulk_update', async (req, res) => {
+        await new Promise(r => setTimeout(r, 20));
+        req.on('data', chunks => {
+          const schema = JSON.parse(chunks.toString()) as APISchema;
+          res.write(JSON.stringify(schema.monitors[0].name) + '\n');
+        });
+        req.on('end', () => {
           res.end(JSON.stringify(apiRes));
-        }
-      );
-      server.route(
-        '/stream/s/dummy/api/synthetics/service/project/monitors',
-        async (req, res) => {
-          await new Promise(r => setTimeout(r, 20));
-          req.on('data', chunks => {
-            const schema = JSON.parse(chunks.toString()) as APISchema;
-            res.write(JSON.stringify(schema.monitors[0].name) + '\n');
-          });
-          req.on('end', () => {
-            res.end(JSON.stringify(apiRes));
-          });
-        }
-      );
+        });
+      });
+      server.route(apiBasePath + '/_bulk_delete', async (req, res) => {
+        let schema;
+        req.on('data', chunks => {
+          schema = JSON.parse(chunks.toString()) as APISchema;
+        });
+        req.on('end', () => {
+          res.end(JSON.stringify({ monitors: schema.monitors }));
+        });
+      });
       await fakeProjectSetup(
         {
           id: 'test-project',
@@ -284,24 +289,13 @@ journey('journey 1', () => monitor.use({ id: 'j1' }));
 journey('journey 2', () => monitor.use({ id: 'j2' }));`
       );
     });
+
     afterAll(async () => {
       await server.close();
     });
 
-    it('handle sync response', async () => {
-      const output = await runPush([
-        '--url',
-        server.PREFIX + '/sync',
-        ...DEFAULT_ARGS,
-      ]);
-      expect(output).toMatchSnapshot();
-    });
-    it('handle streamed response', async () => {
-      const output = await runPush([
-        '--url',
-        server.PREFIX + '/stream',
-        ...DEFAULT_ARGS,
-      ]);
+    it('works with the API', async () => {
+      const output = await runPush(['--url', server.PREFIX, ...DEFAULT_ARGS]);
       expect(output).toMatchSnapshot();
     });
   });

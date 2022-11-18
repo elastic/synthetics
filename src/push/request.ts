@@ -60,10 +60,10 @@ export type APIMonitorError = {
   details: string;
 };
 
-export function formatNotFoundError(message: string) {
+export function formatNotFoundError(url: string, message: string) {
   return red(
     bold(
-      `${symbols['failed']} Please check your kibana url and try again - 404:${message}`
+      `${symbols['failed']} Please check your kibana url ${url} and try again - 404:${message}`
     )
   );
 }

@@ -1,20 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Push API handle streamed response 1`] = `
-"> preparing all monitors
-> creating all monitors
-> journey 1
-> journey 2
-> deleting all stale monitors
-✓ Pushed: http://localhost:54455/stream/app/uptime/manage-monitors/all
-"
-`;
-
-exports[`Push API handle sync response 1`] = `
-"> preparing all monitors
-> creating all monitors
-> deleting all stale monitors
-✓ Pushed: http://localhost:54455/sync/app/uptime/manage-monitors/all
+exports[`Push API works with the API 1`] = `
+"✖ Please check your kibana url http://localhost:54455/s/dummy/api/synthetics/project/test-project/monitors and try again - 404:Not found
 "
 `;
 
