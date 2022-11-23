@@ -48,6 +48,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
   const local = buildLocalMonitors(monitors);
   const { monitors: remote } = await bulkGetMonitors(options);
+
   const { changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
     local,
     remote
@@ -68,7 +69,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     const schemas = await buildMonitorSchema(toChange);
 
     progress(`creating ${schemas.length} monitors`);
-    bulkPutMonitors(options, schemas);
+    await bulkPutMonitors(options, schemas);
   }
 
   if (removedIDs.size > 0) {

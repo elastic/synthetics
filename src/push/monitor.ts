@@ -108,9 +108,10 @@ export function buildLocalMonitors(monitors: Monitor[]) {
   const data: MonitorHashID[] = [];
 
   for (const monitor of monitors) {
+    const mon = new Monitor(monitor.config);
     data.push({
       journey_id: monitor.config.id,
-      hash: monitor.hash(),
+      hash: mon.hash(),
     });
   }
   return data;
@@ -130,7 +131,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
     const { source, config, filter, type } = monitor;
     const schema = {
       ...config,
-      hash: monitor.hash(),
+      hash: new Monitor(monitor.config).hash(),
       locations: translateLocation(config.locations),
     };
     if (type === 'browser') {

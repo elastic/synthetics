@@ -57,7 +57,7 @@ export async function getLocations(options: LocationCmdOptions) {
     auth: options.auth,
   });
   if (statusCode === 404) {
-    throw formatNotFoundError(await body.text());
+    throw formatNotFoundError(await body.text(), url);
   }
   if (!ok(statusCode)) {
     const { error, message } = await body.json();
