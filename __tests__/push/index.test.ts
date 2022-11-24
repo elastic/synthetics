@@ -249,7 +249,11 @@ heartbeat.monitors:
     let server: Server;
     beforeAll(async () => {
       server = await Server.create({ port: 54455 });
-      const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
+      const apiRes = {
+        createdMonitors: [],
+        failedMonitors: [],
+        failedStaleMonitors: [],
+      };
       server.route(
         '/sync/s/dummy/api/synthetics/service/project/monitors',
         (req, res) => {
