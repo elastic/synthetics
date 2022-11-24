@@ -79,7 +79,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     progress(`bundling ${toChange.length} monitors`);
     const schemas = await buildMonitorSchema(toChange);
 
-    const chunks = getChunks(schemas, 50);
+    const chunks = getChunks(schemas, 100);
 
     for (const chunk of chunks) {
       const bulkPutPromise = bulkPutMonitors(options, chunk);
