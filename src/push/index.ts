@@ -45,6 +45,7 @@ import {
   safeNDJSONParse,
   done,
   getMonitorManagementURL,
+  parseCompleteResults,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -61,8 +62,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     schemas = await buildMonitorSchema(monitors);
 
     progress(`creating all monitors`);
-    for (const schema of schemas) {
-      await pushMonitors({ schemas: [schema], keepStale: true, options });
+
+    const chunks = getArrayChunks(schemas, 10);
+
+    for (const chunk of chunks) {
+      await pushMonitors({ schemas: chunk, keepStale: true, options });
     }
   } else {
     write('');
@@ -111,26 +115,29 @@ export async function pushMonitors({
     throw formatAPIError(statusCode, error, message);
   }
   body.setEncoding('utf-8');
+  let fullData = [];
   for await (const data of body) {
-    // Its kind of hacky for now where Kibana streams the response by
-    // writing the data as NDJSON events (data can be interleaved), we
-    // distinguish the final data by checking if the event was a progress vs complete event
     const chunks = safeNDJSONParse(data);
     for (const chunk of chunks) {
       if (typeof chunk === 'string') {
-        // TODO: add progress back for all states once we get the fix
-        // on kibana side
         keepStale && apiProgress(chunk);
-        continue;
-      }
-      const { failedMonitors, failedStaleMonitors } = chunk;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      if (failedStaleMonitors.length > 0) {
-        throw formatStaleMonitors(failedStaleMonitors);
       }
     }
+
+    fullData.push(data);
+  }
+
+  // Its kind of hacky for now where Kibana streams the response by
+  // writing the data as NDJSON events (data can be interleaved), we
+  // distinguish the final data by checking if the event was a progress vs complete event
+  const result = parseCompleteResults(fullData);
+
+  const { failedMonitors, failedStaleMonitors } = result ?? {};
+  if (failedMonitors && failedMonitors.length > 0) {
+    throw formatFailedMonitors(failedMonitors);
+  }
+  if (failedStaleMonitors && failedStaleMonitors.length > 0) {
+    throw formatStaleMonitors(failedStaleMonitors);
   }
 }
 
@@ -251,3 +258,11 @@ export async function catchIncorrectSettings(
     await overrideSettings(settings.id, options.id);
   }
 }
+
+const getArrayChunks = (arr: any[], chunkSize: number) => {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += chunkSize) {
+    chunks.push(arr.slice(i, i + chunkSize));
+  }
+  return chunks;
+};

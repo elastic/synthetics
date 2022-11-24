@@ -332,10 +332,26 @@ export function safeNDJSONParse(chunks: string[]) {
     .map(line => {
       try {
         return JSON.parse(line);
-      } catch (e) {
-        throw `Error ${e} could not parse data '${line}'`;
-      }
+      } catch (e) {}
     });
+}
+
+// Safely parse ND JSON (Newline delimited JSON) chunks
+export function parseCompleteResults(chunks: string[]) {
+  // chunks may not be at proper newline boundaries, so we make sure everything is split
+  // on proper newlines
+  chunks = Array.isArray(chunks) ? chunks : [chunks];
+  const lines = chunks.join('\n').split(/\r?\n/);
+  const results = lines.filter(l => l.match(/\S/)).join(''); // join all lines to make sure we have valid JSON
+
+  try {
+    const data =
+      '{"createdMonitors":[' + results.split('{"createdMonitors":[')[1];
+
+    return JSON.parse(data);
+  } catch (e) {
+    throw `Error ${e} could not parse data '${results}'`;
+  }
 }
 
 // Console helpers
