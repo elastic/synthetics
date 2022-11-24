@@ -115,7 +115,7 @@ export async function pushMonitors({
     throw formatAPIError(statusCode, error, message);
   }
   body.setEncoding('utf-8');
-  let fullData = [];
+  const fullData = [];
   for await (const data of body) {
     const chunks = safeNDJSONParse(data);
     for (const chunk of chunks) {
@@ -123,7 +123,6 @@ export async function pushMonitors({
         keepStale && apiProgress(chunk);
       }
     }
-
     fullData.push(data);
   }
 
