@@ -32,7 +32,15 @@ import {
   diffMonitors as diffMonitorHashIDs,
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
-import { progress, write, error, warn, indent, done } from '../helpers';
+import {
+  progress,
+  write,
+  error,
+  warn,
+  indent,
+  liveProgress,
+  doneLabel,
+} from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
 import {
@@ -42,6 +50,9 @@ import {
 } from './kibana_api';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
+  const label = doneLabel(`Pushed: ${grey(options.url)}`);
+  console.time(label);
+
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
@@ -68,19 +79,25 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     progress(`bundling ${toChange.length} monitors`);
     const schemas = await buildMonitorSchema(toChange);
 
-    progress(`creating ${schemas.length} monitors`);
-    await bulkPutMonitors(options, schemas);
+    const chunks = getChunks(schemas, 50);
+
+    for (const chunk of chunks) {
+      const bulkPutPromise = bulkPutMonitors(options, chunk);
+      await liveProgress(bulkPutPromise, `creating ${chunk.length} monitors`);
+    }
   }
 
   if (removedIDs.size > 0) {
     if (changedIDs.size === 0 && unchangedIDs.size === 0) {
       await promptConfirmDeleteAll(options);
     }
-    progress(`deleting ${removedIDs.size} monitors`);
-    await bulkDeleteMonitors(options, Array.from(removedIDs));
+    await liveProgress(
+      bulkDeleteMonitors(options, Array.from(removedIDs)),
+      `deleting ${removedIDs.size} monitors`
+    );
   }
 
-  done(`Pushed: ${grey(options.url)}`);
+  console.timeEnd(label);
 }
 
 async function promptConfirmDeleteAll(options: PushOptions) {
@@ -220,3 +237,11 @@ export async function catchIncorrectSettings(
     await overrideSettings(settings.id, options.id);
   }
 }
+
+const getChunks = (arr: any[], size: number) => {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};

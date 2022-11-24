@@ -86,7 +86,6 @@ export function diffMonitors(
   for (const [localID, localHash] of localMonitorsIDToHash) {
     const remoteHash = remoteMonitorsIDToHash.get(localID);
     if (!remoteHash || remoteHash != localHash) {
-      console.log(localID);
       result.changedIDs.add(localID);
     } else if (remoteHash === localHash) {
       result.unchangedIDs.add(localID);
