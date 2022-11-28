@@ -1,9 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Push API handle streamed response 1`] = `
-"(node:25177) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-> preparing all monitors
+"> preparing all monitors
 > creating all monitors
 > journey 1
 > deleting all stale monitors
@@ -12,9 +10,7 @@ exports[`Push API handle streamed response 1`] = `
 `;
 
 exports[`Push API handle sync response 1`] = `
-"(node:25175) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-> preparing all monitors
+"> preparing all monitors
 > creating all monitors
 > deleting all stale monitors
 ✓ Pushed: http://localhost:54455/sync/app/uptime/manage-monitors/all
@@ -22,9 +18,7 @@ exports[`Push API handle sync response 1`] = `
 `;
 
 exports[`Push error on empty project id 1`] = `
-"(node:25149) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-Aborted. Invalid synthetics project settings.
+"Aborted. Invalid synthetics project settings.
 
 Set project id via
   - CLI '--id <id>'
@@ -35,9 +29,7 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 `;
 
 exports[`Push error on invalid location 1`] = `
-"(node:25152) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-Aborted. Invalid synthetics project settings.
+"Aborted. Invalid synthetics project settings.
 
 Set default location for all monitors via
   - CLI '--locations <values...> or --privateLocations <values...>'
@@ -48,9 +40,7 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 `;
 
 exports[`Push error on invalid schedule 1`] = `
-"(node:25154) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-Aborted. Invalid synthetics project settings.
+"Aborted. Invalid synthetics project settings.
 
 Set default schedule(12) to one of the allowed values - 1,3,5,10,15,30,60
 
@@ -59,9 +49,7 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 `;
 
 exports[`Push error when schedule is not present 1`] = `
-"(node:25153) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
-(Use \`node --trace-warnings ...\` to show where the warning was created)
-Aborted. Invalid synthetics project settings.
+"Aborted. Invalid synthetics project settings.
 
 Set default schedule in minutes for all monitors via
   - CLI '--schedule <mins>'
