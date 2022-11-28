@@ -59,6 +59,8 @@ function translateLocation(locations?: MonitorConfig['locations']) {
 }
 
 class RemoteDiffResult {
+  // The set of monitor IDs that have been added
+  newIDs: Set<string> = new Set<string>();
   // Monitor IDs that are different locally than remotely
   changedIDs: Set<string> = new Set<string>();
   // Monitor IDs that are no longer present locally
@@ -85,10 +87,14 @@ export function diffMonitors(
   // Compare local to remote
   for (const [localID, localHash] of localMonitorsIDToHash) {
     const remoteHash = remoteMonitorsIDToHash.get(localID);
-    if (!remoteHash || remoteHash != localHash) {
-      result.changedIDs.add(localID);
-    } else if (remoteHash === localHash) {
-      result.unchangedIDs.add(localID);
+    if (!remoteHash) {
+      result.newIDs.add(localID);
+    } else {
+      if (remoteHash != localHash) {
+        result.changedIDs.add(localID);
+      } else if (remoteHash === localHash) {
+        result.unchangedIDs.add(localID);
+      }
     }
 
     // We no longer need to process this ID, removing it here

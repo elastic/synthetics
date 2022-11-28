@@ -48,6 +48,7 @@ import {
   bulkGetMonitors,
   bulkPutMonitors,
 } from './kibana_api';
+import { logPushProgress } from './utils';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   const label = doneLabel(`Pushed: ${grey(options.url)}`);
@@ -60,22 +61,17 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const local = buildLocalMonitors(monitors);
   const { monitors: remote } = await bulkGetMonitors(options);
 
-  const { changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
+  const { changedIDs, removedIDs, unchangedIDs, newIDs } = diffMonitorHashIDs(
     local,
     remote
   );
 
-  progress(
-    grey('Monitor Diff: ') +
-      green('Added/Updated(' + changedIDs.size) +
-      ') ' +
-      red('Removed(' + removedIDs.size) +
-      ') ' +
-      grey('Unchanged(' + unchangedIDs.size + ')')
-  );
+  logPushProgress({ unchangedIDs, removedIDs, changedIDs, newIDs });
 
-  if (changedIDs.size > 0) {
-    const toChange = monitors.filter(m => changedIDs.has(m.config.id));
+  const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
+
+  if (updatedMonitors.size > 0) {
+    const toChange = monitors.filter(m => updatedMonitors.has(m.config.id));
     progress(`bundling ${toChange.length} monitors`);
     const schemas = await buildMonitorSchema(toChange);
 
@@ -88,7 +84,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
 
   if (removedIDs.size > 0) {
-    if (changedIDs.size === 0 && unchangedIDs.size === 0) {
+    if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
       await promptConfirmDeleteAll(options);
     }
     await liveProgress(
