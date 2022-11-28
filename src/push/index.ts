@@ -81,7 +81,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
     for (const chunk of chunks) {
       const bulkPutPromise = bulkPutMonitors(options, chunk);
-      await liveProgress(bulkPutPromise, `creating ${chunk.length} monitors`);
+      await liveProgress(bulkPutPromise, `creating or updating ${chunk.length} monitors`);
     }
   }
 
@@ -89,10 +89,15 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
       await promptConfirmDeleteAll(options);
     }
-    await liveProgress(
-      bulkDeleteMonitors(options, Array.from(removedIDs)),
-      `deleting ${removedIDs.size} monitors`
-    );
+
+    const chunks = getChunks(Array.from(removedIDs), 100);
+
+    for (const chunk of chunks) {
+      await liveProgress(
+        bulkDeleteMonitors(options, chunk),
+        `deleting ${chunk.length} monitors`
+      );
+    }
   }
 
   console.timeEnd(label);
@@ -178,9 +183,8 @@ export function validateSettings(opts: PushOptions) {
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
   } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
-    reason = `Set default schedule(${
-      opts.schedule
-    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+    reason = `Set default schedule(${opts.schedule
+      }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;
