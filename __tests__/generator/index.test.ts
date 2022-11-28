@@ -51,7 +51,7 @@ describe('Generator', () => {
         ...process.env,
         TEST_QUESTIONS: JSON.stringify({
           locations: ['us_east'],
-          privateLocations: [],
+          privateLocations: ['custom'],
           schedule: 30,
           id: 'test',
           space: 'kbn',
