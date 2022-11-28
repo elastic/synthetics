@@ -62,6 +62,10 @@ export class Gatherer {
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
+    if (playwrightOptions?.timeout) {
+      context.setDefaultTimeout(playwrightOptions.timeout);
+    }
+
     Gatherer.setNetworkConditions(context, networkConditions);
 
     const page = await context.newPage();

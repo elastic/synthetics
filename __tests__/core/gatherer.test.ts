@@ -164,6 +164,26 @@ describe('Gatherer', () => {
     });
   });
 
+  describe('Playwright override default timeout', () => {
+    it('sets the passed value as timeout', async () => {
+      const timeout = 1000;
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { timeout },
+      });
+      expect(await driver.context['_options']['timeout']).toEqual(timeout);
+
+      await driver.page.goto(server.TEST_PAGE);
+      try {
+        await driver.page.waitForSelector('h1');
+      } catch (e) {
+        expect(e.message).toContain(`Timeout ${timeout}ms exceeded`);
+      }
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
   describe('Network emulation', () => {
     const networkConditions = {
       downloadThroughput: megabitsToBytes(3),
