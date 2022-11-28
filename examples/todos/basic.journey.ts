@@ -2,7 +2,7 @@ import { journey, step, expect } from '@elastic/synthetics';
 
 journey('check if title is present', ({ page, params }) => {
   step('launch app', async () => {
-    await page.goto('https://www.elastic.co/');
+    await page.goto(params.url);
   });
 
   step('assert title', async () => {
