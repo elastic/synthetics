@@ -44,14 +44,14 @@ describe('Generator', () => {
   });
   it('generate synthetics project - NPM', async () => {
     // In a few development environments, this test may take
-    // a few millisseconds more than the default 15000ms timeout
+    // a few milliseconds more than the default 15000ms timeout
     jest.setTimeout(30000);
     const cli = new CLIMock().args(['init', scaffoldDir]).run({
       env: {
         ...process.env,
         TEST_QUESTIONS: JSON.stringify({
           locations: ['us_east'],
-          privateLocations: ['custom'],
+          privateLocations: [],
           schedule: 30,
           id: 'test',
           space: 'kbn',
