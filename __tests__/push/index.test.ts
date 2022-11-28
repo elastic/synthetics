@@ -76,7 +76,10 @@ describe('Push', () => {
   it('error on empty project id', async () => {
     await fakeProjectSetup({}, {});
     const output = await runPush();
-    expect(output).toMatchSnapshot();
+    expect(output).toContain('Aborted. Invalid synthetics project settings.');
+    expect(output).toContain('Set project id via');
+    expect(output).toContain("- CLI '--id <id>");
+    expect(output).toContain("- Config file 'project.id' field");
   });
 
   it('error on invalid location', async () => {
@@ -130,7 +133,7 @@ journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
     await rm(testJourney, { force: true });
   });
 
-  it('push with different id when overriden', async () => {
+  it('push with different id when overridden', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
       { locations: ['test-loc'], schedule: 3 }

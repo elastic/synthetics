@@ -6,7 +6,9 @@ exports[`Push API works with the API 1`] = `
 `;
 
 exports[`Push error on empty project id 1`] = `
-"Aborted. Invalid synthetics project settings.
+"(node:34199) ExperimentalWarning: stream/web is an experimental feature. This feature could change at any time
+(Use \`node --trace-warnings ...\` to show where the warning was created)
+Aborted. Invalid synthetics project settings.
 
 Set project id via
   - CLI '--id <id>'
