@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  */
-
+import semver from 'semver';
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold, grey } from 'kleur/colors';
@@ -30,16 +30,23 @@ import {
   buildLocalMonitors,
   buildMonitorSchema,
   diffMonitors as diffMonitorHashIDs,
+  createMonitorsLegacy,
+  getVersion,
+  MonitorSchema
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
+  apiProgress,
   write,
   error,
   warn,
   indent,
   liveProgress,
   doneLabel,
+  done,
+  safeNDJSONParse,
+  getMonitorManagementURL
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -49,8 +56,21 @@ import {
   bulkPutMonitors,
 } from './kibana_api';
 import { logPushProgress } from './utils';
+import {
+  ok,
+  formatAPIError,
+  formatFailedMonitors,
+  formatNotFoundError,
+  formatStaleMonitors,
+} from './request';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
+  const stackVersion = await getVersion(options);
+  const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
+  if (!isV2) {
+    await pushLegacy(monitors, options);
+    return;
+  }
   progress('Pushing monitors to Kibana for Project: ' + options.id);
 
   const label = doneLabel(`Pushed: ${grey(options.url)}`);
@@ -247,3 +267,88 @@ const getChunks = (arr: any[], size: number) => {
   }
   return chunks;
 };
+
+export const pushLegacy = async (monitors: Monitor[], options: PushOptions) => {
+  let schemas: MonitorSchema[] = [];
+  if (monitors.length > 0) {
+    const duplicates = trackDuplicates(monitors);
+    if (duplicates.size > 0) {
+      throw error(formatDuplicateError(duplicates));
+    }
+
+    progress(`preparing all monitors`);
+    schemas = await buildMonitorSchema(monitors);
+
+    progress(`creating all monitors`);
+    for (const schema of schemas) {
+      await pushMonitorsLegacy({ schemas: [schema], keepStale: true, options });
+    }
+  } else {
+    write('');
+    const { deleteAll } = await prompt<{ deleteAll: boolean }>({
+      type: 'confirm',
+      skip() {
+        if (options.yes) {
+          this.initial = process.env.TEST_OVERRIDE ?? true;
+          return true;
+        }
+        return false;
+      },
+      name: 'deleteAll',
+      message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+      initial: false,
+    });
+    if (!deleteAll) {
+      throw warn('Push command Aborted');
+    }
+  }
+  progress(`deleting all stale monitors`);
+  await pushMonitorsLegacy({ schemas, keepStale: false, options });
+
+  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+}
+
+export async function pushMonitorsLegacy({
+  schemas,
+  keepStale,
+  options,
+}: {
+  schemas: MonitorSchema[];
+  keepStale: boolean;
+  options: PushOptions;
+}) {
+  const { body, statusCode } = await createMonitorsLegacy(
+    schemas,
+    options,
+    keepStale
+  );
+  if (statusCode === 404) {
+    throw formatNotFoundError(options.url, await body.text());
+  }
+  if (!ok(statusCode)) {
+    const { error, message } = await body.json();
+    throw formatAPIError(statusCode, error, message);
+  }
+  body.setEncoding('utf-8');
+  for await (const data of body) {
+    // Its kind of hacky for now where Kibana streams the response by
+    // writing the data as NDJSON events (data can be interleaved), we
+    // distinguish the final data by checking if the event was a progress vs complete event
+    const chunks = safeNDJSONParse(data);
+    for (const chunk of chunks) {
+      if (typeof chunk === 'string') {
+        // TODO: add progress back for all states once we get the fix
+        // on kibana side
+        keepStale && apiProgress(chunk);
+        continue;
+      }
+      const { failedMonitors, failedStaleMonitors } = chunk;
+      if (failedMonitors && failedMonitors.length > 0) {
+        throw formatFailedMonitors(failedMonitors);
+      }
+      if (failedStaleMonitors.length > 0) {
+        throw formatStaleMonitors(failedStaleMonitors);
+      }
+    }
+  }
+}

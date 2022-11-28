@@ -28,8 +28,9 @@ import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
+import { removeTrailingSlash, SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
+import { sendRequest } from './request';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
@@ -282,4 +283,39 @@ export function nearestSchedule(schedule: number) {
     }
   }
   return ALLOWED_SCHEDULES[end];
+}
+
+export async function getVersion(
+  options: PushOptions,
+) {
+  const { body } = await sendRequest({
+    url:
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/status`,
+    method: 'GET',
+    auth: options.auth,
+  });
+  const data = await body.json();
+  return data.version.number;
+}
+
+export async function createMonitorsLegacy(
+  monitors: MonitorSchema[],
+  options: PushOptions,
+  keepStale: boolean
+) {
+  const schema: APISchema = {
+    project: options.id,
+    keep_stale: keepStale,
+    monitors,
+  };
+
+  return await sendRequest({
+    url:
+      removeTrailingSlash(options.url) +
+      `/s/${options.space}/api/synthetics/service/project/monitors`,
+    method: 'PUT',
+    auth: options.auth,
+    body: JSON.stringify(schema),
+  });
 }

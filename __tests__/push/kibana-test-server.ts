@@ -25,13 +25,16 @@
 import { Server } from '../utils/server';
 import { APISchema } from '../../src/push/monitor';
 
-export const createKibanaTestServer = async () => {
+export const createKibanaTestServer = async (kibanaVersion?: string) => {
   const server = await Server.create({ port: 54455 });
   const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
-  const apiBasePath = '/s/dummy/api/synthetics/project/dummy/monitors';
+  const apiBasePath = '/s/dummy/api/synthetics/project/test-project/monitors';
   server.route(apiBasePath, (req, res) => {
     res.end(JSON.stringify({ monitors: [] }));
   });
+  server.route('/s/dummy/api/status', (req, res) => {
+    res.end(JSON.stringify({ version: { number: kibanaVersion || '8.5.0' } }));
+  })
   server.route(apiBasePath + '/_bulk_update', async (req, res) => {
     await new Promise(r => setTimeout(r, 20));
     req.on('data', chunks => {
