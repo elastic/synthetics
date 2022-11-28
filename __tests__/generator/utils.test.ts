@@ -23,11 +23,8 @@
  *
  */
 
-import { existsSync, readFileSync } from 'fs';
-import { readFile, rm } from 'fs/promises';
+import { readFileSync } from 'fs';
 import { join } from 'path';
-import { CLIMock } from '../utils/test-config';
-import { REGULAR_FILES_PATH, CONFIG_PATH } from '../../src/generator';
 import { replaceTemplates } from '../../src/generator/utils';
 
 describe('Generator utils', () => {
