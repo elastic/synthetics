@@ -1,3 +1,5 @@
+import { createKibanaTestServer } from './kibana-test-server';
+
 /**
  * MIT License
  *
@@ -27,10 +29,11 @@ process.env.NO_COLOR = '1';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
-import { formatDuplicateError } from '../../src/push';
+import { formatDuplicateError, push } from '../../src/push';
 import { APISchema } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
+import * as pushAPI from '../../src/push/index';
 
 describe('Push', () => {
   const PROJECT_DIR = join(__dirname, 'new-project');
@@ -69,7 +72,7 @@ describe('Push', () => {
   it('error when project is not setup', async () => {
     const output = await runPush();
     expect(output).toContain(
-      'Aborted (missing synthetics config file), Project not set up corrrectly.'
+      'Aborted (missing synthetics config file), Project not set up correctly.'
     );
   });
 
@@ -135,7 +138,7 @@ journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
 
   it('push with different id when overridden', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      { id: 'test-project', space: 'dummy' },
       { locations: ['test-loc'], schedule: 3 }
     );
     const testJourney = join(PROJECT_DIR, 'test.journey.ts');
@@ -150,7 +153,11 @@ journey('journey 1', () => monitor.use({ id: 'j1' }));`
         TEST_OVERRIDE: true,
       }
     );
-    expect(output).toContain('preparing all monitors');
+
+    jest.advanceTimersByTime(10000);
+    expect(output).toContain(
+      'Pushing monitors to Kibana for Project: new-project'
+    );
     await rm(testJourney, { force: true });
   });
 
@@ -217,69 +224,13 @@ heartbeat.monitors:
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
   });
 
-  it('abort when delete is skipped', async () => {
-    await fakeProjectSetup(
-      { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 3 }
-    );
-    const output = await runPush([...DEFAULT_ARGS, '-y'], {
-      TEST_OVERRIDE: false,
-    });
-    expect(output).toContain('Push command Aborted');
-  });
-
-  it('delete entire project with --yes flag', async () => {
-    await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
-      { locations: ['test-loc'], schedule: 3 }
-    );
-    const output = await runPush([...DEFAULT_ARGS, '-y']);
-    expect(output).toContain('deleting all stale monitors');
-  });
-
-  it('delete entire project with overrides', async () => {
-    await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
-      { locations: ['test-loc'], schedule: 3 }
-    );
-    const output = await runPush([...DEFAULT_ARGS, '-y'], {
-      TEST_OVERRIDE: true,
-    });
-    expect(output).toContain('deleting all stale monitors');
-  });
-
   describe('API', () => {
     let server: Server;
     beforeAll(async () => {
-      server = await Server.create({ port: 54455 });
-      const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
-      const apiBasePath =
-        '/s/dummy/api/synthetics/service/project/dummy/monitors';
-      server.route(apiBasePath, (req, res) => {
-        res.end(JSON.stringify(apiRes));
-      });
-      server.route(apiBasePath + '/_bulk_update', async (req, res) => {
-        await new Promise(r => setTimeout(r, 20));
-        req.on('data', chunks => {
-          const schema = JSON.parse(chunks.toString()) as APISchema;
-          res.write(JSON.stringify(schema.monitors[0].name) + '\n');
-        });
-        req.on('end', () => {
-          res.end(JSON.stringify(apiRes));
-        });
-      });
-      server.route(apiBasePath + '/_bulk_delete', async (req, res) => {
-        let schema;
-        req.on('data', chunks => {
-          schema = JSON.parse(chunks.toString()) as APISchema;
-        });
-        req.on('end', () => {
-          res.end(JSON.stringify({ monitors: schema.monitors }));
-        });
-      });
+      server = await createKibanaTestServer();
       await fakeProjectSetup(
         {
-          id: 'test-project',
+          id: 'dummy',
           space: 'dummy',
         },
         { locations: ['test-loc'], schedule: 3 }
@@ -300,6 +251,37 @@ journey('journey 2', () => monitor.use({ id: 'j2' }));`
     it('works with the API', async () => {
       const output = await runPush(['--url', server.PREFIX, ...DEFAULT_ARGS]);
       expect(output).toMatchSnapshot();
+    });
+
+    it('abort when delete is skipped', async () => {
+      await fakeProjectSetup(
+        { id: 'test-project' },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const output = await runPush([...DEFAULT_ARGS, '-y'], {
+        TEST_OVERRIDE: false,
+      });
+      expect(output).toContain('Push command Aborted');
+    });
+
+    it('delete entire project with --yes flag', async () => {
+      await fakeProjectSetup(
+        { id: 'test-project', space: 'dummy', url: 'http://localhost:54455' },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const output = await runPush([...DEFAULT_ARGS, '-y']);
+      expect(output).toContain('deleting all stale monitors');
+    });
+
+    it('delete entire project with overrides', async () => {
+      await fakeProjectSetup(
+        { id: 'test-project', space: 'dummy', url: 'http://localhost:54455' },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const output = await runPush([...DEFAULT_ARGS, '-y'], {
+        TEST_OVERRIDE: true,
+      });
+      expect(output).toContain('deleting all stale monitors');
     });
   });
 });

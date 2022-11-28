@@ -51,6 +51,8 @@ import {
 import { logPushProgress } from './utils';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
+  progress('Pushing monitors to Kibana for Project: ' + options.id);
+
   const label = doneLabel(`Pushed: ${grey(options.url)}`);
   console.time(label);
 
@@ -153,7 +155,7 @@ export async function loadSettings() {
     }
     return config.project || ({} as ProjectSettings);
   } catch (e) {
-    throw error(`Aborted (missing synthetics config file), Project not set up corrrectly.
+    throw error(`Aborted (missing synthetics config file), Project not set up correctly.
 
 ${INSTALLATION_HELP}`);
   }
