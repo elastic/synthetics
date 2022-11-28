@@ -3,3 +3,4 @@ examples
 templates
 __tests__/e2e/tmp/
 src/sdk/lh-trace-processor.ts
+test-projects

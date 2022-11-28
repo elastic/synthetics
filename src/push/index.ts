@@ -25,7 +25,7 @@
 
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold, grey, green, red } from 'kleur/colors';
+import { bold, grey } from 'kleur/colors';
 import {
   buildLocalMonitors,
   buildMonitorSchema,

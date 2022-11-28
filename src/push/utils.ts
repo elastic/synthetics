@@ -1,6 +1,3 @@
-import { progress } from '../helpers';
-import { green, grey, red, blue } from 'kleur/colors';
-
 /**
  * MIT License
  *
@@ -25,6 +22,9 @@ import { green, grey, red, blue } from 'kleur/colors';
  * THE SOFTWARE.
  *
  */
+
+import { progress } from '../helpers';
+import { green, grey, red, blue } from 'kleur/colors';
 
 export function logPushProgress({
   newIDs,
