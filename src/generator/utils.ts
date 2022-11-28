@@ -59,9 +59,6 @@ export function replaceTemplates(input: string, values: Record<string, any>) {
       return finalValue;
     });
   }
-
-  // input = input.replace(new RegExp("['']", 'g'), '');
-
   return input;
 }
 
