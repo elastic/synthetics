@@ -24,18 +24,18 @@
  */
 
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { replaceTemplates } from '../../src/generator/utils';
 
 describe('Generator utils', () => {
   it('does not add empty values in array', async () => {
     const template = readFileSync(
-      join(__dirname, '../../templates', 'synthetics.config.ts'),
+      join(dirname('../../templates'), 'synthetics.config.ts'),
       'utf-8'
     );
     const values = {
       locations: ['us_east'],
-      privateLocations: [],
+      privateLocations: [''],
       schedule: 30,
       id: 'test',
       space: 'kbn',
