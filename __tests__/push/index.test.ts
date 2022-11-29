@@ -263,6 +263,12 @@ heartbeat.monitors:
           req.on('data', chunks => {
             const schema = JSON.parse(chunks.toString()) as APISchema;
             res.write(JSON.stringify(schema.monitors[0].name) + '\n');
+            if (!schema.keep_stale) {
+              // write more than the stream buffer to check the broken NDJSON data
+              res.write(
+                JSON.stringify(Buffer.from('a'.repeat(70000)).toString()) + '\n'
+              );
+            }
           });
           req.on('end', () => {
             res.end(JSON.stringify(apiRes));

@@ -110,26 +110,27 @@ export async function pushMonitors({
     const { error, message } = await body.json();
     throw formatAPIError(statusCode, error, message);
   }
-  body.setEncoding('utf-8');
+  const allchunks = [];
   for await (const data of body) {
-    // Its kind of hacky for now where Kibana streams the response by
-    // writing the data as NDJSON events (data can be interleaved), we
-    // distinguish the final data by checking if the event was a progress vs complete event
-    const chunks = safeNDJSONParse(data);
-    for (const chunk of chunks) {
-      if (typeof chunk === 'string') {
-        // TODO: add progress back for all states once we get the fix
-        // on kibana side
-        keepStale && apiProgress(chunk);
-        continue;
-      }
-      const { failedMonitors, failedStaleMonitors } = chunk;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      if (failedStaleMonitors.length > 0) {
-        throw formatStaleMonitors(failedStaleMonitors);
-      }
+    allchunks.push(Buffer.from(data));
+  }
+  const chunks = safeNDJSONParse(Buffer.concat(allchunks).toString('utf-8'));
+  // Its kind of hacky for now where Kibana streams the response by
+  // writing the data as NDJSON events (data can be interleaved), we
+  // distinguish the final data by checking if the event was a progress vs complete event
+  for (const chunk of chunks) {
+    if (typeof chunk === 'string') {
+      // TODO: add progress back for all states once we get the fix
+      // on kibana side
+      keepStale && apiProgress(chunk);
+      continue;
+    }
+    const { failedMonitors, failedStaleMonitors } = chunk;
+    if (failedMonitors && failedMonitors.length > 0) {
+      throw formatFailedMonitors(failedMonitors);
+    }
+    if (failedStaleMonitors.length > 0) {
+      throw formatStaleMonitors(failedStaleMonitors);
     }
   }
 }
