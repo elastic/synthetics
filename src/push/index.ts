@@ -45,6 +45,7 @@ import {
   safeNDJSONParse,
   done,
   getMonitorManagementURL,
+  getArrayChunks,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -61,9 +62,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     schemas = await buildMonitorSchema(monitors);
 
     progress(`creating all monitors`);
-
     const chunks = getArrayChunks(schemas, 10);
-
     for (const chunk of chunks) {
       await pushMonitors({ schemas: chunk, keepStale: true, options });
     }
@@ -254,12 +253,4 @@ export async function catchIncorrectSettings(
   if (override) {
     await overrideSettings(settings.id, options.id);
   }
-}
-
-function getArrayChunks<T>(arr: T[], chunkSize: number): T[][] {
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    chunks.push(arr.slice(i, i + chunkSize));
-  }
-  return chunks;
 }

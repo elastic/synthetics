@@ -267,7 +267,11 @@ heartbeat.monitors:
                 schema.monitors.length + ' monitors created successfully'
               ) + '\n'
             );
-            res.write(JSON.stringify('1 monitor updated successfully') + '\n');
+            res.write(
+              JSON.stringify(
+                `${schema.monitors[1].name} monitor updated successfully`
+              ) + '\n'
+            );
             if (!schema.keep_stale) {
               // write more than the stream buffer to check the broken NDJSON data
               res.write(
