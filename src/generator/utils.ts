@@ -47,6 +47,7 @@ export function replaceTemplates(input: string, values: Record<string, any>) {
       if (Array.isArray(finalValue)) {
         return String(finalValue)
           .split(',')
+          .filter(Boolean)
           .map(f => `'${f}'`);
       }
       if (typeof finalValue == 'number') {
