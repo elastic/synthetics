@@ -61,8 +61,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     schemas = await buildMonitorSchema(monitors);
 
     progress(`creating all monitors`);
-    for (const schema of schemas) {
-      await pushMonitors({ schemas: [schema], keepStale: true, options });
+
+    const chunks = getArrayChunks(schemas, 10);
+
+    for (const chunk of chunks) {
+      await pushMonitors({ schemas: chunk, keepStale: true, options });
     }
   } else {
     write('');
@@ -250,4 +253,12 @@ export async function catchIncorrectSettings(
   if (override) {
     await overrideSettings(settings.id, options.id);
   }
+}
+
+function getArrayChunks<T>(arr: T[], chunkSize: number): T[][] {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += chunkSize) {
+    chunks.push(arr.slice(i, i + chunkSize));
+  }
+  return chunks;
 }
