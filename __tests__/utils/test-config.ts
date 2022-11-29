@@ -80,7 +80,11 @@ export class CLIMock {
   run(spawnOverrides?: { cwd?: string; env?: NodeJS.ProcessEnv }): CLIMock {
     this.process = spawn(
       'node',
-      [join(__dirname, '..', '..', 'dist', 'cli.js'), ...this.cliArgs],
+      [
+        '--no-warnings',
+        join(__dirname, '..', '..', 'dist', 'cli.js'),
+        ...this.cliArgs,
+      ],
       {
         env: process.env,
         stdio: 'pipe',
