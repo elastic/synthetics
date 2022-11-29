@@ -243,39 +243,43 @@ describe('network', () => {
     const driver = await Gatherer.setupDriver({
       wsEndpoint,
     });
-
     const network = new NetworkManager(driver);
     await network.start();
-
     const delayTime = 5;
-    server.route('/test.js', async (req, res) => {
+
+    server.route('/test.css', async (req, res) => {
       res.writeHead(200, {
-        'content-type': 'application/javascript',
-        'cache-control': 'public; max-age=600',
+        'Content-Type': 'text/css',
+        'Cache-Control': 'public, max-age=10000',
       });
       await delay(delayTime + 1);
-      res.end('var a=10');
+      res.end(`body { background: green }`);
     });
     server.route('/index', async (_, res) => {
       res.setHeader('content-type', 'text/html');
-      res.end(`<script src=${server.PREFIX}/test.js />`);
+      res.end(`<link rel="stylesheet" href=${server.PREFIX}/test.css />`);
     });
 
-    await driver.page.goto(server.PREFIX + '/index', {
-      waitUntil: 'networkidle',
-    });
-    await driver.page.reload({ waitUntil: 'networkidle' });
-    await delay(delayTime + 1);
+    await driver.page.goto(server.PREFIX + '/index');
+    const [response] = await Promise.all([
+      driver.page.waitForResponse('**/test.css'),
+      driver.page.reload(),
+    ]);
+    await response.finished();
+
     const netinfo = await network.stop();
     await Gatherer.stop();
     const resources = netinfo.filter(req =>
-      req.url.includes(`${server.PREFIX}/test.js`)
+      req.url.includes(`${server.PREFIX}/test.css`)
     );
     expect(resources.length).toBe(2);
+
+    const [uncached, cached] = resources;
+    expect(uncached.timings.wait).toBeGreaterThan(delayTime);
+    expect(cached.timings.wait).toBeLessThan(delayTime); // served from cache
     resources.forEach(res => {
       const timing = res.timings;
-      expect(timing.wait).toBeGreaterThan(delayTime);
-      expect(timing.total).toBeGreaterThan(timing.wait + timing.receive);
+      expect(timing.total).toBeGreaterThanOrEqual(timing.wait + timing.receive);
       // Check with absolute value to make sure we are not crossing absurd values
       expect(timing.total).toBeLessThan(50);
     });
