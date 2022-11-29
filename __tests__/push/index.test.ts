@@ -262,7 +262,16 @@ heartbeat.monitors:
           await new Promise(r => setTimeout(r, 20));
           req.on('data', chunks => {
             const schema = JSON.parse(chunks.toString()) as APISchema;
-            res.write(JSON.stringify(schema.monitors[0].name) + '\n');
+            res.write(
+              JSON.stringify(
+                schema.monitors.length + ' monitors created successfully'
+              ) + '\n'
+            );
+            res.write(
+              JSON.stringify(
+                `${schema.monitors[1].name} monitor updated successfully`
+              ) + '\n'
+            );
             if (!schema.keep_stale) {
               // write more than the stream buffer to check the broken NDJSON data
               res.write(
