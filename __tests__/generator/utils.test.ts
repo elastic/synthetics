@@ -24,7 +24,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { replaceTemplates } from '../../src/generator/utils';
 
 describe('Generator utils', () => {
