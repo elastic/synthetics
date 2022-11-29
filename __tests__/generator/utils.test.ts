@@ -30,7 +30,7 @@ import { replaceTemplates } from '../../src/generator/utils';
 describe('Generator utils', () => {
   it('does not add empty values in array', async () => {
     const template = readFileSync(
-      join(dirname('../../templates'), 'synthetics.config.ts'),
+      join(__dirname, '..', '..', 'templates/synthetics.config.ts'),
       'utf-8'
     );
     const values = {
