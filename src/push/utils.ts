@@ -23,8 +23,9 @@
  *
  */
 
-import { progress } from '../helpers';
+import { progress, removeTrailingSlash } from '../helpers';
 import { green, red, grey, yellow } from 'kleur/colors';
+import { PushOptions } from '../common_types';
 
 export function logDiff<T extends Set<string>>(
   newIDs: T,
@@ -47,4 +48,30 @@ export function getChunks(arr: any[], size: number) {
     chunks.push(arr.slice(i, i + size));
   }
   return chunks;
+}
+
+type Operation =
+  | 'status'
+  | 'bulk_get'
+  | 'bulk_update'
+  | 'bulk_delete'
+  | 'legacy'
+  | 'location';
+
+export function generateURL(options: PushOptions, operation: Operation) {
+  const url = removeTrailingSlash(options.url);
+  switch (operation) {
+    case 'status':
+      return `${url}/s/${options.space}/api/status`;
+    case 'bulk_get':
+    case 'bulk_update':
+    case 'bulk_delete':
+      return `${url}/s/${options.space}/api/synthetics/project/${options.id}/monitors`;
+    case 'legacy':
+      return `${url}/s/${options.space}/api/synthetics/service/project/monitors`;
+    case 'location':
+      return `${url}/internal/uptime/service/locations`;
+    default:
+      throw new Error('Invalid operation');
+  }
 }

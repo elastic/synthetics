@@ -24,7 +24,7 @@
  */
 
 import { PushOptions } from '../common_types';
-import { removeTrailingSlash, safeNDJSONParse } from '../helpers';
+import { safeNDJSONParse } from '../helpers';
 import { MonitorHashID, MonitorSchema } from './monitor';
 import {
   formatFailedMonitors,
@@ -33,6 +33,7 @@ import {
   sendReqAndHandleError,
   sendRequest,
 } from './request';
+import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
 export const CHUNK_SIZE = 200;
@@ -52,11 +53,8 @@ export async function bulkPutMonitors(
     updatedMonitors: [],
     failedMonitors: [],
   };
-  const url =
-    removeTrailingSlash(options.url) +
-    `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_update`;
   const resp = await sendReqAndHandleError<BulkPutResponse>({
-    url,
+    url: generateURL(options, 'bulk_update') + '/_bulk_update',
     method: 'PUT',
     auth: options.auth,
     body: JSON.stringify({ monitors: schemas }),
@@ -80,10 +78,8 @@ export async function bulkGetMonitors(
   let afterKey = null;
   let total = 0;
   const monitors: MonitorHashID[] = [];
+  let url = generateURL(options, 'bulk_get');
   do {
-    let url =
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/project/${options.id}/monitors`;
     if (afterKey) {
       url += `?search_after=${afterKey}`;
     }
@@ -112,12 +108,8 @@ export async function bulkDeleteMonitors(
   options: PushOptions,
   monitorIDs: string[]
 ) {
-  const url =
-    removeTrailingSlash(options.url) +
-    `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`;
-
   return await sendReqAndHandleError<DeleteResponse>({
-    url,
+    url: generateURL(options, 'bulk_delete') + '/_bulk_delete',
     method: 'DELETE',
     auth: options.auth,
     body: JSON.stringify({ monitors: monitorIDs }),
@@ -131,10 +123,8 @@ type StatusResponse = {
 };
 
 export async function getVersion(options: PushOptions) {
-  const url =
-    removeTrailingSlash(options.url) + `/s/${options.space}/api/status`;
   const data = await sendReqAndHandleError<StatusResponse>({
-    url,
+    url: generateURL(options, 'status'),
     method: 'GET',
     auth: options.auth,
   });
@@ -161,9 +151,7 @@ export async function createMonitorsLegacy({
     keep_stale: keepStale,
     monitors: schemas,
   };
-  const url =
-    removeTrailingSlash(options.url) +
-    `/s/${options.space}/api/synthetics/service/project/monitors`;
+  const url = generateURL(options, 'legacy');
   const { body, statusCode } = await sendRequest({
     url,
     method: 'PUT',

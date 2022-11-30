@@ -125,7 +125,7 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
     const { source, config, filter, type } = monitor;
     const schema = {
       ...config,
-      hash: new Monitor(monitor.config).hash(),
+      hash: monitor.hash(),
       locations: translateLocation(config.locations),
     };
     if (type === 'browser') {

@@ -57,6 +57,7 @@ describe('Monitors', () => {
       schedule: 10,
       type: 'http',
       enabled: true,
+      hash: 'fS9hbiqcopwk3gMeDrqMgyp0mEpeyFWy6F/YFSnfWPE=',
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
     });
@@ -70,6 +71,7 @@ describe('Monitors', () => {
       schedule: 10,
       type: 'browser',
       enabled: true,
+      hash: 'I+bYcE74C35IaKpHeN04wBfinO3qEiqlcaksKFAmkBg=',
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
       content: expect.any(String),
@@ -94,40 +96,6 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 45m')).toBe(30);
     expect(parseSchedule('@every 1h2m')).toBe(60);
     expect(parseSchedule('@every 10h2m10s')).toBe(60);
-  });
-
-  it('api schema', async () => {
-    server.route(
-      '/s/dummy/api/synthetics/service/project/monitors',
-      (req, res) => {
-        let data = '';
-        req.on('data', chunks => {
-          data += chunks;
-        });
-        req.on('end', () => {
-          // Write the post data back
-          res.end(data.toString());
-        });
-      }
-    );
-    const schema = await buildMonitorSchema([monitor]);
-    const { statusCode, body } = await createMonitors(
-      schema,
-      {
-        url: `${server.PREFIX}`,
-        auth: 'apiKey',
-        id: 'blah',
-        space: 'dummy',
-      },
-      false
-    );
-
-    expect(statusCode).toBe(200);
-    expect(await body.json()).toEqual({
-      project: 'blah',
-      keep_stale: false,
-      monitors: schema,
-    });
   });
 
   describe('Lightweight monitors', () => {
