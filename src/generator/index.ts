@@ -58,6 +58,7 @@ export const REGULAR_FILES_PATH = [
   'journeys/example.journey.ts',
   'journeys/advanced-example-helpers.ts',
   'journeys/advanced-example.journey.ts',
+  'lightweight/heartbeat.yml',
   '.github/workflows/run-synthetics.yml',
   'README.md',
 ];

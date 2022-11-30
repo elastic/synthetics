@@ -322,10 +322,10 @@ export function wrapFnWithLocation<A extends unknown[], R>(
 }
 
 // Safely parse ND JSON (Newline delimitted JSON) chunks
-export function safeNDJSONParse(chunks: string[]) {
-  // chunks may not be at proper newline boundaries, so we make sure everything is split
+export function safeNDJSONParse(data: string | string[]) {
+  // data may not be at proper newline boundaries, so we make sure everything is split
   // on proper newlines
-  chunks = Array.isArray(chunks) ? chunks : [chunks];
+  const chunks = Array.isArray(data) ? data : [data];
   const lines = chunks.join('\n').split(/\r?\n/);
   return lines
     .filter(l => l.match(/\S/)) // remove blank lines

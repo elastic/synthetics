@@ -29,11 +29,9 @@ process.env.NO_COLOR = '1';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
-import { formatDuplicateError, push } from '../../src/push';
-import { APISchema } from '../../src/push/monitor';
+import { formatDuplicateError } from '../../src/push';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
-import * as pushAPI from '../../src/push/index';
 
 describe('Push', () => {
   const PROJECT_DIR = join(__dirname, 'new-project');

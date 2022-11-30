@@ -32,7 +32,7 @@ import {
   diffMonitors as diffMonitorHashIDs,
   createMonitorsLegacy,
   getVersion,
-  MonitorSchema
+  MonitorSchema,
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
@@ -46,7 +46,7 @@ import {
   doneLabel,
   done,
   safeNDJSONParse,
-  getMonitorManagementURL
+  getMonitorManagementURL,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -101,7 +101,10 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
     for (const chunk of chunks) {
       const bulkPutPromise = bulkPutMonitors(options, chunk);
-      await liveProgress(bulkPutPromise, `creating or updating ${chunk.length} monitors`);
+      await liveProgress(
+        bulkPutPromise,
+        `creating or updating ${chunk.length} monitors`
+      );
     }
   }
 
@@ -203,8 +206,9 @@ export function validateSettings(opts: PushOptions) {
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
   } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
-    reason = `Set default schedule(${opts.schedule
-      }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+    reason = `Set default schedule(${
+      opts.schedule
+    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;
@@ -306,7 +310,7 @@ export const pushLegacy = async (monitors: Monitor[], options: PushOptions) => {
   await pushMonitorsLegacy({ schemas, keepStale: false, options });
 
   done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
-}
+};
 
 export async function pushMonitorsLegacy({
   schemas,
