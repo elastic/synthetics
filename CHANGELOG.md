@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta-39 (20222-11-29)
+
+### Features
+
+- Improve the performance of push command when monitors are created or updated
+  by chunking the monitors #666
+- Add an example lightweight monitor yaml file when a new synthetics project is
+  created via `init` command #650
+
+### Bug Fixes
+
+- Parse varying NDJSON chunked responses sizes from Kibana when the API endpoint is
+  behind a proxy #680
+- Skip adding empty values for locations when creating new synthetics project
+  using `init` command #658
+
 ## v1.0.0-beta-38 (20222-11-02)
 
 ### Features
