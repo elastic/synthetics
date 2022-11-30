@@ -24,24 +24,27 @@
  */
 
 import { progress } from '../helpers';
-import { green, grey, red, blue } from 'kleur/colors';
+import { green, red, grey, yellow } from 'kleur/colors';
 
-export function logPushProgress({
-  newIDs,
-  changedIDs,
-  removedIDs,
-  unchangedIDs,
-}: {
-  newIDs: Set<string>;
-  changedIDs: Set<string>;
-  removedIDs: Set<string>;
-  unchangedIDs: Set<string>;
-}) {
+export function logDiff<T extends Set<string>>(
+  newIDs: T,
+  changedIDs: T,
+  removedIDs: T,
+  unchangedIDs: T
+) {
   progress(
-    grey('Monitor Diff: ') +
+    'Monitor Diff: ' +
       green(`Added(${newIDs.size}) `) +
-      blue(`Updated(${changedIDs.size}) `) +
+      yellow(`Updated(${changedIDs.size}) `) +
       red(`Removed(${removedIDs.size}) `) +
       grey(`Unchanged(${unchangedIDs.size})`)
   );
+}
+
+export function getChunks(arr: any[], size: number) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
 }

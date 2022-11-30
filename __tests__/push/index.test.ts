@@ -1,5 +1,3 @@
-import { createKibanaTestServer } from './kibana-test-server';
-
 /**
  * MIT License
  *
@@ -32,6 +30,7 @@ import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
+import { createKibanaTestServer } from '../utils/kibana-test-server';
 
 describe('Push', () => {
   const PROJECT_DIR = join(__dirname, 'new-project');

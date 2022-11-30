@@ -27,25 +27,20 @@ import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold, grey } from 'kleur/colors';
 import {
-  buildLocalMonitors,
+  getLocalMonitors,
   buildMonitorSchema,
   diffMonitors as diffMonitorHashIDs,
-  createMonitorsLegacy,
-  getVersion,
   MonitorSchema,
 } from './monitor';
 import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
-  apiProgress,
+  liveProgress,
   write,
   error,
   warn,
   indent,
-  liveProgress,
-  doneLabel,
   done,
-  safeNDJSONParse,
   getMonitorManagementURL,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
@@ -54,55 +49,42 @@ import {
   bulkDeleteMonitors,
   bulkGetMonitors,
   bulkPutMonitors,
+  getVersion,
+  createMonitorsLegacy,
+  CHUNK_SIZE,
 } from './kibana_api';
-import { logPushProgress } from './utils';
-import {
-  ok,
-  formatAPIError,
-  formatFailedMonitors,
-  formatNotFoundError,
-  formatStaleMonitors,
-} from './request';
+import { getChunks, logDiff } from './utils';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
-  const stackVersion = await getVersion(options);
-  const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
-  if (!isV2) {
-    await pushLegacy(monitors, options);
-    return;
-  }
-  progress('Pushing monitors to Kibana for Project: ' + options.id);
-
-  const label = doneLabel(`Pushed: ${grey(options.url)}`);
-  console.time(label);
-
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
   }
-  const local = buildLocalMonitors(monitors);
-  const { monitors: remote } = await bulkGetMonitors(options);
+  progress(`Pushing monitors for project: ${options.id}`);
 
-  const { changedIDs, removedIDs, unchangedIDs, newIDs } = diffMonitorHashIDs(
+  const stackVersion = await getVersion(options);
+  const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
+  if (!isV2) {
+    return await pushLegacy(monitors, options);
+  }
+
+  const local = getLocalMonitors(monitors);
+  const { monitors: remote } = await bulkGetMonitors(options);
+  const { newIDs, changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
     local,
     remote
   );
-
-  logPushProgress({ unchangedIDs, removedIDs, changedIDs, newIDs });
+  logDiff(newIDs, changedIDs, removedIDs, unchangedIDs);
 
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
-
   if (updatedMonitors.size > 0) {
-    const toChange = monitors.filter(m => updatedMonitors.has(m.config.id));
-    progress(`bundling ${toChange.length} monitors`);
-    const schemas = await buildMonitorSchema(toChange);
-
-    const chunks = getChunks(schemas, 100);
-
+    const toBundle = monitors.filter(m => updatedMonitors.has(m.config.id));
+    progress(`bundling ${toBundle.length} monitors`);
+    const schemas = await buildMonitorSchema(toBundle);
+    const chunks = getChunks(schemas, CHUNK_SIZE);
     for (const chunk of chunks) {
-      const bulkPutPromise = bulkPutMonitors(options, chunk);
       await liveProgress(
-        bulkPutPromise,
+        bulkPutMonitors(options, chunk),
         `creating or updating ${chunk.length} monitors`
       );
     }
@@ -112,9 +94,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
       await promptConfirmDeleteAll(options);
     }
-
-    const chunks = getChunks(Array.from(removedIDs), 100);
-
+    const chunks = getChunks(Array.from(removedIDs), CHUNK_SIZE);
     for (const chunk of chunks) {
       await liveProgress(
         bulkDeleteMonitors(options, chunk),
@@ -123,7 +103,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     }
   }
 
-  console.timeEnd(label);
+  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
 }
 
 async function promptConfirmDeleteAll(options: PushOptions) {
@@ -264,95 +244,25 @@ export async function catchIncorrectSettings(
   }
 }
 
-const getChunks = (arr: any[], size: number) => {
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-};
-
-export const pushLegacy = async (monitors: Monitor[], options: PushOptions) => {
+export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
-    const duplicates = trackDuplicates(monitors);
-    if (duplicates.size > 0) {
-      throw error(formatDuplicateError(duplicates));
-    }
-
-    progress(`preparing all monitors`);
+    progress(`bundling ${monitors.length} monitors`);
     schemas = await buildMonitorSchema(monitors);
-
-    progress(`creating all monitors`);
-    for (const schema of schemas) {
-      await pushMonitorsLegacy({ schemas: [schema], keepStale: true, options });
+    const chunks = getChunks(schemas, 10);
+    for (const chunk of chunks) {
+      await liveProgress(
+        createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),
+        `creating or updating ${chunk.length} monitors`
+      );
     }
   } else {
-    write('');
-    const { deleteAll } = await prompt<{ deleteAll: boolean }>({
-      type: 'confirm',
-      skip() {
-        if (options.yes) {
-          this.initial = process.env.TEST_OVERRIDE ?? true;
-          return true;
-        }
-        return false;
-      },
-      name: 'deleteAll',
-      message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
-      initial: false,
-    });
-    if (!deleteAll) {
-      throw warn('Push command Aborted');
-    }
+    await promptConfirmDeleteAll(options);
   }
-  progress(`deleting all stale monitors`);
-  await pushMonitorsLegacy({ schemas, keepStale: false, options });
+  await liveProgress(
+    createMonitorsLegacy({ schemas, keepStale: false, options }),
+    `deleting all stale monitors`
+  );
 
   done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
-};
-
-export async function pushMonitorsLegacy({
-  schemas,
-  keepStale,
-  options,
-}: {
-  schemas: MonitorSchema[];
-  keepStale: boolean;
-  options: PushOptions;
-}) {
-  const { body, statusCode } = await createMonitorsLegacy(
-    schemas,
-    options,
-    keepStale
-  );
-  if (statusCode === 404) {
-    throw formatNotFoundError(options.url, await body.text());
-  }
-  if (!ok(statusCode)) {
-    const { error, message } = await body.json();
-    throw formatAPIError(statusCode, error, message);
-  }
-  body.setEncoding('utf-8');
-  for await (const data of body) {
-    // Its kind of hacky for now where Kibana streams the response by
-    // writing the data as NDJSON events (data can be interleaved), we
-    // distinguish the final data by checking if the event was a progress vs complete event
-    const chunks = safeNDJSONParse(data);
-    for (const chunk of chunks) {
-      if (typeof chunk === 'string') {
-        // TODO: add progress back for all states once we get the fix
-        // on kibana side
-        keepStale && apiProgress(chunk);
-        continue;
-      }
-      const { failedMonitors, failedStaleMonitors } = chunk;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      if (failedStaleMonitors.length > 0) {
-        throw formatStaleMonitors(failedStaleMonitors);
-      }
-    }
-  }
 }

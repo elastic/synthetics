@@ -28,9 +28,8 @@ import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { removeTrailingSlash, SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
+import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
-import { sendRequest } from './request';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 
@@ -48,12 +47,6 @@ export type MonitorHashID = {
   hash?: string;
 };
 
-export type APISchema = {
-  project: string;
-  keep_stale: boolean;
-  monitors: MonitorSchema[];
-};
-
 function translateLocation(locations?: MonitorConfig['locations']) {
   if (!locations) return [];
   return locations.map(loc => LocationsMap[loc] || loc).filter(Boolean);
@@ -61,13 +54,13 @@ function translateLocation(locations?: MonitorConfig['locations']) {
 
 class RemoteDiffResult {
   // The set of monitor IDs that have been added
-  newIDs: Set<string> = new Set<string>();
+  newIDs = new Set<string>();
   // Monitor IDs that are different locally than remotely
-  changedIDs: Set<string> = new Set<string>();
+  changedIDs = new Set<string>();
   // Monitor IDs that are no longer present locally
-  removedIDs: Set<string> = new Set<string>();
+  removedIDs = new Set<string>();
   // Monitor IDs that are identical on the remote server
-  unchangedIDs: Set<string> = new Set<string>();
+  unchangedIDs = new Set<string>();
 }
 
 export function diffMonitors(
@@ -75,7 +68,6 @@ export function diffMonitors(
   remote: MonitorHashID[]
 ): RemoteDiffResult {
   const result = new RemoteDiffResult();
-
   const localMonitorsIDToHash = new Map<string, string>();
   for (const hashID of local) {
     localMonitorsIDToHash.set(hashID.journey_id, hashID.hash);
@@ -88,8 +80,7 @@ export function diffMonitors(
   // Compare local to remote
   for (const [localID, localHash] of localMonitorsIDToHash) {
     const remoteHash = remoteMonitorsIDToHash.get(localID);
-    const hasExistingMonitor = remoteMonitorsIDToHash.has(localID);
-    if (!hasExistingMonitor) {
+    if (!remoteHash) {
       result.newIDs.add(localID);
     } else {
       if (remoteHash != localHash) {
@@ -98,7 +89,6 @@ export function diffMonitors(
         result.unchangedIDs.add(localID);
       }
     }
-
     // We no longer need to process this ID, removing it here
     // reduces the numbers considered in the next phase
     remoteMonitorsIDToHash.delete(localID);
@@ -107,18 +97,15 @@ export function diffMonitors(
   for (const [id] of remoteMonitorsIDToHash) {
     result.removedIDs.add(id);
   }
-
   return result;
 }
 
-export function buildLocalMonitors(monitors: Monitor[]) {
+export function getLocalMonitors(monitors: Monitor[]) {
   const data: MonitorHashID[] = [];
-
   for (const monitor of monitors) {
-    const mon = new Monitor(monitor.config);
     data.push({
       journey_id: monitor.config.id,
-      hash: mon.hash(),
+      hash: monitor.hash(),
     });
   }
   return data;
@@ -283,39 +270,4 @@ export function nearestSchedule(schedule: number) {
     }
   }
   return ALLOWED_SCHEDULES[end];
-}
-
-export async function getVersion(
-  options: PushOptions,
-) {
-  const { body } = await sendRequest({
-    url:
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/status`,
-    method: 'GET',
-    auth: options.auth,
-  });
-  const data = await body.json();
-  return data.version.number;
-}
-
-export async function createMonitorsLegacy(
-  monitors: MonitorSchema[],
-  options: PushOptions,
-  keepStale: boolean
-) {
-  const schema: APISchema = {
-    project: options.id,
-    keep_stale: keepStale,
-    monitors,
-  };
-
-  return await sendRequest({
-    url:
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/service/project/monitors`,
-    method: 'PUT',
-    auth: options.auth,
-    body: JSON.stringify(schema),
-  });
 }

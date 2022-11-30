@@ -339,29 +339,18 @@ export function safeNDJSONParse(data: string | string[]) {
 }
 
 // Console helpers
-export function write(message: string, erasePreviousLine = false) {
-  if (erasePreviousLine) {
-    process.stderr.write(message + '\r');
-  } else {
-    process.stderr.write(message + '\n');
-  }
+export function write(message: string) {
+  process.stderr.write(message + '\n');
 }
 
-export function progress(message: string, erasePreviousLine = false) {
-  write(cyan(bold(`${symbols.progress} ${message}`)), erasePreviousLine);
+export function progress(message: string) {
+  write(cyan(bold(`${symbols.progress} ${message}`)));
 }
 
 export async function liveProgress(promise: Promise<any>, message: string) {
-  const now = performance.now();
-
-  const interval = setInterval(() => {
-    const time = (performance.now() - now) / 1000;
-    progress(`${message} (${time.toFixed(0)}s)`, true);
-  }, 1000);
-  promise.finally(() => clearInterval(interval));
-  const result = await promise;
-  progress(`${message} (${((performance.now() - now) / 1000).toFixed(0)}s)`);
-  return result;
+  const start = now();
+  await promise;
+  write(grey(`> ${message} (${Math.trunc(now() - start)}ms)`));
 }
 
 export function apiProgress(message: string) {
@@ -374,10 +363,6 @@ export function error(message: string) {
 
 export function done(message: string) {
   write(bold(green(`${symbols['succeeded']} ${message}`)));
-}
-
-export function doneLabel(message: string) {
-  return bold(green(`${symbols['succeeded']} ${message}`));
 }
 
 export function warn(message: string) {

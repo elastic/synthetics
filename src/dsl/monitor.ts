@@ -65,7 +65,6 @@ type MonitorFilter = {
 export class Monitor {
   source?: Location;
   filter: MonitorFilter;
-  hashMemo: string;
   constructor(public config: MonitorConfig = {}) {}
   /**
    * Treat the creation time config with `monitor.use` as source of truth by
@@ -97,12 +96,8 @@ export class Monitor {
   }
 
   hash(): string {
-    if (this.hashMemo) {
-      return this.hashMemo;
-    }
     const hash = createHash('sha256');
-    this.hashMemo = hash.update(JSON.stringify(this.config)).digest('base64');
-    return this.hashMemo
+    return hash.update(JSON.stringify(this.config)).digest('base64');
   }
 
   validate() {

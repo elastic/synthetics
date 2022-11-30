@@ -24,17 +24,18 @@
  */
 
 import { PushOptions } from '../common_types';
-import { removeTrailingSlash } from '../helpers';
+import { removeTrailingSlash, safeNDJSONParse } from '../helpers';
 import { MonitorHashID, MonitorSchema } from './monitor';
 import {
-  formatAPIError,
-  formatNotFoundError,
-  ok,
+  formatFailedMonitors,
+  formatStaleMonitors,
+  handleError,
+  sendReqAndHandleError,
   sendRequest,
 } from './request';
 
 // Default chunk size for bulk put / delete
-const chunkSize = 125;
+export const CHUNK_SIZE = 200;
 
 type BulkPutResponse = {
   createdMonitors: string[];
@@ -51,30 +52,18 @@ export async function bulkPutMonitors(
     updatedMonitors: [],
     failedMonitors: [],
   };
-
-  for (let i = 0; i < schemas.length; i += chunkSize) {
-    const chunk = schemas.slice(i, i + chunkSize);
-
-    const url =
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_update`;
-
-    const { statusCode, body: respBody } = await sendRequest({
-      url,
-      method: 'PUT',
-      auth: options.auth,
-      body: JSON.stringify({ monitors: chunk }),
-    });
-
-    const parsedResp = (await parseAndCheck(
-      statusCode,
-      url,
-      respBody
-    )) as BulkPutResponse;
-    result.createdMonitors.push(...parsedResp.createdMonitors);
-    result.updatedMonitors.push(...parsedResp.updatedMonitors);
-    result.failedMonitors.push(...parsedResp.failedMonitors);
-  }
+  const url =
+    removeTrailingSlash(options.url) +
+    `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_update`;
+  const resp = await sendReqAndHandleError<BulkPutResponse>({
+    url,
+    method: 'PUT',
+    auth: options.auth,
+    body: JSON.stringify({ monitors: schemas }),
+  });
+  result.createdMonitors.push(...resp.createdMonitors);
+  result.updatedMonitors.push(...resp.updatedMonitors);
+  result.failedMonitors.push(...resp.failedMonitors);
 
   return result;
 }
@@ -82,9 +71,6 @@ export async function bulkPutMonitors(
 type GetResponse = {
   total: number;
   monitors: MonitorHashID[];
-};
-
-type AfterKey = {
   after_key?: string;
 };
 
@@ -101,13 +87,11 @@ export async function bulkGetMonitors(
     if (afterKey) {
       url += `?search_after=${afterKey}`;
     }
-    const { body, statusCode } = await sendRequest({
+    const resp = await sendReqAndHandleError<GetResponse>({
       url,
       method: 'GET',
       auth: options.auth,
     });
-    const resp = (await parseAndCheck(statusCode, url, body)) as GetResponse &
-      AfterKey;
     afterKey = resp.after_key;
 
     // The first page gives the total number of monitors
@@ -127,49 +111,86 @@ type DeleteResponse = {
 export async function bulkDeleteMonitors(
   options: PushOptions,
   monitorIDs: string[]
-): Promise<number> {
-  let totalDeleted = 0;
-  for (let i = 0; i < monitorIDs.length; i += chunkSize) {
-    const chunk = monitorIDs.slice(i, i + chunkSize);
+) {
+  const url =
+    removeTrailingSlash(options.url) +
+    `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`;
 
-    const url =
-      removeTrailingSlash(options.url) +
-      `/s/${options.space}/api/synthetics/project/${options.id}/monitors/_bulk_delete`;
-    const { body, statusCode } = await sendRequest({
-      url,
-      method: 'DELETE',
-      auth: options.auth,
-      body: JSON.stringify({ monitors: chunk }),
-    });
-
-    (await parseAndCheck(statusCode, url, body)) as DeleteResponse;
-    totalDeleted += chunk.length;
-  }
-
-  return totalDeleted;
+  return await sendReqAndHandleError<DeleteResponse>({
+    url,
+    method: 'DELETE',
+    auth: options.auth,
+    body: JSON.stringify({ monitors: monitorIDs }),
+  });
 }
 
-// Check for any bad status codes and attempt to read the body, returning the parsed JSON
-async function parseAndCheck(
-  statusCode: number,
-  url: string,
-  body
-): Promise<any> {
-  if (statusCode === 404) {
-    throw formatNotFoundError(url, await body.text());
-  } else if (!ok(statusCode)) {
-    let parsed: { error: string; message: string };
-    try {
-      parsed = await body.json();
-    } catch (e) {
-      throw formatAPIError(
-        statusCode,
-        'unexpected non-JSON error',
-        await body.text()
-      );
-    }
-    throw formatAPIError(statusCode, parsed.error, parsed.message);
-  }
+type StatusResponse = {
+  version: {
+    number: number;
+  };
+};
 
-  return await body.json();
+export async function getVersion(options: PushOptions) {
+  const url =
+    removeTrailingSlash(options.url) + `/s/${options.space}/api/status`;
+  const data = await sendReqAndHandleError<StatusResponse>({
+    url,
+    method: 'GET',
+    auth: options.auth,
+  });
+  return data.version.number;
+}
+
+export type LegacyAPISchema = {
+  project: string;
+  keep_stale: boolean;
+  monitors: MonitorSchema[];
+};
+
+export async function createMonitorsLegacy({
+  schemas,
+  keepStale,
+  options,
+}: {
+  schemas: MonitorSchema[];
+  keepStale: boolean;
+  options: PushOptions;
+}) {
+  const schema: LegacyAPISchema = {
+    project: options.id,
+    keep_stale: keepStale,
+    monitors: schemas,
+  };
+  const url =
+    removeTrailingSlash(options.url) +
+    `/s/${options.space}/api/synthetics/service/project/monitors`;
+  const { body, statusCode } = await sendRequest({
+    url,
+    method: 'PUT',
+    auth: options.auth,
+    body: JSON.stringify(schema),
+  });
+
+  const resBody = await handleError(statusCode, url, body);
+  const allchunks = [];
+  for await (const data of resBody) {
+    allchunks.push(Buffer.from(data));
+  }
+  const chunks = safeNDJSONParse(Buffer.concat(allchunks).toString('utf-8'));
+  // Its kind of hacky for now where Kibana streams the response by
+  // writing the data as NDJSON events (data can be interleaved), we
+  // distinguish the final data by checking if the event was a progress vs complete event
+  for (const chunk of chunks) {
+    if (typeof chunk === 'string') {
+      // Ignore the progress from Kibana as we chunk the requests
+      continue;
+    }
+    const { failedMonitors, failedStaleMonitors } = chunk;
+    if (failedMonitors && failedMonitors.length > 0) {
+      throw formatFailedMonitors(failedMonitors);
+    }
+    if (failedStaleMonitors.length > 0) {
+      throw formatStaleMonitors(failedStaleMonitors);
+    }
+  }
 }
