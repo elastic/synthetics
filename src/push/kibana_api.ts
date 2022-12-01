@@ -32,41 +32,37 @@ import {
   handleError,
   sendReqAndHandleError,
   sendRequest,
+  APIMonitorError,
 } from './request';
 import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
-export const CHUNK_SIZE = 200;
+export const CHUNK_SIZE = 100;
 
-type BulkPutResponse = {
+export type PutResponse = {
   createdMonitors: string[];
   updatedMonitors: string[];
-  failedMonitors: string[];
+  failedMonitors: APIMonitorError[];
 };
 
 export async function bulkPutMonitors(
   options: PushOptions,
   schemas: MonitorSchema[]
-): Promise<BulkPutResponse> {
-  const result: BulkPutResponse = {
-    createdMonitors: [],
-    updatedMonitors: [],
-    failedMonitors: [],
-  };
-  const resp = await sendReqAndHandleError<BulkPutResponse>({
+) {
+  const resp = await sendReqAndHandleError<PutResponse>({
     url: generateURL(options, 'bulk_update') + '/_bulk_update',
     method: 'PUT',
     auth: options.auth,
     body: JSON.stringify({ monitors: schemas }),
   });
-  result.createdMonitors.push(...resp.createdMonitors);
-  result.updatedMonitors.push(...resp.updatedMonitors);
-  result.failedMonitors.push(...resp.failedMonitors);
-
-  return result;
+  const { failedMonitors } = resp;
+  if (failedMonitors && failedMonitors.length > 0) {
+    throw formatFailedMonitors(failedMonitors);
+  }
+  return resp;
 }
 
-type GetResponse = {
+export type GetResponse = {
   total: number;
   monitors: MonitorHashID[];
   after_key?: string;
@@ -100,7 +96,7 @@ export async function bulkGetMonitors(
   return { total, monitors };
 }
 
-type DeleteResponse = {
+export type DeleteResponse = {
   deleted_monitors: string[];
 };
 

@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Push api request format 404 error 1`] = `"✖ Please check your kibana url http://foo and try again - 404:Not Found"`;
+exports[`Push api request format 404 error 1`] = `"✖ Please check your kibana url: http://foo and try again - 404:Not Found"`;
 
 exports[`Push api request format api error 1`] = `
 "✖ Error

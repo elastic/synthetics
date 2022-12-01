@@ -193,75 +193,59 @@ heartbeat.monitors:
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
   });
 
-  describe('API', () => {
-    let server: Server;
-    beforeAll(async () => {
-      server = await createKibanaTestServer('8.5.0');
-      await fakeProjectSetup(
-        { id: 'test-project', space: 'dummy', url: server.PREFIX },
-        { locations: ['test-loc'], schedule: 3 }
-      );
-    });
-    afterAll(async () => {
-      await server.close();
-    });
-
-    it('abort when delete is skipped', async () => {
-      const output = await runPush([...DEFAULT_ARGS, '-y'], {
-        TEST_OVERRIDE: false,
+  ['8.5.0', '8.6.0'].forEach(version => {
+    describe('API: ' + version, () => {
+      let server: Server;
+      const deleteProgress =
+        '8.5.0' === version
+          ? 'deleting all stale monitors'
+          : 'deleting 2 monitors';
+      beforeAll(async () => {
+        server = await createKibanaTestServer(version);
+        await fakeProjectSetup(
+          { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          { locations: ['test-loc'], schedule: 3 }
+        );
       });
-      expect(output).toContain('Push command Aborted');
-    });
-
-    it('delete entire project with --yes flag', async () => {
-      const output = await runPush([...DEFAULT_ARGS, '-y']);
-      expect(output).toContain('deleting all stale monitors');
-    });
-
-    it('delete entire project with prompt override', async () => {
-      const output = await runPush([...DEFAULT_ARGS, '-y'], {
-        TEST_OVERRIDE: true,
+      afterAll(async () => {
+        await server.close();
       });
-      expect(output).toContain('deleting all stale monitors');
-    });
 
-    it('push with different id when overriden', async () => {
-      const testJourney = join(PROJECT_DIR, 'test.journey.ts');
-      await writeFile(
-        testJourney,
-        `import {journey, monitor} from '../../../src/index';
-journey('journey 1', () => monitor.use({ id: 'j1' }));`
-      );
-      const output = await runPush(
-        [...DEFAULT_ARGS, '-y', '--id', 'new-project'],
-        {
+      it('abort when delete is skipped', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y'], {
+          TEST_OVERRIDE: false,
+        });
+        expect(output).toContain('Push command Aborted');
+      });
+
+      it('delete entire project with --yes flag', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y']);
+        expect(output).toContain(deleteProgress);
+      });
+
+      it('delete entire project with prompt override', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y'], {
           TEST_OVERRIDE: true,
-        }
-      );
-      expect(output).toContain('Pushing monitors for project: new-project');
-      expect(output).toContain('bundling 1 monitors');
-      await rm(testJourney, { force: true });
-    });
+        });
+        expect(output).toContain(deleteProgress);
+      });
 
-    const validateLegacyPush = output => {
-      expect(output).toContain('Pushing monitors for project: test-project');
-      expect(output).toContain('bundling 2 monitors');
-      expect(output).toContain('creating or updating 2 monitors');
-      expect(output).toContain('deleting all stale monitors');
-      expect(output).toContain('✓ Pushed:');
-    };
-
-    it('handle legacy API response', async () => {
-      const testJourney = join(PROJECT_DIR, 'test.journey.ts');
-      await writeFile(
-        testJourney,
-        `import {journey, monitor} from '../../../src/index';
-    journey('journey 1', () => monitor.use({ id: 'j1' }));
-    journey('journey 2', () => monitor.use({ id: 'j2' }));`
-      );
-      const output = await runPush();
-      validateLegacyPush(output);
-      await rm(testJourney, { force: true });
+      it('push journeys', async () => {
+        const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+        await writeFile(
+          testJourney,
+          `import {journey, monitor} from '../../../src/index';
+        journey('journey 1', () => monitor.use({ id: 'j1' }));
+        journey('journey 2', () => monitor.use({ id: 'j2' }));`
+        );
+        const output = await runPush();
+        expect(output).toContain('Pushing monitors for project: test-project');
+        expect(output).toContain('bundling 2 monitors');
+        expect(output).toContain('creating or updating 2 monitors');
+        expect(output).toContain(deleteProgress);
+        expect(output).toContain('✓ Pushed:');
+        await rm(testJourney, { force: true });
+      });
     });
   });
 });

@@ -48,6 +48,7 @@ export async function sendRequest(options: APIRequestOptions) {
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',
     },
+    headersTimeout: 60 * 1000,
   });
 }
 
@@ -98,7 +99,7 @@ export type APIMonitorError = {
 export function formatNotFoundError(url: string, message: string) {
   return red(
     bold(
-      `${symbols['failed']} Please check your kibana url ${url} and try again - 404:${message}`
+      `${symbols['failed']} Please check your kibana url: ${url} and try again - 404:${message}`
     )
   );
 }

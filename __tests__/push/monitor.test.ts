@@ -29,13 +29,13 @@ import { generateTempPath } from '../../src/helpers';
 import {
   buildMonitorSchema,
   createLightweightMonitors,
+  diffMonitors,
   parseSchedule,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 
 describe('Monitors', () => {
-  const monitor = createTestMonitor('example.journey.ts');
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
@@ -45,6 +45,24 @@ describe('Monitors', () => {
     await server.close();
     jest.resetAllMocks();
     process.env.NO_COLOR = '';
+  });
+
+  it('diff monitors', () => {
+    const local = [
+      { journey_id: 'j1', hash: 'hash1' },
+      { journey_id: 'j2', hash: 'hash2' },
+      { journey_id: 'j3', hash: 'hash3' },
+    ];
+    const remote = [
+      { journey_id: 'j1', hash: 'hash1' },
+      { journey_id: 'j2', hash: 'hash2-changed' },
+      { journey_id: 'j4', hash: 'hash4' },
+    ];
+    const result = diffMonitors(local, remote);
+    expect(Array.from(result.newIDs)).toEqual(['j3']);
+    expect(Array.from(result.changedIDs)).toEqual(['j2']);
+    expect(Array.from(result.removedIDs)).toEqual(['j4']);
+    expect(Array.from(result.unchangedIDs)).toEqual(['j1']);
   });
 
   it('build lightweight monitor schema', async () => {
@@ -64,7 +82,9 @@ describe('Monitors', () => {
   });
 
   it('build browser monitor schema', async () => {
-    const schema = await buildMonitorSchema([monitor]);
+    const schema = await buildMonitorSchema([
+      createTestMonitor('example.journey.ts'),
+    ]);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',

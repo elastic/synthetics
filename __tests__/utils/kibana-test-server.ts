@@ -23,15 +23,18 @@
  *
  */
 import { Server } from './server';
-import { LegacyAPISchema } from '../../src/push/kibana_api';
+import {
+  GetResponse,
+  LegacyAPISchema,
+  PutResponse,
+} from '../../src/push/kibana_api';
 
-export const createKibanaTestServer = async (kibanaVersion?: string) => {
+export const createKibanaTestServer = async (kibanaVersion: string) => {
   const server = await Server.create({ port: 54455 });
-  // Prior to 8.6.0 - Status and API endpoints
-  const statusHandler = (req, res) =>
-    res.end(JSON.stringify({ version: { number: kibanaVersion || '8.5.0' } }));
-  server.route('/s/dummy/api/status', statusHandler);
-
+  server.route('/s/dummy/api/status', (req, res) =>
+    res.end(JSON.stringify({ version: { number: kibanaVersion } }))
+  );
+  // Legacy
   server.route(
     '/s/dummy/api/synthetics/service/project/monitors',
     async (req, res) => {
@@ -57,26 +60,28 @@ export const createKibanaTestServer = async (kibanaVersion?: string) => {
     }
   );
 
-  // // Bulk PUT|POST
-  // server.route(apiBasePath + '/_bulk_update', async (req, res) => {
-  //   await new Promise(r => setTimeout(r, 20));
-  //   req.on('data', chunks => {
-  //     const schema = JSON.parse(chunks.toString()) as LegacyAPISchema;
-  //     res.write(JSON.stringify(schema.monitors[0].name) + '\n');
-  //   });
-  //   req.on('end', () => {
-  //     res.end(JSON.stringify(apiRes));
-  //   });
-  // });
-  // // Bulk DELETE
-  // server.route(apiBasePath + '/_bulk_delete', async (req, res) => {
-  //   let schema;
-  //   req.on('data', chunks => {
-  //     schema = JSON.parse(chunks.toString()) as LegacyAPISchema;
-  //   });
-  //   req.on('end', () => {
-  //     res.end(JSON.stringify({ monitors: schema.monitors }));
-  //   });
-  // });
+  // Post 8.6
+  const basePath = '/s/dummy/api/synthetics/project/test-project/monitors';
+  server.route(basePath, (req, res) => {
+    const getResp = {
+      total: 2,
+      monitors: [
+        { journey_id: 'j3', hash: 'hash1' },
+        { journey_id: 'j4', hash: 'hash2' },
+      ],
+    } as GetResponse;
+    res.end(JSON.stringify(getResp));
+  });
+  server.route(basePath + '/_bulk_update', (req, res) => {
+    const updateResponse = {
+      createdMonitors: ['j1', 'j2'],
+      updatedMonitors: [],
+      failedMonitors: [],
+    } as PutResponse;
+    res.end(JSON.stringify(updateResponse));
+  });
+  server.route(basePath + '/_bulk_delete', (req, res) => {
+    res.end(JSON.stringify({ deleted_monitors: ['j3', 'j4'] }));
+  });
   return server;
 };
