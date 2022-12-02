@@ -403,9 +403,7 @@ export default class Runner {
       if (!journey.isMatch(match, tags)) {
         continue;
       }
-
       this.#currentJourney = journey;
-
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey

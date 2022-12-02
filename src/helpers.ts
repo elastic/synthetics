@@ -339,8 +339,8 @@ export function safeNDJSONParse(data: string | string[]) {
 }
 
 // Console helpers
-export function write(message: string) {
-  process.stderr.write(message + '\n');
+export function write(message: string, live?: boolean) {
+  process.stderr.write(message + (live ? '\r' : '\n'));
 }
 
 export function progress(message: string) {
@@ -349,12 +349,17 @@ export function progress(message: string) {
 
 export async function liveProgress(promise: Promise<any>, message: string) {
   const start = now();
-  await promise;
-  write(grey(`> ${message} (${Math.trunc(now() - start)}ms)`));
+  const interval = setInterval(() => {
+    apiProgress(`${message} (${Math.trunc(now() - start)}ms)`, true);
+  }, 500);
+  promise.finally(() => clearInterval(interval));
+  const result = await promise;
+  apiProgress(`${message} (${Math.trunc(now() - start)}ms)`);
+  return result;
 }
 
-export function apiProgress(message: string) {
-  write(grey(`> ${message}`));
+export function apiProgress(message: string, live = false) {
+  write(grey(`> ${message}`), live);
 }
 
 export function error(message: string) {

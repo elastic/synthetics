@@ -52,16 +52,18 @@ describe('Monitors', () => {
       { journey_id: 'j1', hash: 'hash1' },
       { journey_id: 'j2', hash: 'hash2' },
       { journey_id: 'j3', hash: 'hash3' },
+      { journey_id: 'j4', hash: 'hash4' },
     ];
     const remote = [
       { journey_id: 'j1', hash: 'hash1' },
       { journey_id: 'j2', hash: 'hash2-changed' },
-      { journey_id: 'j4', hash: 'hash4' },
+      { journey_id: 'j4', hash: '' }, // Hash reset in UI
+      { journey_id: 'j5', hash: 'hash5' },
     ];
     const result = diffMonitors(local, remote);
     expect(Array.from(result.newIDs)).toEqual(['j3']);
-    expect(Array.from(result.changedIDs)).toEqual(['j2']);
-    expect(Array.from(result.removedIDs)).toEqual(['j4']);
+    expect(Array.from(result.changedIDs)).toEqual(['j2', 'j4']);
+    expect(Array.from(result.removedIDs)).toEqual(['j5']);
     expect(Array.from(result.unchangedIDs)).toEqual(['j1']);
   });
 

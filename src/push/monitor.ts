@@ -79,10 +79,11 @@ export function diffMonitors(
 
   // Compare local to remote
   for (const [localID, localHash] of localMonitorsIDToHash) {
-    const remoteHash = remoteMonitorsIDToHash.get(localID);
-    if (!remoteHash) {
+    // Hash is reset to '' when a monitor is edited on the UI
+    if (!remoteMonitorsIDToHash.has(localID)) {
       result.newIDs.add(localID);
     } else {
+      const remoteHash = remoteMonitorsIDToHash.get(localID);
       if (remoteHash != localHash) {
         result.changedIDs.add(localID);
       } else if (remoteHash === localHash) {
