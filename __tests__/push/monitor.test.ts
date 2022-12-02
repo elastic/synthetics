@@ -68,9 +68,10 @@ describe('Monitors', () => {
   });
 
   it('build lightweight monitor schema', async () => {
-    const schema = await buildMonitorSchema([
-      createTestMonitor('heartbeat.yml', 'http'),
-    ]);
+    const schema = await buildMonitorSchema(
+      [createTestMonitor('heartbeat.yml', 'http')],
+      true
+    );
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
@@ -84,9 +85,10 @@ describe('Monitors', () => {
   });
 
   it('build browser monitor schema', async () => {
-    const schema = await buildMonitorSchema([
-      createTestMonitor('example.journey.ts'),
-    ]);
+    const schema = await buildMonitorSchema(
+      [createTestMonitor('example.journey.ts')],
+      true
+    );
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',

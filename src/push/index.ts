@@ -80,7 +80,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   if (updatedMonitors.size > 0) {
     const toBundle = monitors.filter(m => updatedMonitors.has(m.config.id));
     progress(`bundling ${toBundle.length} monitors`);
-    const schemas = await buildMonitorSchema(toBundle);
+    const schemas = await buildMonitorSchema(toBundle, true);
     const chunks = getChunks(schemas, CHUNK_SIZE);
     for (const chunk of chunks) {
       await liveProgress(
@@ -248,7 +248,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
     progress(`bundling ${monitors.length} monitors`);
-    schemas = await buildMonitorSchema(monitors);
+    schemas = await buildMonitorSchema(monitors, false);
     const chunks = getChunks(schemas, 10);
     for (const chunk of chunks) {
       await liveProgress(

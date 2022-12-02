@@ -37,7 +37,7 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
   content?: string;
   filter?: Monitor['filter'];
-  hash: string;
+  hash?: string;
 };
 
 // Abbreviated monitor info, as often returned by the API,
@@ -112,7 +112,7 @@ export function getLocalMonitors(monitors: Monitor[]) {
   return data;
 }
 
-export async function buildMonitorSchema(monitors: Monitor[]) {
+export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   /**
    * Set up the bundle artifacts path which can be used to
    * create the bundles required for uploading journeys
@@ -124,11 +124,13 @@ export async function buildMonitorSchema(monitors: Monitor[]) {
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
-    const schema = {
+    const schema: MonitorSchema = {
       ...config,
-      hash: monitor.hash(),
       locations: translateLocation(config.locations),
     };
+    if (isV2) {
+      schema.hash = monitor.hash();
+    }
     if (type === 'browser') {
       const outPath = join(bundlePath, config.name + '.zip');
       const content = await bundler.build(source.file, outPath);
