@@ -65,7 +65,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const stackVersion = await getVersion(options);
   const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
   if (!isV2) {
-    return await pushLegacy(monitors, options);
+    return await pushLegacy(monitors, options, stackVersion);
   }
 
   const local = getLocalMonitors(monitors);
@@ -244,7 +244,21 @@ export async function catchIncorrectSettings(
   }
 }
 
-export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
+export async function pushLegacy(
+  monitors: Monitor[],
+  options: PushOptions,
+  stackVersion: number
+) {
+  const noLightWeightSupport = semver.satisfies(stackVersion, '<8.5.0');
+  if (
+    noLightWeightSupport &&
+    monitors.some(monitor => monitor.config.type !== 'browser')
+  ) {
+    throw error(
+      `Aborted: Kibana version does not support lightweight monitors. Please upgrade to 8.5.0 or higher.`
+    );
+  }
+
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
     progress(`bundling ${monitors.length} monitors`);
