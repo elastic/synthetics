@@ -23,6 +23,7 @@
  *
  */
 
+import { createHash } from 'crypto';
 import merge from 'deepmerge';
 import { bold, red } from 'kleur/colors';
 import {
@@ -92,6 +93,11 @@ export class Monitor {
    */
   setFilter(filter: MonitorFilter) {
     this.filter = filter;
+  }
+
+  hash(): string {
+    const hash = createHash('sha256');
+    return hash.update(JSON.stringify(this.config)).digest('base64');
   }
 
   validate() {

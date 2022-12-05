@@ -339,16 +339,27 @@ export function safeNDJSONParse(data: string | string[]) {
 }
 
 // Console helpers
-export function write(message: string) {
-  process.stderr.write(message + '\n');
+export function write(message: string, live?: boolean) {
+  process.stderr.write(message + (live ? '\r' : '\n'));
 }
 
 export function progress(message: string) {
   write(cyan(bold(`${symbols.progress} ${message}`)));
 }
 
-export function apiProgress(message: string) {
-  write(grey(`> ${message}`));
+export async function liveProgress(promise: Promise<any>, message: string) {
+  const start = now();
+  const interval = setInterval(() => {
+    apiProgress(`${message} (${Math.trunc(now() - start)}ms)`, true);
+  }, 500);
+  promise.finally(() => clearInterval(interval));
+  const result = await promise;
+  apiProgress(`${message} (${Math.trunc(now() - start)}ms)`);
+  return result;
+}
+
+export function apiProgress(message: string, live = false) {
+  write(grey(`> ${message}`), live);
 }
 
 export function error(message: string) {
@@ -369,12 +380,4 @@ export function removeTrailingSlash(url: string) {
 
 export function getMonitorManagementURL(url) {
   return removeTrailingSlash(url) + '/app/uptime/manage-monitors/all';
-}
-
-export function getArrayChunks<T>(arr: T[], chunkSize: number): T[][] {
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    chunks.push(arr.slice(i, i + chunkSize));
-  }
-  return chunks;
 }
