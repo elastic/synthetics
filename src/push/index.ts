@@ -247,15 +247,15 @@ export async function catchIncorrectSettings(
 export async function pushLegacy(
   monitors: Monitor[],
   options: PushOptions,
-  stackVersion: number
+  version: number
 ) {
-  const noLightWeightSupport = semver.satisfies(stackVersion, '<8.5.0');
+  const noLightWeightSupport = semver.satisfies(version, '<8.5.0');
   if (
     noLightWeightSupport &&
-    monitors.some(monitor => monitor.config.type !== 'browser')
+    monitors.some(monitor => monitor.type !== 'browser')
   ) {
     throw error(
-      `Aborted: Kibana version does not support lightweight monitors. Please upgrade to 8.5.0 or higher.`
+      `Aborted: Lightweight monitors are not supported in ${version}. Please upgrade to 8.5.0 or above.`
     );
   }
 
