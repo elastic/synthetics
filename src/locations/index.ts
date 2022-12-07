@@ -32,6 +32,12 @@ export type LocationCmdOptions = {
   url: string;
 };
 
+export type InitCmdOptions = {
+  apiKey?: string;
+  url?: string;
+  dir: string;
+};
+
 type LocationMetadata = {
   id: string;
   label: string;

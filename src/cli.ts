@@ -49,6 +49,7 @@ import {
   getLocations,
   renderLocations,
   LocationCmdOptions,
+  InitCmdOptions,
 } from './locations';
 import { resolve } from 'path';
 import { Generator } from './generator';
@@ -216,9 +217,18 @@ program
 program
   .command('init [dir]')
   .description('Initialize Elastic synthetics project')
-  .action(async (dir = '') => {
+  .option('--url <url>', 'Kibana URL to fetch all public and private locations')
+  .option(
+    '--api-key <apiKey>',
+    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+  )
+  .action(async (dir = '', cmdOpts: InitCmdOptions) => {
     try {
-      const generator = await new Generator(resolve(process.cwd(), dir));
+      const generator = await new Generator(
+        resolve(process.cwd(), dir),
+        cmdOpts.apiKey,
+        cmdOpts.url
+      );
       await generator.setup();
     } catch (e) {
       e && error(e);

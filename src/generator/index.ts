@@ -69,7 +69,11 @@ const DEFAULT_OVERRIDES = [CONFIG_PATH];
 
 export class Generator {
   pkgManager = 'npm';
-  constructor(public projectDir: string) {}
+  constructor(
+    public projectDir: string,
+    public apiKey?: string,
+    public url?: string
+  ) {}
 
   async directory() {
     progress(
@@ -87,36 +91,42 @@ export class Generator {
       return JSON.parse(process.env.TEST_QUESTIONS);
     }
 
-    const { onCloud } = await prompt<{ onCloud: string }>({
-      type: 'confirm',
-      name: 'onCloud',
-      initial: 'y',
-      message: 'Do you use Elastic Cloud',
-    });
-    const url = await new Input({
-      header: onCloud
-        ? yellow(
-            'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
-          )
-        : '',
-      message: onCloud
-        ? 'What is your cloud.id'
-        : 'What is the url of your Kibana instance',
-      name: 'url',
-      required: true,
-      result(value) {
-        return onCloud ? cloudIDToKibanaURL(value) : value;
-      },
-    }).run();
+    const { onCloud } = this.url
+      ? { onCloud: false }
+      : await prompt<{ onCloud: string }>({
+          type: 'confirm',
+          name: 'onCloud',
+          initial: 'y',
+          message: 'Do you use Elastic Cloud',
+        });
+    const url =
+      this.url ??
+      (await new Input({
+        header: onCloud
+          ? yellow(
+              'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
+            )
+          : '',
+        message: onCloud
+          ? 'What is your cloud.id'
+          : 'What is the url of your Kibana instance',
+        name: 'url',
+        required: true,
+        result(value) {
+          return onCloud ? cloudIDToKibanaURL(value) : value;
+        },
+      }).run());
 
-    const auth = await new Input({
-      name: 'auth',
-      header: yellow(
-        `Generate API key from Kibana ${getMonitorManagementURL(url)}`
-      ),
-      required: true,
-      message: 'What is your API key',
-    }).run();
+    const auth =
+      this.apiKey ??
+      (await new Input({
+        name: 'auth',
+        header: yellow(
+          `Generate API key from Kibana ${getMonitorManagementURL(url)}`
+        ),
+        required: true,
+        message: 'What is your API key',
+      }).run());
 
     const allLocations = await getLocations({ url, auth });
     const locChoices = formatLocations(allLocations);
