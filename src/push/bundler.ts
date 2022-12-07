@@ -27,23 +27,30 @@ import path from 'path';
 import { stat, unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
-import NodeResolve from '@esbuild-plugins/node-resolve';
 import archiver from 'archiver';
-import { commonOptions, MultiAssetPlugin, PluginData } from './plugin';
+import { builtinModules } from 'module';
+import {
+  commonOptions,
+  isBare,
+  SyntheticsBundlePlugin,
+  PluginData,
+} from './plugin';
 
 const SIZE_LIMIT_KB = 800;
+const BUNDLES_PATH = 'bundles';
+const EXTERNAL_MODULES = ['@elastic/synthetics'];
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
 }
 
 export class Bundler {
-  moduleMap = new Map<string, string>();
-  constructor() {}
+  private moduleMap = new Map<string, string>();
 
   async prepare(absPath: string) {
     const addToMap = (data: PluginData) => {
-      this.moduleMap.set(data.path, data.contents);
+      const bundlePath = this.getModulesPath(data.path);
+      this.moduleMap.set(bundlePath, data.contents);
     };
 
     const options: esbuild.BuildOptions = {
@@ -52,19 +59,65 @@ export class Bundler {
         entryPoints: {
           [absPath]: absPath,
         },
-        plugins: [
-          MultiAssetPlugin(addToMap),
-          NodeResolve({
-            extensions: ['.ts', '.js'],
-          }),
-        ],
+        plugins: [SyntheticsBundlePlugin(addToMap, EXTERNAL_MODULES)],
       },
     };
     const result = await esbuild.build(options);
     if (result.errors.length > 0) {
       throw result.errors;
     }
-    this.moduleMap.set(absPath, result.outputFiles[0].text);
+  }
+
+  resolvePath(bundlePath: string) {
+    for (const mod of this.moduleMap.keys()) {
+      if (mod.startsWith(bundlePath)) {
+        return mod.substring(0, mod.lastIndexOf(path.extname(mod)));
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Rewrite the imports/requires to local node modules dependency
+   * to relative paths that references the bundles directory
+   */
+  rewriteImports(
+    contents: string,
+    bundlePath: string,
+    external: string[] = EXTERNAL_MODULES
+  ) {
+    const packageRegex =
+      /s*(from|require\()\s*(['"`][^'"`]+['"`])(?=;?)(?=([^"'`]*["'`][^"'`]*["'`])*[^"'`]*$)/gi;
+
+    return contents.replace(packageRegex, (raw, _, dep) => {
+      dep = dep.replace(/['"`]/g, '');
+      // Ignore rewriting for built-in modules, ignored modules and bare modules
+      if (
+        builtinModules.includes(dep) ||
+        external.includes(dep) ||
+        isBare(dep)
+      ) {
+        return raw;
+      }
+      // If the module is not in node_modules, we need to go up the directory
+      // tree till we reach the bundles directory
+      let deep = bundlePath.split(path.sep).length;
+      let resolvedpath = this.resolvePath(BUNDLES_PATH + '/' + dep);
+      // If its already part of the bundles directory, we don't need to go up
+      if (bundlePath.startsWith(BUNDLES_PATH)) {
+        deep -= 1;
+        resolvedpath = resolvedpath.replace(BUNDLES_PATH + '/', '');
+      }
+      return raw.replace(dep, '.'.repeat(deep) + '/' + resolvedpath);
+    });
+  }
+
+  getModulesPath(path: string) {
+    const relativePath = relativeToCwd(path);
+    if (relativePath.startsWith('node_modules')) {
+      return relativePath.replace('node_modules', BUNDLES_PATH);
+    }
+    return relativePath;
   }
 
   async zip(outputPath: string) {
@@ -76,12 +129,12 @@ export class Bundler {
       archive.on('error', reject);
       output.on('close', fulfill);
       archive.pipe(output);
-      for (const [path, content] of this.moduleMap.entries()) {
-        const relativePath = relativeToCwd(path);
-        // Date is fixed to Unix epoch so the file metadata is
-        // not modified everytime when files are bundled
-        archive.append(content, {
-          name: relativePath,
+      for (const [path, contents] of this.moduleMap.entries()) {
+        // Rewrite the imports to relative paths
+        archive.append(this.rewriteImports(contents, path), {
+          name: path,
+          // Date is fixed to Unix epoch so the file metadata is
+          // not modified everytime when files are bundled
           date: new Date('1970-01-01'),
         });
       }

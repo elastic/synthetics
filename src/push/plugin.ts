@@ -23,14 +23,16 @@
  *
  */
 
-import { isAbsolute, dirname, extname, join } from 'path';
-import fs from 'fs/promises';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
 import * as esbuild from 'esbuild';
+import NodeResolvePlugin from '@esbuild-plugins/node-resolve';
 
 // ROOT directory of the Package - /
 const ROOT_DIR = join(__dirname, '..', '..');
 // Source of the package - /src, /dist, etc.
-const SOURCE_DIR = join(__dirname, '..');
+const SOURCE_DIR = join(ROOT_DIR, 'src');
+const DIST_DIR = join(ROOT_DIR, 'dist');
 // Node modules directory of the package - /node_modules
 const SOURCE_NODE_MODULES = join(ROOT_DIR, 'node_modules');
 
@@ -44,9 +46,8 @@ export function commonOptions(): esbuild.BuildOptions {
     minifyWhitespace: false,
     treeShaking: false,
     keepNames: false,
+    logLevel: 'error',
     platform: 'node',
-    logLevel: 'silent',
-    format: 'esm',
     write: false,
     outExtension: {
       '.js': '.js',
@@ -60,109 +61,78 @@ export type PluginData = {
 };
 export type PluginCallback = (data: PluginData) => void;
 
-export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
-  // Check that the path isn't in an external package by making sure it's at a standard
-  // local filesystem location
-  const isBare = (str: string) => {
-    // Note that we use `isAbsolute` to handle UNC/windows style paths like C:\path\to\thing
-    // This is not necessary for relative directories since `.\file` is not supported as an import
-    // nor is `~/path/to/file`.
-    if (isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
-      return true;
-    }
-    return false;
-  };
+// Check that the path isn't in an external package by making sure it's at a standard
+// local filesystem location
+export const isBare = (str: string) => {
+  if (str.startsWith('./') || str.startsWith('../')) {
+    return true;
+  }
+  return false;
+};
 
-  // If we're importing the @elastic/synthetics package
-  // directly from source instead of using the fully
-  // qualified name, we must skip it too. That's just
-  // so it doesn't get bundled on tests or when we locally
-  // refer to the package itself.
-  const isLocalSynthetics = (entryPath: string) => {
-    return entryPath.startsWith(SOURCE_DIR);
-  };
+// Avoid importing @elastic/synthetics package from source
+const isLocalSynthetics = (entryPath: string) => {
+  return entryPath.startsWith(SOURCE_DIR) || entryPath.startsWith(DIST_DIR);
+};
 
-  // When importing the local synthetics module directly
-  // it may import its own local dependencies, so we must
-  // make sure those will be resolved using Node's resolution
-  // algorithm, as they're still "node_modules" that we must bundle
-  const isLocalSyntheticsModule = (str: string) => {
-    return str.startsWith(SOURCE_NODE_MODULES);
-  };
+// Avoid importing the local dependenceis of the @elastic/synthetics module
+// from source
+const isLocalSyntheticsModule = (str: string) => {
+  return str.startsWith(SOURCE_NODE_MODULES);
+};
 
-  return {
-    name: 'esbuild-multiasset-plugin',
-    setup(build) {
-      build.onResolve({ filter: /.*?/ }, async args => {
-        // External and other packages need be marked external to
-        // be removed from the bundle
-        if (build.initialOptions.external?.includes(args.path)) {
-          return {
-            external: true,
-          };
-        }
+export function SyntheticsBundlePlugin(
+  callback: PluginCallback,
+  external: string[]
+): esbuild.Plugin {
+  const visited = new Set<string>();
 
-        if (
-          !isBare(args.path) ||
-          args.importer.includes('/node_modules/') ||
-          isLocalSyntheticsModule(args.importer)
-        ) {
-          return;
-        }
+  return NodeResolvePlugin({
+    name: 'SyntheticsBundlePlugin',
+    extensions: ['.ts', '.js', '.mjs'],
+    onNonResolved: (_, __, error) => {
+      throw error;
+    },
+    onResolved: async resolved => {
+      if (
+        external.includes(resolved) ||
+        isLocalSynthetics(resolved) ||
+        isLocalSyntheticsModule(resolved)
+      ) {
+        return {
+          external: true,
+        };
+      }
 
-        if (args.kind === 'entry-point') {
-          return {
-            path: args.path,
-            namespace: 'journey',
-          };
-        }
+      if (visited.has(resolved)) {
+        return;
+      }
 
-        // If the modules are resolved locally, then
-        // use the imported path to get full path
-        const entryPath =
-          join(dirname(args.importer), args.path) + extname(args.importer);
-
-        if (isLocalSynthetics(entryPath)) {
-          return { external: true };
-        }
-
-        // Spin off another build to copy over the imported modules without bundling
+      // Spin off another build to copy over the imported modules without bundling
+      if (resolved.includes('/node_modules/')) {
         const result = await esbuild.build({
           ...commonOptions(),
-          entryPoints: {
-            [entryPath]: entryPath,
-          },
+          entryPoints: [resolved],
           bundle: false,
           external: [],
         });
 
         callback({
-          path: entryPath,
+          path: resolved,
           contents: result.outputFiles[0].text,
         });
-
-        return {
-          errors: result.errors,
-          external: true,
-        };
-      });
-
-      build.onLoad({ filter: /.*?/, namespace: 'journey' }, async args => {
-        const contents = await fs.readFile(args.path, 'utf-8');
-        callback({ path: args.path, contents });
-
-        // Use correct loader for the journey entry path
-        let loader: esbuild.Loader = 'default';
-        const ext = extname(args.path).slice(1);
-        if (ext === 'cjs' || ext === 'mjs') {
-          loader = 'js';
-        } else if (ext === 'cts' || ext === 'mts') {
-          loader = 'ts';
-        } else {
-          loader = ext as esbuild.Loader;
+      } else {
+        // If it's a local file, read it and return the contents
+        // to preserve the source without modifications
+        try {
+          const contents = await readFile(resolved, 'utf-8');
+          callback({ path: resolved, contents });
+        } catch (e) {
+          throw new Error(`Could not read file ${resolved}`);
         }
-        return { contents, loader };
-      });
+      }
+      visited.add(resolved);
+      return;
     },
-  };
+  });
 }
