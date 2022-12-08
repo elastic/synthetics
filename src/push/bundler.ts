@@ -24,7 +24,7 @@
  */
 
 import path, { normalize } from 'path';
-import { stat, unlink, readFile, writeFile } from 'fs/promises';
+import { stat, unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
@@ -158,7 +158,6 @@ export class Bundler {
     await this.prepare(entry);
     await this.zip(output);
     const data = await this.encode(output);
-    // await writeFile('/tmp/new-synth.zip', data, 'base64');
     await this.checkSize(output);
     await this.cleanup(output);
     return data;

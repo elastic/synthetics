@@ -24,7 +24,6 @@
  */
 
 import { join } from 'path';
-import { readFile } from 'fs/promises';
 import * as esbuild from 'esbuild';
 import NodeResolvePlugin from '@esbuild-plugins/node-resolve';
 
