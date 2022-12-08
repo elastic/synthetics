@@ -27,19 +27,66 @@ import { createReadStream } from 'fs';
 import { writeFile, unlink, mkdir, rm } from 'fs/promises';
 import unzipper from 'unzipper';
 import { join } from 'path';
+import { spawn } from 'child_process';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
 const PROJECT_DIR = join(__dirname, 'test-bundler');
 const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
 
-async function validateZip(content) {
-  const partialPath = join(
-    '__tests__',
-    'push',
-    'test-bundler',
-    'bundle.journey.ts'
+const setup = async () => {
+  process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
+  await writeFile(
+    join(PROJECT_DIR, `setup.sh`),
+    `
+  #!/bin/bash
+  set -e
+  npm init -y
+  npm install @elastic/synthetics is-positive is-negative
+  `
   );
+
+  await writeFile(
+    journeyFile,
+    `import {journey, step, monitor} from '@elastic/synthetics';
+import isPositive from 'is-positive';
+import isNegative from 'is-negative';
+import utils from "./utils"
+
+journey('journey 1', () => {
+  // avoid dead code elimination
+  utils();
+  monitor.use({ id: 'duplicate id' });
+  launchStep(-1);
+});
+
+const launchStep = (no: number) => {
+  step("step1", () => {
+    isPositive(no);
+  })
+};`
+  );
+
+  await writeFile(
+    join(PROJECT_DIR, 'utils.ts'),
+    `import isNegative from 'is-negative';
+    export default utils = () => {
+      isNegative(1);
+    };`
+  );
+
+  return new Promise(res => {
+    const proc = spawn('sh', ['setup.sh'], {
+      cwd: PROJECT_DIR,
+      stdio: 'pipe',
+    });
+    proc.on('exit', code => {
+      res(code);
+    });
+  });
+};
+
+async function validateZip(content) {
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
@@ -53,20 +100,21 @@ async function validateZip(content) {
       .on('entry', function (entry) {
         const fileName = entry.path;
         files.push(fileName);
-        if (fileName === partialPath) {
-          entry.on('data', d => (targetFileContent += d));
-        } else {
-          entry.autodrain();
-        }
+        targetFileContent += '\n' + fileName + '\n';
+        entry.on('data', d => (targetFileContent += d));
       })
       .on('close', r);
   });
 
-  expect(files).toEqual([partialPath]);
+  const expectedFiles = [
+    'bundle.journey.ts',
+    'bundles/is-positive/index.js',
+    'utils.ts',
+    'bundles/is-negative/index.js',
+  ].map(f => join('__tests__/push/test-bundler', f));
 
-  expect(targetFileContent).toContain('__toESM');
-  expect(targetFileContent).toContain('node_modules/is-positive/index.js');
-
+  expect(files).toEqual(expectedFiles);
+  expect(targetFileContent).toMatchSnapshot();
   await unlink(pathToZip);
 }
 
@@ -75,22 +123,7 @@ describe('Bundler', () => {
 
   beforeAll(async () => {
     await mkdir(PROJECT_DIR, { recursive: true });
-    await writeFile(
-      journeyFile,
-      `import {journey, step, monitor} from '@elastic/synthetics';
-import isPositive from 'is-positive';
-
-journey('journey 1', () => {
-  monitor.use({ id: 'duplicate id' });
-  launchStep(-1);
-});
-
-const launchStep = (no: number) => {
-  step("step1", () => {
-    isPositive(no);
-  })
-};`
-    );
+    await setup();
   });
 
   afterAll(async () => {
@@ -100,7 +133,7 @@ const launchStep = (no: number) => {
   it('build journey', async () => {
     const content = await bundler.build(journeyFile, generateTempPath());
     await validateZip(content);
-  });
+  }, 15000);
 
   it('bundle should be idempotent', async () => {
     const content1 = await bundler.build(journeyFile, generateTempPath());
@@ -112,7 +145,9 @@ const launchStep = (no: number) => {
     try {
       await bundler.build(join(PROJECT_DIR, 'blah.ts'), generateTempPath());
     } catch (e) {
-      expect(e.message).toContain('ENOENT');
+      expect(e.message).toContain(
+        '[plugin: SyntheticsBundlePlugin] Cannot find module'
+      );
     }
   });
 });

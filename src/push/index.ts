@@ -62,10 +62,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
   progress(`Pushing monitors for project: ${options.id}`);
 
-  const stackVersion = await getVersion(options);
-  const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
+  // const stackVersion = await getVersion(options);
+  // const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
+  const isV2 = false;
   if (!isV2) {
-    return await pushLegacy(monitors, options, stackVersion);
+    return await pushLegacy(monitors, options, '8.5.0' as any);
   }
 
   const local = getLocalMonitors(monitors);

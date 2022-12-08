@@ -23,22 +23,23 @@
  *
  */
 
-import path from 'path';
-import { stat, unlink, readFile } from 'fs/promises';
+import path, { normalize } from 'path';
+import { stat, unlink, readFile, writeFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
 import { builtinModules } from 'module';
 import {
   commonOptions,
+  EXTERNAL_MODULES,
   isBare,
   SyntheticsBundlePlugin,
   PluginData,
 } from './plugin';
+import { lcaTwoPaths } from './utils';
 
 const SIZE_LIMIT_KB = 800;
 const BUNDLES_PATH = 'bundles';
-const EXTERNAL_MODULES = ['@elastic/synthetics'];
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
@@ -59,7 +60,7 @@ export class Bundler {
         entryPoints: {
           [absPath]: absPath,
         },
-        plugins: [SyntheticsBundlePlugin(addToMap, EXTERNAL_MODULES)],
+        plugins: [SyntheticsBundlePlugin(addToMap)],
       },
     };
     const result = await esbuild.build(options);
@@ -70,11 +71,11 @@ export class Bundler {
 
   resolvePath(bundlePath: string) {
     for (const mod of this.moduleMap.keys()) {
-      if (mod.startsWith(bundlePath)) {
+      if (mod.includes(bundlePath)) {
         return mod.substring(0, mod.lastIndexOf(path.extname(mod)));
       }
     }
-    return null;
+    throw new Error(`Could not find bundled code for ${bundlePath}`);
   }
 
   /**
@@ -99,23 +100,34 @@ export class Bundler {
       ) {
         return raw;
       }
-      // If the module is not in node_modules, we need to go up the directory
-      // tree till we reach the bundles directory
-      let deep = bundlePath.split(path.sep).length;
+      // Resolve the path to the module from the bundles directory
       let resolvedpath = this.resolvePath(BUNDLES_PATH + '/' + dep);
-      // If its already part of the bundles directory, we don't need to go up
-      if (bundlePath.startsWith(BUNDLES_PATH)) {
-        deep -= 1;
-        resolvedpath = resolvedpath.replace(BUNDLES_PATH + '/', '');
+      // Take LCA to find the relative path
+      const LCAPath = lcaTwoPaths(bundlePath, resolvedpath);
+      resolvedpath = resolvedpath.replace(LCAPath, '');
+      bundlePath = bundlePath.replace(LCAPath, '');
+      // Calculate the depth of the relative path to the module
+      const depth = bundlePath.split(path.sep).filter(Boolean).length - 1;
+
+      // Resolve the path to the module from the bundles directory
+      let pathToModule = '';
+      if (depth === 0) {
+        pathToModule =
+          './' +
+          (resolvedpath.charAt(0) === '/'
+            ? resolvedpath.substring(1)
+            : resolvedpath);
+      } else {
+        pathToModule = normalize('../'.repeat(depth) + resolvedpath);
       }
-      return raw.replace(dep, '.'.repeat(deep) + '/' + resolvedpath);
+      return raw.replace(dep, pathToModule);
     });
   }
 
   getModulesPath(path: string) {
     const relativePath = relativeToCwd(path);
-    if (relativePath.startsWith('node_modules')) {
-      return relativePath.replace('node_modules', BUNDLES_PATH);
+    if (relativePath.includes('node_modules')) {
+      return relativePath.replaceAll('node_modules', BUNDLES_PATH);
     }
     return relativePath;
   }
@@ -146,6 +158,7 @@ export class Bundler {
     await this.prepare(entry);
     await this.zip(output);
     const data = await this.encode(output);
+    // await writeFile('/tmp/new-synth.zip', data, 'base64');
     await this.checkSize(output);
     await this.cleanup(output);
     return data;

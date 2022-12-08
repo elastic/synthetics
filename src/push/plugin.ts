@@ -36,17 +36,17 @@ const DIST_DIR = join(ROOT_DIR, 'dist');
 // Node modules directory of the package - /node_modules
 const SOURCE_NODE_MODULES = join(ROOT_DIR, 'node_modules');
 
+export const EXTERNAL_MODULES = ['@elastic/synthetics'];
 export function commonOptions(): esbuild.BuildOptions {
   return {
     bundle: true,
-    external: ['@elastic/synthetics'],
+    external: EXTERNAL_MODULES,
     minify: false,
     minifyIdentifiers: false,
     minifySyntax: false,
     minifyWhitespace: false,
-    treeShaking: false,
     keepNames: false,
-    logLevel: 'error',
+    logLevel: 'silent',
     platform: 'node',
     write: false,
     outExtension: {
@@ -72,18 +72,17 @@ export const isBare = (str: string) => {
 
 // Avoid importing @elastic/synthetics package from source
 const isLocalSynthetics = (entryPath: string) => {
-  return entryPath.startsWith(SOURCE_DIR) || entryPath.startsWith(DIST_DIR);
+  return entryPath.includes(SOURCE_DIR) || entryPath.includes(DIST_DIR);
 };
 
 // Avoid importing the local dependenceis of the @elastic/synthetics module
 // from source
 const isLocalSyntheticsModule = (str: string) => {
-  return str.startsWith(SOURCE_NODE_MODULES);
+  return str.includes(SOURCE_NODE_MODULES);
 };
 
 export function SyntheticsBundlePlugin(
-  callback: PluginCallback,
-  external: string[]
+  callback: PluginCallback
 ): esbuild.Plugin {
   const visited = new Set<string>();
 
@@ -95,7 +94,7 @@ export function SyntheticsBundlePlugin(
     },
     onResolved: async resolved => {
       if (
-        external.includes(resolved) ||
+        EXTERNAL_MODULES.some(mod => resolved.includes(mod)) ||
         isLocalSynthetics(resolved) ||
         isLocalSyntheticsModule(resolved)
       ) {
@@ -104,33 +103,24 @@ export function SyntheticsBundlePlugin(
         };
       }
 
+      // Avoid running the bundler on the same module twice
       if (visited.has(resolved)) {
         return;
       }
 
       // Spin off another build to copy over the imported modules without bundling
-      if (resolved.includes('/node_modules/')) {
-        const result = await esbuild.build({
-          ...commonOptions(),
-          entryPoints: [resolved],
-          bundle: false,
-          external: [],
-        });
+      const result = await esbuild.build({
+        ...commonOptions(),
+        entryPoints: [resolved],
+        bundle: false,
+        external: [],
+      });
 
-        callback({
-          path: resolved,
-          contents: result.outputFiles[0].text,
-        });
-      } else {
-        // If it's a local file, read it and return the contents
-        // to preserve the source without modifications
-        try {
-          const contents = await readFile(resolved, 'utf-8');
-          callback({ path: resolved, contents });
-        } catch (e) {
-          throw new Error(`Could not read file ${resolved}`);
-        }
-      }
+      callback({
+        path: resolved,
+        contents: result.outputFiles[0].text,
+      });
+
       visited.add(resolved);
       return;
     },

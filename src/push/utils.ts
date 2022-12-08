@@ -23,6 +23,7 @@
  *
  */
 
+import path from 'path';
 import { progress, removeTrailingSlash } from '../helpers';
 import { green, red, grey, yellow } from 'kleur/colors';
 import { PushOptions } from '../common_types';
@@ -74,4 +75,19 @@ export function generateURL(options: PushOptions, operation: Operation) {
     default:
       throw new Error('Invalid operation');
   }
+}
+
+const SEPARATOR = path.sep;
+export function lcaTwoPaths(path1, path2) {
+  const parts1 = path1.split(SEPARATOR);
+  const parts2 = path2.split(SEPARATOR);
+  const commonParts = [];
+
+  for (let i = 0; i < parts1.length; i++) {
+    if (parts1[i] !== parts2[i]) {
+      break;
+    }
+    commonParts.push(parts1[i]);
+  }
+  return commonParts.join(SEPARATOR);
 }

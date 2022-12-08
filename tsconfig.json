@@ -8,7 +8,7 @@
     "noImplicitOverride": true,
     "sourceMap": true,
     "outDir": "dist",
-    "target": "es2020",
+    "target": "ES2021",
     "module": "commonjs"
   },
   "include": ["src/**/*"]

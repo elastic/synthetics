@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bundler build journey 1`] = `
+"
+__tests__/push/test-bundler/bundle.journey.ts
+import { journey, step, monitor } from \\"@elastic/synthetics\\";
+import isPositive from \\"./bundles/is-positive/index\\";
+import utils from \\"./utils\\";
+journey(\\"journey 1\\", () => {
+  utils();
+  monitor.use({ id: \\"duplicate id\\" });
+  launchStep(-1);
+});
+const launchStep = (no) => {
+  step(\\"step1\\", () => {
+    isPositive(no);
+  });
+};
+
+__tests__/push/test-bundler/bundles/is-positive/index.js
+\\"use strict\\";
+module.exports = function(n) {
+  return toString.call(n) === \\"[object Number]\\" && n > 0;
+};
+
+__tests__/push/test-bundler/utils.ts
+import isNegative from \\"./bundles/is-negative/index\\";
+export default utils = () => {
+  isNegative(1);
+};
+
+__tests__/push/test-bundler/bundles/is-negative/index.js
+\\"use strict\\";
+module.exports = function(n) {
+  return toString.call(n) === \\"[object Number]\\" && n < 0;
+};
+"
+`;
