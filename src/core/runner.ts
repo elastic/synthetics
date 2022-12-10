@@ -103,7 +103,7 @@ export default class Runner {
         quality: 80,
         timeout: 5000,
       })
-      .catch(() => { });
+      .catch(() => {});
     /**
      * Write the screenshot image buffer with additional details (step
      * information) which could be extracted at the end of
