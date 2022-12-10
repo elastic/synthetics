@@ -89,9 +89,9 @@ export default class BaseReporter implements Reporter {
 
   onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
     const { status, end, start, error } = result;
-    const message = `${symbols[status]}  Step: '${step.name
-      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
-    this.write(indent(message));
+    const message = `${symbols[status]}  Step: '${
+      step.name
+    }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
     error && this.write(renderError(error));
     this.metrics[status]++;
   }
