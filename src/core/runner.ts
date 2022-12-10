@@ -44,6 +44,9 @@ import {
   RunOptions,
   JourneyResult,
   StepResult,
+  SuiteHookType,
+  HookResult,
+  HookType,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -51,8 +54,7 @@ import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 
-type HookType = 'beforeAll' | 'afterAll';
-export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
+export type SuiteHooks = Record<SuiteHookType, Array<HooksCallback>>;
 
 type JourneyContext = {
   params?: Params;
@@ -101,7 +103,7 @@ export default class Runner {
         quality: 80,
         timeout: 5000,
       })
-      .catch(() => {});
+      .catch(() => { });
     /**
      * Write the screenshot image buffer with additional details (step
      * information) which could be extracted at the end of
@@ -125,7 +127,7 @@ export default class Runner {
     return this.#currentJourney;
   }
 
-  addHook(type: HookType, callback: HooksCallback) {
+  addHook(type: SuiteHookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
 
@@ -155,24 +157,41 @@ export default class Runner {
     this.#reporter = new Reporter({ fd: outfd });
   }
 
+  async runHook(callback: HooksCallback[], args: HooksArgs, hookType: HookType, journey?: Journey) {
+    const data: HookResult = {
+      status: 'succeeded',
+      hooktype: hookType,
+    };
+    try {
+      await runParallel(callback, args);
+    } catch (error) {
+      data.status = 'failed';
+      data.error = error;
+    }
+    if (journey) {
+      this.#reporter?.onHookEnd?.(journey, data);
+    }
+    return data;
+  }
+
   async runBeforeAllHook(args: HooksArgs) {
     log(`Runner: beforeAll hooks`);
-    await runParallel(this.hooks.beforeAll, args);
+    await this.runHook(this.hooks.beforeAll, args, 'beforeAll')
   }
 
   async runAfterAllHook(args: HooksArgs) {
     log(`Runner: afterAll hooks`);
-    await runParallel(this.hooks.afterAll, args);
+    await this.runHook(this.hooks.beforeAll, args, 'afterAll')
   }
 
   async runBeforeHook(journey: Journey, args: HooksArgs) {
     log(`Runner: before hooks for (${journey.name})`);
-    await runParallel(journey.hooks.before, args);
+    await this.runHook(this.hooks.beforeAll, args, 'before', journey);
   }
 
   async runAfterHook(journey: Journey, args: HooksArgs) {
     log(`Runner: after hooks for (${journey.name})`);
-    await runParallel(journey.hooks.after, args);
+    await this.runHook(this.hooks.beforeAll, args, 'after', journey);
   }
 
   async runStep(

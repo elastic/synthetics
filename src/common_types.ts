@@ -281,6 +281,12 @@ export type StepResult = {
   traces?: PluginOutput['traces'];
 };
 
+export type HookResult = {
+  status: StatusValue;
+  hooktype: HookType,
+  error?: Error;
+};
+
 /** Reporter and Runner contract */
 export type StartEvent = {
   numJourneys: number;
@@ -304,3 +310,7 @@ export type StepEndResult = StepResult & {
   start: number;
   end: number;
 };
+
+export type SuiteHookType = 'beforeAll' | 'afterAll';
+export type JourneyHookType = 'before' | 'after';
+export type HookType = SuiteHookType | JourneyHookType;

@@ -32,6 +32,7 @@ import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
+  HookResult,
 } from '../common_types';
 
 export type ReporterOptions = { fd?: number; colors?: boolean };
@@ -51,6 +52,7 @@ export interface Reporter {
   onJourneyStart?(journey: Journey, result: JourneyStartResult): void;
   onStepStart?(journey: Journey, step: Step): void;
   onStepEnd?(journey: Journey, step: Step, result: StepEndResult): void;
+  onHookEnd?(journey: Journey, result: HookResult): void;
   onJourneyEnd?(
     journey: Journey,
     result: JourneyEndResult

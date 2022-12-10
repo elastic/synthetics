@@ -37,6 +37,7 @@ import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
+  HookResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 
@@ -82,15 +83,22 @@ export default class BaseReporter implements Reporter {
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
   }
 
-  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+  onJourneyStart(journey: Journey, { }: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
 
   onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
     const { status, end, start, error } = result;
-    const message = `${symbols[status]}  Step: '${
-      step.name
-    }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
+    const message = `${symbols[status]}  Step: '${step.name
+      }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
+    this.write(indent(message));
+    error && this.write(renderError(error));
+    this.metrics[status]++;
+  }
+
+  onHookEnd(journey: Journey, result: HookResult) {
+    const { status, error } = result;
+    const message = `${symbols[status]} Hook: ${result.hooktype} ${result.status}`;
     this.write(indent(message));
     error && this.write(renderError(error));
     this.metrics[status]++;
@@ -116,7 +124,8 @@ export default class BaseReporter implements Reporter {
     let message = '\n';
     if (total === 0) {
       message = 'No tests found!';
-      message += ` (${renderDuration(now())} ms) \n`;
+      message += ` (${renderDuration(now())
+        } ms) \n`;
       this.write(message);
       return;
     }

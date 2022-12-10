@@ -29,6 +29,7 @@ import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
+  HookResult
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 import { formatError, indent, now } from '../helpers';
@@ -59,7 +60,7 @@ export default class JUnitReporter extends BaseReporter {
   private totalSkipped = 0;
   #journeyMap = new Map<string, XMLEntry>();
 
-  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+  override onJourneyStart(journey: Journey, { }: JourneyStartResult) {
     if (!this.#journeyMap.has(journey.name)) {
       const entry = {
         name: 'testsuite',
@@ -119,7 +120,44 @@ export default class JUnitReporter extends BaseReporter {
     entry.children.push(caseEntry);
   }
 
-  override onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  override onHookEnd(
+    journey: Journey,
+    {
+      error,
+      status,
+      hooktype,
+    }: HookResult
+  ) {
+    if (!this.#journeyMap.has(journey.name)) {
+      return;
+    }
+    const entry = this.#journeyMap.get(journey.name);
+    const caseEntry = {
+      name: 'testcase',
+      attributes: {
+        name: `${hooktype} hooks`,
+        classname: `${journey.name} ${hooktype} hooks`,
+      },
+      children: [],
+    };
+
+    entry.attributes.tests++;
+    if (status === 'failed') {
+      const { name, message, stack } = formatError(error);
+      caseEntry.children.push({
+        name: 'failure',
+        attributes: {
+          message,
+          type: name,
+        },
+        text: stack,
+      });
+      entry.attributes.failures++;
+    }
+    entry.children.push(caseEntry);
+  }
+
+  override onJourneyEnd(journey: Journey, { }: JourneyEndResult) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
     }

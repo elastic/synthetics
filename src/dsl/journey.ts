@@ -32,7 +32,7 @@ import {
 } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location, JourneyHookType } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 
 export type JourneyOptions = {
@@ -41,8 +41,7 @@ export type JourneyOptions = {
   tags?: string[];
 };
 
-type HookType = 'before' | 'after';
-export type Hooks = Record<HookType, Array<HooksCallback>>;
+export type Hooks = Record<JourneyHookType, Array<HooksCallback>>;
 export type JourneyCallback = (options: {
   page: Page;
   context: BrowserContext;
@@ -81,7 +80,7 @@ export class Journey {
     return step;
   }
 
-  addHook(type: HookType, callback: HooksCallback) {
+  addHook(type: JourneyHookType, callback: HooksCallback) {
     this.hooks[type].push(callback);
   }
 

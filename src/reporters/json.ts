@@ -52,6 +52,8 @@ import {
   StepEndResult,
   JourneyEndResult,
   PageMetrics,
+  HookResult,
+  HookType,
 } from '../common_types';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -67,6 +69,7 @@ type OutputType =
   | 'step/metrics'
   | 'step/filmstrips'
   | 'step/end'
+  | 'hook/end'
   | 'journey/network_info'
   | 'journey/browserconsole'
   | 'journey/end';
@@ -96,6 +99,9 @@ type OutputFields = {
       us: number;
     };
   };
+  hook?: {
+    type: HookType
+  }
   error?: Error;
   root_fields?: Record<string, unknown>;
   payload?: Payload;
@@ -223,6 +229,17 @@ function stepInfo(
   };
 }
 
+function hookInfo(
+  hook: OutputFields['hook'],
+) {
+  if (!hook) {
+    return;
+  }
+  return {
+    type: hook.type,
+  };
+}
+
 export async function getScreenshotBlocks(screenshot: Buffer) {
   const { width, height } = await sharp(screenshot).metadata();
   /**
@@ -313,8 +330,8 @@ export default class JSONReporter extends BaseReporter {
       },
       payload: params.networkConditions
         ? {
-            network_conditions: params.networkConditions,
-          }
+          network_conditions: params.networkConditions,
+        }
         : undefined,
     });
   }
@@ -388,6 +405,27 @@ export default class JSONReporter extends BaseReporter {
         url,
         status,
         pagemetrics,
+      },
+    });
+  }
+
+  override onHookEnd(
+    journey: Journey,
+    {
+      error,
+      status,
+      hooktype,
+    }: HookResult
+  ) {
+    this.writeJSON({
+      type: 'hook/end',
+      journey,
+      hook: {
+        type: hooktype
+      },
+      error,
+      payload: {
+        status,
       },
     });
   }
@@ -538,6 +576,7 @@ export default class JSONReporter extends BaseReporter {
     type,
     timestamp,
     step,
+    hook,
     root_fields,
     error,
     payload,
@@ -551,6 +590,7 @@ export default class JSONReporter extends BaseReporter {
       '@timestamp': timestamp || getTimestamp(),
       journey: journeyInfo(journey, type, payload?.status),
       step: stepInfo(step, type, payload?.status),
+      hook: hookInfo(hook),
       root_fields: { ...(root_fields || {}), ...getMetadata() },
       payload,
       blob,
