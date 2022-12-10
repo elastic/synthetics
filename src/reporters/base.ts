@@ -83,7 +83,7 @@ export default class BaseReporter implements Reporter {
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
   }
 
-  onJourneyStart(journey: Journey, { }: JourneyStartResult) {
+  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
 
@@ -125,8 +125,7 @@ export default class BaseReporter implements Reporter {
     let message = '\n';
     if (total === 0) {
       message = 'No tests found!';
-      message += ` (${renderDuration(now())
-        } ms) \n`;
+      message += ` (${renderDuration(now())} ms) \n`;
       this.write(message);
       return;
     }

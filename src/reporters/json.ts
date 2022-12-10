@@ -100,8 +100,8 @@ type OutputFields = {
     };
   };
   hook?: {
-    type: HookType
-  }
+    type: HookType;
+  };
   error?: Error;
   root_fields?: Record<string, unknown>;
   payload?: Payload;
@@ -229,9 +229,7 @@ function stepInfo(
   };
 }
 
-function hookInfo(
-  hook: OutputFields['hook'],
-) {
+function hookInfo(hook: OutputFields['hook']) {
   if (!hook) {
     return;
   }
@@ -330,8 +328,8 @@ export default class JSONReporter extends BaseReporter {
       },
       payload: params.networkConditions
         ? {
-          network_conditions: params.networkConditions,
-        }
+            network_conditions: params.networkConditions,
+          }
         : undefined,
     });
   }
@@ -411,17 +409,13 @@ export default class JSONReporter extends BaseReporter {
 
   override onHookEnd(
     journey: Journey,
-    {
-      error,
-      status,
-      hooktype,
-    }: HookResult
+    { error, status, hooktype }: HookResult
   ) {
     this.writeJSON({
       type: 'hook/end',
       journey,
       hook: {
-        type: hooktype
+        type: hooktype,
       },
       error,
       payload: {
