@@ -92,6 +92,7 @@ export default class BaseReporter implements Reporter {
     const message = `${symbols[status]}  Step: '${
       step.name
     }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
+    this.write(indent(message));
     error && this.write(renderError(error));
     this.metrics[status]++;
   }
