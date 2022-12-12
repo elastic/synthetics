@@ -91,7 +91,7 @@ export async function bulkGetMonitors(
       total = resp.total;
     }
     monitors.push(...resp.monitors);
-  } while (afterKey);
+  } while (monitors.length < total);
 
   return { total, monitors };
 }
