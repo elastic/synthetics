@@ -76,7 +76,7 @@ export async function bulkGetMonitors(
   const resp = await fetchMonitors(options);
   allMonitors.push(...resp.monitors);
   let afterKey = resp.afterKey;
-  let total = resp.total;
+  const total = resp.total;
 
   while (allMonitors.length < total) {
     const resp = await fetchMonitors(options, afterKey);
