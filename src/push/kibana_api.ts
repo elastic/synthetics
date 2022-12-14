@@ -71,30 +71,41 @@ export type GetResponse = {
 export async function bulkGetMonitors(
   options: PushOptions
 ): Promise<GetResponse> {
-  let afterKey = null;
-  let total = 0;
-  const monitors: MonitorHashID[] = [];
-  let url = generateURL(options, 'bulk_get');
-  do {
-    if (afterKey) {
-      url += `?search_after=${afterKey}`;
-    }
-    const resp = await sendReqAndHandleError<GetResponse>({
-      url,
-      method: 'GET',
-      auth: options.auth,
-    });
-    afterKey = resp.after_key;
+  const allMonitors: MonitorHashID[] = [];
 
-    // The first page gives the total number of monitors
-    if (total == 0) {
-      total = resp.total;
-    }
-    monitors.push(...resp.monitors);
-  } while (afterKey);
+  const resp = await fetchMonitors(options);
+  allMonitors.push(...resp.monitors);
+  let afterKey = resp.afterKey;
+  const total = resp.total;
 
-  return { total, monitors };
+  while (allMonitors.length < total) {
+    const resp = await fetchMonitors(options, afterKey);
+    allMonitors.push(...resp.monitors);
+    afterKey = resp.afterKey;
+  }
+
+  return {
+    total,
+    monitors: allMonitors,
+  };
 }
+
+const fetchMonitors = async (options: PushOptions, afterKey?: string) => {
+  let url = generateURL(options, 'bulk_get');
+  if (afterKey) {
+    url += `?search_after=${afterKey}`;
+  }
+  const resp = await sendReqAndHandleError<GetResponse>({
+    url,
+    method: 'GET',
+    auth: options.auth,
+  });
+  return {
+    afterKey: resp.after_key,
+    total: resp.total,
+    monitors: resp.monitors,
+  };
+};
 
 export type DeleteResponse = {
   deleted_monitors: string[];
