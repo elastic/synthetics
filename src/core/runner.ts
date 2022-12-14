@@ -397,7 +397,6 @@ export default class Runner {
     });
 
     const { match, tags } = options;
-
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
       if (!journey.isMatch(match, tags)) {
