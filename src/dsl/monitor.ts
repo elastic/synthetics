@@ -63,6 +63,7 @@ type MonitorFilter = {
 };
 
 export class Monitor {
+  content?: string;
   source?: Location;
   filter: MonitorFilter;
   constructor(public config: MonitorConfig = {}) {}
@@ -85,6 +86,14 @@ export class Monitor {
   setSource(source: Location) {
     this.source = source;
   }
+
+  /**
+   * The underlying journey code of the monitor
+   */
+  setContent(content = '') {
+    this.content = content;
+  }
+
   /**
    * If journey files are colocated within the same file during
    * push command, when we invoke synthetics from HB we rely on
@@ -95,9 +104,20 @@ export class Monitor {
     this.filter = filter;
   }
 
+  /**
+   * Hash is used to identify if the monitor has changed since the last time
+   * it was pushed to Kibana. Change is based on three factors:
+   * - Monitor configuration
+   * - Code changes
+   * - File path changes
+   */
   hash(): string {
     const hash = createHash('sha256');
-    return hash.update(JSON.stringify(this.config)).digest('base64');
+    return hash
+      .update(JSON.stringify(this.config))
+      .update(this.content || '')
+      .update(this.source?.file || '')
+      .digest('base64');
   }
 
   validate() {

@@ -78,24 +78,22 @@ describe('Monitors', () => {
       schedule: 10,
       type: 'http',
       enabled: true,
-      hash: 'fS9hbiqcopwk3gMeDrqMgyp0mEpeyFWy6F/YFSnfWPE=',
+      hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
     });
   });
 
   it('build browser monitor schema', async () => {
-    const schema = await buildMonitorSchema(
-      [createTestMonitor('example.journey.ts')],
-      true
-    );
+    const monitor = createTestMonitor('example.journey.ts');
+    const schema = await buildMonitorSchema([monitor], true);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
       type: 'browser',
       enabled: true,
-      hash: 'I+bYcE74C35IaKpHeN04wBfinO3qEiqlcaksKFAmkBg=',
+      hash: expect.any(String), // hash is dynamic based on the file path
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
       content: expect.any(String),
@@ -103,6 +101,9 @@ describe('Monitors', () => {
         match: 'test',
       },
     });
+    monitor.setContent('foo');
+    const schema1 = await buildMonitorSchema([monitor], true);
+    expect(schema1[0].hash).not.toEqual(schema[0].hash);
   });
 
   it('parse @every schedule format', async () => {
