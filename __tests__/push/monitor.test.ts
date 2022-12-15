@@ -78,7 +78,7 @@ describe('Monitors', () => {
       schedule: 10,
       type: 'http',
       enabled: true,
-      hash: 'igo/MKAypnRGwHGRMPdZI9pQ3AFR7bP2Jqa7nacpNsk=',
+      hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
     });
@@ -93,7 +93,7 @@ describe('Monitors', () => {
       schedule: 10,
       type: 'browser',
       enabled: true,
-      hash: 'ZdPp+3TMq4vdxSzFWOgyt6m/NeouY4y4U+jeizdlejI=',
+      hash: expect.any(String), // hash is dynamic based on the file path
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
       content: expect.any(String),
