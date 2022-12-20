@@ -29,7 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { lstat, readdir } from 'fs/promises';
 import { performance } from 'perf_hooks';
-import sourceMapSupport from '@cspotcode/source-map-support';
+import sourceMapSupport from 'source-map-support';
 import {
   HooksArgs,
   HooksCallback,
@@ -300,8 +300,8 @@ export function wrapFnWithLocation<A extends unknown[], R>(
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stackFrames) => {
       // Deafult CallSite would not map to the original transpiled source
-      // from ts-node properly, So we wrap it with the library that knows
-      // how to retrive those source-map for the transpiled code
+      // correctly, So we use source-map-support to map the CallSite to the
+      // original source from our cached source map
       const frame: NodeJS.CallSite = sourceMapSupport.wrapCallSite(
         stackFrames[1]
       );

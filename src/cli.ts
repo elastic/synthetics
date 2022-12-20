@@ -34,7 +34,7 @@ import {
   parseThrottling,
   getCommonCommandOpts,
 } from './options';
-import { loadTestFiles } from './loader';
+import { globalSetup } from './loader';
 import { run } from './';
 import { runner } from './core';
 import { SyntheticsLocations } from './dsl/monitor';
@@ -127,8 +127,8 @@ program
   .version(version)
   .description('Run synthetic tests')
   .action(async (cliArgs: CliArgs) => {
+    const tearDown = await globalSetup(cliArgs, program.args);
     try {
-      await loadTestFiles(cliArgs, program.args);
       const options = normalizeOptions(cliArgs);
       const results = await run(options);
       /**
@@ -144,6 +144,8 @@ program
     } catch (e) {
       console.error(e);
       process.exit(1);
+    } finally {
+      tearDown();
     }
   });
 
@@ -192,9 +194,11 @@ program
   .addOption(params)
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
+    const workDir = cwd();
+    const tearDown = await globalSetup({ inline: false, ...program.opts() }, [
+      workDir,
+    ]);
     try {
-      const workDir = cwd();
-      await loadTestFiles({ inline: false, ...program.opts() }, [workDir]);
       const settings = await loadSettings();
       const options = normalizeOptions({
         ...program.opts(),
@@ -209,6 +213,8 @@ program
     } catch (e) {
       e && console.error(e);
       process.exit(1);
+    } finally {
+      tearDown();
     }
   });
 

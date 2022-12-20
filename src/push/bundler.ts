@@ -27,9 +27,9 @@ import path from 'path';
 import { stat, unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
-import NodeResolve from '@esbuild-plugins/node-resolve';
 import archiver from 'archiver';
-import { commonOptions, MultiAssetPlugin, PluginData } from './plugin';
+import { commonOptions } from '../core/transform';
+import { SyntheticsBundlePlugin } from './plugin';
 
 const SIZE_LIMIT_KB = 800;
 
@@ -42,22 +42,15 @@ export class Bundler {
   constructor() {}
 
   async prepare(absPath: string) {
-    const addToMap = (data: PluginData) => {
-      this.moduleMap.set(data.path, data.contents);
-    };
-
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
       ...{
-        entryPoints: {
-          [absPath]: absPath,
-        },
-        plugins: [
-          MultiAssetPlugin(addToMap),
-          NodeResolve({
-            extensions: ['.ts', '.js'],
-          }),
-        ],
+        entryPoints: [absPath],
+        bundle: true,
+        write: false,
+        sourcemap: 'inline',
+        external: ['@elastic/synthetics'],
+        plugins: [SyntheticsBundlePlugin()],
       },
     };
     const result = await esbuild.build(options);

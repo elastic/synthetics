@@ -122,7 +122,7 @@ describe('Push', () => {
     const testJourney = join(PROJECT_DIR, 'test.journey.ts');
     await writeFile(
       testJourney,
-      `import {journey, monitor} from '../../../src';
+      `import {journey, monitor} from '../../../';
 journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
     );
     const output = await runPush();
@@ -139,7 +139,7 @@ journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
     const dupJourney = join(PROJECT_DIR, 'duplicate.journey.ts');
     await writeFile(
       dupJourney,
-      `import {journey, monitor} from '../../../src';
+      `import {journey, monitor} from '../../../';
 journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
 journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
 
@@ -234,7 +234,7 @@ heartbeat.monitors:
         const testJourney = join(PROJECT_DIR, 'test.journey.ts');
         await writeFile(
           testJourney,
-          `import {journey, monitor} from '../../../src/index';
+          `import {journey, monitor} from '../../../';
         journey('journey 1', () => monitor.use({ id: 'j1' }));
         journey('journey 2', () => monitor.use({ id: 'j2' }));`
         );
