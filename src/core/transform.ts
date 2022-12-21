@@ -86,6 +86,17 @@ export function transform(
     ...commonOptions(),
     sourcefile: filename,
     loader: getLoader(filename),
+    /**
+     * Add this only for the transformation phase, using it on
+     * bundling phase would disable tree shaking and uncessary bloat
+     *
+     * Ensures backwards compatability with tsc's implicit strict behaviour
+     */
+    tsconfigRaw: {
+      compilerOptions: {
+        alwaysStrict: true,
+      },
+    },
     ...options,
   });
 
