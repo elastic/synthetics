@@ -64,9 +64,6 @@ export const REGULAR_FILES_PATH = [
 ];
 export const CONFIG_PATH = 'synthetics.config.ts';
 
-// Files to be overriden by default if the project is initialized multiple times
-const DEFAULT_OVERRIDES = [CONFIG_PATH];
-
 export class Generator {
   pkgManager = 'npm';
   constructor(public projectDir: string) {}
@@ -197,11 +194,7 @@ export class Generator {
   async createFile(relativePath: string, content: string, override = false) {
     const absolutePath = join(this.projectDir, relativePath);
 
-    if (
-      !override &&
-      !DEFAULT_OVERRIDES.includes(relativePath) &&
-      existsSync(absolutePath)
-    ) {
+    if (!override && existsSync(absolutePath)) {
       const { override } = await prompt<{ override: boolean }>({
         type: 'confirm',
         name: 'override',
@@ -252,10 +245,13 @@ export class Generator {
       pkgJSON.scripts = {};
     }
     // Add test command
-    pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
-
+    if (!pkgJSON.scripts.test) {
+      pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
+    }
     // Add push command
-    pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+    if (!pkgJSON.scripts.push) {
+      pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+    }
 
     await this.createFile(
       filename,
@@ -274,7 +270,9 @@ export class Generator {
     if (!gitIgnore.includes('node_modules')) {
       gitIgnore += 'node_modules/\n';
     }
-    gitIgnore += '.synthetics/\n';
+    if (!gitIgnore.includes('.synthetics')) {
+      gitIgnore += '.synthetics/\n';
+    }
     await writeFile(gitIgnorePath, gitIgnore, 'utf-8');
   }
 
