@@ -75,7 +75,7 @@ describe('options', () => {
 
   it('normalize monitor configs', () => {
     expect(normalizeOptions({ throttling: false })).toMatchObject({
-      throttling: {},
+      throttling: false,
     });
 
     expect(

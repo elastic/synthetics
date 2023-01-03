@@ -51,7 +51,7 @@ export type MonitorConfig = {
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
-  throttling?: ThrottlingOptions;
+  throttling?: boolean | ThrottlingOptions;
   screenshot?: ScreenshotOptions;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;

@@ -209,7 +209,7 @@ type BaseArgs = {
   ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
-  throttling?: ThrottlingOptions;
+  throttling?: MonitorConfig['throttling'];
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
@@ -226,7 +226,6 @@ export type CliArgs = BaseArgs & {
   richEvents?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
-  throttling?: boolean | ThrottlingOptions;
 };
 
 export type RunOptions = BaseArgs & {
