@@ -123,16 +123,24 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   if (cliArgs.throttling) {
     const throttleConfig = merge.all([
       DEFAULT_THROTTLING_OPTIONS,
-      monitor?.throttling || {},
-      cliArgs.throttling as ThrottlingOptions,
+      toObject(monitor?.throttling),
+      toObject(cliArgs.throttling),
     ]);
-    options.throttling = throttleConfig;
-    options.networkConditions = getNetworkConditions(throttleConfig);
+    if (monitor?.throttling !== false) {
+      options.throttling = throttleConfig;
+      options.networkConditions = getNetworkConditions(throttleConfig);
+    } else {
+      /**
+       * If the throttling is disabled via Project monitor config, use it a source
+       * of truth and disable it for pushing those monitors.
+       */
+      options.throttling = false;
+    }
   } else {
     /**
      * Do not apply throttling when `--no-throttling` flag is passed
      */
-    options.throttling = {};
+    options.throttling = false;
   }
 
   options.schedule = cliArgs.schedule ?? monitor?.schedule;
@@ -141,6 +149,14 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     cliArgs.privateLocations ?? monitor?.privateLocations;
 
   return options;
+}
+
+function toObject(value: boolean | Record<string, any>): Record<string, any> {
+  const defaulVal = {};
+  if (typeof value === 'boolean') {
+    return defaulVal;
+  }
+  return value || defaulVal;
 }
 
 /**
