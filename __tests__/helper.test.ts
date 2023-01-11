@@ -68,6 +68,12 @@ it('format errors', () => {
   });
 });
 
+it('formats thrown non-error errors', () => {
+  const errStr = "c'est ne pas une Error";
+  const formatted = formatError(errStr);
+  expect(formatted.message).toContain(errStr);
+});
+
 it('throw error when no package.json found', async () => {
   try {
     const tempPath = generateTempPath();
