@@ -233,11 +233,16 @@ export function rewriteErrorStack(stack: string, indexes: [number, number]) {
   return stack;
 }
 
-export function formatError(error: Error) {
+// formatError prefers receiving proper Errors, but since at runtime
+// non Error exceptions can be thrown, it tolerates though. The
+// redundant type Error | any expresses that.
+export function formatError(error: Error | any) {
   if (!(error instanceof Error)) {
-    error = new Error(
-      `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`
-    );
+    return {
+      message: `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`,
+      name: '',
+      stack: '',
+    };
   }
   const { name, message, stack } = error;
   const indexes = findPWLogsIndexes(message);

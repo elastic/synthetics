@@ -73,6 +73,8 @@ describe('formatting errors', () => {
     it(`formats thrown non-error errors like: ${obj}(${typeof obj})`, () => {
       const formatted = formatError(obj);
       expect(formatted.message).toContain(`${obj}`);
+      expect(formatted.name).toStrictEqual('');
+      expect(formatted.stack).toStrictEqual('');
       expect(typeof formatted.message).toBe('string');
     });
   });
