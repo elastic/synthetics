@@ -235,7 +235,9 @@ export function rewriteErrorStack(stack: string, indexes: [number, number]) {
 
 export function formatError(error: Error) {
   if (!(error instanceof Error)) {
-    return;
+    error = new Error(
+      `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`
+    );
   }
   const { name, message, stack } = error;
   const indexes = findPWLogsIndexes(message);
