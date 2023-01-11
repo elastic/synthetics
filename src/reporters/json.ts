@@ -372,7 +372,6 @@ export default class JSONReporter extends BaseReporter {
       });
     }
 
-    console.error('JSONEX', error);
     this.writeJSON({
       type: 'step/end',
       journey,
@@ -464,7 +463,6 @@ export default class JSONReporter extends BaseReporter {
       });
     }
 
-    console.error('JSON JE ', error);
     this.writeJSON({
       type: 'journey/end',
       journey,
