@@ -333,10 +333,10 @@ export function wrapFnWithLocation<A extends unknown[], R>(
 }
 
 // Safely parse ND JSON (Newline delimitted JSON) chunks
-export function safeNDJSONParse(chunks: string[]) {
-  // chunks may not be at proper newline boundaries, so we make sure everything is split
+export function safeNDJSONParse(data: string | string[]) {
+  // data may not be at proper newline boundaries, so we make sure everything is split
   // on proper newlines
-  chunks = Array.isArray(chunks) ? chunks : [chunks];
+  const chunks = Array.isArray(data) ? data : [data];
   const lines = chunks.join('\n').split(/\r?\n/);
   return lines
     .filter(l => l.match(/\S/)) // remove blank lines
@@ -350,16 +350,27 @@ export function safeNDJSONParse(chunks: string[]) {
 }
 
 // Console helpers
-export function write(message: string) {
-  process.stderr.write(message + '\n');
+export function write(message: string, live?: boolean) {
+  process.stderr.write(message + (live ? '\r' : '\n'));
 }
 
 export function progress(message: string) {
   write(cyan(bold(`${symbols.progress} ${message}`)));
 }
 
-export function apiProgress(message: string) {
-  write(grey(`> ${message}`));
+export async function liveProgress(promise: Promise<any>, message: string) {
+  const start = now();
+  const interval = setInterval(() => {
+    apiProgress(`${message} (${Math.trunc(now() - start)}ms)`, true);
+  }, 500);
+  promise.finally(() => clearInterval(interval));
+  const result = await promise;
+  apiProgress(`${message} (${Math.trunc(now() - start)}ms)`);
+  return result;
+}
+
+export function apiProgress(message: string, live = false) {
+  write(grey(`> ${message}`), live);
 }
 
 export function error(message: string) {

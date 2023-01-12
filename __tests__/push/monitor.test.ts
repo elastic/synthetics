@@ -28,15 +28,14 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import {
   buildMonitorSchema,
-  createMonitors,
   createLightweightMonitors,
+  diffMonitors,
   parseSchedule,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 
 describe('Monitors', () => {
-  const monitor = createTestMonitor('example.journey.ts');
   let server: Server;
   beforeAll(async () => {
     server = await Server.create();
@@ -48,29 +47,53 @@ describe('Monitors', () => {
     process.env.NO_COLOR = '';
   });
 
+  it('diff monitors', () => {
+    const local = [
+      { journey_id: 'j1', hash: 'hash1' },
+      { journey_id: 'j2', hash: 'hash2' },
+      { journey_id: 'j3', hash: 'hash3' },
+      { journey_id: 'j4', hash: 'hash4' },
+    ];
+    const remote = [
+      { journey_id: 'j1', hash: 'hash1' },
+      { journey_id: 'j2', hash: 'hash2-changed' },
+      { journey_id: 'j4', hash: '' }, // Hash reset in UI
+      { journey_id: 'j5', hash: 'hash5' },
+    ];
+    const result = diffMonitors(local, remote);
+    expect(Array.from(result.newIDs)).toEqual(['j3']);
+    expect(Array.from(result.changedIDs)).toEqual(['j2', 'j4']);
+    expect(Array.from(result.removedIDs)).toEqual(['j5']);
+    expect(Array.from(result.unchangedIDs)).toEqual(['j1']);
+  });
+
   it('build lightweight monitor schema', async () => {
-    const schema = await buildMonitorSchema([
-      createTestMonitor('heartbeat.yml', 'http'),
-    ]);
+    const schema = await buildMonitorSchema(
+      [createTestMonitor('heartbeat.yml', 'http')],
+      true
+    );
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
       type: 'http',
       enabled: true,
+      hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
     });
   });
 
   it('build browser monitor schema', async () => {
-    const schema = await buildMonitorSchema([monitor]);
+    const monitor = createTestMonitor('example.journey.ts');
+    const schema = await buildMonitorSchema([monitor], true);
     expect(schema[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
       type: 'browser',
       enabled: true,
+      hash: expect.any(String), // hash is dynamic based on the file path
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
       content: expect.any(String),
@@ -78,6 +101,9 @@ describe('Monitors', () => {
         match: 'test',
       },
     });
+    monitor.setContent('foo');
+    const schema1 = await buildMonitorSchema([monitor], true);
+    expect(schema1[0].hash).not.toEqual(schema[0].hash);
   });
 
   it('parse @every schedule format', async () => {
@@ -95,40 +121,6 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 45m')).toBe(30);
     expect(parseSchedule('@every 1h2m')).toBe(60);
     expect(parseSchedule('@every 10h2m10s')).toBe(60);
-  });
-
-  it('api schema', async () => {
-    server.route(
-      '/s/dummy/api/synthetics/service/project/monitors',
-      (req, res) => {
-        let data = '';
-        req.on('data', chunks => {
-          data += chunks;
-        });
-        req.on('end', () => {
-          // Write the post data back
-          res.end(data.toString());
-        });
-      }
-    );
-    const schema = await buildMonitorSchema([monitor]);
-    const { statusCode, body } = await createMonitors(
-      schema,
-      {
-        url: `${server.PREFIX}`,
-        auth: 'apiKey',
-        id: 'blah',
-        space: 'dummy',
-      },
-      false
-    );
-
-    expect(statusCode).toBe(200);
-    expect(await body.json()).toEqual({
-      project: 'blah',
-      keep_stale: false,
-      monitors: schema,
-    });
   });
 
   describe('Lightweight monitors', () => {

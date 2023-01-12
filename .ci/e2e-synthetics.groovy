@@ -12,6 +12,7 @@ pipeline {
     PIPELINE_LOG_LEVEL = 'INFO'
     SLACK_CHANNEL = '#synthetics-user_experience-uptime'
     E2E_FOLDER = "__tests__/e2e"
+    GO_VERSION = "1.19.1"
   }
   options {
     timeout(time: 1, unit: 'HOURS')  // to support releases then we will add a timeout in each stage
