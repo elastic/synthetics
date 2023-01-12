@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`junit reporter writes the output to a file 1`] = `
-"<testsuites name=\\"\\" tests=\\"1\\" failures=\\"0\\" skipped=\\"1\\" errors=\\"0\\" time=\\"0\\">
-   <testsuite name=\\"j1\\" tests=\\"1\\" failures=\\"0\\" skipped=\\"1\\" errors=\\"0\\">
-      <testcase name=\\"s1\\" classname=\\"j1 s1\\" time=\\"1\\">
-         <skipped message=\\"previous step failed\\">
+"<testsuites name="" tests="1" failures="0" skipped="1" errors="0" time="0">
+   <testsuite name="j1" tests="1" failures="0" skipped="1" errors="0">
+      <testcase name="s1" classname="j1 s1" time="1">
+         <skipped message="previous step failed">
          </skipped>
       </testcase>
    </testsuite>
@@ -12,15 +12,15 @@ exports[`junit reporter writes the output to a file 1`] = `
 `;
 
 exports[`junit reporter writes the output to fd 1`] = `
-"<testsuites name=\\"\\" tests=\\"2\\" failures=\\"1\\" skipped=\\"1\\" errors=\\"0\\" time=\\"0\\">
-   <testsuite name=\\"j1\\" tests=\\"2\\" failures=\\"1\\" skipped=\\"1\\" errors=\\"0\\">
-      <testcase name=\\"s1\\" classname=\\"j1 s1\\" time=\\"1\\">
-         <failure message=\\"Boom\\" type=\\"Error\\">
+"<testsuites name="" tests="2" failures="1" skipped="1" errors="0" time="0">
+   <testsuite name="j1" tests="2" failures="1" skipped="1" errors="0">
+      <testcase name="s1" classname="j1 s1" time="1">
+         <failure message="Boom" type="Error">
          at /__tests/reporters/junit.test.ts
          </failure>
       </testcase>
-      <testcase name=\\"s2\\" classname=\\"j1 s2\\" time=\\"1\\">
-         <skipped message=\\"previous step failed\\">
+      <testcase name="s2" classname="j1 s2" time="1">
+         <skipped message="previous step failed">
          </skipped>
       </testcase>
    </testsuite>

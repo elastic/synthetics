@@ -11,10 +11,10 @@ exports[`Push api request format api error 1`] = `
 exports[`Push api request format failed monitors 1`] = `
 "✖ Error
    > Failed to save or update monitor. Configuration is not valid: monitor(monitor-without-schedule)
-       Invalid value \\"undefined\\" supplied to \\"schedule\\"
+       Invalid value "undefined" supplied to "schedule"
 
    > Failed to save or update monitor. Configuration is not valid
-       Invalid value \\"undefined\\" supplied to \\"id\\"
+       Invalid value "undefined" supplied to "id"
 
 "
 `;
