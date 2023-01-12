@@ -237,6 +237,10 @@ export function rewriteErrorStack(stack: string, indexes: [number, number]) {
 // non Error exceptions can be thrown, it tolerates though. The
 // redundant type Error | any expresses that.
 export function formatError(error: Error | any) {
+  if (error === undefined || error === null) {
+    return;
+  }
+
   if (!(error instanceof Error)) {
     return {
       message: `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`,
