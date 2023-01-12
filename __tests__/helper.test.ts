@@ -80,7 +80,7 @@ describe('formatting errors', () => {
   });
 
   [null, undefined].forEach(obj => {
-    it(`returns null for ${typeof obj}`, () => {
+    it(`returns undefined for ${typeof obj}`, () => {
       expect(formatError(obj)).toBe(undefined);
     });
   });
