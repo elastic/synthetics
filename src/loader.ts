@@ -35,29 +35,25 @@ import {
   totalist,
   findPkgJsonByTraversing,
 } from './helpers';
+import { installTransform } from './core/transform';
 
 const resolvedCwd = cwd();
 
-export async function loadTestFiles(options: CliArgs, args: string[]) {
-  /**
-   * Transform `.ts` files out of the box by invoking
-   * the `ts-node` via `transpile-only` mode that compiles
-   * TS files without doing any extensive type checks.
-   *
-   * We must register `ts-node` _before_ loading inline
-   * scripts too because otherwise we will not be able to
-   * require `.ts` configuration files.
-   */
-  /* eslint-disable-next-line @typescript-eslint/no-var-requires */
-  require('ts-node').register({
-    transpileOnly: true,
-    compilerOptions: {
-      esModuleInterop: true,
-      allowJs: true,
-      target: 'es2020',
-    },
-  });
+/**
+ * Perform global setup process required for running the test suites
+ * and also for bundling the monitors. The process includes
+ * - Transpiling the TS/JS test files
+ * - Loading these files for running test suites
+ */
+export async function globalSetup(options: CliArgs, args: string[]) {
+  const revert = installTransform();
+  await loadTestFiles(options, args);
+  return () => {
+    revert();
+  };
+}
 
+export async function loadTestFiles(options: CliArgs, args: string[]) {
   /**
    * Preload modules before running the tests
    */

@@ -24,33 +24,41 @@
  */
 
 import * as esbuild from 'esbuild';
+import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
-import NodeResolve from '@esbuild-plugins/node-resolve';
-import {
-  MultiAssetPlugin,
-  commonOptions,
-  PluginData,
-} from '../../src/push/plugin';
+import { commonOptions } from '../../src/core/transform';
+import { SyntheticsBundlePlugin } from '../../src/push/plugin';
 
-const E2E_DIR = join(__dirname, '..', 'e2e');
+describe('SyntheticsBundlePlugin', () => {
+  const PROJECT_DIR = join(__dirname, 'test-bundler');
+  const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
 
-describe('Plugin', () => {
-  it('bundle jouneys', async () => {
-    const callback = (data: PluginData) => {
-      expect(data.path).toContain('e2e/uptime.journey.ts');
-      expect(data.contents).toMatchSnapshot();
-    };
+  beforeAll(async () => {
+    await mkdir(PROJECT_DIR, { recursive: true });
+  });
 
-    await esbuild.build({
+  afterAll(async () => {
+    await rm(PROJECT_DIR, { recursive: true });
+  });
+
+  it('skip locally resolved synthetics package', async () => {
+    // Should
+    await writeFile(
+      journeyFile,
+      `import {journey, step, monitor} from '../../';
+journey('journey 1', () => {
+  monitor.use({ id: 'duplicate id' });
+  step("step1", () => {})
+});`
+    );
+    const result = await esbuild.build({
       ...commonOptions(),
-      entryPoints: [join(E2E_DIR, 'uptime.journey.ts')],
-      plugins: [
-        MultiAssetPlugin(callback),
-        NodeResolve({
-          extensions: ['.ts', '.js'],
-          resolveOptions: { basedir: E2E_DIR },
-        }),
-      ],
+      bundle: false,
+      sourcemap: false,
+      write: false,
+      entryPoints: [journeyFile],
+      plugins: [SyntheticsBundlePlugin()],
     });
+    expect(result.outputFiles[0].text).toMatchSnapshot();
   });
 });
