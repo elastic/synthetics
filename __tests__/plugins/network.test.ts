@@ -281,7 +281,8 @@ describe('network', () => {
       const timing = res.timings;
       expect(timing.total).toBeGreaterThanOrEqual(timing.wait + timing.receive);
       // Check with absolute value to make sure we are not crossing absurd values
-      expect(timing.total).toBeLessThan(50);
+      // can be somewhat high on CI
+      expect(timing.total).toBeLessThan(100);
     });
   });
 

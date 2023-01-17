@@ -57,14 +57,32 @@ it('convert trace timestamp to internal time', () => {
   expect(elapsedTime).toBe(392583.998697);
 });
 
-it('format errors', () => {
-  const error = new Error('testing');
-  const { name, message, stack } = error;
-  const formatted = formatError(error);
-  expect(formatted).toStrictEqual({
-    name,
-    message,
-    stack,
+describe('formatting errors', () => {
+  it('formats proper errors', () => {
+    const error = new Error('testing');
+    const { name, message, stack } = error;
+    const formatted = formatError(error);
+    expect(formatted).toStrictEqual({
+      name,
+      message,
+      stack,
+    });
+  });
+
+  ["c'est ne pas une Error", 42, { an: 'object' }].forEach(obj => {
+    it(`formats thrown non-error errors like: ${obj}(${typeof obj})`, () => {
+      const formatted = formatError(obj)!;
+      expect(formatted.message).toContain(`${obj}`);
+      expect(formatted.name).toStrictEqual('');
+      expect(formatted.stack).toStrictEqual('');
+      expect(typeof formatted.message).toBe('string');
+    });
+  });
+
+  [null, undefined].forEach(obj => {
+    it(`returns undefined for ${typeof obj}`, () => {
+      expect(formatError(obj)).toBe(undefined);
+    });
   });
 });
 
