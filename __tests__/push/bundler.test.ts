@@ -40,7 +40,8 @@ const setup = async () => {
 import isPositive from 'is-positive';
 import utils from "./utils"
 journey('journey 1', () => {
-  // avoid dead code elimination
+  // include utils to make sure it is bundled and not ignored via
+  // dead code elimination while bundling
   utils();
   monitor.use({ id: 'duplicate id' });
   launchStep(-1);

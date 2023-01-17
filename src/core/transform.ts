@@ -38,6 +38,14 @@ const sourceMaps: Map<string, string> = new Map();
 
 // Register the source-map-support library to resolve the sourcemaps
 // for the files that are transpiled by esbuild
+/**
+ * Register the source-map-support library to resolve the sourcemaps
+ * for the files that are transpiled by esbuild and cache the sourcemaps
+ * for each file.
+ *
+ * Caching the sourcemap file is important, as it is used by the Synthetics agent
+ * to resolve the stack traces of journey, monitor and step functions.
+ */
 sourceMapSupport.install({
   environment: 'node',
   handleUncaughtExceptions: false,
@@ -50,6 +58,10 @@ sourceMapSupport.install({
   },
 });
 
+/**
+ * Default list of files and corresponding loaders we support
+ * while pushing project based monitors
+ */
 const LOADERS: Record<string, Loader> = {
   '.ts': 'ts',
   '.js': 'js',
@@ -63,6 +75,10 @@ const getLoader = (filename: string) => {
 };
 
 export function commonOptions(): CommonOptions {
+  /**
+   * We are not minifying the code as we want it to be in sync with previous
+   * transformation phase and introduce it later.
+   */
   return {
     minify: false,
     minifyIdentifiers: false,
@@ -77,6 +93,10 @@ export function commonOptions(): CommonOptions {
   };
 }
 
+/**
+ * Transform the given code using esbuild and save the corresponding
+ * map file in memory to be retrived later.
+ */
 export function transform(
   code: string,
   filename: string,
@@ -110,7 +130,10 @@ export function transform(
 
   /**
    * Cache the sourcemap contents in memory, so we can look it up
-   * later when we try to resolve the sourcemap for a given file
+   * later when we try to resolve the sourcemap for a given file.
+   *
+   * Every time the synthetics agent is started, we register the source-map-support
+   * library to resolve the sourcemaps for the files that are transpiled by esbuild.
    */
   if (result.map) {
     sourceMaps.set(filename, result.map);
@@ -118,6 +141,10 @@ export function transform(
   return result;
 }
 
+/**
+ * Install the pirates hook to transform the code on the fly
+ * for all of the imported files.
+ */
 export function installTransform() {
   const revertPirates = addHook(
     (source: string, filename: string) => {

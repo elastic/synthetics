@@ -39,6 +39,12 @@ const isLocalSynthetics = (resolvedPath: string) => {
   return resolvedPath.startsWith(SOURCE_DIR);
 };
 
+/**
+ * Esbuild Plugin to create separate bundles for all the journeys.
+ * Treats journeys as the entry point and bundles all the dependencies
+ * including the node_modules and ignores bundling the synthetics package
+ * when imported externally or from source.
+ */
 export function SyntheticsBundlePlugin(): esbuild.Plugin {
   return {
     name: 'synthetics-bundle-plugin',
