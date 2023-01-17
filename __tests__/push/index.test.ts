@@ -61,8 +61,7 @@ describe('Push', () => {
     await rm(PROJECT_DIR, { recursive: true, force: true });
   });
 
-  // skipped for now, needs to get a project setup with no auth
-  it.skip('error when auth is ignored', async () => {
+  it('error when auth is ignored', async () => {
     const output = await runPush([]);
     expect(output).toContain(`required option '--auth <auth>' not specified`);
   });
