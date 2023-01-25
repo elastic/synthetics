@@ -1,3 +1,4 @@
+heartbeat.monitors:
 - type: http
   name: Todos Lightweight
   id: todos-lightweight
