@@ -22,13 +22,20 @@
  * THE SOFTWARE.
  *
  */
-
 import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
+import { normalizeOptions } from '../options';
 import { wrapFnWithLocation } from '../helpers';
+import { getCombinations, getCombinationName } from '../matrix';
 import { log } from './logger';
 import { MonitorConfig } from '../dsl/monitor';
+
+
+/* TODO: Testing
+ * Local vs global matrix: Local matrix fully overwrites global matrix, rather than merging
+ * Adjustments: Duplicates in adjustments do not run extra journeys
+ * 
 
 /**
  * Use a gloabl Runner which would be accessed by the runtime and
@@ -38,7 +45,6 @@ const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
 if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
 }
-
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
 export const journey = wrapFnWithLocation(
@@ -51,9 +57,27 @@ export const journey = wrapFnWithLocation(
     if (typeof options === 'string') {
       options = { name: options, id: options };
     }
-    const j = new Journey(options, callback, location);
-    runner.addJourney(j);
-    return j;
+    const { matrix: globalMatrix } = normalizeOptions({});
+    const { matrix: journeyMatrix } = options;
+    if (!globalMatrix && !journeyMatrix) {
+      const j = new Journey(options, callback, location);
+      runner.addJourney(j);
+      return j;
+    }
+
+    // local journey matrix takes priority over global matrix
+    const matrix = journeyMatrix || globalMatrix;
+
+    if (!matrix.values) {
+      throw new Error('Please specify values for your testing matrix');
+    }
+
+    const combinations = getCombinations(matrix);
+    combinations.forEach(matrixParams => {
+      const name = getCombinationName((options as JourneyOptions)?.name, matrixParams);
+      const j = new Journey({...options as JourneyOptions, name}, callback, location, matrixParams);
+      runner.addJourney(j);  
+    })
   }
 );
 

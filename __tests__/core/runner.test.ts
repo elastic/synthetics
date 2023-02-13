@@ -729,7 +729,7 @@ describe('runner', () => {
       type: 'browser',
       tags: [],
       locations: ['united_kingdom'],
-      privaateLocations: undefined,
+      privateLocations: undefined,
       schedule: 3,
       params: undefined,
       playwrightOptions: undefined,

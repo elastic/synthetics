@@ -339,16 +339,18 @@ export default class Runner {
 
   async runJourney(journey: Journey, options: RunOptions) {
     const result: JourneyResult = { status: 'succeeded' };
-    const context = await Runner.createContext(options);
+    const params = Object.freeze({...options.params, ...journey.params});
+    const journeyOptions = { ...options, params};
+    const context = await Runner.createContext(journeyOptions);
     log(`Runner: start journey (${journey.name})`);
     try {
       this.registerJourney(journey, context);
       const hookArgs = {
         env: options.environment,
-        params: options.params,
+        params: params,
       };
       await this.runBeforeHook(journey, hookArgs);
-      const stepResults = await this.runSteps(journey, context, options);
+      const stepResults = await this.runSteps(journey, context, journeyOptions);
       /**
        * Mark journey as failed if any intermediate step fails
        */
@@ -363,7 +365,7 @@ export default class Runner {
       result.status = 'failed';
       result.error = e;
     } finally {
-      await this.endJourney(journey, { ...context, ...result }, options);
+      await this.endJourney(journey, { ...context, ...result }, journeyOptions);
       await Gatherer.dispose(context.driver);
     }
     log(`Runner: end journey (${journey.name})`);
@@ -399,6 +401,7 @@ export default class Runner {
     const { match, tags } = options;
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
+      const params = Object.freeze({ ...this.monitor.config?.params, ...options.params, ...journey.params });
       if (!journey.isMatch(match, tags)) {
         continue;
       }
@@ -407,8 +410,11 @@ export default class Runner {
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
        */
-      journey.callback({ params: options.params } as any);
-      journey.monitor.update(this.monitor?.config);
+      journey.callback({ params: params } as any);
+      journey.monitor.update({ 
+        ...this.monitor?.config, 
+        params: Object.keys(params).length ? params : undefined 
+      });
       journey.monitor.validate();
       monitors.push(journey.monitor);
     }

@@ -237,6 +237,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
+  matrix?: Matrix;
   reporter?: BuiltInReporterName | ReporterInstance;
 };
 
@@ -254,12 +255,18 @@ export type ProjectSettings = {
   space: string;
 };
 
+export type Matrix = {
+  values: Record<string, unknown[]>;
+  adjustments?: Array<Record<string, unknown>>;
+}
+
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  matrix?: Matrix;
 };
 
 /** Runner Payload types */

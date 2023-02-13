@@ -32,13 +32,14 @@ import {
 } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location, Matrix } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 
 export type JourneyOptions = {
   name: string;
   id?: string;
   tags?: string[];
+  matrix?: Matrix;
 };
 
 type HookType = 'before' | 'after';
@@ -61,11 +62,13 @@ export class Journey {
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
   monitor: Monitor;
+  params: Params = {};
 
   constructor(
     options: JourneyOptions,
     callback: JourneyCallback,
-    location?: Location
+    location?: Location,
+    params?: Params,
   ) {
     this.name = options.name;
     this.id = options.id || options.name;
@@ -73,6 +76,7 @@ export class Journey {
     this.callback = callback;
     this.location = location;
     this.updateMonitor({});
+    this.params = params;
   }
 
   addStep(name: string, callback: VoidCallback, location?: Location) {
