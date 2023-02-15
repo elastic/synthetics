@@ -141,6 +141,14 @@ export default class Runner {
   }
 
   addJourney(journey: Journey) {
+    const journeySuite = this.suites.get(journey.location);
+    if (journeySuite) {
+      journeySuite.addJourney(journey);
+    } else {
+      const suite = new Suite(journey.location);
+      suite.addJourney(journey);
+      this.addSuite(suite);
+    }
     this.journeys.push(journey);
     this.#currentJourney = journey;
   }
@@ -392,10 +400,13 @@ export default class Runner {
   }
 
   buildMonitors(options: RunOptions) {
+    /* Build out monitors according to matrix specs */
+    this.parseMatrix(options);
+
     /**
      * Update the global monitor configuration required for
      * setting defaults
-     */
+     */  
     this.updateMonitor({
       throttling: options.throttling,
       schedule: options.schedule,
@@ -407,7 +418,10 @@ export default class Runner {
 
     const { match, tags } = options;
     const monitors: Monitor[] = [];
-    for (const journey of this.journeys) {
+
+    const journeys = this.getAllJourneys();
+
+    for (const journey of journeys) {
       const params = Object.freeze({ ...this.monitor.config?.params, ...options.params, ...journey.params });
       if (!journey.isMatch(match, tags)) {
         continue;
@@ -419,9 +433,15 @@ export default class Runner {
        */
       journey.callback({ params: params } as any);
       journey.monitor.update({ 
-        ...this.monitor?.config, 
+        ...this.monitor?.config,
         params: Object.keys(params).length ? params : undefined 
       });
+
+      /* Only overwrite name and id values when using matrix */
+      if (journey.matrix) {
+        journey.monitor.config.name = journey.name;
+        journey.monitor.config.id = journey.id;
+      }
       journey.monitor.validate();
       monitors.push(journey.monitor);
     }
@@ -453,11 +473,19 @@ export default class Runner {
         j.name = name;
         j.id = name;
         j.params = matrixParams;
+        j.matrix = matrix;
         this.addJourney(j);  
         suite.addJourney(j);
       });
-    })
-    
+    }) 
+  }
+
+  getAllJourneys() {
+    const journeys = Array.from(this.suites.values()).reduce((acc, suite) => {
+      const suiteJourneys = suite.entries;
+      return [...acc, ...suiteJourneys];
+    }, []);
+    return journeys;
   }
 
   async run(options: RunOptions) {
@@ -477,10 +505,7 @@ export default class Runner {
 
     this.parseMatrix(options);
 
-    const journeys = Array.from(this.suites.values()).reduce((acc, suite) => {
-      const suiteJourneys = suite.entries;
-      return [...acc, ...suiteJourneys];
-    }, []);
+    const journeys = this.getAllJourneys();
 
     for (const journey of journeys) {
       /**

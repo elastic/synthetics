@@ -71,6 +71,7 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
     loadInlineScript(source);
     return;
   }
+
   /**
    * Handle piped files by reading the STDIN
    * ex: ls example/suites/*.js | npx @elastic/synthetics

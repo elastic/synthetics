@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  */
-import { Journey, JourneyCallback, JourneyOptions, Suite } from '../dsl';
+import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
@@ -33,7 +33,8 @@ import { MonitorConfig } from '../dsl/monitor';
 /* TODO: Testing
  * Local vs global matrix: Local matrix fully overwrites global matrix, rather than merging
  * Adjustments: Duplicates in adjustments do not run extra journeys
- * Regular params are combina
+ * Regular params are combined with matrix params
+ * Project monitors: name and id are overwritten only for matrix monitors
 
 /**
  * Use a gloabl Runner which would be accessed by the runtime and
@@ -55,11 +56,8 @@ export const journey = wrapFnWithLocation(
     if (typeof options === 'string') {
       options = { name: options, id: options };
     }
-    const suite = new Suite(location);
     const j = new Journey(options, callback, location);
-    suite.addJourney(j);
     runner.addJourney(j);
-    runner.addSuite(suite);
     return j;
   }
 );
