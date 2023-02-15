@@ -25,7 +25,7 @@
 
 import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { Journey } from '../dsl/journey';
+import { Journey, Suite } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
@@ -35,6 +35,7 @@ import {
   runParallel,
   generateUniqueId,
 } from '../helpers';
+import { getCombinationName, getCombinations } from '../matrix';
 import {
   HooksCallback,
   Params,
@@ -44,6 +45,7 @@ import {
   RunOptions,
   JourneyResult,
   StepResult,
+  Location,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -68,6 +70,7 @@ export default class Runner {
   #reporter: Reporter;
   #currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  suites: Map<Location, Suite> = new Map();
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   hookError: Error | undefined;
   monitor?: Monitor;
@@ -140,6 +143,10 @@ export default class Runner {
   addJourney(journey: Journey) {
     this.journeys.push(journey);
     this.#currentJourney = journey;
+  }
+
+  addSuite(suite: Suite) {
+    this.suites.set(suite.location, suite);
   }
 
   setReporter(options: RunOptions) {
@@ -421,6 +428,38 @@ export default class Runner {
     return monitors;
   }
 
+  async parseMatrix(options: RunOptions) {
+    this.journeys.forEach(journey => {
+      const { matrix: globalMatrix } = options;
+      const { matrix: localMatrix } = journey;
+      // local journey matrix takes priority over global matrix
+      const matrix = localMatrix || globalMatrix;
+
+      if (!matrix) {
+        return;
+      }
+
+      if (!matrix.values) {
+        throw new Error('Please specify values for your testing matrix');
+      }
+
+      const suite = this.suites.get(journey.location);
+      suite.clearJourneys();
+  
+      const combinations = getCombinations(matrix);
+      combinations.forEach(matrixParams => {
+        const j = journey.clone();
+        const name = getCombinationName(j.name, matrixParams);
+        j.name = name;
+        j.id = name;
+        j.params = matrixParams;
+        this.addJourney(j);  
+        suite.addJourney(j);
+      });
+    })
+    
+  }
+
   async run(options: RunOptions) {
     const result: RunResult = {};
     if (this.#active) {
@@ -435,7 +474,15 @@ export default class Runner {
     }).catch(e => (this.hookError = e));
 
     const { dryRun, match, tags } = options;
-    for (const journey of this.journeys) {
+
+    this.parseMatrix(options);
+
+    const journeys = Array.from(this.suites.values()).reduce((acc, suite) => {
+      const suiteJourneys = suite.entries;
+      return [...acc, ...suiteJourneys];
+    }, []);
+
+    for (const journey of journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
        */
