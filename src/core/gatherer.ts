@@ -109,12 +109,13 @@ export class Gatherer {
    */
   static async beginRecording(driver: Driver, options: RunOptions) {
     log('Gatherer: started recording');
-    const { network, metrics } = options;
+    const { network, metrics, apm } = options;
     const pluginManager = new PluginManager(driver);
     pluginManager.registerAll(options);
     const plugins = [await pluginManager.start('browserconsole')];
     network && plugins.push(await pluginManager.start('network'));
     metrics && plugins.push(await pluginManager.start('performance'));
+    apm && plugins.push(await pluginManager.start('apm'));
     await Promise.all(plugins);
     return pluginManager;
   }

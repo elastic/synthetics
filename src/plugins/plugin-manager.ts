@@ -23,7 +23,7 @@
  *
  */
 
-import { PluginOutput, Driver } from '../common_types';
+import { PluginOutput, Driver, RunOptions } from '../common_types';
 import {
   BrowserConsole,
   NetworkManager,
@@ -32,10 +32,25 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { Apm } from './apm';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
-type PluginOptions = TraceOptions;
+type PluginType =
+  | 'network'
+  | 'trace'
+  | 'performance'
+  | 'browserconsole'
+  | 'apm';
+type Plugin =
+  | NetworkManager
+  | Tracing
+  | PerformanceManager
+  | BrowserConsole
+  | Apm;
+type PluginOptions = TraceOptions & {
+  apm?: RunOptions['apm'];
+  monitorId?: RunOptions['monitorId'];
+  checkgroup?: RunOptions['checkgroup'];
+};
 
 export class PluginManager {
   protected plugins = new Map<PluginType, Plugin>();
@@ -44,6 +59,7 @@ export class PluginManager {
     'trace',
     'performance',
     'browserconsole',
+    'apm',
   ];
   constructor(private driver: Driver) {}
 
@@ -61,6 +77,14 @@ export class PluginManager {
         break;
       case 'browserconsole':
         instance = new BrowserConsole(this.driver);
+        break;
+      case 'apm':
+        instance = new Apm(
+          this.driver,
+          options.apm,
+          options.monitorId,
+          options.checkgroup
+        );
         break;
     }
     instance && this.plugins.set(type, instance);

@@ -123,6 +123,10 @@ program
     {}
   )
   .option('--no-throttling', 'Turns off default network throttling.')
+  .option(
+    '--trace-url-patterns <strings delimited by ,>',
+    'each of these strings correspond to url patterns that will receive the baggage header containing monitorid and checkgroup'
+  )
   .addOption(playwrightOpts)
   .version(version)
   .description('Run synthetic tests')

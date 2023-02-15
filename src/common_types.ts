@@ -225,6 +225,7 @@ export type CliArgs = BaseArgs & {
   sandbox?: boolean;
   richEvents?: boolean;
   capability?: Array<string>;
+  traceUrlPatterns?: string;
   ignoreHttpsErrors?: boolean;
 };
 
@@ -238,6 +239,9 @@ export type RunOptions = BaseArgs & {
   playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  apm?: ApmOptions;
+  monitorId?: string;
+  checkgroup?: string;
 };
 
 export type PushOptions = Partial<ProjectSettings> & {
@@ -254,12 +258,17 @@ export type ProjectSettings = {
   space: string;
 };
 
+export type ApmOptions = {
+  traceUrlPatterns: Array<string | RegExp>;
+};
+
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  apm?: ApmOptions;
 };
 
 /** Runner Payload types */

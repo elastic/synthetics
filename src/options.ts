@@ -26,6 +26,7 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
+import globToRegExp from 'glob-to-regexp';
 import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
 
@@ -42,7 +43,10 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   const options: RunOptions = {
     ...cliArgs,
     environment: process.env['NODE_ENV'] || 'development',
+    monitorId: process.env['MONITOR_ID'],
+    checkgroup: process.env['CHECKGROUP'],
   };
+
   /**
    * Group all events that can be consumed by heartbeat and
    * eventually by the Synthetics UI.
@@ -53,6 +57,16 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     options.network = true;
     options.trace = true;
     options.quietExitCode = true;
+  }
+
+  if (cliArgs.traceUrlPatterns) {
+    const urlPatterns = cliArgs.traceUrlPatterns.split(',').map(pattern => {
+      return globToRegExp(pattern);
+    });
+
+    options.apm = {
+      traceUrlPatterns: urlPatterns,
+    };
   }
 
   if (cliArgs.capability) {
