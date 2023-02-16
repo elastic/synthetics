@@ -59,15 +59,15 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
     options.quietExitCode = true;
   }
 
-  if (cliArgs.traceUrlPatterns) {
-    const urlPatterns = cliArgs.traceUrlPatterns.split(',').map(pattern => {
-      return globToRegExp(pattern);
-    });
+  // if (cliArgs.traceUrlPatterns) {
+  //   const urlPatterns = cliArgs.traceUrlPatterns.split(',').map(pattern => {
+  //     return globToRegExp(pattern);
+  //   });
 
-    options.apm = {
-      traceUrlPatterns: urlPatterns,
-    };
-  }
+  //   options.apm = {
+  //     traceUrlPatterns: urlPatterns,
+  //   };
+  // }
 
   if (cliArgs.capability) {
     const supportedCapabilities = [
@@ -113,6 +113,18 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
    * 3. Configuration file
    */
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
+
+  if (options.params.traceUrlPatterns) {
+    const urlPatterns = options.params.traceUrlPatterns
+      .split(',')
+      .map(pattern => {
+        return globToRegExp(pattern);
+      });
+
+    options.apm = {
+      traceUrlPatterns: urlPatterns,
+    };
+  }
 
   /**
    * Merge playwright options from CLI and Synthetics config
