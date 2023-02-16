@@ -256,8 +256,8 @@ export type ProjectSettings = {
 };
 
 export type Matrix = {
-  values: Record<string, unknown[]>;
-  adjustments?: Array<Record<string, unknown>>;
+  // values: Record<string, unknown[]>;
+  adjustments: Array<Record<string, unknown> & { playwrightOptions?: PlaywrightOptions, name: string }>;
 }
 
 export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;

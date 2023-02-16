@@ -35,6 +35,9 @@ import { MonitorConfig } from '../dsl/monitor';
  * Adjustments: Duplicates in adjustments do not run extra journeys
  * Regular params are combined with matrix params
  * Project monitors: name and id are overwritten only for matrix monitors
+ * How does monitor params/playwright options interact with matrix overrides? 
+ *      Should it be global params -> monitor params -> matrix params
+ *      Should it be global playwrightOptions -> monitor playWrightOptions -> matrix playwrightOptions
 
 /**
  * Use a gloabl Runner which would be accessed by the runtime and

@@ -34,7 +34,7 @@ import {
   safeNDJSONParse,
 } from '../src/helpers';
 
-describe('CLI', () => {
+describe.only('CLI', () => {
   let server: Server;
   let serverParams: { url: string };
   beforeAll(async () => {
@@ -44,6 +44,7 @@ describe('CLI', () => {
   afterAll(async () => await server.close());
 
   const FIXTURES_DIR = join(__dirname, 'fixtures');
+  const MATRIX_FIXTURES_DIR = join(__dirname, 'fixtures/matrix');
 
   // jest by default sets NODE_ENV to `test`
   const originalNodeEnv = process.env['NODE_ENV'];
@@ -541,7 +542,7 @@ describe('CLI', () => {
     });
   });
 
-  describe('playwright options', () => {
+  describe.only('playwright options', () => {
     it('pass playwright options to runner', async () => {
       const cli = new CLIMock()
         .args([
@@ -574,12 +575,30 @@ describe('CLI', () => {
           }),
         ])
         .run();
-      await cli.waitFor('step/end');
-      const output = cli.output();
+        await cli.waitFor('step/end');
+        const output = cli.output();
+        expect(await cli.exitCode).toBe(1);
+        expect(JSON.parse(output).step).toMatchObject({
+          status: 'failed',
+        });
+    });
+
+    it.only('handles matrix', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(MATRIX_FIXTURES_DIR, 'example.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(MATRIX_FIXTURES_DIR, 'synthetics.config.ts'),
+        ])
+        .run();
       expect(await cli.exitCode).toBe(1);
-      expect(JSON.parse(output).step).toMatchObject({
-        status: 'failed',
-      });
+      const endEvents = cli.buffer().filter(data => data.includes('journey/end'));
+      const badsslFailing = endEvents.find(event => event.includes('badssl failing'));
+      const badsslSucceeded = endEvents.find(event => event.includes('badssl passing'))
+      expect(JSON.parse(badsslFailing || '')?.journey?.status).toBe("failed");
+      expect(JSON.parse(badsslSucceeded || '')?.journey?.status).toBe("succeeded");
     });
   });
 });

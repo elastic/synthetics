@@ -23,42 +23,45 @@
  *
  */
 
-import { createHash } from 'crypto';
+// import { createHash } from 'crypto';
 import type { Matrix } from './common_types';
 
-export const getCombinations = (matrix: Matrix): Array<Record<string, unknown>> => {
-  const { values, adjustments } = matrix;
-  const matrixKeys = Object.keys(matrix.values);
-  const entries = Object.values(values);
+export const getCombinations = (matrix: Matrix): Matrix['adjustments'] => {
+  const { adjustments } = matrix;
 
-  let combinations = calculateCombinations(entries[0]);
-  for (let i = 1; i < entries.length; i++) {
-    combinations = calculateCombinations(combinations, entries[i]);
-  }
+  // no longer need this logic when removing values
 
-  const matrixParams = combinations.map(combination => {
-    return getCombinationParams(matrixKeys, combination);
-  });
+  // const matrixKeys = Object.keys(matrix.values);
+  // const entries = Object.values(values);
 
-  if (!adjustments) {
-    return matrixParams;
-  }
+  // let combinations = calculateCombinations(entries[0]);
+  // for (let i = 1; i < entries.length; i++) {
+  //   combinations = calculateCombinations(combinations, entries[i]);
+  // }
 
-  const currentCombinations = new Set(matrixParams.map(params => {
-    const hash = createHash('sha256');
-    const paramHash = hash.update(JSON.stringify(params)).digest('base64');
-    return paramHash;
-  }));
+  // const matrixParams = combinations.map(combination => {
+  //   return getCombinationParams(matrixKeys, combination);
+  // });
 
-  adjustments.forEach(adjustment => {
-    const hash = createHash('sha256');
-    const adjustmentHash = hash.update(JSON.stringify(adjustment)).digest('base64');
-    if (!currentCombinations.has(adjustmentHash)) {
-      matrixParams.push(adjustment);
-    }
-  });
+  // if (!adjustments) {
+  //   return matrixParams;
+  // }
 
-  return matrixParams;
+  // const currentCombinations = new Set(matrixParams.map(params => {
+  //   const hash = createHash('sha256');
+  //   const paramHash = hash.update(JSON.stringify(params)).digest('base64');
+  //   return paramHash;
+  // }));
+
+  // adjustments.forEach(adjustment => {
+  //   const hash = createHash('sha256');
+  //   const adjustmentHash = hash.update(JSON.stringify(adjustment)).digest('base64');
+  //   if (!currentCombinations.has(adjustmentHash)) {
+  //     matrixParams.push(adjustment);
+  //   }
+  // });
+
+  return adjustments;
 }
 
 export const calculateCombinations = (groupA: Array<unknown | unknown[]>, groupB?: Array<unknown>): Array<unknown[]> => {

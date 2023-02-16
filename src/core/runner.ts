@@ -35,7 +35,7 @@ import {
   runParallel,
   generateUniqueId,
 } from '../helpers';
-import { getCombinationName, getCombinations } from '../matrix';
+import {  getCombinations } from '../matrix';
 import {
   HooksCallback,
   Params,
@@ -355,7 +355,8 @@ export default class Runner {
   async runJourney(journey: Journey, options: RunOptions) {
     const result: JourneyResult = { status: 'succeeded' };
     const params = Object.freeze({...options.params, ...journey.params});
-    const journeyOptions = { ...options, params};
+    const playwrightOptions = { ...options.playwrightOptions, ...journey.playwrightOptions };
+    const journeyOptions = { ...options, params, playwrightOptions };
     const context = await Runner.createContext(journeyOptions);
     log(`Runner: start journey (${journey.name})`);
     try {
@@ -422,7 +423,8 @@ export default class Runner {
     const journeys = this.getAllJourneys();
 
     for (const journey of journeys) {
-      const params = Object.freeze({ ...this.monitor.config?.params, ...options.params, ...journey.params });
+      const params = Object.freeze({ ...options.params, ...this.monitor.config?.params, ...journey.params });
+      const playwrightOptions = { ...options.playwrightOptions, ...this.monitor.config?.playwrightOptions, ...journey.playwrightOptions }
       if (!journey.isMatch(match, tags)) {
         continue;
       }
@@ -434,13 +436,15 @@ export default class Runner {
       journey.callback({ params: params } as any);
       journey.monitor.update({ 
         ...this.monitor?.config,
-        params: Object.keys(params).length ? params : undefined 
+        params: Object.keys(params).length ? params : undefined,
+        playwrightOptions
       });
 
       /* Only overwrite name and id values when using matrix */
       if (journey.matrix) {
         journey.monitor.config.name = journey.name;
         journey.monitor.config.id = journey.id;
+        journey.monitor.config.playwrightOptions = playwrightOptions;
       }
       journey.monitor.validate();
       monitors.push(journey.monitor);
@@ -459,8 +463,13 @@ export default class Runner {
         return;
       }
 
-      if (!matrix.values) {
-        throw new Error('Please specify values for your testing matrix');
+      if (!matrix.adjustments) {
+        throw new Error('Please specify adjustments for your testing matrix');
+      }
+
+
+      if (matrix.adjustments.some(adjustment => !adjustment.name)) {
+        throw new Error('Please specify a name for each adjustment');
       }
 
       const suite = this.suites.get(journey.location);
@@ -469,13 +478,15 @@ export default class Runner {
       const combinations = getCombinations(matrix);
       combinations.forEach(matrixParams => {
         const j = journey.clone();
-        const name = getCombinationName(j.name, matrixParams);
+        const { playwrightOptions, name, ...params } = matrixParams;
+        if (playwrightOptions) {
+          j.playwrightOptions = { ...options.playwrightOptions, ...playwrightOptions }
+        }
         j.name = name;
         j.id = name;
-        j.params = matrixParams;
+        j.params = params;
         j.matrix = matrix;
         this.addJourney(j);  
-        suite.addJourney(j);
       });
     }) 
   }

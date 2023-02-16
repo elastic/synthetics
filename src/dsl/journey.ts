@@ -32,7 +32,7 @@ import {
 } from 'playwright-chromium';
 import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location, Matrix } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location, Matrix, PlaywrightOptions } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 
 export type JourneyOptions = {
@@ -65,6 +65,7 @@ export class Journey {
   monitor: Monitor;
   params: Params = {};
   parent!: Suite;
+  playwrightOptions: PlaywrightOptions = {};
 
   constructor(
     options: JourneyOptions,
