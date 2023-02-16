@@ -25,7 +25,7 @@
 
 import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { Journey } from '../dsl/journey';
+import { Journey, Suite } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
@@ -35,6 +35,7 @@ import {
   runParallel,
   generateUniqueId,
 } from '../helpers';
+import {  getCombinations } from '../matrix';
 import {
   HooksCallback,
   Params,
@@ -44,6 +45,7 @@ import {
   RunOptions,
   JourneyResult,
   StepResult,
+  Location,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -68,6 +70,7 @@ export default class Runner {
   #reporter: Reporter;
   #currentJourney?: Journey = null;
   journeys: Journey[] = [];
+  suites: Map<Location, Suite> = new Map();
   hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   hookError: Error | undefined;
   monitor?: Monitor;
@@ -138,8 +141,20 @@ export default class Runner {
   }
 
   addJourney(journey: Journey) {
+    const journeySuite = this.suites.get(journey.location);
+    if (journeySuite) {
+      journeySuite.addJourney(journey);
+    } else {
+      const suite = new Suite(journey.location);
+      suite.addJourney(journey);
+      this.addSuite(suite);
+    }
     this.journeys.push(journey);
     this.#currentJourney = journey;
+  }
+
+  addSuite(suite: Suite) {
+    this.suites.set(suite.location, suite);
   }
 
   setReporter(options: RunOptions) {
@@ -339,16 +354,19 @@ export default class Runner {
 
   async runJourney(journey: Journey, options: RunOptions) {
     const result: JourneyResult = { status: 'succeeded' };
-    const context = await Runner.createContext(options);
+    const params = Object.freeze({...options.params, ...journey.params});
+    const playwrightOptions = { ...options.playwrightOptions, ...journey.playwrightOptions };
+    const journeyOptions = { ...options, params, playwrightOptions };
+    const context = await Runner.createContext(journeyOptions);
     log(`Runner: start journey (${journey.name})`);
     try {
       this.registerJourney(journey, context);
       const hookArgs = {
         env: options.environment,
-        params: options.params,
+        params: params,
       };
       await this.runBeforeHook(journey, hookArgs);
-      const stepResults = await this.runSteps(journey, context, options);
+      const stepResults = await this.runSteps(journey, context, journeyOptions);
       /**
        * Mark journey as failed if any intermediate step fails
        */
@@ -363,7 +381,7 @@ export default class Runner {
       result.status = 'failed';
       result.error = e;
     } finally {
-      await this.endJourney(journey, { ...context, ...result }, options);
+      await this.endJourney(journey, { ...context, ...result }, journeyOptions);
       await Gatherer.dispose(context.driver);
     }
     log(`Runner: end journey (${journey.name})`);
@@ -383,10 +401,13 @@ export default class Runner {
   }
 
   buildMonitors(options: RunOptions) {
+    /* Build out monitors according to matrix specs */
+    this.parseMatrix(options);
+
     /**
      * Update the global monitor configuration required for
      * setting defaults
-     */
+     */  
     this.updateMonitor({
       throttling: options.throttling,
       schedule: options.schedule,
@@ -398,7 +419,12 @@ export default class Runner {
 
     const { match, tags } = options;
     const monitors: Monitor[] = [];
-    for (const journey of this.journeys) {
+
+    const journeys = this.getAllJourneys();
+
+    for (const journey of journeys) {
+      const params = Object.freeze({ ...options.params, ...this.monitor.config?.params, ...journey.params });
+      const playwrightOptions = { ...options.playwrightOptions, ...this.monitor.config?.playwrightOptions, ...journey.playwrightOptions }
       if (!journey.isMatch(match, tags)) {
         continue;
       }
@@ -407,12 +433,70 @@ export default class Runner {
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
        */
-      journey.callback({ params: options.params } as any);
-      journey.monitor.update(this.monitor?.config);
+      journey.callback({ params: params } as any);
+      journey.monitor.update({ 
+        ...this.monitor?.config,
+        params: Object.keys(params).length ? params : undefined,
+        playwrightOptions
+      });
+
+      /* Only overwrite name and id values when using matrix */
+      if (journey.matrix) {
+        journey.monitor.config.name = journey.name;
+        journey.monitor.config.id = journey.id;
+        journey.monitor.config.playwrightOptions = playwrightOptions;
+      }
       journey.monitor.validate();
       monitors.push(journey.monitor);
     }
     return monitors;
+  }
+
+  async parseMatrix(options: RunOptions) {
+    this.journeys.forEach(journey => {
+      const { matrix: globalMatrix } = options;
+      const { matrix: localMatrix } = journey;
+      // local journey matrix takes priority over global matrix
+      const matrix = localMatrix || globalMatrix;
+
+      if (!matrix) {
+        return;
+      }
+
+      if (!matrix.adjustments) {
+        throw new Error('Please specify adjustments for your testing matrix');
+      }
+
+
+      if (matrix.adjustments.some(adjustment => !adjustment.name)) {
+        throw new Error('Please specify a name for each adjustment');
+      }
+
+      const suite = this.suites.get(journey.location);
+      suite.clearJourneys();
+  
+      const combinations = getCombinations(matrix);
+      combinations.forEach(matrixParams => {
+        const j = journey.clone();
+        const { playwrightOptions, name, ...params } = matrixParams;
+        if (playwrightOptions) {
+          j.playwrightOptions = { ...options.playwrightOptions, ...playwrightOptions }
+        }
+        j.name = name;
+        j.id = name;
+        j.params = params;
+        j.matrix = matrix;
+        this.addJourney(j);  
+      });
+    }) 
+  }
+
+  getAllJourneys() {
+    const journeys = Array.from(this.suites.values()).reduce((acc, suite) => {
+      const suiteJourneys = suite.entries;
+      return [...acc, ...suiteJourneys];
+    }, []);
+    return journeys;
   }
 
   async run(options: RunOptions) {
@@ -429,7 +513,12 @@ export default class Runner {
     }).catch(e => (this.hookError = e));
 
     const { dryRun, match, tags } = options;
-    for (const journey of this.journeys) {
+
+    this.parseMatrix(options);
+
+    const journeys = this.getAllJourneys();
+
+    for (const journey of journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
        */

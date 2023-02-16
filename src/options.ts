@@ -101,6 +101,11 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
 
   /**
+   * Grab matrix only from config and not cliArgs
+   */
+  options.matrix = Object.freeze(config.matrix);
+
+  /**
    * Merge playwright options from CLI and Synthetics config
    * and prefer individual options over other option
    */

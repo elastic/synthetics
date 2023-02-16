@@ -22,13 +22,22 @@
  * THE SOFTWARE.
  *
  */
-
 import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
 import { MonitorConfig } from '../dsl/monitor';
+
+
+/* TODO: Testing
+ * Local vs global matrix: Local matrix fully overwrites global matrix, rather than merging
+ * Adjustments: Duplicates in adjustments do not run extra journeys
+ * Regular params are combined with matrix params
+ * Project monitors: name and id are overwritten only for matrix monitors
+ * How does monitor params/playwright options interact with matrix overrides? 
+ *      Should it be global params -> monitor params -> matrix params
+ *      Should it be global playwrightOptions -> monitor playWrightOptions -> matrix playwrightOptions
 
 /**
  * Use a gloabl Runner which would be accessed by the runtime and
@@ -38,7 +47,6 @@ const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
 if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
 }
-
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
 export const journey = wrapFnWithLocation(
