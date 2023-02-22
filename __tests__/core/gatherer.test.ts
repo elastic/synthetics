@@ -148,7 +148,7 @@ describe('Gatherer', () => {
         expect(request.headers()['user-agent']).toContain('Elastic/Synthetics');
       });
       await page.setContent(
-        '<a target=_blank rel=noopener href="/popup.html">popup</a>'
+        '<a target=_blank rel=noopener href="/username-page">popup</a>'
       );
       const [page1] = await Promise.all([
         context.waitForEvent('page'),
@@ -159,6 +159,41 @@ describe('Gatherer', () => {
         'Elastic/Synthetics'
       );
       expect(await page1.textContent('body')).toEqual('Not found');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
+  describe.only('Set Test ID Attribute', () => {
+    it('uses default when not set', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-testid="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('uses custom when provided', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { testIdAttribute: 'data-test-subj' },
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-test-subj="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });
