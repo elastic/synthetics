@@ -148,7 +148,7 @@ describe('Gatherer', () => {
         expect(request.headers()['user-agent']).toContain('Elastic/Synthetics');
       });
       await page.setContent(
-        '<a target=_blank rel=noopener href="/username-page">popup</a>'
+        '<a target=_blank rel=noopener href="/popup.html">popup</a>'
       );
       const [page1] = await Promise.all([
         context.waitForEvent('page'),
