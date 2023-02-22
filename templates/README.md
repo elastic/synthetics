@@ -3,8 +3,8 @@
 Browse the directory structure here to see an example skeleton of an [Elastic Synthetics](https://www.elastic.co/observability/synthetic-monitoring) project.
 Make sure to [read the docs](https://www.elastic.co/guide/en/observability/current/monitor-uptime-synthetics.html) as well if you're unfamiliar with Elastic Synthetics.
 
-This directory was created with the command `npx @elastic/synthetics <target-directory>`, with `<target-directory>` being the name of the directory you'd like it to make.
-You can always use this command to scafold new Synthetics projects.
+This directory was created with the command `npx @elastic/synthetics init <target-directory>`, with `<target-directory>` being the name of the directory you'd like it to make.
+You can always use this command to scaffold new Synthetics projects.
 
 Key places to look:
 
