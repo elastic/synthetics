@@ -164,7 +164,7 @@ describe('Gatherer', () => {
     });
   });
 
-  describe.only('Set Test ID Attribute', () => {
+  describe('Set Test ID Attribute', () => {
     it('uses default when not set', async () => {
       const driver = await Gatherer.setupDriver({
         wsEndpoint,
