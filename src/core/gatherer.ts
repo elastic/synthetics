@@ -28,6 +28,7 @@ import {
   ChromiumBrowser,
   BrowserContext,
   request as apiRequest,
+  selectors,
 } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
@@ -63,6 +64,10 @@ export class Gatherer {
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
     Gatherer.setNetworkConditions(context, networkConditions);
+
+    if (playwrightOptions?.testIdAttribute) {
+      selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
+    }
 
     const page = await context.newPage();
     const client = await context.newCDPSession(page);

@@ -164,6 +164,41 @@ describe('Gatherer', () => {
     });
   });
 
+  describe('Set Test ID Attribute', () => {
+    it('uses default when not set', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-testid="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('uses custom when provided', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { testIdAttribute: 'data-test-subj' },
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-test-subj="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
   describe('Network emulation', () => {
     const networkConditions = {
       downloadThroughput: megabitsToBytes(3),
