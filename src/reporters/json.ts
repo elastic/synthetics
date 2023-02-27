@@ -35,6 +35,7 @@ import {
   totalist,
   isDirectory,
   getDurationInUs,
+  processStart,
 } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
@@ -84,17 +85,19 @@ type Payload = {
   network_conditions?: NetworkConditions;
 };
 
+type Duration = {
+  duration?: {
+    us: number;
+  };
+};
+
 type OutputFields = {
   type: OutputType;
   _id?: string;
-  journey?: Journey;
+  journey?: Partial<Journey> & Duration;
   timestamp?: number;
   url?: string;
-  step?: Partial<Step> & {
-    duration?: {
-      us: number;
-    };
-  };
+  step?: Partial<Step> & Duration;
   error?: Error;
   root_fields?: Record<string, unknown>;
   payload?: Payload;
@@ -260,6 +263,7 @@ function journeyInfo(
     id: journey.id,
     tags: journey.tags,
     status: type === 'journey/end' ? status : undefined,
+    duration: journey.duration,
   };
 }
 
@@ -451,6 +455,7 @@ export default class JSONReporter extends BaseReporter {
       timestamp,
       start,
       end,
+      browserDelay,
       networkinfo,
       browserconsole,
       status,
@@ -517,12 +522,21 @@ export default class JSONReporter extends BaseReporter {
 
     this.writeJSON({
       type: 'journey/end',
-      journey,
+      journey: {
+        ...journey,
+        duration: {
+          us: getDurationInUs(end - start),
+        },
+      },
       timestamp,
+      root_fields: {
+        // convert from monotonic seconds time to microseconds
+        browser_delay_us: getDurationInUs(browserDelay),
+        // timestamp in microseconds at which the current node process began, measured in Unix time.
+        process_startup_epoch_us: processStart * 1000,
+      },
       error,
       payload: {
-        start,
-        end,
         status,
       },
     });

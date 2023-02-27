@@ -92,6 +92,7 @@ describe('base reporter', () => {
       error,
       start: 0,
       end: 1,
+      browserDelay: 0,
       options: {},
     });
     reporter.onEnd();
