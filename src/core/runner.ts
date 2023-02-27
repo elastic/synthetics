@@ -56,6 +56,7 @@ export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
 type JourneyContext = {
   params?: Params;
+  browserDelay: number;
   start: number;
   driver: Driver;
   pluginManager: PluginManager;
@@ -74,6 +75,7 @@ export default class Runner {
   static screenshotPath = join(CACHE_PATH, 'screenshots');
 
   static async createContext(options: RunOptions): Promise<JourneyContext> {
+    const browserStart = monotonicTimeInSeconds();
     const driver = await Gatherer.setupDriver(options);
     /**
      * Do not include browser launch/context creation duration
@@ -88,6 +90,7 @@ export default class Runner {
     await mkdir(this.screenshotPath, { recursive: true });
     return {
       start,
+      browserDelay: start - browserStart,
       params: options.params,
       driver,
       pluginManager,
@@ -298,13 +301,14 @@ export default class Runner {
     options: RunOptions
   ) {
     const end = monotonicTimeInSeconds();
-    const { pluginManager, start, status, error } = result;
+    const { pluginManager, start, status, error, browserDelay } = result;
     const pluginOutput = await pluginManager.output();
     await this.#reporter?.onJourneyEnd?.(journey, {
       status,
       error,
       start,
       end,
+      browserDelay,
       timestamp: getTimestamp(),
       options,
       ...pluginOutput,
@@ -331,6 +335,7 @@ export default class Runner {
       timestamp: getTimestamp(),
       start,
       options,
+      browserDelay: 0,
       end: monotonicTimeInSeconds(),
       ...result,
     });
