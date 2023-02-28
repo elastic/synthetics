@@ -206,7 +206,7 @@ export function getCommonCommandOpts() {
 
   const pattern = createOption(
     '--pattern <pattern>',
-    'RegExp file patterns to search inside directory'
+    'RegExp pattern to look for journey files that are different from the default (ex: /*.journey.(ts|js)$/)'
   );
   const tags = createOption(
     '--tags <name...>',
