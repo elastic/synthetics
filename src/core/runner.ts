@@ -309,7 +309,6 @@ export default class Runner {
       options,
       ...pluginOutput,
       browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
-      journeyconsole: pluginOutput.journeyconsole ?? [],
     });
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
@@ -322,6 +321,7 @@ export default class Runner {
     const start = monotonicTimeInSeconds();
     this.#reporter.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
+      params: options.params,
     });
     const result: JourneyResult = {
       status: 'failed',

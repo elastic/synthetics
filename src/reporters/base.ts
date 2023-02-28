@@ -86,7 +86,7 @@ export default class BaseReporter implements Reporter {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
+  onStepEnd(_: Journey, step: Step, result: StepEndResult) {
     const { status, end, start, error } = result;
     const message = `${symbols[status]}  Step: '${
       step.name
@@ -97,7 +97,7 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(journey: Journey, { error }: JourneyEndResult) {
+  onJourneyEnd(_: Journey, { error }: JourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**

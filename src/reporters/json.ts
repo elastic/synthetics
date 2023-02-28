@@ -68,7 +68,6 @@ type OutputType =
   | 'step/end'
   | 'journey/network_info'
   | 'journey/browserconsole'
-  | 'journey/scriptconsole'
   | 'journey/end';
 
 type Payload = {
@@ -300,7 +299,7 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
-  onStart(params: StartEvent) {
+  onStart(event: StartEvent) {
     /**
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
@@ -308,11 +307,11 @@ export default class JSONReporter extends BaseReporter {
     this.writeJSON({
       type: 'synthetics/metadata',
       root_fields: {
-        num_journeys: params.numJourneys,
+        num_journeys: event.numJourneys,
       },
-      payload: params.networkConditions
+      payload: event.networkConditions
         ? {
-            network_conditions: params.networkConditions,
+            network_conditions: event.networkConditions,
           }
         : undefined,
     });
@@ -396,7 +395,6 @@ export default class JSONReporter extends BaseReporter {
       end,
       networkinfo,
       browserconsole,
-      journeyconsole,
       status,
       error,
       options,
@@ -471,22 +469,6 @@ export default class JSONReporter extends BaseReporter {
         status,
       },
     });
-
-    if (journeyconsole) {
-      journeyconsole.forEach(({ timestamp, text, type, step, error }) => {
-        this.writeJSON({
-          type: 'journey/scriptconsole',
-          journey,
-          timestamp,
-          step,
-          error,
-          payload: {
-            text,
-            type,
-          } as Payload,
-        });
-      });
-    }
   }
 
   override onEnd() {
