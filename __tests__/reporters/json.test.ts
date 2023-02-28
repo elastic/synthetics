@@ -105,7 +105,6 @@ describe('json reporter', () => {
     error.stack = '';
     reporter.onJourneyRegister(j1);
     reporter.onJourneyStart(j1, {
-      params: { environment: 'testing' },
       timestamp,
     });
     reporter.onStepEnd(j1, step('s1', helpers.noop), {

@@ -45,7 +45,6 @@ import {
   TraceOutput,
   StatusValue,
   PerfMetrics,
-  Params,
   Screenshot,
   StartEvent,
   JourneyStartResult,
@@ -78,7 +77,6 @@ type Payload = {
   url?: string;
   status?: StatusValue;
   pagemetrics?: PageMetrics;
-  params?: Params;
   type?: OutputType;
   text?: string;
   index?: number;
@@ -301,7 +299,7 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
-  onStart(params: StartEvent) {
+  onStart(event: StartEvent) {
     /**
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
@@ -309,11 +307,11 @@ export default class JSONReporter extends BaseReporter {
     this.writeJSON({
       type: 'synthetics/metadata',
       root_fields: {
-        num_journeys: params.numJourneys,
+        num_journeys: event.numJourneys,
       },
-      payload: params.networkConditions
+      payload: event.networkConditions
         ? {
-            network_conditions: params.networkConditions,
+            network_conditions: event.networkConditions,
           }
         : undefined,
     });
@@ -326,15 +324,12 @@ export default class JSONReporter extends BaseReporter {
     });
   }
 
-  override onJourneyStart(
-    journey: Journey,
-    { timestamp, params }: JourneyStartResult
-  ) {
+  override onJourneyStart(journey: Journey, { timestamp }: JourneyStartResult) {
     this.writeJSON({
       type: 'journey/start',
       journey,
       timestamp,
-      payload: { params, source: journey.callback.toString() },
+      payload: { source: journey.callback.toString() },
     });
   }
 

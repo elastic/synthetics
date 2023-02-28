@@ -136,28 +136,21 @@ describe('CLI', () => {
     });
 
     it('loads a configuration file when passing a config param', async () => {
-      const output = async () => {
-        const cli = new CLIMock()
-          .stdin(`step('fake step', async () => {})`)
-          .args([
-            '--reporter',
-            'json',
-            '--inline',
-            '--config',
-            join(FIXTURES_DIR, 'synthetics.config.ts'),
-          ])
-          .run({ cwd: FIXTURES_DIR });
-        await cli.waitFor('journey/start');
-        expect(await cli.exitCode).toBe(0);
-        return getJourneyStart(cli.output());
-      };
-
-      expect((await output()).payload).toMatchObject({
-        params: { url: 'non-dev' },
-      });
-      process.env['NODE_ENV'] = 'development';
-      expect((await output()).payload).toMatchObject({
-        params: { url: 'dev' },
+      const cli = new CLIMock(false)
+        .stdin(`step('fake step', async () => {})`)
+        .args([
+          '--reporter',
+          'json',
+          '--inline',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+        ])
+        .run({ cwd: FIXTURES_DIR });
+      await cli.waitFor('synthetics/metadata');
+      expect(await cli.exitCode).toBe(0);
+      const [output] = safeNDJSONParse(cli.output());
+      expect(output.payload).toMatchObject({
+        network_conditions: { latency: 11 },
       });
     });
   });
@@ -282,7 +275,7 @@ describe('CLI', () => {
   });
 
   it('pass dynamic config to journey params', async () => {
-    const getJourneyStart = async () => {
+    const getMetadata = async () => {
       const cli = new CLIMock()
         .args([
           join(FIXTURES_DIR, 'fake.journey.ts'),
@@ -292,27 +285,27 @@ describe('CLI', () => {
           join(FIXTURES_DIR, 'synthetics.config.ts'),
         ])
         .run();
-      await cli.waitFor('journey/start');
+      await cli.waitFor('synthetics/metadata');
       expect(await cli.exitCode).toBe(0);
       return cli.output();
     };
 
-    let [output] = safeNDJSONParse([await getJourneyStart()]);
+    let [output] = safeNDJSONParse([await getMetadata()]);
     expect(output.payload).toMatchObject({
-      params: { url: 'non-dev' },
+      network_conditions: { latency: 11 },
     });
 
     process.env['NODE_ENV'] = 'development';
-    [output] = safeNDJSONParse([await getJourneyStart()]);
+    [output] = safeNDJSONParse([await getMetadata()]);
     expect(output.payload).toMatchObject({
-      params: { url: 'dev' },
+      network_conditions: { latency: 10 },
     });
   });
 
   it('params wins over config params', async () => {
     const cli = new CLIMock()
       .args([
-        join(FIXTURES_DIR, 'fake.journey.ts'),
+        join(FIXTURES_DIR, 'example.journey.ts'),
         '--reporter',
         'json',
         '--config',
@@ -321,12 +314,10 @@ describe('CLI', () => {
         '{"url": "suite-url"}',
       ])
       .run();
-    await cli.waitFor('journey/start');
-    const output = getJourneyStart(cli.output());
-    expect(await cli.exitCode).toBe(0);
-    expect(output.payload).toMatchObject({
-      params: { url: 'suite-url' },
-    });
+    await cli.waitFor('step/end');
+    expect(await cli.exitCode).toBe(1);
+    const [output] = safeNDJSONParse(cli.output());
+    expect(output.error.stack).toContain('suite-url');
   });
 
   it('throw error on modifying params', async () => {

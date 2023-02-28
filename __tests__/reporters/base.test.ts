@@ -67,7 +67,6 @@ describe('base reporter', () => {
 
   it('writes each step to the FD', async () => {
     reporter.onJourneyStart(j1, {
-      params: { environment: 'testing' },
       timestamp,
     });
     reporter.onStepEnd(j1, step('s1', helpers.noop), {
@@ -87,7 +86,6 @@ describe('base reporter', () => {
 
   it('render hook errors without steps', async () => {
     reporter.onJourneyStart(j1, {
-      params: { environment: 'testing' },
       timestamp,
     });
     const error = {
