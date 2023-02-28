@@ -71,7 +71,7 @@ describe('formatting errors', () => {
 
   ["c'est ne pas une Error", 42, { an: 'object' }].forEach(obj => {
     it(`formats thrown non-error errors like: ${obj}(${typeof obj})`, () => {
-      const formatted = formatError(obj)!;
+      const formatted = formatError(obj);
       expect(formatted.message).toContain(`${obj}`);
       expect(formatted.name).toStrictEqual('');
       expect(formatted.stack).toStrictEqual('');

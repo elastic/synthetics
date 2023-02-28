@@ -60,6 +60,10 @@ describe('CLI', () => {
     return getEvent(output, 'step/end');
   };
 
+  const getJourneyScriptConsole = output => {
+    return getEvent(output, 'journey/scriptconsole');
+  };
+
   const getEvent = (output, eventName) => {
     const parsedLines = output
       .split('\n')
@@ -138,7 +142,7 @@ describe('CLI', () => {
     it('loads a configuration file when passing a config param', async () => {
       const output = async () => {
         const cli = new CLIMock()
-          .stdin(`step('fake step', async () => {})`)
+          .stdin(`step('fake step', async () => {console.log(params)})`)
           .args([
             '--reporter',
             'json',
@@ -147,18 +151,14 @@ describe('CLI', () => {
             join(FIXTURES_DIR, 'synthetics.config.ts'),
           ])
           .run({ cwd: FIXTURES_DIR });
-        await cli.waitFor('journey/start');
+        await cli.waitFor('journey/scriptconsole');
         expect(await cli.exitCode).toBe(0);
-        return getJourneyStart(cli.output());
+        return getJourneyScriptConsole(cli.output());
       };
+      expect((await output()).payload.text).toBe("{ url: 'non-dev' }");
 
-      expect((await output()).payload).toMatchObject({
-        params: { url: 'non-dev' },
-      });
       process.env['NODE_ENV'] = 'development';
-      expect((await output()).payload).toMatchObject({
-        params: { url: 'dev' },
-      });
+      expect((await output()).payload.text).toBe("{ url: 'dev' }");
     });
   });
 
@@ -269,7 +269,7 @@ describe('CLI', () => {
       ])
       .run();
     await cli.waitFor('journey/end');
-    const data = safeNDJSONParse(cli.buffer());
+    const data = safeNDJSONParse(cli.buffer(), true);
     const screenshotRef = data.find(
       ({ type }) => type === 'step/screenshot_ref'
     );
@@ -292,21 +292,17 @@ describe('CLI', () => {
           join(FIXTURES_DIR, 'synthetics.config.ts'),
         ])
         .run();
-      await cli.waitFor('journey/start');
+      await cli.waitFor('journey/scriptconsole');
       expect(await cli.exitCode).toBe(0);
       return cli.output();
     };
 
     let [output] = safeNDJSONParse([await getJourneyStart()]);
-    expect(output.payload).toMatchObject({
-      params: { url: 'non-dev' },
-    });
+    expect(output.payload.text).toBe("{ url: 'non-dev' }");
 
     process.env['NODE_ENV'] = 'development';
     [output] = safeNDJSONParse([await getJourneyStart()]);
-    expect(output.payload).toMatchObject({
-      params: { url: 'dev' },
-    });
+    expect(output.payload.text).toBe("{ url: 'dev' }");
   });
 
   it('params wins over config params', async () => {
@@ -321,12 +317,10 @@ describe('CLI', () => {
         '{"url": "suite-url"}',
       ])
       .run();
-    await cli.waitFor('journey/start');
-    const output = getJourneyStart(cli.output());
+    await cli.waitFor('journey/scriptconsole');
+    const output = getJourneyScriptConsole(cli.output());
     expect(await cli.exitCode).toBe(0);
-    expect(output.payload).toMatchObject({
-      params: { url: 'suite-url' },
-    });
+    expect(output.payload.text).toBe("{ url: 'suite-url' }");
   });
 
   it('throw error on modifying params', async () => {

@@ -50,7 +50,6 @@ describe('junit reporter', () => {
 
   it('writes the output to fd', async () => {
     reporter.onJourneyStart(j1, {
-      params: { environment: 'testing' },
       timestamp,
     });
     const error = new Error('Boom');
@@ -91,7 +90,6 @@ describe('junit reporter', () => {
     const filepath = join(__dirname, '../../tmp', 'junit.xml');
     process.env.SYNTHETICS_JUNIT_FILE = filepath;
     reporter.onJourneyStart(j1, {
-      params: { environment: 'testing' },
       timestamp,
     });
     reporter.onStepEnd(j1, s1, {

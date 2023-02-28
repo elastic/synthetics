@@ -120,6 +120,7 @@ export class Gatherer {
     const plugins = [await pluginManager.start('browserconsole')];
     network && plugins.push(await pluginManager.start('network'));
     metrics && plugins.push(await pluginManager.start('performance'));
+    plugins.push(await pluginManager.start('journeyconsole'));
     await Promise.all(plugins);
     return pluginManager;
   }

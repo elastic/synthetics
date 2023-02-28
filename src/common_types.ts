@@ -185,6 +185,7 @@ export type PluginOutput = {
   filmstrips?: Array<Filmstrip>;
   networkinfo?: Array<NetworkInfo>;
   browserconsole?: Array<BrowserMessage>;
+  journeyconsole?: Array<BrowserMessage>;
   traces?: Array<TraceOutput>;
   metrics?: PerfMetrics;
 };
@@ -269,6 +270,7 @@ export type JourneyResult = {
   error?: Error;
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
+  journeyconsole?: PluginOutput['journeyconsole'];
 };
 
 export type StepResult = {

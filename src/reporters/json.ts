@@ -45,7 +45,6 @@ import {
   TraceOutput,
   StatusValue,
   PerfMetrics,
-  Params,
   Screenshot,
   StartEvent,
   JourneyStartResult,
@@ -69,6 +68,7 @@ type OutputType =
   | 'step/end'
   | 'journey/network_info'
   | 'journey/browserconsole'
+  | 'journey/scriptconsole'
   | 'journey/end';
 
 type Payload = {
@@ -78,7 +78,6 @@ type Payload = {
   url?: string;
   status?: StatusValue;
   pagemetrics?: PageMetrics;
-  params?: Params;
   type?: OutputType;
   text?: string;
   index?: number;
@@ -326,15 +325,12 @@ export default class JSONReporter extends BaseReporter {
     });
   }
 
-  override onJourneyStart(
-    journey: Journey,
-    { timestamp, params }: JourneyStartResult
-  ) {
+  override onJourneyStart(journey: Journey, { timestamp }: JourneyStartResult) {
     this.writeJSON({
       type: 'journey/start',
       journey,
       timestamp,
-      payload: { params, source: journey.callback.toString() },
+      payload: { source: journey.callback.toString() },
     });
   }
 
@@ -400,6 +396,7 @@ export default class JSONReporter extends BaseReporter {
       end,
       networkinfo,
       browserconsole,
+      journeyconsole,
       status,
       error,
       options,
@@ -474,6 +471,22 @@ export default class JSONReporter extends BaseReporter {
         status,
       },
     });
+
+    if (journeyconsole) {
+      journeyconsole.forEach(({ timestamp, text, type, step, error }) => {
+        this.writeJSON({
+          type: 'journey/scriptconsole',
+          journey,
+          timestamp,
+          step,
+          error,
+          payload: {
+            text,
+            type,
+          } as Payload,
+        });
+      });
+    }
   }
 
   override onEnd() {

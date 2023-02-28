@@ -25,6 +25,8 @@
 
 import { journey, step } from '../../';
 
-journey('fake journey', ({}) => {
-  step('step1', () => {});
+journey('fake journey', ({ params }) => {
+  step('step1', () => {
+    console.log(params);
+  });
 });

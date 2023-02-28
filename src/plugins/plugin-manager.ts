@@ -32,9 +32,20 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { JourneyConsole } from './journey-console';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type PluginType =
+  | 'network'
+  | 'trace'
+  | 'performance'
+  | 'browserconsole'
+  | 'journeyconsole';
+type Plugin =
+  | NetworkManager
+  | Tracing
+  | PerformanceManager
+  | BrowserConsole
+  | JourneyConsole;
 type PluginOptions = TraceOptions;
 
 export class PluginManager {
@@ -44,6 +55,7 @@ export class PluginManager {
     'trace',
     'performance',
     'browserconsole',
+    'journeyconsole',
   ];
   constructor(private driver: Driver) {}
 
@@ -61,6 +73,8 @@ export class PluginManager {
         break;
       case 'browserconsole':
         instance = new BrowserConsole(this.driver);
+      case 'journeyconsole':
+        instance = new JourneyConsole(this.driver);
         break;
     }
     instance && this.plugins.set(type, instance);
@@ -99,6 +113,7 @@ export class PluginManager {
 
   onStep(step: Step) {
     (this.get('browserconsole') as BrowserConsole)._currentStep = step;
+    (this.get('journeyconsole') as JourneyConsole)._currentStep = step;
     (this.get('network') as NetworkManager)._currentStep = step;
   }
 
@@ -109,6 +124,8 @@ export class PluginManager {
         data.networkinfo = await plugin.stop();
       } else if (plugin instanceof BrowserConsole) {
         data.browserconsole = plugin.stop();
+      } else if (plugin instanceof JourneyConsole) {
+        data.journeyconsole = plugin.stop();
       }
     }
     return data;
