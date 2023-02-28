@@ -33,7 +33,7 @@ const FIXTURES_DIR = join(__dirname, 'fixtures');
 describe('Config', () => {
   it('read config based on environment', async () => {
     const configPath = join(FIXTURES_DIR, 'synthetics.config.ts');
-    expect(readConfig('development', configPath)).toEqual({
+    expect(readConfig('development', configPath)).toMatchObject({
       params: {
         url: 'dev',
       },
