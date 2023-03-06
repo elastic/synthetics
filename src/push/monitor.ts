@@ -24,6 +24,7 @@
  */
 
 import { mkdir, rm, readFile } from 'fs/promises';
+import get from 'lodash/get';
 import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
@@ -218,13 +219,28 @@ export function buildMonitorFromYaml(
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
 
+  const alertConfig = parseAlertConfig(config);
+
   return new Monitor({
     locations: options.locations,
     ...config,
     privateLocations,
     schedule: schedule || options.schedule,
+    alert: alertConfig,
   });
 }
+
+export const parseAlertConfig = (config: MonitorConfig) => {
+  if (config['alert.status.enabled'] !== undefined) {
+    const value = config['alert.status.enabled'];
+    delete config['alert.status.enabled'];
+    return {
+      status: {
+        enabled: value,
+      },
+    };
+  }
+};
 
 export function parseSchedule(schedule: string) {
   const EVERY_SYNTAX = '@every';
