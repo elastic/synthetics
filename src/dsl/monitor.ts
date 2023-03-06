@@ -55,6 +55,11 @@ export type MonitorConfig = {
   screenshot?: ScreenshotOptions;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
+  alert?: {
+    status: {
+      enabled: boolean;
+    };
+  };
 };
 
 type MonitorFilter = {
