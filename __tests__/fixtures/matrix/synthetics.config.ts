@@ -6,21 +6,21 @@ module.exports = () => {
       url: 'dev',
     },
     matrix: {
-      // values: {
-      //   url: ['https://elastic.github.io/synthetics-demo/'],
-      //   assertion: ['test', 'test-2']
-      // }
       adjustments: [{
         name: 'badssl failing',
-        url: 'https://expired.badssl.com/',
-        assertion: 'expired',
+        params: {
+          url: 'https://expired.badssl.com/',
+          assertion: 'expired',
+        },
         playwrightOptions: {
           ignoreHTTPSErrors: false,
         }
       }, {
         name: 'badssl passing',
-        url: 'https://expired.badssl.com/',
-        assertion: 'expired',
+        params: {
+          url: 'https://expired.badssl.com/',
+          assertion: 'expired',
+        },
         playwrightOptions: {
           ignoreHTTPSErrors: true,
         }

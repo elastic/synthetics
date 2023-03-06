@@ -478,12 +478,12 @@ export default class Runner {
       const combinations = getCombinations(matrix);
       combinations.forEach(matrixParams => {
         const j = journey.clone();
-        const { playwrightOptions, name, ...params } = matrixParams;
+        const { playwrightOptions, name, params } = matrixParams;
         if (playwrightOptions) {
           j.playwrightOptions = { ...options.playwrightOptions, ...playwrightOptions }
         }
-        j.name = name;
-        j.id = name;
+        j.name = `${j.name} - ${name}`;
+        j.id = `${j.id}-${name}`;
         j.params = params;
         j.matrix = matrix;
         this.addJourney(j);  
