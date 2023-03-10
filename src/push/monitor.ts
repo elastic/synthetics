@@ -148,8 +148,9 @@ export async function createLightweightMonitors(
   options: PushOptions
 ) {
   const lwFiles = new Set<string>();
+  const ignore = /(node_modules|.github)/;
   await totalist(workDir, (rel, abs) => {
-    if (/.(yml|yaml)$/.test(rel)) {
+    if (!ignore.test(rel) && /.(yml|yaml)$/.test(rel)) {
       lwFiles.add(abs);
     }
   });
