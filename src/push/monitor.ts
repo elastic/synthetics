@@ -24,7 +24,6 @@
  */
 
 import { mkdir, rm, readFile } from 'fs/promises';
-import get from 'lodash/get';
 import { join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
@@ -240,6 +239,7 @@ export const parseAlertConfig = (config: MonitorConfig) => {
       },
     };
   }
+  return config.alert;
 };
 
 export function parseSchedule(schedule: string) {
