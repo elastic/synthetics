@@ -124,7 +124,7 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 10h2m10s')).toBe(60);
   });
 
-  it.only('parse alert config option', async () => {
+  it('parse alert config option', async () => {
     expect(parseAlertConfig({})).toBe(undefined);
     expect(parseAlertConfig({ 'alert.status.enabled': true } as any)).toEqual({
       status: { enabled: true },
