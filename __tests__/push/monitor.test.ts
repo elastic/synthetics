@@ -30,6 +30,7 @@ import {
   buildMonitorSchema,
   createLightweightMonitors,
   diffMonitors,
+  parseAlertConfig,
   parseSchedule,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
@@ -121,6 +122,16 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 45m')).toBe(30);
     expect(parseSchedule('@every 1h2m')).toBe(60);
     expect(parseSchedule('@every 10h2m10s')).toBe(60);
+  });
+
+  it('parse alert config option', async () => {
+    expect(parseAlertConfig({})).toBe(undefined);
+    expect(parseAlertConfig({ 'alert.status.enabled': true } as any)).toEqual({
+      status: { enabled: true },
+    });
+    expect(parseAlertConfig({ alert: { status: { enabled: true } } })).toEqual({
+      status: { enabled: true },
+    });
   });
 
   describe('Lightweight monitors', () => {

@@ -219,13 +219,29 @@ export function buildMonitorFromYaml(
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
 
+  const alertConfig = parseAlertConfig(config);
+
   return new Monitor({
     locations: options.locations,
     ...config,
     privateLocations,
     schedule: schedule || options.schedule,
+    alert: alertConfig,
   });
 }
+
+export const parseAlertConfig = (config: MonitorConfig) => {
+  if (config['alert.status.enabled'] !== undefined) {
+    const value = config['alert.status.enabled'];
+    delete config['alert.status.enabled'];
+    return {
+      status: {
+        enabled: value,
+      },
+    };
+  }
+  return config.alert;
+};
 
 export function parseSchedule(schedule: string) {
   const EVERY_SYNTAX = '@every';
