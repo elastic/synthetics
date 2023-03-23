@@ -125,11 +125,13 @@ export class Gatherer {
   }
 
   static async dispose(driver: Driver) {
+    log(`Gatherer: closing all contexts`);
     await driver.request.dispose();
     await driver.context.close();
   }
 
   static async stop() {
+    log(`Gatherer: closing browser`);
     if (Gatherer.browser) {
       await Gatherer.browser.close();
       Gatherer.browser = null;

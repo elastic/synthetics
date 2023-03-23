@@ -32,6 +32,7 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { log } from '../core/logger';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
 type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;

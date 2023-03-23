@@ -24,6 +24,7 @@
  */
 
 import { Driver, PluginOutput } from '../common_types';
+import { log } from '../core/logger';
 import { Filmstrips } from '../sdk/trace-metrics';
 import { TraceEvent, TraceProcessor } from '../sdk/trace-processor';
 
@@ -40,6 +41,7 @@ export class Tracing {
   constructor(private driver: Driver, private options: TraceOptions) {}
 
   async start() {
+    log(`Plugins: started collecting trace events`);
     const includedCategories = [
       // exclude all default categories
       '-*',
@@ -97,6 +99,7 @@ export class Tracing {
         ...TraceProcessor.computeTrace(traceEvents as Array<TraceEvent>),
       });
     }
+    log(`Plugins: stopped collecting trace events`);
     return output;
   }
 }

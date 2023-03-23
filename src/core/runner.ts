@@ -118,6 +118,7 @@ export default class Runner {
         join(Runner.screenshotPath, fileName),
         JSON.stringify(screenshot)
       );
+      log(`Runner: captured screenshot for (${step.name})`);
     }
   }
 
