@@ -311,15 +311,7 @@ describe('network', () => {
       res.writeHead(200, {
         'Content-Type': 'text/html',
       });
-      res.end(`
-        <script>
-      var delayedPromise = new Promise(r => setTimeout(r, 300));
-      setTimeout(() => {
-        var x = new XMLHttpRequest();
-        x.open("POST", "chunked.txt");
-        x.send(null);
-      }, 0);
-      </script>`);
+      res.end('');
     });
     server.route('/chunked.txt', async (req, res) => {
       res.writeHead(200, {
@@ -330,11 +322,16 @@ describe('network', () => {
       // response is never ended
     });
 
-    driver.page.on('console', (msg: any) => {
-      console.log('console', msg.text());
-    });
     await driver.page.goto(server.PREFIX + '/index');
-    await driver.page.evaluate(() => (window as any).delayedPromise);
+    await Promise.all([
+      driver.page.evaluate(() => {
+        // hangs forever
+        const x = new XMLHttpRequest();
+        x.open('GET', 'chunked.txt', true);
+        x.send();
+      }, [server.PREFIX + 'chunked.txt']),
+      delay(1000),
+    ]);
     const netinfo = await network.stop();
     await Gatherer.stop();
     expect(netinfo.length).toBe(2);

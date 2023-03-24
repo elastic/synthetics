@@ -180,30 +180,24 @@ export class NetworkManager {
           networkEntry.response.mimeType = contentType.split(';')[0];
       })
     );
+    this._addBarrier(
+      page,
+      response.serverAddr().then(server => {
+        networkEntry.response.remoteIPAddress = server?.ipAddress;
+        networkEntry.response.remotePort = server?.port;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.securityDetails().then(details => {
+        if (details) networkEntry.response.securityDetails = details;
+      })
+    );
   }
 
   private async _onRequestCompleted(request: Request) {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
-
-    const page = request.frame().page();
-    const response = await request.response();
-    // response can be null if the request failed
-    if (response != null) {
-      this._addBarrier(
-        page,
-        response.serverAddr().then(server => {
-          networkEntry.response.remoteIPAddress = server?.ipAddress;
-          networkEntry.response.remotePort = server?.port;
-        })
-      );
-      this._addBarrier(
-        page,
-        response.securityDetails().then(details => {
-          if (details) networkEntry.response.securityDetails = details;
-        })
-      );
-    }
 
     networkEntry.loadEndTime = epochTimeInSeconds();
     const timing = request.timing();
@@ -281,6 +275,7 @@ export class NetworkManager {
       total,
     };
 
+    const page = request.frame().page();
     // For aborted/failed requests sizes will not be present
     this._addBarrier(
       page,
@@ -301,7 +296,14 @@ export class NetworkManager {
   }
 
   async stop() {
-    await Promise.all(this._barrierPromises);
+    /**
+     * Waiting for all network events is error prone and might hang the tests
+     * from getting closed forever when there are upstream bugs in browsers or
+     * Playwright. So we log and drop these events once the test run is completed
+     */
+    if (this._barrierPromises.size > 0) {
+      log(`Plugins: dropping ${this._barrierPromises.size} network events}`);
+    }
     const context = this.driver.context;
     context.off('request', this._onRequest.bind(this));
     context.off('response', this._onResponse.bind(this));

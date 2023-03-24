@@ -41,5 +41,5 @@ export function log(msg) {
     msg = JSON.stringify(msg);
   }
   const time = dim(cyan(`at ${parseInt(String(now()))} ms `));
-  console.log(time + italic(grey(msg)));
+  process.stderr.write(time + italic(grey(msg)) + '\n');
 }
