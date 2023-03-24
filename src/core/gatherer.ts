@@ -39,7 +39,6 @@ import { Driver, NetworkConditions, RunOptions } from '../common_types';
  * related capabilities for the runner to run all journeys
  */
 export class Gatherer {
-  static isClosing = false;
   static browser: ChromiumBrowser;
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
@@ -117,8 +116,7 @@ export class Gatherer {
 
   static async closeBrowser() {
     log(`Gatherer: closing browser`);
-    if (Gatherer.browser && !Gatherer.isClosing) {
-      Gatherer.isClosing = true;
+    if (Gatherer.browser) {
       await Gatherer.browser.close();
       Gatherer.browser = null;
     }
