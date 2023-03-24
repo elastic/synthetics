@@ -24,6 +24,7 @@
  */
 
 import { BrowserMessage, Driver } from '../common_types';
+import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
@@ -76,6 +77,7 @@ export class BrowserConsole {
   }
 
   start() {
+    log(`Plugins: started collecting console events`);
     this.driver.page.on('console', this.consoleEventListener);
     this.driver.page.on('pageerror', this.pageErrorEventListener);
   }
@@ -83,6 +85,7 @@ export class BrowserConsole {
   stop() {
     this.driver.page.off('console', this.consoleEventListener);
     this.driver.page.off('pageerror', this.pageErrorEventListener);
+    log(`Plugins: stopped collecting console events`);
     return this.messages;
   }
 }

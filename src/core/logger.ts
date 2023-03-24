@@ -26,13 +26,20 @@
 import { grey, cyan, dim, italic } from 'kleur/colors';
 import { now } from '../helpers';
 
+/**
+ * Set debug based on DEBUG ENV and namespace - synthetics
+ */
+if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
+  process.env['__SYNTHETICS__DEBUG__'] = '1';
+}
+
 export function log(msg) {
-  if (!process.env.DEBUG || !msg) {
+  if (!process.env['__SYNTHETICS__DEBUG__'] || !msg) {
     return;
   }
   if (typeof msg === 'object') {
     msg = JSON.stringify(msg);
   }
   const time = dim(cyan(`at ${parseInt(String(now()))} ms `));
-  console.log(time + italic(grey(msg)) + '\n');
+  console.log(time + italic(grey(msg)));
 }

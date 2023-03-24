@@ -29,15 +29,6 @@ import { readConfig } from './config';
 import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
 import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
 
-/**
- * Set debug based on DEBUG ENV and -d flags
- * namespace - synthetics
- */
-const namespace = 'synthetics';
-if (process.env.DEBUG && process.env.DEBUG.includes(namespace)) {
-  process.env.DEBUG = '1';
-}
-
 export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   const options: RunOptions = {
     ...cliArgs,

@@ -25,6 +25,7 @@
 
 import { Page, Request, Response } from 'playwright-chromium';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
+import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
@@ -77,6 +78,7 @@ export class NetworkManager {
   }
 
   async start() {
+    log(`Plugins: started collecting network events`);
     const { client, context } = this.driver;
     const { product } = await client.send('Browser.getVersion');
     const [name, version] = product.split('/');
@@ -116,7 +118,7 @@ export class NetworkManager {
       request: {
         url,
         method: request.method(),
-        headers: {},
+        headers: request.headers(),
         body: {
           bytes: request.postDataBuffer()?.length || 0,
         },
@@ -170,19 +172,6 @@ export class NetworkManager {
     );
     this._addBarrier(
       page,
-      response.serverAddr().then(server => {
-        networkEntry.response.remoteIPAddress = server?.ipAddress;
-        networkEntry.response.remotePort = server?.port;
-      })
-    );
-    this._addBarrier(
-      page,
-      response.securityDetails().then(details => {
-        if (details) networkEntry.response.securityDetails = details;
-      })
-    );
-    this._addBarrier(
-      page,
       response.allHeaders().then(resHeaders => {
         networkEntry.response.headers = resHeaders;
 
@@ -196,6 +185,25 @@ export class NetworkManager {
   private async _onRequestCompleted(request: Request) {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
+
+    const page = request.frame().page();
+    const response = await request.response();
+    // response can be null if the request failed
+    if (response != null) {
+      this._addBarrier(
+        page,
+        response.serverAddr().then(server => {
+          networkEntry.response.remoteIPAddress = server?.ipAddress;
+          networkEntry.response.remotePort = server?.port;
+        })
+      );
+      this._addBarrier(
+        page,
+        response.securityDetails().then(details => {
+          if (details) networkEntry.response.securityDetails = details;
+        })
+      );
+    }
 
     networkEntry.loadEndTime = epochTimeInSeconds();
     const timing = request.timing();
@@ -273,7 +281,6 @@ export class NetworkManager {
       total,
     };
 
-    const page = request.frame().page();
     // For aborted/failed requests sizes will not be present
     this._addBarrier(
       page,
@@ -301,6 +308,7 @@ export class NetworkManager {
     context.off('requestfinished', this._onRequestCompleted.bind(this));
     context.off('requestfailed', this._onRequestCompleted.bind(this));
     this._barrierPromises.clear();
+    log(`Plugins: stopped collecting network events`);
     return this.results;
   }
 }
