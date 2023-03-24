@@ -176,6 +176,7 @@ describe('network', () => {
     server.route('/chunked', async (req, res) => {
       await delay(delayTime + 1);
       res.writeHead(200, {
+        'transfer-encoding': 'chunked',
         'content-type': 'application/javascript',
       });
       res.write('a');
@@ -297,6 +298,45 @@ describe('network', () => {
     const netinfo = await network.stop();
     await Gatherer.stop();
     expect(netinfo.length).toBe(0);
-    await Gatherer.dispose(driver);
+  });
+
+  it('do not hang on slow chunked response', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    server.route('/index', async (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/html',
+      });
+      res.end(`
+        <script>
+      var delayedPromise = new Promise(r => setTimeout(r, 300));
+      setTimeout(() => {
+        var x = new XMLHttpRequest();
+        x.open("POST", "chunked.txt");
+        x.send(null);
+      }, 0);
+      </script>`);
+    });
+    server.route('/chunked.txt', async (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Transfer-Encoding': 'chunked',
+      });
+      res.write('start');
+      // response is never ended
+    });
+
+    driver.page.on('console', (msg: any) => {
+      console.log('console', msg.text());
+    });
+    await driver.page.goto(server.PREFIX + '/index');
+    await driver.page.evaluate(() => (window as any).delayedPromise);
+    const netinfo = await network.stop();
+    await Gatherer.stop();
+    expect(netinfo.length).toBe(2);
   });
 });
