@@ -72,6 +72,12 @@ export class Gatherer {
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     const request = await apiRequest.newContext({ ...playwrightOptions });
+
+    // Register sig int handler to close the browser
+    process.on('SIGINT', async () => {
+      await Gatherer.closeBrowser();
+      process.exit(130);
+    });
     return { browser: Gatherer.browser, context, page, client, request };
   }
 
@@ -108,6 +114,14 @@ export class Gatherer {
     }
   }
 
+  static async closeBrowser() {
+    log(`Gatherer: closing browser`);
+    if (Gatherer.browser) {
+      await Gatherer.browser.close();
+      Gatherer.browser = null;
+    }
+  }
+
   /**
    * Starts recording all events related to the v8 devtools protocol
    * https://chromedevtools.github.io/devtools-protocol/v8/
@@ -131,10 +145,6 @@ export class Gatherer {
   }
 
   static async stop() {
-    log(`Gatherer: closing browser`);
-    if (Gatherer.browser) {
-      await Gatherer.browser.close();
-      Gatherer.browser = null;
-    }
+    await Gatherer.closeBrowser();
   }
 }
