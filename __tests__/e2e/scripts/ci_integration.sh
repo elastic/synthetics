@@ -3,7 +3,7 @@ set -e
 
 SYNTHETICS_E2E_ARGS=$2
 
-if [ -z "${JENKINS_URL}" ]; then
+if ! "${CI}"; then
   # formatting
   bold=$(tput bold)
   normal=$(tput sgr0)

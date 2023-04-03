@@ -1,0 +1,72 @@
+name: ci
+
+on: pull_request
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm run-script lint
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm run test:unit -- --ci --reporters=default --reporters=jest-junit
+      - uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/junit.xml"
+
+  e2e-test:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
+      - run: npm run test
+        timeout-minutes: 10
+        working-directory: __tests__/e2e
+        env:
+          TERM: xterm
+      - uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/junit.xml"
