@@ -20,6 +20,8 @@ jobs:
         working-directory: __tests__/e2e
       - run: npm run test:ci_integration_all
         working-directory: __tests__/e2e
+        env:
+          TERM: xterm
       - uses: actions/upload-artifact@v3
         with:
           name: test-results
