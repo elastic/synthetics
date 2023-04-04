@@ -11,6 +11,9 @@ jobs:
         with:
           cache: npm
           node-version-file: .nvmrc
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
       - run: npm ci
       - run: npm run build
       - run: npm install
