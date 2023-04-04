@@ -113,8 +113,9 @@ describe('Monitors', () => {
     );
     expect(parseSchedule('@every 4s')).toBe(1);
     expect(parseSchedule('@every 70s')).toBe(1);
-    expect(parseSchedule('@every 121s')).toBe(3);
+    expect(parseSchedule('@every 121s')).toBe(1);
     expect(parseSchedule('@every 1m')).toBe(1);
+    expect(parseSchedule('@every 181s')).toBe(3);
     expect(parseSchedule('@every 2m10s')).toBe(3);
     expect(parseSchedule('@every 4m25s')).toBe(5);
     expect(parseSchedule('@every 16m')).toBe(15);
