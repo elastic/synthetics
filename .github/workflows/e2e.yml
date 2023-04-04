@@ -1,0 +1,23 @@
+name: e2e
+
+on: pull_request
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm run build
+      - run: npm install
+        working-directory: __tests__/e2e
+      - run: npm run test:ci_integration_all
+        working-directory: __tests__/e2e
+      - uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/junit.xml"
