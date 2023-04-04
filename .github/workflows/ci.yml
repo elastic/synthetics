@@ -65,7 +65,7 @@ jobs:
         timeout-minutes: 10
         working-directory: __tests__/e2e
         env:
-          TERM: xterm
+          TERM: xterm # this is needed for tput
       - uses: actions/upload-artifact@v3
         with:
           name: test-results
