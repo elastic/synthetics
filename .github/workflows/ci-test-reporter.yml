@@ -1,6 +1,6 @@
 ---
 ## Workflow to process the JUnit test results and add a report to the checks.
-name: test-reporter
+name: ci-test-reporter
 on:
   workflow_run:
     workflows:
