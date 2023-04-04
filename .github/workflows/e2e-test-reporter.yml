@@ -1,6 +1,7 @@
 ---
 ## Workflow to process the JUnit test results and add a report to the checks.
 name: e2e-test-reporter
+
 on:
   workflow_run:
     workflows:
