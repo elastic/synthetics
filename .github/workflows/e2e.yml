@@ -26,7 +26,15 @@ jobs:
         working-directory: __tests__/e2e
         env:
           TERM: xterm # this is needed for tput
-      - uses: actions/upload-artifact@v3
+      - if: success() || failure()
+        uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: "**/junit_*.xml"
+      - if: always()
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#synthetics-user_experience-uptime"
