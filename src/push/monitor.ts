@@ -172,7 +172,7 @@ export async function createLightweightMonitors(
     // Warn users about schedule that are less than 60 seconds
     if (!warnOnce) {
       warn(
-        'If you are using lightweight monitors with less than 1 minute resolution, these will be saved to the nearest supported frequency'
+        'Lightweight monitor schedules will be adjusted to their nearest frequency supported by our synthetics infrastructure.'
       );
       warnOnce = true;
     }
@@ -260,13 +260,16 @@ export function parseSchedule(schedule: string) {
     const scheduleValue = parseInt(value, 10);
     switch (format) {
       case 's':
-        minutes += Math.floor(scheduleValue / 60) || 1;
+        minutes += Math.round(scheduleValue / 60);
         break;
       case 'm':
         minutes += scheduleValue;
         break;
       case 'h':
         minutes += scheduleValue * 60;
+        break;
+      case 'd':
+        minutes += scheduleValue * 24 * 60;
         break;
     }
   }
@@ -275,19 +278,15 @@ export function parseSchedule(schedule: string) {
 
 // Find the nearest schedule that is supported by the platform
 // from the parsed schedule value
-export function nearestSchedule(schedule: number) {
-  let start = 0;
-  let end = ALLOWED_SCHEDULES.length - 1;
-  while (start <= end) {
-    const mid = Math.floor((start + end) / 2);
-    const midValue = ALLOWED_SCHEDULES[mid];
-    if (midValue === schedule) {
-      return midValue;
-    } else if (midValue < schedule) {
-      start = mid + 1;
-    } else {
-      end = mid - 1;
+function nearestSchedule(minutes) {
+  let nearest: typeof ALLOWED_SCHEDULES[number] = ALLOWED_SCHEDULES[0];
+  let prev = Math.abs(nearest - minutes);
+  for (let i = 1; i < ALLOWED_SCHEDULES.length; i++) {
+    const curr = Math.abs(ALLOWED_SCHEDULES[i] - minutes);
+    if (curr <= prev) {
+      nearest = ALLOWED_SCHEDULES[i];
+      prev = curr;
     }
   }
-  return ALLOWED_SCHEDULES[end];
+  return nearest;
 }
