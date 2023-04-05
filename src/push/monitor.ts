@@ -260,7 +260,7 @@ export function parseSchedule(schedule: string) {
     const scheduleValue = parseInt(value, 10);
     switch (format) {
       case 's':
-        minutes += Math.ceil(scheduleValue / 60);
+        minutes += Math.floor(scheduleValue / 60) || 1;
         break;
       case 'm':
         minutes += scheduleValue;
