@@ -302,7 +302,7 @@ export class NetworkManager {
      * Playwright. So we log and drop these events once the test run is completed
      */
     if (this._barrierPromises.size > 0) {
-      log(`Plugins: dropping ${this._barrierPromises.size} network events}`);
+      log(`Plugins: dropping ${this._barrierPromises.size} network events`);
     }
     const context = this.driver.context;
     context.off('request', this._onRequest.bind(this));

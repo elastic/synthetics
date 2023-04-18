@@ -200,18 +200,22 @@ export default class Runner {
     };
     driver.context.on('request', captureUrl);
 
+    const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
-      const traceEnabled = trace || filmstrips;
       pluginManager.onStep(step);
       traceEnabled && (await pluginManager.start('trace'));
       // call the step definition
       await step.callback();
+    } catch (error) {
+      data.status = 'failed';
+      data.error = error;
+    } finally {
       /**
-       * Collect all step level metrics
+       * Collect all step level metrics and trace events
        */
       if (metrics) {
         data.pagemetrics = await (
@@ -222,10 +226,6 @@ export default class Runner {
         const traceOutput = await pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
-    } catch (error) {
-      data.status = 'failed';
-      data.error = error;
-    } finally {
       /**
        * Capture screenshot for the newly created pages
        * via popup or new windows/tabs

@@ -627,6 +627,7 @@ describe('runner', () => {
           <img src=${server.PREFIX}/favicon.png>
         `);
         await page.waitForLoadState('networkidle');
+        throw 'step error';
       });
     });
     const runOptions = { ...defaultRunOptions, trace: true };
@@ -639,9 +640,8 @@ describe('runner', () => {
     expect(step2.traces?.length).toBeGreaterThan(0);
     expect(step2.metrics).toMatchObject({
       cls: 0,
-      fcp: {
-        us: expect.any(Number),
-      },
+      fcp: { us: expect.any(Number) },
+      load: { us: expect.any(Number) },
     });
   });
 
