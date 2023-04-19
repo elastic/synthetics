@@ -221,7 +221,6 @@ export type CliArgs = BaseArgs & {
   pattern?: string;
   inline?: boolean;
   require?: Array<string>;
-  headless?: boolean;
   sandbox?: boolean;
   richEvents?: boolean;
   capability?: Array<string>;

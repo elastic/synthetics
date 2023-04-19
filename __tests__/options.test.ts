@@ -33,7 +33,9 @@ describe('options', () => {
       params: {
         foo: 'bar',
       },
-      headless: true,
+      playwrightOptions: {
+        headless: false,
+      },
       sandbox: false,
       screenshots: 'on',
       dryRun: true,
@@ -59,7 +61,7 @@ describe('options', () => {
         defaultBrowserType: 'chromium',
         deviceScaleFactor: 4.5,
         hasTouch: true,
-        headless: true,
+        headless: false,
         ignoreHTTPSErrors: undefined,
         isMobile: true,
         userAgent:
