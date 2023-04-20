@@ -267,6 +267,52 @@ describe('Gatherer', () => {
     });
   });
 
+  describe('Timeouts', () => {
+    it('set navigation timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { navigationTimeout: 1, actionTimeout: 2 },
+      });
+      server.route('/hang.html', () => {});
+      let error: any = null;
+      await driver.page
+        .goto(server.PREFIX + '/hang.html')
+        .catch(e => (error = e));
+      expect(error.message).toContain('page.goto: Timeout 1ms exceeded.');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('prefer timeout over navigation timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { navigationTimeout: 3 },
+      });
+      server.route('/hang.html', () => {});
+      let error: any = null;
+      await driver.page
+        .goto(server.PREFIX + '/hang.html', { timeout: 1 })
+        .catch(e => (error = e));
+      expect(error.message).toContain('page.goto: Timeout 1ms exceeded.');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('set action timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { actionTimeout: 2 },
+      });
+      await driver.page.setContent(
+        '<button disabled><span>Click Span</span></button>'
+      );
+      const error = await driver.page.click('text=Click Span').catch(e => e);
+      expect(error.message).toContain('page.click: Timeout 2ms exceeded.');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
   describe('API Request Context', () => {
     it('exposes request', async () => {
       const driver = await Gatherer.setupDriver({ wsEndpoint });

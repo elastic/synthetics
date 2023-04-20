@@ -34,6 +34,9 @@ import { PluginManager } from '../plugins';
 import { log } from './logger';
 import { Driver, NetworkConditions, RunOptions } from '../common_types';
 
+// Default timeout for Playwright actions and Navigations
+const DEFAULT_TIMEOUT = 50000;
+
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
  * related capabilities for the runner to run all journeys
@@ -63,8 +66,15 @@ export class Gatherer {
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
-    Gatherer.setNetworkConditions(context, networkConditions);
+    // Set timeouts for actions and navigations
+    context.setDefaultTimeout(
+      playwrightOptions?.actionTimeout ?? DEFAULT_TIMEOUT
+    );
+    context.setDefaultNavigationTimeout(
+      playwrightOptions?.navigationTimeout ?? DEFAULT_TIMEOUT
+    );
 
+    Gatherer.setNetworkConditions(context, networkConditions);
     if (playwrightOptions?.testIdAttribute) {
       selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
     }

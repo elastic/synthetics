@@ -254,7 +254,11 @@ export type ProjectSettings = {
 };
 
 export type PlaywrightOptions = LaunchOptions &
-  BrowserContextOptions & { testIdAttribute?: string };
+  BrowserContextOptions & {
+    testIdAttribute?: string;
+    actionTimeout?: number;
+    navigationTimeout?: number;
+  };
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
