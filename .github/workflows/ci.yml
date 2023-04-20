@@ -49,6 +49,7 @@ jobs:
         with:
           name: test-results
           path: "**/junit.xml"
+          if-no-files-found: error
 
   e2e-test:
     needs:
@@ -74,3 +75,4 @@ jobs:
         with:
           name: test-results
           path: "**/junit.xml"
+          if-no-files-found: error
