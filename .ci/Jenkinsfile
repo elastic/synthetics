@@ -58,99 +58,6 @@ pipeline {
         stash allowEmpty: true, name: 'source', useDefaultExcludes: false, excludes: ".nvm/**,.npm/_cacache/**,.nvm/.git/**"
       }
     }
-    /**
-     Checks formatting / linting.
-     */
-    stage('Lint') {
-      options {
-        timeout(5)
-      }
-      steps {
-        withGithubNotify(context: 'Linting') {
-          cleanup()
-          withNodeJSEnv(){
-            dir("${BASE_DIR}"){
-              sh(label: 'Checks linting',script: 'npm run-script lint')
-              preCommit(commit: "${GIT_BASE_COMMIT}", junit: true)
-            }
-          }
-        }
-      }
-    }
-    /**
-     Build the main package
-     */
-    stage('Build') {
-      options {
-        timeout(5)
-      }
-      steps {
-        withGithubNotify(context: 'Build') {
-          cleanup()
-          withNodeJSEnv(){
-            dir("${BASE_DIR}"){
-              sh(label: 'Build',script: 'npm run build')
-            }
-          }
-        }
-      }
-    }
-    /**
-     Execute integration tests.
-     */
-    stage('Test') {
-      options {
-        timeout(5)
-      }
-      steps {
-        withGithubNotify(context: 'Test') {
-          cleanup()
-          withNodeJSEnv(){
-            dir("${BASE_DIR}"){
-              sh(label: 'install jest-unit',script: 'npm add --dev jest-junit')
-              sh(label: 'install e2e bundling deps',script: 'npm install --prefix ./__tests__/e2e')
-              sh(label: 'Runs the tests',script: './node_modules/.bin/jest --ci --reporters=default --reporters=jest-junit')
-            }
-          }
-        }
-      }
-      post {
-        always {
-          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/junit.xml")
-        }
-      }
-    }
-    stage('E2e Test') {
-      agent { label 'ubuntu-20 && immutable' }
-      environment {
-        E2E_FOLDER = "__tests__/e2e"
-      }
-      options {
-        skipDefaultCheckout()
-        timeout(20)
-      }
-      steps {
-        withGithubNotify(context: 'E2e Test') {
-          cleanup()
-          withNodeJSEnv(){
-            dir("${BASE_DIR}"){
-              sh(label: 'set permissions', script: '''
-                chmod -R ugo+rw examples
-              ''')
-              dir("${E2E_FOLDER}"){
-                sh(label: 'run e2e tests',script: 'npm run test')
-              }
-            }
-          }
-        }
-      }
-      post {
-        always {
-          archiveArtifacts(allowEmptyArchive: true, artifacts: "${BASE_DIR}/${E2E_FOLDER}/junit.xml")
-          junit(allowEmptyResults: true, keepLongStdio: true, testResults: "${BASE_DIR}/${E2E_FOLDER}/junit.xml")
-        }
-      }
-    }
     stage('Release') {
       options {
         skipDefaultCheckout()
@@ -267,11 +174,6 @@ pipeline {
           }
         }
       }
-    }
-  }
-  post {
-    cleanup {
-      notifyBuildResult(prComment: true)
     }
   }
 }
