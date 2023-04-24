@@ -1,0 +1,64 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      is-stack-release:
+        type: boolean
+        description: Should we tag the current version as a stack release?
+        default: false
+
+permissions:
+  contents: write
+
+env:
+   GH_TOKEN: ${{ github.token }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: elastic/apm-pipeline-library/.github/actions/setup-git@current
+      - uses: reakaleek/apm-pipeline-library/.github/actions/setup-npmrc@feature/setup-npmrc-action
+        with:
+          secret: secret/jenkins-ci/npmjs/elasticmachine
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: npm run clean
+      - run: npm ci
+      - name: Bump the beta version
+        run: |
+          echo "VERSION=$(npm version prerelease --preid=beta)" >> $GITHUB_ENV
+          echo "NPM_PACKAGE=$(jq '.name' package.json) >> $GITHUB_ENV
+      - run: git push --tags
+      - name: Get TOTP
+        uses: hashicorp/vault-action@v2.5.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: approle
+          secrets: |
+            totp/code/npmjs-elasticmachine code | TOTP_CODE;
+      - name: NPM Publish
+        run: npm publish --otp=${TOTP_CODE} --tag beta
+      - name: Create 'latest' dist-tag
+        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" latest
+      - name: Create 'stack_release' dist-tag
+        if: ${{ github.event.inputs.is-stack-release }}
+        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
+      - name: Create Draft Release Notes
+        run: >-
+          gh release create ${VERSION}
+          --title ${VERSION}
+          --generate-notes
+          --draft
+      - if: always()
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#synthetics-user_experience-uptime"
