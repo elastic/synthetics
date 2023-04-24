@@ -51,8 +51,8 @@ jobs:
         run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
       - name: Create Draft Release Notes
         run: >-
-          gh release create ${VERSION}
-          --title ${VERSION}
+          gh release create "${VERSION}"
+          --title="${VERSION}"
           --generate-notes
           --draft
       - if: always()
