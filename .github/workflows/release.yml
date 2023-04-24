@@ -33,7 +33,7 @@ jobs:
           echo "VERSION=$(npm version prerelease --preid=beta)" >> $GITHUB_ENV
           echo "NPM_PACKAGE=$(jq '.name' package.json) >> $GITHUB_ENV
       - run: git push --tags
-      - name: Get TOTP
+      - name: Set up TOTP_CODE
         uses: hashicorp/vault-action@v2.5.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
