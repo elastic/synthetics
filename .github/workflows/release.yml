@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: elastic/apm-pipeline-library/.github/actions/setup-git@current
-      - uses: reakaleek/apm-pipeline-library/.github/actions/setup-npmrc@feature/setup-npmrc-action
+      - uses: elastic/apm-pipeline-library/.github/actions/setup-npmrc@current
         with:
           secret: secret/jenkins-ci/npmjs/elasticmachine
           vault-url: ${{ secrets.VAULT_ADDR }}
@@ -33,15 +33,11 @@ jobs:
           echo "VERSION=$(npm version prerelease --preid=beta)" >> $GITHUB_ENV
           echo "NPM_PACKAGE=$(jq '.name' package.json) >> $GITHUB_ENV
       - run: git push --tags
-      - name: Set up TOTP_CODE
-        uses: hashicorp/vault-action@v2.5.0
+      - uses: ./.github/actions/setup-totp
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          method: approle
-          secrets: |
-            totp/code/npmjs-elasticmachine code | TOTP_CODE;
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: NPM Publish
         run: npm publish --otp=${TOTP_CODE} --tag beta
       - name: Create 'latest' dist-tag
