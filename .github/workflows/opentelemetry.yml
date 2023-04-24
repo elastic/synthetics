@@ -5,7 +5,9 @@ on:
   workflow_run:
     workflows:
       - ci
+      - dist-tag
       - e2e
+      - release
     types: [completed]
 
 jobs:
