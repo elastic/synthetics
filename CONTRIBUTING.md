@@ -146,18 +146,12 @@ We run end to end tests for the Synthetics agent itself, as well as the Elastic 
 
 The release process is also automated in the way any specific commit from the main branch can be potentially released, for such it's required the below steps:
 
-1. Login to apm-ci.elastic.co
-1. Go to the [main](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/) pipeline.
-1. Click on `Build with parameters` with the below checkbox:
+1. Go to https://github.com/elastic/synthetics/actions/workflows/release.yml
+1. Click the `Run workflow` dropdown button.
+1. Use the `main` branch option which is selected by default.
+1. Choose whether a `stack_release` dist-tag should be created or not.
+1. Click the green `Run workflow` button to trigger the release workflow.
 
-- `release` to be selected.
-- other checkboxes should be left as default.
-
-1. Click on `Build`.
-1. Wait for an email or slack message to confirm the release is ready to be approved, it might take roughly 20 minutes.
-1. Click on the URL from the email or slack.
-1. Click on approve or abort.
-1. Then you can go to the `https://www.npmjs.com/package/@elastic/synthetics` to validate that the bundles have been published.
 
 ## CI
 
