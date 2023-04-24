@@ -151,7 +151,7 @@ The release process is also automated in the way any specific commit from the ma
 1. Use the `main` branch option which is selected by default.
 1. Choose whether a `stack_release` dist-tag should be created or not.
 1. Click the green `Run workflow` button to trigger the release workflow.
-
+1. Then you can go to the `https://www.npmjs.com/package/@elastic/synthetics` to validate that the bundles have been published.
 
 ## CI
 
