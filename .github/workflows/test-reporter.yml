@@ -5,6 +5,7 @@ on:
   workflow_run:
     workflows:
       - ci
+      - e2e
     types:
       - completed
 
@@ -15,6 +16,6 @@ jobs:
       - uses: elastic/apm-pipeline-library/.github/actions/test-report@current
         with:
           artifact: test-results
-          name: test-report
-          path: "**/junit.xml"
+          name: ${{ github.event.workflow_run.name }}-test-report
+          path: "**/junit*.xml"
           reporter: java-junit
