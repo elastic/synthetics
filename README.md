@@ -1,4 +1,5 @@
-[![Build Status](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/badge/icon)](https://apm-ci.elastic.co/job/apm-agent-rum/job/elastic-synthetics/job/main/)
+[![ci](https://github.com/elastic/synthetics/actions/workflows/ci.yml/badge.svg)](https://github.com/elastic/synthetics/actions/workflows/ci.yml)
+[![e2e](https://github.com/elastic/synthetics/actions/workflows/e2e.yml/badge.svg)](https://github.com/elastic/synthetics/actions/workflows/e2e.yml)
 
 # Experimental Synthetics Agent
 
