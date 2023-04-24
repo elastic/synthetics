@@ -33,6 +33,7 @@ jobs:
         with:
           name: test-results
           path: "**/junit_*.xml"
+          if-no-files-found: error
       - if: always()
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
         with:
