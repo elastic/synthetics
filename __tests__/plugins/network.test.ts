@@ -302,17 +302,16 @@ describe('network', () => {
       res.end(`<body></body>`);
     });
 
-    await Promise.race([
-      driver.page.goto(server.PREFIX + '/index'),
-      driver.context.waitForEvent('response'),
-    ]);
+    await driver.page
+      .goto(server.PREFIX + '/index', { timeout: 100 })
+      .catch(() => {});
 
     const netinfo = await network.stop();
     await Gatherer.stop();
 
     expect(netinfo.length).toBe(1);
     // responseEnd is never fired as we are not waiting for the
-    // `responseFinished` event
+    // `responseFinished` event instead cutting off after TTFB
     expect(netinfo[0].timings.receive).toEqual(-1);
     expect(netinfo[0].timings.total).toBeGreaterThan(10);
     expect(netinfo[0].timings.total).toBeLessThan(500);
