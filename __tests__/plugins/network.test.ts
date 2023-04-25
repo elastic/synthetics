@@ -287,6 +287,36 @@ describe('network', () => {
     });
   });
 
+  it('timings for broken response', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    server.route('/index', async (_, res) => {
+      res.setHeader('content-type', 'text/html');
+      await delay(10);
+      res.write(`<head></head>`);
+      await delay(500);
+      res.end(`<body></body>`);
+    });
+
+    await driver.page
+      .goto(server.PREFIX + '/index', { timeout: 100 })
+      .catch(() => {});
+
+    const netinfo = await network.stop();
+    await Gatherer.stop();
+
+    expect(netinfo.length).toBe(1);
+    // responseEnd is never fired as we are not waiting for the
+    // `responseFinished` event instead cutting off after TTFB
+    expect(netinfo[0].timings.receive).toEqual(-1);
+    expect(netinfo[0].timings.total).toBeGreaterThan(10);
+    expect(netinfo[0].timings.total).toBeLessThan(500);
+  });
+
   it("doesn't capture network info from request context", async () => {
     const driver = await Gatherer.setupDriver({
       wsEndpoint,
