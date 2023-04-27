@@ -1,0 +1,34 @@
+name: dist-tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version to dist tag.
+        required: true
+      dist-tag:
+        type: string
+        description: Dist tag to use.
+        required: true
+
+jobs:
+  dist-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: elastic/apm-pipeline-library/.github/actions/setup-npmrc@current
+        with:
+          secret: secret/jenkins-ci/npmjs/elasticmachine
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/setup-totp
+        with:
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: NPM dist-tag
+        run: |
+          NPM_PACKAGE=$(jq '.name' package.json)
+          npm dist-tag --otp=${TOTP_CODE} add ${NPM_PACKAGE}@${{ github.event.inputs.version }} ${{ github.event.inputs.dist-tag }}
