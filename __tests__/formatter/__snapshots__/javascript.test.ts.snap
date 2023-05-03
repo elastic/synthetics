@@ -4,6 +4,7 @@ exports[`Synthetics JavaScript formatter accepts custom step organization 1`] = 
 "const { journey, step, expect } = require('@elastic/synthetics');
 
 journey('Recorded journey', async ({ page, context }) => {
+  let page1;
   step('Open new page', async () => {
     await page.goto('https://vigneshh.in/');
   });
@@ -13,18 +14,84 @@ journey('Recorded journey', async ({ page, context }) => {
   });
   step('Assert text=Babel Minify textContent', async () => {
     expect(await page.textContent('text=Babel Minify')).toMatch('Babel');
-    const [page1] = await Promise.all([
-      page.waitForEvent('popup'),
-      page.locator('text=Babel Minify').click()
-    ]);
-    await Promise.all([
-      page1.waitForNavigation(/*{ url: 'https://github.com/babel/minify' }*/),
-      page1.locator('a:has-text(\\"smoke\\")').click()
-    ]);
+    const page1Promise = page.waitForEvent('popup');
+    await page.locator('text=Babel Minify').click();
+    page1 = await page1Promise;
+    await page1.locator('a:has-text(\\"smoke\\")').click();
   });
   step('Close page', async () => {
     await page1.close();
   });
+});"
+`;
+
+exports[`Synthetics JavaScript formatter does not hoist when all accesses are in one step 1`] = `
+"let page1;
+let page2;
+step('Go to https://vigneshh.in/', async () => {
+  await page.goto('https://vigneshh.in/');
+  const page1Promise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: 'Tailor' }).click();
+  page1 = await page1Promise;
+  await page1.getByRole('link', { name: 'Packages' }).click();
+  await page1.getByRole('link', { name: '@zalando Zalando SE' }).click();
+  const page2Promise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: 'Babel Minify' }).click();
+  page2 = await page2Promise;
+  await page2.getByTitle('Topic: babel-minify').click();
+  await page2.close();
+  await page1.close();
+});"
+`;
+
+exports[`Synthetics JavaScript formatter hoist accounts for popup alias 1`] = `
+"let page1;
+let page2;
+step('Go to https://vigneshh.in/', async () => {
+  await page.goto('https://vigneshh.in/');
+  const page1Promise = page.waitForEvent('popup');
+  await page.locator('text=Tailor').click();
+  page1 = await page1Promise;
+  await page1.frame({
+    url: 'https://github.com/zalando/tailor'
+  }).locator('text=Packages 0').click();
+});
+step('Close page', async () => {
+  await page1.close();
+  const page2Promise = page.waitForEvent('popup');
+  await page.locator('text=Babel Minify').click();
+  page2 = await page2Promise;
+});
+step('Close page', async () => {
+  await page2.frame({
+    url: 'https://github.com/babel/minify'
+  }).close();
+});"
+`;
+
+exports[`Synthetics JavaScript formatter hoists page objects to prevent undefined references 1`] = `
+"let page1;
+let page2;
+step('Go to https://vigneshh.in/', async () => {
+  await page.goto('https://vigneshh.in/');
+  const page1Promise = page.waitForEvent('popup');
+  await page.locator('text=Tailor').click();
+  page1 = await page1Promise;
+  await page1.locator('text=Packages 0').click();
+});
+step('Close page', async () => {
+  await page1.close();
+});
+step('Click text=Babel Minify', async () => {
+  const page2Promise = page.waitForEvent('popup');
+  await page.locator('text=Babel Minify').click();
+  page2 = await page2Promise;
+  await page2.locator(':nth-match(a:has-text(\\"babel-minify\\"), 3)').click();
+});
+step('Close page', async () => {
+  await page2.frame({
+    url: 'https://github.com/topics/babel-minify'
+  }).close();
 });"
 `;
 
