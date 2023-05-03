@@ -99,7 +99,6 @@ export class NetworkManager {
     const { product } = await client.send('Browser.getVersion');
     const [name, version] = product.split('/');
     this._browser = { name, version };
-    await client.send('Network.enable');
     /**
      * Listen for all network events from PW context
      */
