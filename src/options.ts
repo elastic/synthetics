@@ -26,8 +26,8 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
-import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
+import type { CliArgs, RunOptions } from './common_types';
+import { THROTTLING_WARNING_MSG, warn } from './helpers';
 
 export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   const options: RunOptions = {
@@ -110,28 +110,6 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
    * Get the default monitor config from synthetics.config.ts file
    */
   const monitor = config.monitor;
-  if (cliArgs.throttling) {
-    const throttleConfig = merge.all([
-      DEFAULT_THROTTLING_OPTIONS,
-      toObject(monitor?.throttling),
-      toObject(cliArgs.throttling),
-    ]);
-    if (monitor?.throttling !== false) {
-      options.throttling = throttleConfig;
-      options.networkConditions = getNetworkConditions(throttleConfig);
-    } else {
-      /**
-       * If the throttling is disabled via Project monitor config, use it a source
-       * of truth and disable it for pushing those monitors.
-       */
-      options.throttling = false;
-    }
-  } else {
-    /**
-     * Do not apply throttling when `--no-throttling` flag is passed
-     */
-    options.throttling = false;
-  }
 
   options.schedule = cliArgs.schedule ?? monitor?.schedule;
   options.locations = cliArgs.locations ?? monitor?.locations;
@@ -141,6 +119,7 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   return options;
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 function toObject(value: boolean | Record<string, any>): Record<string, any> {
   const defaulVal = {};
   if (typeof value === 'boolean') {
@@ -150,35 +129,14 @@ function toObject(value: boolean | Record<string, any>): Record<string, any> {
 }
 
 /**
- * Parses the throttling CLI settings and also
- * adapts to the format to keep the backwards compatability
- * - Accepts old format `<5d/3u/20l>`
- * - Processess new format otherwise `{download: 5, upload: 3, latency: 20}`
+ * Parses the throttling CLI settings with `{download: 5, upload: 3, latency:
+ * 20}` format
+ *
+ * Since throttling is disabled for now, we warn the users if throttling/nothrottling
+ * flag is passed to the CLI
  */
-export function parseThrottling(value: string, prev?: string) {
-  const THROTTLING_REGEX = /([0-9]{1,}u)|([0-9]{1,}d)|([0-9]{1,}l)/gm;
-  if (THROTTLING_REGEX.test(value)) {
-    const throttling: ThrottlingOptions = {};
-    const conditions = value.split('/');
-
-    conditions.forEach(condition => {
-      const setting = condition.slice(0, condition.length - 1);
-      const token = condition.slice(-1);
-      switch (token) {
-        case 'd':
-          throttling.download = Number(setting);
-          break;
-        case 'u':
-          throttling.upload = Number(setting);
-          break;
-        case 'l':
-          throttling.latency = Number(setting);
-          break;
-      }
-    });
-    return throttling;
-  }
-  return JSON.parse(value || prev);
+export function parseThrottling() {
+  warn(THROTTLING_WARNING_MSG);
 }
 
 export function getCommonCommandOpts() {

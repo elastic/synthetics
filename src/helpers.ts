@@ -300,6 +300,9 @@ export function getNetworkConditions(
   };
 }
 
+export const THROTTLING_WARNING_MSG = `Throttling may not be active when the tests run - see
+https://github.com/elastic/synthetics/blob/main/docs/throttling.md for more details`;
+
 const dstackTraceLimit = 10;
 
 // Uses the V8 Stacktrace API to get the function location

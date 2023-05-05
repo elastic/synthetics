@@ -42,6 +42,7 @@ import {
   indent,
   done,
   getMonitorManagementURL,
+  THROTTLING_WARNING_MSG,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
@@ -279,4 +280,12 @@ export async function pushLegacy(
   );
 
   done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+}
+
+// prints warning if any of the monitors has throttling settings enabled during push
+export function warnIfThrottled(monitors: Monitor[]) {
+  const throttled = monitors.some(monitor => monitor.config.throttling != null);
+  if (throttled) {
+    warn(THROTTLING_WARNING_MSG);
+  }
 }

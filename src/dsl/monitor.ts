@@ -40,7 +40,9 @@ export type SyntheticsLocationsType = keyof typeof LocationsMap;
 export const SyntheticsLocations = Object.keys(
   LocationsMap
 ) as SyntheticsLocationsType[];
-export const ALLOWED_SCHEDULES = [1, 3, 5, 10, 15, 20, 30, 60, 120, 240] as const;
+export const ALLOWED_SCHEDULES = [
+  1, 3, 5, 10, 15, 20, 30, 60, 120, 240,
+] as const;
 
 export type MonitorConfig = {
   id?: string;
@@ -51,6 +53,11 @@ export type MonitorConfig = {
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
+  /**
+   * @deprecated This option is ignored.
+   * Network throttling via chrome devtools is ignored at the moment.
+   * See https://github.com/elastic/synthetics/blob/main/docs/throttling.md for more details.
+   */
   throttling?: boolean | ThrottlingOptions;
   screenshot?: ScreenshotOptions;
   params?: Params;

@@ -32,6 +32,7 @@ module.exports = env => {
       url: 'dev',
     },
     monitor: {
+      id: 'monitor-id',
       throttling: { latency: 10 },
     },
     playwrightOptions: {
