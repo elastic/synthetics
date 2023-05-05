@@ -24,7 +24,7 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions, parseThrottling } from '../src/options';
+import { normalizeOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {

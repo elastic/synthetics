@@ -31,10 +31,6 @@ module.exports = env => {
     params: {
       url: 'dev',
     },
-    monitor: {
-      id: 'monitor-id',
-      throttling: { latency: 10 },
-    },
     playwrightOptions: {
       ...devices['Galaxy S9+'],
     },
