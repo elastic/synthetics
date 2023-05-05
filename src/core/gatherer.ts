@@ -46,7 +46,7 @@ export class Gatherer {
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
     log('Gatherer: setup driver');
-    const { wsEndpoint, playwrightOptions, networkConditions } = options;
+    const { wsEndpoint, playwrightOptions } = options;
 
     if (Gatherer.browser == null) {
       if (wsEndpoint) {
@@ -74,7 +74,9 @@ export class Gatherer {
       playwrightOptions?.navigationTimeout ?? DEFAULT_TIMEOUT
     );
 
-    Gatherer.setNetworkConditions(context, networkConditions);
+    // TODO: Network throttling via chrome devtools emulation is disabled for now.
+    // See docs/throttling.md for more details.
+    // Gatherer.setNetworkConditions(context, networkConditions);
     if (playwrightOptions?.testIdAttribute) {
       selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
     }

@@ -31,16 +31,12 @@ module.exports = env => {
     params: {
       url: 'dev',
     },
-    monitor: {
-      throttling: { latency: 10 },
-    },
     playwrightOptions: {
       ...devices['Galaxy S9+'],
     },
   };
-  if (env !== 'development' && config.params && config.monitor) {
+  if (env !== 'development' && config.params) {
     config.params.url = 'non-dev';
-    config.monitor.throttling = { latency: 11 };
   }
   return config;
 };

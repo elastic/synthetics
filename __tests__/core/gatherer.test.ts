@@ -199,7 +199,7 @@ describe('Gatherer', () => {
     });
   });
 
-  describe('Network emulation', () => {
+  describe.skip('Network emulation', () => {
     const networkConditions = {
       downloadThroughput: megabitsToBytes(3),
       uploadThroughput: megabitsToBytes(1),
