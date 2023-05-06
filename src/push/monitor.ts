@@ -241,6 +241,7 @@ export function buildMonitorFromYaml(
     ...config,
     privateLocations,
     schedule: schedule || options.schedule,
+    params: options.params,
     alert: alertConfig,
   });
 }

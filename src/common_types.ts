@@ -244,6 +244,7 @@ export type PushOptions = Partial<ProjectSettings> & {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  params?: MonitorConfig['params'];
   yes?: boolean;
   pattern?: string;
   match?: string;
