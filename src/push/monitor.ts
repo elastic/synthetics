@@ -24,14 +24,17 @@
  */
 
 import { mkdir, rm, readFile } from 'fs/promises';
-import { join } from 'path';
+import { extname, join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
+import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
+
+// Allowed extensions for lightweight monitor files
+const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
@@ -148,9 +151,17 @@ export async function createLightweightMonitors(
   options: PushOptions
 ) {
   const lwFiles = new Set<string>();
+  // Filter monitor files based on the provided pattern
+  const pattern = options.pattern
+    ? new RegExp(options.pattern, 'i')
+    : /.(yml|yaml)$/;
   const ignore = /(node_modules|.github)/;
   await totalist(workDir, (rel, abs) => {
-    if (!ignore.test(rel) && /.(yml|yaml)$/.test(rel)) {
+    if (
+      !ignore.test(rel) &&
+      pattern.test(rel) &&
+      ALLOWED_LW_EXTENSIONS.includes(extname(abs))
+    ) {
       lwFiles.add(abs);
     }
   });
@@ -186,6 +197,10 @@ export async function createLightweightMonitors(
         continue;
       }
       const config = monNode.toJSON();
+      // Filter based on matched tags and name
+      if (!isMatch(config.tags, config.name, options.tags, options.match)) {
+        continue;
+      }
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
       try {
         const mon = buildMonitorFromYaml(config, options);

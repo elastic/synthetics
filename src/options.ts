@@ -154,15 +154,15 @@ export function getCommonCommandOpts() {
 
   const pattern = createOption(
     '--pattern <pattern>',
-    'RegExp pattern to look for journey files that are different from the default (ex: /*.journey.(ts|js)$/)'
+    'RegExp pattern to match journey/monitor files that are different from the default (ex: /*.journey.(ts|js)$/)'
   );
   const tags = createOption(
     '--tags <name...>',
-    'run only journeys with a tag that matches the glob'
+    'run/push tests with a tag that matches the glob'
   );
   const match = createOption(
     '--match <name>',
-    'run only journeys with a name or tag that matches the glob'
+    'run/push tests with a name or tags that matches the glob'
   );
 
   return {
