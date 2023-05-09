@@ -245,6 +245,7 @@ export type PushOptions = Partial<ProjectSettings> & {
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
   params?: MonitorConfig['params'];
+  kibanaVersion?: number;
   yes?: boolean;
   pattern?: string;
   match?: string;

@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  *
  */
-import semver from 'semver';
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
 import { bold, grey } from 'kleur/colors';
@@ -50,11 +49,15 @@ import {
   bulkDeleteMonitors,
   bulkGetMonitors,
   bulkPutMonitors,
-  getVersion,
   createMonitorsLegacy,
   CHUNK_SIZE,
 } from './kibana_api';
-import { getChunks, logDiff } from './utils';
+import {
+  getChunks,
+  isBulkAPISupported,
+  isLightweightMonitorSupported,
+  logDiff,
+} from './utils';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   const duplicates = trackDuplicates(monitors);
@@ -63,10 +66,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
   progress(`Pushing monitors for project: ${options.id}`);
 
-  const stackVersion = await getVersion(options);
-  const isV2 = semver.satisfies(stackVersion, '>=8.6.0');
-  if (!isV2) {
-    return await pushLegacy(monitors, options, stackVersion);
+  /**
+   * Legacy API for kibana which does not support bulk operations
+   */
+  if (!isBulkAPISupported(options.kibanaVersion)) {
+    return await pushLegacy(monitors, options);
   }
 
   const local = getLocalMonitors(monitors);
@@ -245,18 +249,10 @@ export async function catchIncorrectSettings(
   }
 }
 
-export async function pushLegacy(
-  monitors: Monitor[],
-  options: PushOptions,
-  version: number
-) {
-  const noLightWeightSupport = semver.satisfies(version, '<8.5.0');
-  if (
-    noLightWeightSupport &&
-    monitors.some(monitor => monitor.type !== 'browser')
-  ) {
+export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
+  if (isLightweightMonitorSupported(monitors, options)) {
     throw error(
-      `Aborted: Lightweight monitors are not supported in ${version}. Please upgrade to 8.5.0 or above.`
+      `Aborted: Lightweight monitors are not supported in ${options.kibanaVersion}. Please upgrade to 8.5.0 or above.`
     );
   }
 

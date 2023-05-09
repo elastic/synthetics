@@ -261,6 +261,35 @@ heartbeat.monitors:
       });
     });
 
+    it('use params from config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  id: foo
+  name: without schedule
+      `);
+      const [monitor1] = await createLightweightMonitors(
+        PROJECT_DIR,
+        {} as PushOptions
+      );
+      expect(monitor1.config).toMatchObject({
+        id: 'foo',
+        name: 'without schedule',
+        type: 'icmp',
+      });
+
+      const [monitor2] = await createLightweightMonitors(PROJECT_DIR, {
+        params: { foo: 'bar' },
+        kibanaVersion: '8.8.0',
+      } as any);
+      expect(monitor2.config).toEqual({
+        id: 'foo',
+        name: 'without schedule',
+        type: 'icmp',
+        params: { foo: 'bar' },
+      });
+    });
+
     it('parses monitor config correctly', async () => {
       await writeHBFile(`
 heartbeat.monitors:

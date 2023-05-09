@@ -23,9 +23,11 @@
  *
  */
 
+import semver from 'semver';
 import { progress, removeTrailingSlash } from '../helpers';
 import { green, red, grey, yellow } from 'kleur/colors';
 import { PushOptions } from '../common_types';
+import { Monitor } from '../dsl/monitor';
 
 export function logDiff<T extends Set<string>>(
   newIDs: T,
@@ -74,4 +76,33 @@ export function generateURL(options: PushOptions, operation: Operation) {
     default:
       throw new Error('Invalid operation');
   }
+}
+
+/**
+ * Bulk API is supported for push monitors only from 8.6.0 and above
+ */
+export function isBulkAPISupported(version: number) {
+  return semver.satisfies(version, '>=8.6.0');
+}
+
+/**
+ * Lightweight monitors are supported only from 8.5.0 and above
+ */
+export function isLightweightMonitorSupported(
+  monitors: Monitor[],
+  options: PushOptions
+) {
+  const version = options.kibanaVersion;
+  return (
+    semver.satisfies(version, '<8.5.0') &&
+    monitors.some(monitor => monitor.type !== 'browser')
+  );
+}
+
+/**
+ * Lighweight monitor param options are supported only from
+ * 8.7.2 and above
+ */
+export function isParamOptionSupported(version: number) {
+  return semver.satisfies(version, '>=8.7.2');
 }
