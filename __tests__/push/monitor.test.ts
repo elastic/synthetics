@@ -207,7 +207,7 @@ heartbeat.monitors:
       );
     });
 
-    it('match file pattern', async () => {
+    it('prefer user provider pattern option', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: http
