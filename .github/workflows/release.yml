@@ -26,8 +26,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: npm run clean
-      - run: npm ci
+      - run: npm ci # runs npm prepublish
       - name: Bump the beta version
         run: |
           echo "VERSION=$(npm version prerelease --preid=beta)" >> $GITHUB_ENV

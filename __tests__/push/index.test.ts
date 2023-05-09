@@ -31,6 +31,7 @@ import { formatDuplicateError } from '../../src/push';
 import { createKibanaTestServer } from '../utils/kibana-test-server';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
+import { THROTTLING_WARNING_MSG } from '../../src/helpers';
 
 describe('Push', () => {
   const PROJECT_DIR = join(__dirname, 'new-project');
@@ -61,19 +62,17 @@ describe('Push', () => {
     await rm(PROJECT_DIR, { recursive: true, force: true });
   });
 
-  // TODO: Fix this failing test.
-  // Fails on andrew's box with "Aborted (missing synthetics config file), Project not set up correctly.·
-  // Run 'npx @elastic/synthetics init' to create project with default settings.
-  it.skip('error when auth is ignored', async () => {
-    const output = await runPush([]);
-    expect(output).toContain(`required option '--auth <auth>' not specified`);
-  });
-
   it('error when project is not setup', async () => {
     const output = await runPush();
     expect(output).toContain(
       'Aborted (missing synthetics config file), Project not set up correctly.'
     );
+  });
+
+  it('error when auth is ignored', async () => {
+    await fakeProjectSetup({}, {});
+    const output = await runPush([]);
+    expect(output).toContain(`required option '--auth <auth>' not specified`);
   });
 
   it('error on empty project id', async () => {
@@ -154,6 +153,22 @@ journey('duplicate name', () => monitor.use({ schedule: 15 }));`
     expect(output).toContain(`duplicate id`);
     expect(output).toContain(`duplicate name`);
     await rm(dupJourney, { force: true });
+  });
+
+  it('warn if throttling config is set', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+  journey('journey 1', () => monitor.use({ throttling: {latency: 20} }));`
+    );
+    const output = await runPush();
+    await rm(testJourney, { force: true });
+    expect(output).toContain(THROTTLING_WARNING_MSG);
   });
 
   it('errors on duplicate lightweight monitors', async () => {

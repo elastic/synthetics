@@ -43,6 +43,7 @@ import {
   loadSettings,
   validateSettings,
   catchIncorrectSettings,
+  warnIfThrottled,
 } from './push';
 import {
   formatLocations,
@@ -118,10 +119,13 @@ program
   .option(
     '--throttling <config>',
     'JSON object to throttle network conditions for download and upload throughput in megabits/second and latency in milliseconds. Ex: { "download": 10, "upload": 5, "latency": 200 }.',
-    parseThrottling,
-    {}
+    parseThrottling
   )
-  .option('--no-throttling', 'Turns off default network throttling.')
+  .option(
+    '--no-throttling',
+    'Turns off default network throttling.',
+    parseThrottling
+  )
   .addOption(playwrightOpts)
   .version(version)
   .description('Run synthetic tests')
@@ -207,6 +211,9 @@ program
       validateSettings(options);
       await catchIncorrectSettings(settings, options);
       const monitors = runner.buildMonitors(options);
+      if ((options as CliArgs).throttling == null) {
+        warnIfThrottled(monitors);
+      }
       monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
     } catch (e) {
