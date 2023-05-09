@@ -24,7 +24,7 @@
  */
 
 import { stdin, cwd } from 'process';
-import { resolve } from 'path';
+import { extname, resolve } from 'path';
 import { CliArgs } from './common_types';
 import { step, journey } from './core';
 import { log } from './core/logger';
@@ -38,6 +38,7 @@ import {
 import { installTransform } from './core/transform';
 
 const resolvedCwd = cwd();
+const JOURNEY_EXTENSIONS = ['.js', '.ts', '.mjs', '.cjs'];
 
 /**
  * Perform global setup process required for running the test suites
@@ -131,6 +132,9 @@ function requireSuites(suites: Iterable<string>) {
 async function prepareSuites(inputs: string[], filePattern?: string) {
   const suites = new Set<string>();
   const addSuite = absPath => {
+    if (!JOURNEY_EXTENSIONS.includes(extname(absPath))) {
+      return;
+    }
     log(`Processing file: ${absPath}`);
     suites.add(require.resolve(absPath));
   };

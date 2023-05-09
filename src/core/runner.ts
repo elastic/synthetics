@@ -397,10 +397,9 @@ export default class Runner {
       playwrightOptions: options.playwrightOptions,
     });
 
-    const { match, tags } = options;
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
-      if (!journey.isMatch(match, tags)) {
+      if (!journey.isMatch(options.match, options.tags)) {
         continue;
       }
       this.#currentJourney = journey;

@@ -35,6 +35,7 @@ import {
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
+import { PushOptions } from '../../src/common_types';
 
 describe('Monitors', () => {
   let server: Server;
@@ -144,7 +145,7 @@ describe('Monitors', () => {
   describe('Lightweight monitors', () => {
     const PROJECT_DIR = generateTempPath();
     const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
-    const opts = { auth: 'foo' };
+    const opts: PushOptions = { auth: 'foo' };
     beforeEach(async () => {
       await mkdir(PROJECT_DIR, { recursive: true });
     });
@@ -204,6 +205,19 @@ heartbeat.monitors:
       expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
         `Aborted: Monitor name is required`
       );
+    });
+
+    it('prefer user provider pattern option', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+      `);
+      opts.pattern = '.yaml$';
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.length).toBe(0);
     });
 
     it('skip browser monitors', async () => {

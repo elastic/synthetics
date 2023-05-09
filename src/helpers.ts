@@ -37,6 +37,7 @@ import {
   Location,
   ThrottlingOptions,
 } from './common_types';
+import micromatch from 'micromatch';
 
 const SEPARATOR = '\n';
 
@@ -394,4 +395,31 @@ export function removeTrailingSlash(url: string) {
 
 export function getMonitorManagementURL(url) {
   return removeTrailingSlash(url) + '/app/uptime/manage-monitors/all';
+}
+
+/**
+ * Matches tests based on the provided args. Proitize tags over match
+ * - tags pattern that matches only tags
+ * - match pattern that matches both name and tags
+ */
+export function isMatch(
+  tags: Array<string>,
+  name: string,
+  tagsPattern?: Array<string>,
+  matchPattern?: string
+) {
+  if (tagsPattern) {
+    return tagsMatch(tags, tagsPattern);
+  }
+  if (matchPattern) {
+    return (
+      micromatch.isMatch(name, matchPattern) || tagsMatch(tags, matchPattern)
+    );
+  }
+  return true;
+}
+
+export function tagsMatch(tags, pattern) {
+  const matchess = micromatch(tags || ['*'], pattern);
+  return matchess.length > 0;
 }
