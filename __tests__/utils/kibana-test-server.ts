@@ -30,7 +30,7 @@ import {
 } from '../../src/push/kibana_api';
 
 export const createKibanaTestServer = async (kibanaVersion: string) => {
-  const server = await Server.create({ port: 54455 });
+  const server = await Server.create({ port: 0 });
   server.route('/s/dummy/api/status', (req, res) =>
     res.end(JSON.stringify({ version: { number: kibanaVersion } }))
   );

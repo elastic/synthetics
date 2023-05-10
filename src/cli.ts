@@ -56,6 +56,7 @@ import { Generator } from './generator';
 import { error } from './helpers';
 import { LocationsMap } from './locations/public-locations';
 import { createLightweightMonitors } from './push/monitor';
+import { getVersion } from './push/kibana_api';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -214,6 +215,7 @@ program
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);
       }
+      options.kibanaVersion = await getVersion(options);
       monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
     } catch (e) {

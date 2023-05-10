@@ -34,6 +34,7 @@ import { CLIMock } from '../utils/test-config';
 import { THROTTLING_WARNING_MSG } from '../../src/helpers';
 
 describe('Push', () => {
+  let server: Server;
   const PROJECT_DIR = join(__dirname, 'new-project');
   const DEFAULT_ARGS = ['--auth', 'foo'];
 
@@ -55,10 +56,12 @@ describe('Push', () => {
   }
 
   beforeAll(async () => {
+    server = await createKibanaTestServer('8.6.0');
     await mkdir(PROJECT_DIR, { recursive: true });
   });
   afterAll(async () => {
     process.env.NO_COLOR = '';
+    await server.close();
     await rm(PROJECT_DIR, { recursive: true, force: true });
   });
 
@@ -134,7 +137,7 @@ journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
 
   it('errors on duplicate browser monitors', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
       { locations: ['test-loc'], schedule: 3 }
     );
 
@@ -173,7 +176,7 @@ journey('duplicate name', () => monitor.use({ schedule: 15 }));`
 
   it('errors on duplicate lightweight monitors', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
       { locations: ['test-loc'], schedule: 3 }
     );
 

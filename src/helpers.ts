@@ -389,7 +389,7 @@ export function warn(message: string) {
   write(bold(yellow(`${symbols['warning']} ${message}`)));
 }
 
-export function removeTrailingSlash(url: string) {
+export function removeTrailingSlash(url = '') {
   return url.replace(/\/+$/, '');
 }
 

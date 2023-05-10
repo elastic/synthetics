@@ -32,6 +32,7 @@ import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
+import { isParamOptionSupported } from './utils';
 
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
@@ -235,14 +236,22 @@ export function buildMonitorFromYaml(
   delete config['private_locations'];
 
   const alertConfig = parseAlertConfig(config);
-
-  return new Monitor({
+  const mon = new Monitor({
     locations: options.locations,
     ...config,
     privateLocations,
     schedule: schedule || options.schedule,
     alert: alertConfig,
   });
+
+  /**
+   * Params support is only available for lighweight monitors
+   * post 8.7.2 stack
+   */
+  if (isParamOptionSupported(options.kibanaVersion)) {
+    mon.config.params = options.params;
+  }
+  return mon;
 }
 
 export const parseAlertConfig = (config: MonitorConfig) => {
