@@ -140,8 +140,6 @@ We run end to end tests for the Synthetics agent itself, as well as the Elastic 
 
 ### Releasing
 
-**NOTE: This project is currently in Beta phase**
-
 #### CI based
 
 The release process is also automated in the way any specific commit from the main branch can be potentially released, for such it's required the below steps:
