@@ -66,6 +66,7 @@ export type { SyntheticsConfig } from './common_types';
 export type {
   Action,
   ActionInContext,
+  FrameDescription,
   Signal,
   Step,
   Steps,
