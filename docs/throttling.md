@@ -2,7 +2,7 @@
 
 We have disabled network throttling in Synthetics for browser-based monitors. This is a temporary measure and throttling will become available in a future update.
 
-⚠️ please be aware that your monitors may run more quickly (i.e. have a lower duration) with network throttling disabled.
+⚠️ With network throttling being disabled, note that your monitors may run more quickly (i.e. have a lower duration) than you observed previously, and when network throttling is enabled again in the future.
 
 
 ### Current status
