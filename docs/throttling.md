@@ -8,7 +8,7 @@ We have disabled network throttling in Synthetics for browser-based monitors. Th
 ### Current status
 
 * Elastic’s global managed testing infrastructure
-  * Network throttling disabled in all locations from ~21:00 GMT 09 May 2023
+  * Network throttling disabled for all locations from ~21:00 GMT 09 May 2023
   * All network throttling configurations defined for your monitors are ignored
 * Private Locations (provided through Elastic Agent)
   * Versions prior to 8.8.0 have network throttling enabled (based on your monitor configuration)
