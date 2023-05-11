@@ -1,4 +1,4 @@
-### Background
+### Network throttling in Elastic Synthetics
 
 We have disabled network throttling in Synthetics for browser-based monitors. This is a temporary measure and throttling will become available in a future update.
 
