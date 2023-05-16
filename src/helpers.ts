@@ -393,8 +393,12 @@ export function removeTrailingSlash(url = '') {
   return url.replace(/\/+$/, '');
 }
 
-export function getMonitorManagementURL(url) {
-  return removeTrailingSlash(url) + '/app/uptime/manage-monitors/all';
+export function getMonitorManagementURL(url: string) {
+  return removeTrailingSlash(url) + '/app/synthetics/monitors';
+}
+
+export function getProjectApiKeyURL(url: string) {
+  return removeTrailingSlash(url) + '/app/synthetics/settings/api-keys';
 }
 
 /**
