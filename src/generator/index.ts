@@ -133,8 +133,8 @@ export class Generator {
         type: 'select',
         name: 'schedule',
         message: 'Set default schedule in minutes for all monitors',
-        initial: '10', // set default schedule to 10 minutes
-        choices: ALLOWED_SCHEDULES.map(String),
+        initial: 3, // Index of the third array item which is 10 minutes
+        choices: ALLOWED_SCHEDULES.map(value => ({ name: value, value })),
         required: true,
         result(value) {
           return Number(value) as any;
