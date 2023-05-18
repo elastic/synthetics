@@ -133,12 +133,9 @@ export class Generator {
         type: 'select',
         name: 'schedule',
         message: 'Set default schedule in minutes for all monitors',
-        initial: 3, // Index of the third array item which is 10 minutes
+        initial: '10', // set default schedule to 10 minutes
         choices: ALLOWED_SCHEDULES.map(String),
         required: true,
-        result(value) {
-          return Number(value) as any;
-        },
       },
       {
         type: 'input',
@@ -156,6 +153,11 @@ export class Generator {
 
     // Split and group private and public locations from the answered list.
     const answers = await prompt<PromptOptions>(monitorQues);
+    // Casting the schedule value via the result() prompt option from enquirer
+    // causes a misbehaviour in certain circumstances. That's why we perform
+    // the casting here. Please see https://github.com/elastic/synthetics/pull/771#issuecomment-1551519148 for more context
+    answers.schedule = Number(answers.schedule);
+
     const { locations, privateLocations } = groupLocations(answers.locations);
     return { ...answers, url, locations, privateLocations };
   }
