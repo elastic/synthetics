@@ -809,4 +809,18 @@ describe('runner', () => {
     expect(monitors.length).toBe(1);
     expect(monitors[0].config.name).toBe('j1');
   });
+
+  it('runner - build monitors filtered through "tags" added updating monitor config', async () => {
+    const j1 = new Journey({ name: 'j1' }, noop);
+    const j2 = new Journey({ name: 'j2' }, noop);
+    const j3 = new Journey({ name: 'j3' }, noop);
+    j1.updateMonitor({ tags: ['first'] });
+    runner.addJourney(j1);
+    runner.addJourney(j2);
+    runner.addJourney(j3);
+
+    const monitors = runner.buildMonitors({ tags: ['first'], schedule: 1 });
+    expect(monitors.length).toBe(1);
+    expect(monitors[0].config.name).toBe('j1');
+  });
 });

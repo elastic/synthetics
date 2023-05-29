@@ -399,9 +399,6 @@ export default class Runner {
 
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
-      if (!journey.isMatch(options.match, options.tags)) {
-        continue;
-      }
       this.#currentJourney = journey;
       /**
        * Execute dummy callback to get all monitor specific
@@ -410,6 +407,15 @@ export default class Runner {
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
       journey.monitor.validate();
+
+      /**
+       * Add the tags created through `monitor.use` to the journey
+       */
+      journey.addTags(journey.monitor.config.tags);
+      if (!journey.isMatch(options.match, options.tags)) {
+        continue;
+      }
+
       monitors.push(journey.monitor);
     }
     return monitors;
