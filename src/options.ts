@@ -115,6 +115,7 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   options.locations = cliArgs.locations ?? monitor?.locations;
   options.privateLocations =
     cliArgs.privateLocations ?? monitor?.privateLocations;
+  options.tags = cliArgs.tags ?? monitor?.tags;
 
   return options;
 }
