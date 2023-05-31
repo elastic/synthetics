@@ -267,6 +267,24 @@ heartbeat.monitors:
         expect(output).toContain('✓ Pushed:');
         await rm(testJourney, { force: true });
       });
+
+      it('push journeys filtered through "tags"', async () => {
+        const testJourney = join(PROJECT_DIR, 'test-tags.journey.ts');
+        await writeFile(
+          testJourney,
+          `import {journey, monitor} from '../../../';
+        journey('journey 1', () => monitor.use({ id: 'j1', tags: ['test'] }));
+        journey('journey 2', () => monitor.use({ id: 'j2' }));`
+        );
+
+        const output = await runPush([...DEFAULT_ARGS, '--tags', 'test']);
+        expect(output).toContain('Pushing monitors for project: test-project');
+        expect(output).toContain('bundling 1 monitors');
+        expect(output).toContain('creating or updating 1 monitors');
+        expect(output).toContain(deleteProgress);
+        expect(output).toContain('✓ Pushed:');
+        await rm(testJourney, { force: true });
+      });
     });
   });
 });

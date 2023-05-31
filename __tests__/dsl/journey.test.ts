@@ -44,13 +44,4 @@ describe('Journey', () => {
     expect(s2).toBeInstanceOf(Step);
     expect(journey.steps.length).toBe(2);
   });
-
-  it('add only new tags to an existing journey', () => {
-    const name = 'j1';
-    const tags = ['foo'];
-    const journey = new Journey({ name, tags }, noop);
-
-    journey.addTags(['bar', 'baz', 'foo']);
-    expect(journey.tags).toEqual(['foo', 'bar', 'baz']);
-  });
 });

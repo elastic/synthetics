@@ -408,11 +408,16 @@ export default class Runner {
       journey.monitor.update(this.monitor?.config);
       journey.monitor.validate();
 
+      const matchesJourney = journey.isMatch(options.match, options.tags);
+      const matchesMonitor = journey.monitor.isMatch(
+        options.match,
+        options.tags
+      );
       /**
-       * Add the tags created through `monitor.use` to the journey
+       * The tags provided should match with the ones
+       * configured either in the journey or in the monitor
        */
-      journey.addTags(journey.monitor.config.tags);
-      if (!journey.isMatch(options.match, options.tags)) {
+      if (!matchesJourney && !matchesMonitor) {
         continue;
       }
 

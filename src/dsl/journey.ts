@@ -107,18 +107,4 @@ export class Journey {
   isMatch(matchPattern: string, tagsPattern: Array<string>) {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
-
-  addTags(tags: string[]) {
-    if (!tags) {
-      return;
-    }
-
-    this.tags = this.tags ?? [];
-    tags.forEach(tag => {
-      // Avoid duplicates
-      if (!this.tags.includes(tag)) {
-        this.tags.push(tag);
-      }
-    });
-  }
 }
