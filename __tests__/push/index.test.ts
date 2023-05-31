@@ -268,7 +268,7 @@ heartbeat.monitors:
         await rm(testJourney, { force: true });
       });
 
-      it('push journeys filtered through "tags"', async () => {
+      it('push journeys filtered through "tags" sent as CLI flag', async () => {
         const testJourney = join(PROJECT_DIR, 'test-tags.journey.ts');
         await writeFile(
           testJourney,
@@ -278,6 +278,28 @@ heartbeat.monitors:
         );
 
         const output = await runPush([...DEFAULT_ARGS, '--tags', 'test']);
+        expect(output).toContain('Pushing monitors for project: test-project');
+        expect(output).toContain('bundling 1 monitors');
+        expect(output).toContain('creating or updating 1 monitors');
+        expect(output).toContain(deleteProgress);
+        expect(output).toContain('✓ Pushed:');
+        await rm(testJourney, { force: true });
+      });
+
+      it('push journeys filtered through "tags" defined in the config file', async () => {
+        await fakeProjectSetup(
+          { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          { locations: ['test-loc'], schedule: 3, tags: ['test'] }
+        );
+        const testJourney = join(PROJECT_DIR, 'test-tags.journey.ts');
+        await writeFile(
+          testJourney,
+          `import {journey, monitor} from '../../../';
+        journey('journey 1', () => monitor.use({ id: 'j1', tags: ['test'] }));
+        journey('journey 2', () => monitor.use({ id: 'j2' }));`
+        );
+
+        const output = await runPush();
         expect(output).toContain('Pushing monitors for project: test-project');
         expect(output).toContain('bundling 1 monitors');
         expect(output).toContain('creating or updating 1 monitors');
