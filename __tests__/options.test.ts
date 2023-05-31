@@ -26,6 +26,7 @@
 import { CliArgs } from '../src/common_types';
 import { normalizeOptions } from '../src/options';
 import { join } from 'path';
+import { devices } from 'playwright-chromium';
 
 describe('options', () => {
   it('normalize', () => {
@@ -86,6 +87,62 @@ describe('options', () => {
       schedule: 3,
       privateLocations: ['test'],
       locations: ['australia_east'],
+    });
+  });
+
+  it('normalize monitor configs defined in the config file', () => {
+    const cliArgs: CliArgs = {
+      config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
+    };
+
+    expect(normalizeOptions(cliArgs)).toEqual(
+      expect.objectContaining({
+        schedule: 5,
+        tags: ['test-tag'],
+        locations: ['us_west'],
+        privateLocations: ['test-private-location'],
+      })
+    );
+  });
+
+  it('CLI flags prevail over the options defined in the config file', () => {
+    const cliArgs: CliArgs = {
+      config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
+      params: {
+        url: 'test-dev',
+      },
+      schedule: 3,
+      tags: ['cli-test-tag'],
+      locations: ['brazil'],
+      privateLocations: ['cli-test-private-location'],
+    };
+
+    expect(normalizeOptions(cliArgs)).toEqual(
+      expect.objectContaining({
+        params: cliArgs.params,
+        schedule: cliArgs.schedule,
+        tags: cliArgs.tags,
+        locations: cliArgs.locations,
+        privateLocations: cliArgs.privateLocations,
+      })
+    );
+  });
+
+  it('merges CLI playwrightOptions with the ones defined in the config file', () => {
+    const cliArgs: CliArgs = {
+      config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
+      playwrightOptions: {
+        testIdAttribute: 'test-id-attribute',
+        chromiumSandbox: true,
+        ignoreHTTPSErrors: false,
+      },
+    };
+
+    expect(normalizeOptions(cliArgs).playwrightOptions).toEqual({
+      ...devices['Galaxy S9+'],
+      testIdAttribute: cliArgs.playwrightOptions.testIdAttribute,
+      chromiumSandbox: cliArgs.playwrightOptions.chromiumSandbox,
+      ignoreHTTPSErrors: cliArgs.playwrightOptions.ignoreHTTPSErrors,
     });
   });
 });
