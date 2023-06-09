@@ -206,7 +206,6 @@ type BaseArgs = {
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
-  ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: MonitorConfig['throttling'];
@@ -234,7 +233,6 @@ export type RunOptions = BaseArgs & {
   trace?: boolean;
   filmstrips?: boolean;
   environment?: string;
-  playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
 };

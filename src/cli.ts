@@ -88,9 +88,10 @@ program
     'Enable capabilities through feature flags'
   )
   .addOption(
-    new Option('--screenshots [flag]', 'take screenshots at end of each step')
-      .choices(['on', 'off', 'only-on-failure'])
-      .default('on')
+    new Option(
+      '--screenshots [flag]',
+      'take screenshots at end of each step'
+    ).choices(['on', 'off', 'only-on-failure'])
   )
   .option(
     '--dry-run',
@@ -133,7 +134,7 @@ program
   .action(async (cliArgs: CliArgs) => {
     const tearDown = await globalSetup(cliArgs, program.args);
     try {
-      const options = normalizeOptions(cliArgs);
+      const options = normalizeOptions(cliArgs, 'run');
       const results = await run(options);
       /**
        * Exit with error status if any journey fails
@@ -204,11 +205,14 @@ program
     ]);
     try {
       const settings = await loadSettings();
-      const options = normalizeOptions({
-        ...program.opts(),
-        ...settings,
-        ...cmdOpts,
-      }) as PushOptions;
+      const options = normalizeOptions(
+        {
+          ...program.opts(),
+          ...settings,
+          ...cmdOpts,
+        },
+        'push'
+      ) as PushOptions;
       validateSettings(options);
       await catchIncorrectSettings(settings, options);
       const monitors = runner.buildMonitors(options);

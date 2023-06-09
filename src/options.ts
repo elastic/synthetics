@@ -29,7 +29,12 @@ import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { THROTTLING_WARNING_MSG, warn } from './helpers';
 
-export function normalizeOptions(cliArgs: CliArgs): RunOptions {
+type Mode = 'run' | 'push';
+
+export function normalizeOptions(
+  cliArgs: CliArgs,
+  mode: Mode = 'run'
+): RunOptions {
   const options: RunOptions = {
     ...cliArgs,
     environment: process.env['NODE_ENV'] || 'development',
@@ -107,14 +112,26 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   };
 
   /**
-   * Get the default monitor config from synthetics.config.ts file
+   * Merge default options based on the mode of operation whether we are running tests locally
+   * or pushing the project monitors
    */
-  const monitor = config.monitor;
-
-  options.schedule = cliArgs.schedule ?? monitor?.schedule;
-  options.locations = cliArgs.locations ?? monitor?.locations;
-  options.privateLocations =
-    cliArgs.privateLocations ?? monitor?.privateLocations;
+  switch (mode) {
+    case 'run':
+      options.screenshots = cliArgs.screenshots ?? 'on';
+      break;
+    case 'push':
+      /**
+       * Merge the default monitor config from synthetics.config.ts file
+       * with the CLI options passed via push command
+       */
+      const monitor = config.monitor;
+      options.screenshots = options.screenshots ?? monitor?.screenshot;
+      options.schedule = options.schedule ?? monitor?.schedule;
+      options.locations = options.locations ?? monitor?.locations;
+      options.privateLocations =
+        options.privateLocations ?? monitor?.privateLocations;
+      break;
+  }
 
   return options;
 }

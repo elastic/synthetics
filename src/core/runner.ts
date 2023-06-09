@@ -395,6 +395,7 @@ export default class Runner {
       privateLocations: options.privateLocations,
       params: options.params,
       playwrightOptions: options.playwrightOptions,
+      screenshot: options.screenshots,
     });
 
     const monitors: Monitor[] = [];
