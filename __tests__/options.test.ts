@@ -43,7 +43,6 @@ describe('options', () => {
       pauseOnError: true,
       config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
     };
-    console.log('normalizeOptions({})', normalizeOptions({}));
     expect(normalizeOptions({})).toMatchObject({
       environment: 'test',
       params: {},
