@@ -46,6 +46,7 @@ describe('options', () => {
     expect(normalizeOptions({})).toMatchObject({
       environment: 'test',
       params: {},
+      screenshots: 'on',
     });
     expect(normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
@@ -76,13 +77,27 @@ describe('options', () => {
   });
 
   it('normalize monitor configs', () => {
+    const config = join(__dirname, 'fixtures', 'synthetics.config.ts');
+    expect(normalizeOptions({ config }, 'push')).toMatchObject({
+      screenshots: 'off',
+      schedule: 10,
+      privateLocations: ['test-location'],
+      locations: ['us_east'],
+    });
+
     expect(
-      normalizeOptions({
-        schedule: 3,
-        privateLocations: ['test'],
-        locations: ['australia_east'],
-      })
+      normalizeOptions(
+        {
+          config,
+          schedule: 3,
+          screenshots: 'only-on-failure',
+          locations: ['australia_east'],
+          privateLocations: ['test'],
+        },
+        'push'
+      )
     ).toMatchObject({
+      screenshots: 'only-on-failure',
       schedule: 3,
       privateLocations: ['test'],
       locations: ['australia_east'],

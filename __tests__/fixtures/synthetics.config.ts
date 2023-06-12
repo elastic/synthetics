@@ -34,6 +34,12 @@ module.exports = env => {
     playwrightOptions: {
       ...devices['Galaxy S9+'],
     },
+    monitor: {
+      screenshot: 'off',
+      schedule: 10,
+      locations: ['us_east'],
+      privateLocations: ['test-location'],
+    },
   };
   if (env !== 'development' && config.params) {
     config.params.url = 'non-dev';
