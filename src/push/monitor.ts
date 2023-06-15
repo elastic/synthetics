@@ -255,14 +255,23 @@ export function buildMonitorFromYaml(
 }
 
 export const parseAlertConfig = (config: MonitorConfig) => {
+  const alertConfig = {};
   if (config['alert.status.enabled'] !== undefined) {
     const value = config['alert.status.enabled'];
     delete config['alert.status.enabled'];
-    return {
-      status: {
-        enabled: value,
-      },
+    alertConfig['status'] = {
+      enabled: value,
     };
+  }
+  if (config['alert.tls.enabled'] !== undefined) {
+    const value = config['alert.tls.enabled'];
+    delete config['alert.tls.enabled'];
+    alertConfig['tls'] = {
+      enabled: value,
+    };
+  }
+  if (Object.keys(alertConfig).length > 0) {
+    return alertConfig;
   }
   return config.alert;
 };

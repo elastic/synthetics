@@ -63,7 +63,10 @@ export type MonitorConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   alert?: {
-    status: {
+    status?: {
+      enabled: boolean;
+    };
+    tls?: {
       enabled: boolean;
     };
   };

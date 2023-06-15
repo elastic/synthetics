@@ -142,6 +142,25 @@ describe('Monitors', () => {
     });
   });
 
+  it('parse tls alert config option', async () => {
+    expect(parseAlertConfig({})).toBe(undefined);
+    expect(
+      parseAlertConfig({
+        'alert.status.enabled': true,
+        'alert.tls.enabled': true,
+      } as any)
+    ).toEqual({
+      status: { enabled: true },
+      tls: { enabled: true },
+    });
+    expect(parseAlertConfig({ 'alert.tls.enabled': true } as any)).toEqual({
+      tls: { enabled: true },
+    });
+    expect(parseAlertConfig({ alert: { tls: { enabled: true } } })).toEqual({
+      tls: { enabled: true },
+    });
+  });
+
   describe('Lightweight monitors', () => {
     const PROJECT_DIR = generateTempPath();
     const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
