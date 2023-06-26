@@ -277,17 +277,12 @@ export const parseAlertConfig = (
       enabled: value,
     };
   }
-  const monitorAlertConfig =
-    Object.keys(alertConfig).length > 0 ? alertConfig : config.alert;
 
   // If the user has provided a global alert config, merge it with the monitor alert config
-  if (globalAlertConfig) {
-    return {
-      ...globalAlertConfig,
-      ...monitorAlertConfig,
-    };
-  }
-  return monitorAlertConfig;
+  return {
+    ...(globalAlertConfig ?? {}),
+    ...alertConfig,
+  };
 };
 
 export function parseSchedule(schedule: string) {
