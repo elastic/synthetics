@@ -85,10 +85,10 @@ describe('options', () => {
       locations: ['us_east'],
       alert: {
         status: {
-          enabled: false,
+          enabled: true,
         },
         tls: {
-          enabled: true,
+          enabled: false,
         },
       },
     });
@@ -111,10 +111,10 @@ describe('options', () => {
       locations: ['australia_east'],
       alert: {
         status: {
-          enabled: false,
+          enabled: true,
         },
         tls: {
-          enabled: true,
+          enabled: false,
         },
       },
     });
