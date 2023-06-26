@@ -34,7 +34,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
-import { MonitorConfig } from './dsl/monitor';
+import { AlertConfig, MonitorConfig } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -212,6 +212,7 @@ type BaseArgs = {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  alert?: AlertConfig;
 };
 
 export type CliArgs = BaseArgs & {
@@ -248,6 +249,7 @@ export type PushOptions = Partial<ProjectSettings> & {
   pattern?: string;
   match?: string;
   tags?: Array<string>;
+  alert?: AlertConfig;
 };
 
 export type ProjectSettings = {

@@ -140,6 +140,21 @@ describe('Monitors', () => {
     expect(parseAlertConfig({ alert: { status: { enabled: true } } })).toEqual({
       status: { enabled: true },
     });
+
+    expect(
+      parseAlertConfig(
+        { alert: { status: { enabled: true } } },
+        {
+          status: { enabled: false },
+          tls: { enabled: true },
+        }
+      )
+    ).toEqual({
+      status: { enabled: true },
+      tls: {
+        enabled: true,
+      },
+    });
   });
 
   it('parse tls alert config option', async () => {
@@ -156,8 +171,16 @@ describe('Monitors', () => {
     expect(parseAlertConfig({ 'alert.tls.enabled': true } as any)).toEqual({
       tls: { enabled: true },
     });
-    expect(parseAlertConfig({ alert: { tls: { enabled: true } } })).toEqual({
+    expect(
+      parseAlertConfig(
+        { alert: { tls: { enabled: true } } },
+        {
+          status: { enabled: false },
+        }
+      )
+    ).toEqual({
       tls: { enabled: true },
+      status: { enabled: false },
     });
   });
 

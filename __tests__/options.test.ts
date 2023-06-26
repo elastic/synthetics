@@ -83,6 +83,14 @@ describe('options', () => {
       schedule: 10,
       privateLocations: ['test-location'],
       locations: ['us_east'],
+      alert: {
+        status: {
+          enabled: false,
+        },
+        tls: {
+          enabled: true,
+        },
+      },
     });
 
     expect(
@@ -101,6 +109,14 @@ describe('options', () => {
       schedule: 3,
       privateLocations: ['test'],
       locations: ['australia_east'],
+      alert: {
+        status: {
+          enabled: false,
+        },
+        tls: {
+          enabled: true,
+        },
+      },
     });
   });
 });

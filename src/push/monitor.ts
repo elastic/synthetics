@@ -30,7 +30,12 @@ import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
-import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
+import {
+  AlertConfig,
+  ALLOWED_SCHEDULES,
+  Monitor,
+  MonitorConfig,
+} from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import { isParamOptionSupported } from './utils';
 
@@ -234,8 +239,8 @@ export function buildMonitorFromYaml(
   const privateLocations =
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
-
-  const alertConfig = parseAlertConfig(config);
+  console.log(options);
+  const alertConfig = parseAlertConfig(config, options.alert);
   const mon = new Monitor({
     locations: options.locations,
     ...config,
@@ -254,7 +259,10 @@ export function buildMonitorFromYaml(
   return mon;
 }
 
-export const parseAlertConfig = (config: MonitorConfig) => {
+export const parseAlertConfig = (
+  config: MonitorConfig,
+  globalAlertConfig?: AlertConfig
+) => {
   const alertConfig = {};
   if (config['alert.status.enabled'] !== undefined) {
     const value = config['alert.status.enabled'];
@@ -270,10 +278,17 @@ export const parseAlertConfig = (config: MonitorConfig) => {
       enabled: value,
     };
   }
-  if (Object.keys(alertConfig).length > 0) {
-    return alertConfig;
+  const monitorAlertConfig =
+    Object.keys(alertConfig).length > 0 ? alertConfig : config.alert;
+
+  // If the user has provided a global alert config, merge it with the monitor alert config
+  if (globalAlertConfig) {
+    return {
+      ...globalAlertConfig,
+      ...monitorAlertConfig,
+    };
   }
-  return config.alert;
+  return monitorAlertConfig;
 };
 
 export function parseSchedule(schedule: string) {
