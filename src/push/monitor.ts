@@ -239,7 +239,6 @@ export function buildMonitorFromYaml(
   const privateLocations =
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
-  console.log(options);
   const alertConfig = parseAlertConfig(config, options.alert);
   const mon = new Monitor({
     locations: options.locations,
