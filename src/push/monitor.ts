@@ -279,10 +279,12 @@ export const parseAlertConfig = (
   }
 
   // If the user has provided a global alert config, merge it with the monitor alert config
-  return {
+  const result = {
     ...(globalAlertConfig ?? {}),
     ...alertConfig,
+    ...config.alert,
   };
+  return Object.keys(result).length > 0 ? result : undefined;
 };
 
 export function parseSchedule(schedule: string) {
