@@ -130,9 +130,9 @@ export function normalizeOptions(
       options.locations = options.locations ?? monitor?.locations;
       options.privateLocations =
         options.privateLocations ?? monitor?.privateLocations;
+      options.alert = options.alert ?? monitor?.alert;
       break;
   }
-
   return options;
 }
 

@@ -30,7 +30,12 @@ import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
-import { ALLOWED_SCHEDULES, Monitor, MonitorConfig } from '../dsl/monitor';
+import {
+  AlertConfig,
+  ALLOWED_SCHEDULES,
+  Monitor,
+  MonitorConfig,
+} from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import { isParamOptionSupported } from './utils';
 
@@ -234,8 +239,7 @@ export function buildMonitorFromYaml(
   const privateLocations =
     config['private_locations'] || options.privateLocations;
   delete config['private_locations'];
-
-  const alertConfig = parseAlertConfig(config);
+  const alertConfig = parseAlertConfig(config, options.alert);
   const mon = new Monitor({
     locations: options.locations,
     ...config,
@@ -254,17 +258,43 @@ export function buildMonitorFromYaml(
   return mon;
 }
 
-export const parseAlertConfig = (config: MonitorConfig) => {
+export const parseAlertConfig = (
+  config: MonitorConfig,
+  globalAlertConfig?: AlertConfig
+) => {
+  const alertConfig: AlertConfig = {};
+
   if (config['alert.status.enabled'] !== undefined) {
     const value = config['alert.status.enabled'];
     delete config['alert.status.enabled'];
-    return {
-      status: {
-        enabled: value,
-      },
+    alertConfig['status'] = {
+      enabled: value,
     };
   }
-  return config.alert;
+  if (config['alert.tls.enabled'] !== undefined) {
+    const value = config['alert.tls.enabled'];
+    delete config['alert.tls.enabled'];
+    alertConfig['tls'] = {
+      enabled: value,
+    };
+  }
+  if (config?.alert?.status?.enabled !== undefined) {
+    alertConfig.status = {
+      enabled: config.alert.status.enabled,
+    };
+  }
+  if (config?.alert?.tls?.enabled !== undefined) {
+    alertConfig.tls = {
+      enabled: config.alert.tls.enabled,
+    };
+  }
+
+  // If the user has provided a global alert config, merge it with the monitor alert config
+  const result = {
+    ...(globalAlertConfig ?? {}),
+    ...alertConfig,
+  };
+  return Object.keys(result).length > 0 ? result : undefined;
 };
 
 export function parseSchedule(schedule: string) {

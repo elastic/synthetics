@@ -39,6 +39,14 @@ module.exports = env => {
       schedule: 10,
       locations: ['us_east'],
       privateLocations: ['test-location'],
+      alert: {
+        status: {
+          enabled: true,
+        },
+        tls: {
+          enabled: false,
+        },
+      },
     },
   };
   if (env !== 'development' && config.params) {
