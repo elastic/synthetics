@@ -262,7 +262,8 @@ export const parseAlertConfig = (
   config: MonitorConfig,
   globalAlertConfig?: AlertConfig
 ) => {
-  const alertConfig = {};
+  const alertConfig: AlertConfig = {};
+
   if (config['alert.status.enabled'] !== undefined) {
     const value = config['alert.status.enabled'];
     delete config['alert.status.enabled'];
@@ -277,12 +278,21 @@ export const parseAlertConfig = (
       enabled: value,
     };
   }
+  if (config?.alert?.status?.enabled !== undefined) {
+    alertConfig.status = {
+      enabled: config.alert.status.enabled,
+    };
+  }
+  if (config?.alert?.tls?.enabled !== undefined) {
+    alertConfig.tls = {
+      enabled: config.alert.tls.enabled,
+    };
+  }
 
   // If the user has provided a global alert config, merge it with the monitor alert config
   const result = {
     ...(globalAlertConfig ?? {}),
     ...alertConfig,
-    ...config.alert,
   };
   return Object.keys(result).length > 0 ? result : undefined;
 };
