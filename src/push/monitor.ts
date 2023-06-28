@@ -180,6 +180,7 @@ export async function createLightweightMonitors(
     const parsedDoc = parseDocument(content, {
       lineCounter,
       keepSourceTokens: true,
+      merge: true,
     });
     // Skip other yml files that are not relevant
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
@@ -260,42 +261,49 @@ export function buildMonitorFromYaml(
 
 export const parseAlertConfig = (
   config: MonitorConfig,
-  globalAlertConfig?: AlertConfig
+  gConfig?: AlertConfig
 ) => {
-  const alertConfig: AlertConfig = {};
-
-  if (config['alert.status.enabled'] !== undefined) {
-    const value = config['alert.status.enabled'];
-    delete config['alert.status.enabled'];
-    alertConfig['status'] = {
-      enabled: value,
-    };
-  }
-  if (config['alert.tls.enabled'] !== undefined) {
-    const value = config['alert.tls.enabled'];
-    delete config['alert.tls.enabled'];
-    alertConfig['tls'] = {
-      enabled: value,
-    };
-  }
-  if (config?.alert?.status?.enabled !== undefined) {
-    alertConfig.status = {
-      enabled: config.alert.status.enabled,
-    };
-  }
-  if (config?.alert?.tls?.enabled !== undefined) {
-    alertConfig.tls = {
-      enabled: config.alert.tls.enabled,
-    };
-  }
-
   // If the user has provided a global alert config, merge it with the monitor alert config
-  const result = {
-    ...(globalAlertConfig ?? {}),
-    ...alertConfig,
-  };
+  const status = getAlertKeyValue('status', config, gConfig);
+  const tls = getAlertKeyValue('tls', config, gConfig);
+  const result = {};
+  if (status) {
+    result['status'] = status;
+  }
+  if (tls) {
+    result['tls'] = tls;
+  }
   return Object.keys(result).length > 0 ? result : undefined;
 };
+
+export function getAlertKeyValue(
+  key: 'status' | 'tls',
+  config: MonitorConfig,
+  alertConfig?: AlertConfig
+): { enabled: boolean } {
+  const value = config.alert;
+  if (value?.[key]?.enabled !== undefined) {
+    return {
+      enabled: value[key].enabled,
+    };
+  }
+
+  if (value?.[`${key}.enabled`] !== undefined) {
+    return {
+      enabled: value[`${key}.enabled`],
+    };
+  }
+  const rootKey = `alert.${key}.enabled`;
+  if (config[rootKey] !== undefined) {
+    const enabled = config[rootKey];
+    delete config[rootKey];
+    return {
+      enabled,
+    };
+  }
+
+  return alertConfig?.[key];
+}
 
 export function parseSchedule(schedule: string) {
   const EVERY_SYNTAX = '@every';

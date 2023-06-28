@@ -132,58 +132,6 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 1d')).toBe(240);
   });
 
-  it('parse alert config option', async () => {
-    expect(parseAlertConfig({})).toBe(undefined);
-    expect(parseAlertConfig({ 'alert.status.enabled': true } as any)).toEqual({
-      status: { enabled: true },
-    });
-    expect(parseAlertConfig({ alert: { status: { enabled: true } } })).toEqual({
-      status: { enabled: true },
-    });
-
-    expect(
-      parseAlertConfig(
-        { alert: { status: { enabled: true } } },
-        {
-          status: { enabled: false },
-          tls: { enabled: true },
-        }
-      )
-    ).toEqual({
-      status: { enabled: true },
-      tls: {
-        enabled: true,
-      },
-    });
-  });
-
-  it('parse tls alert config option', async () => {
-    expect(parseAlertConfig({})).toBe(undefined);
-    expect(
-      parseAlertConfig({
-        'alert.status.enabled': true,
-        'alert.tls.enabled': true,
-      } as any)
-    ).toEqual({
-      status: { enabled: true },
-      tls: { enabled: true },
-    });
-    expect(parseAlertConfig({ 'alert.tls.enabled': true } as any)).toEqual({
-      tls: { enabled: true },
-    });
-    expect(
-      parseAlertConfig(
-        { alert: { tls: { enabled: true } } },
-        {
-          status: { enabled: false },
-        }
-      )
-    ).toEqual({
-      tls: { enabled: true },
-      status: { enabled: false },
-    });
-  });
-
   describe('Lightweight monitors', () => {
     const PROJECT_DIR = generateTempPath();
     const HB_SOURCE = join(PROJECT_DIR, 'heartbeat.yml');
@@ -403,6 +351,80 @@ heartbeat.monitors:
         ssl: {
           certificate_authorities: ['/etc/ca.crt'],
         },
+      });
+    });
+  });
+
+  describe('parseAlertConfig', () => {
+    it('parse alert config option', async () => {
+      expect(parseAlertConfig({})).toBe(undefined);
+      expect(parseAlertConfig({ 'alert.status.enabled': true } as any)).toEqual(
+        {
+          status: { enabled: true },
+        }
+      );
+      expect(
+        parseAlertConfig({ alert: { status: { enabled: true } } })
+      ).toEqual({
+        status: { enabled: true },
+      });
+    });
+
+    it('parse alert config option when global config is also provided', async () => {
+      expect(
+        parseAlertConfig(
+          { alert: { 'status.enabled': false, 'tls.enabled': true } } as any,
+          {
+            status: { enabled: false },
+            tls: { enabled: false },
+          }
+        )
+      ).toEqual({
+        status: { enabled: false },
+        tls: {
+          enabled: true,
+        },
+      });
+      expect(
+        parseAlertConfig(
+          { alert: { status: { enabled: true } } },
+          {
+            status: { enabled: false },
+            tls: { enabled: true },
+          }
+        )
+      ).toEqual({
+        status: { enabled: true },
+        tls: {
+          enabled: true,
+        },
+      });
+    });
+
+    it('parse tls alert config option', async () => {
+      expect(parseAlertConfig({})).toBe(undefined);
+      expect(
+        parseAlertConfig({
+          'alert.status.enabled': true,
+          'alert.tls.enabled': true,
+        } as any)
+      ).toEqual({
+        status: { enabled: true },
+        tls: { enabled: true },
+      });
+      expect(parseAlertConfig({ 'alert.tls.enabled': true } as any)).toEqual({
+        tls: { enabled: true },
+      });
+      expect(
+        parseAlertConfig(
+          { alert: { tls: { enabled: true } } },
+          {
+            status: { enabled: false },
+          }
+        )
+      ).toEqual({
+        tls: { enabled: true },
+        status: { enabled: false },
       });
     });
   });
