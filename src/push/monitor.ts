@@ -180,7 +180,6 @@ export async function createLightweightMonitors(
     const parsedDoc = parseDocument(content, {
       lineCounter,
       keepSourceTokens: true,
-      merge: true,
     });
     // Skip other yml files that are not relevant
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
