@@ -95,7 +95,7 @@ export function microSecsToSeconds(ts: number) {
 /**
  * Timestamp at which the current node process began.
  */
-const processStart = performance.timeOrigin;
+export const processStart = performance.timeOrigin;
 export function getTimestamp() {
   return (processStart + now()) * 1000;
 }

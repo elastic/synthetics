@@ -36,6 +36,7 @@ import JSONReporter, {
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
+import { Step } from '../../src/dsl';
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -45,6 +46,15 @@ jest.mock(
   '../../package.json',
   jest.fn(() => ({ version: '0.0.1', name: '@elastic/synthetics' }))
 );
+
+/**
+ * Mock the timeOrigin to log process startup time
+ */
+jest.mock('perf_hooks', () => ({
+  performance: {
+    timeOrigin: 1600300800000,
+  },
+}));
 
 describe('json reporter', () => {
   let dest: string;
@@ -107,7 +117,7 @@ describe('json reporter', () => {
     reporter.onJourneyStart(j1, {
       timestamp,
     });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
+    reporter.onStepEnd(j1, step('s1', helpers.noop) as Step, {
       status: 'succeeded',
       url: 'dummy',
       start: 0,
@@ -158,6 +168,7 @@ describe('json reporter', () => {
       status: 'succeeded',
       start: 0,
       end: 11,
+      browserDelay: 2,
       options: {},
       networkinfo: [
         {
@@ -196,7 +207,7 @@ describe('json reporter', () => {
   it('writes step errors to the top level', async () => {
     const myErr = new Error('myError');
 
-    reporter.onStepEnd(j1, step('s2', helpers.noop), {
+    reporter.onStepEnd(j1, step('s2', helpers.noop) as Step, {
       status: 'failed',
       url: 'dummy2',
       start: 11,
@@ -217,6 +228,7 @@ describe('json reporter', () => {
       timestamp,
       start: 0,
       end: 1,
+      browserDelay: 0,
       status: 'failed',
       error: myErr,
       options: {},
@@ -237,6 +249,7 @@ describe('json reporter', () => {
         timestamp,
         start: 0,
         end: 1,
+        browserDelay: 0,
         status: 'skipped',
         options: {},
       }
@@ -245,7 +258,11 @@ describe('json reporter', () => {
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
     );
-    expect(journeyEnd.journey).toEqual({ ...journeyOpts, status: 'skipped' });
+    expect(journeyEnd.journey).toEqual({
+      ...journeyOpts,
+      duration: { us: 1 * 1e6 },
+      status: 'skipped',
+    });
   });
 
   it('captures number of journeys as metadata event', async () => {
@@ -294,6 +311,7 @@ describe('json reporter', () => {
       reporter.onJourneyEnd(j1, {
         timestamp,
         start: 0,
+        browserDelay: 0,
         end: 2,
         status,
         options,

@@ -304,6 +304,7 @@ export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
     start: number;
     end: number;
+    browserDelay: number;
     options: RunOptions;
     timestamp: number;
   };
