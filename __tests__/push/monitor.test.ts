@@ -285,78 +285,62 @@ heartbeat.monitors:
       expect(monitors.length).toBe(0);
     });
 
-    it('use schedule from config', async () => {
-      await writeHBFile(`
-heartbeat.monitors:
-- type: icmp
-  id: foo
-  name: without schedule
-      `);
-      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
-        schedule: 10,
-      } as any);
-      expect(monitor.config).toMatchObject({
-        id: 'foo',
-        name: 'without schedule',
-        type: 'icmp',
-        schedule: 10,
-      });
-    });
-
-    it('use params from config', async () => {
-      await writeHBFile(`
-heartbeat.monitors:
-- type: icmp
-  id: foo
-  name: without schedule
-      `);
-      const [monitor1] = await createLightweightMonitors(
-        PROJECT_DIR,
-        {} as PushOptions
-      );
-      expect(monitor1.config).toMatchObject({
-        id: 'foo',
-        name: 'without schedule',
-        type: 'icmp',
-      });
-
-      const [monitor2] = await createLightweightMonitors(PROJECT_DIR, {
-        params: { foo: 'bar' },
-        kibanaVersion: '8.8.0',
-      } as any);
-      expect(monitor2.config).toEqual({
-        id: 'foo',
-        name: 'without schedule',
-        type: 'icmp',
-        params: { foo: 'bar' },
-      });
-    });
-
-    it('parses monitor config correctly', async () => {
+    it('prefer local monitor config', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: icmp
   schedule: @every 5m
-  id: "foo"
-  name: "with-loc"
-  private_locations:
+  id: "test-icmp"
+  name: "test-icmp"
+  privateLocations:
     - baz
+  tags:
+    - ltag1
+    - ltag2
       `);
-      const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        params: { foo: 'bar' },
+        kibanaVersion: '8.8.0',
         locations: ['australia_east'],
+        tags: ['gtag1', 'gtag2'],
+        privateLocations: ['gbaz'],
+        schedule: 10,
       } as any);
-      expect(monitor.config).toEqual({
-        id: 'foo',
-        name: 'with-loc',
-        type: 'icmp',
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
         locations: ['australia_east'],
         privateLocations: ['baz'],
+        type: 'icmp',
+        params: { foo: 'bar' },
         schedule: 5,
+        tags: ['ltag1', 'ltag2'],
       });
-      expect(monitor.source).toEqual({
-        file: HB_SOURCE,
-        column: 3,
-        line: 3,
+    });
+
+    it('fallback to global monitor config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  id: "test-icmp"
+  name: "test-icmp"
+      `);
+
+      const [monitor2] = await createLightweightMonitors(PROJECT_DIR, {
+        tags: ['gtag1', 'gtag2'],
+        privateLocations: ['gbaz'],
+        schedule: 10,
+      } as PushOptions);
+
+      expect(monitor2.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        privateLocations: ['gbaz'],
+        type: 'icmp',
+        schedule: 10,
+        tags: ['gtag1', 'gtag2'],
       });
     });
 

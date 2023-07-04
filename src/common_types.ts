@@ -247,7 +247,6 @@ export type PushOptions = Partial<ProjectSettings> & {
   kibanaVersion?: number;
   yes?: boolean;
   pattern?: string;
-  match?: string;
   tags?: Array<string>;
   alert?: AlertConfig;
 };
