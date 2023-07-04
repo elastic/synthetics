@@ -288,8 +288,13 @@ export function getAlertKeyValue(
   }
 
   if (value?.[`${key}.enabled`] !== undefined) {
+    const val = value?.[`${key}.enabled`];
+    delete value?.[`${key}.enabled`];
+    if (Object.keys(value).length === 0) {
+      delete config.alert;
+    }
     return {
-      enabled: value[`${key}.enabled`],
+      enabled: val,
     };
   }
   const rootKey = `alert.${key}.enabled`;

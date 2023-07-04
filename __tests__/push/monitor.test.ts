@@ -427,5 +427,29 @@ heartbeat.monitors:
         status: { enabled: false },
       });
     });
+
+    it('deletes parsed keys from config', async () => {
+      let config: any = {
+        'alert.status.enabled': true,
+        'alert.tls.enabled': true,
+      };
+      expect(parseAlertConfig(config)).toEqual({
+        status: { enabled: true },
+        tls: { enabled: true },
+      });
+      expect(config).toEqual({});
+
+      config = {
+        alert: {
+          'status.enabled': true,
+          'tls.enabled': true,
+        },
+      };
+      expect(parseAlertConfig(config)).toEqual({
+        status: { enabled: true },
+        tls: { enabled: true },
+      });
+      expect(config).toEqual({});
+    });
   });
 });
