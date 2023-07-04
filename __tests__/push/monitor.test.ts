@@ -328,13 +328,13 @@ heartbeat.monitors:
   name: "test-icmp"
       `);
 
-      const [monitor2] = await createLightweightMonitors(PROJECT_DIR, {
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
         tags: ['gtag1', 'gtag2'],
         privateLocations: ['gbaz'],
         schedule: 10,
       } as PushOptions);
 
-      expect(monitor2.config).toEqual({
+      expect(mon.config).toEqual({
         id: 'test-icmp',
         name: 'test-icmp',
         privateLocations: ['gbaz'],

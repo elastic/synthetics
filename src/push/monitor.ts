@@ -28,7 +28,7 @@ import { extname, join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
+import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
   AlertConfig,

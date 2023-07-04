@@ -136,7 +136,9 @@ export function normalizeOptions(
 
 export function validatePushOptions(opts: PushOptions & { match?: string }) {
   if (opts.tags || opts.match) {
-    throw error('Aborted. Invalid flags: tags or match are not supported.');
+    throw error(`Aborted. Invalid CLI flags.
+
+Tags and Match are not supported in push command.`);
   }
 }
 
