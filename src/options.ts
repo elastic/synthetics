@@ -127,6 +127,11 @@ export function normalizeOptions(
        */
       const monitor = config.monitor;
       for (const key of Object.keys(monitor || {})) {
+        // TODO: screenshots require special handling as the flags are different
+        if (key === 'screenshot') {
+          options.screenshots = options.screenshots ?? monitor[key];
+          continue;
+        }
         options[key] = options[key] ?? monitor[key];
       }
       break;
