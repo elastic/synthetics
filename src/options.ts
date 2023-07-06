@@ -26,8 +26,8 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import type { CliArgs, RunOptions } from './common_types';
-import { THROTTLING_WARNING_MSG, warn } from './helpers';
+import type { CliArgs, PushOptions, RunOptions } from './common_types';
+import { THROTTLING_WARNING_MSG, error, warn } from './helpers';
 
 type Mode = 'run' | 'push';
 
@@ -120,20 +120,31 @@ export function normalizeOptions(
       options.screenshots = cliArgs.screenshots ?? 'on';
       break;
     case 'push':
+      validatePushOptions(options as PushOptions);
       /**
        * Merge the default monitor config from synthetics.config.ts file
        * with the CLI options passed via push command
        */
       const monitor = config.monitor;
-      options.screenshots = options.screenshots ?? monitor?.screenshot;
-      options.schedule = options.schedule ?? monitor?.schedule;
-      options.locations = options.locations ?? monitor?.locations;
-      options.privateLocations =
-        options.privateLocations ?? monitor?.privateLocations;
-      options.alert = options.alert ?? monitor?.alert;
+      for (const key of Object.keys(monitor || {})) {
+        // screenshots require special handling as the flags are different
+        if (key === 'screenshot') {
+          options.screenshots = options.screenshots ?? monitor[key];
+          continue;
+        }
+        options[key] = options[key] ?? monitor[key];
+      }
       break;
   }
   return options;
+}
+
+export function validatePushOptions(opts: PushOptions) {
+  if (opts.tags || opts.match) {
+    throw error(`Aborted. Invalid CLI flags.
+
+Tags and Match are not supported in push command.`);
+  }
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -173,20 +184,10 @@ export function getCommonCommandOpts() {
     '--pattern <pattern>',
     'RegExp pattern to match journey/monitor files that are different from the default (ex: /*.journey.(ts|js)$/)'
   );
-  const tags = createOption(
-    '--tags <name...>',
-    'run/push tests with a tag that matches the glob'
-  );
-  const match = createOption(
-    '--match <name>',
-    'run/push tests with a name or tags that matches the glob'
-  );
 
   return {
     params,
     playwrightOpts,
     pattern,
-    tags,
-    match,
   };
 }

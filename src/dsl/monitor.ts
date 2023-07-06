@@ -91,7 +91,10 @@ export class Monitor {
   update(globalOpts: MonitorConfig = {}) {
     this.config = merge(globalOpts, this.config, {
       arrayMerge(target, source) {
-        return [...new Set(source)];
+        if (source && source.length > 0) {
+          return [...new Set(source)];
+        }
+        return target;
       },
     });
   }

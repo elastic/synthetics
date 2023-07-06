@@ -1,5 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Push abort on tags and match 1`] = `
+"Aborted. Invalid CLI flags.
+
+Tags and Match are not supported in push command.
+"
+`;
+
 exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 

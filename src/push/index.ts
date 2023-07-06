@@ -174,6 +174,14 @@ ${INSTALLATION_HELP}`);
   }
 }
 
+export async function validatePush(
+  opts: PushOptions,
+  settings: ProjectSettings
+) {
+  validateSettings(opts);
+  await catchIncorrectSettings(settings, opts);
+}
+
 export function validateSettings(opts: PushOptions) {
   const INVALID = 'Aborted. Invalid synthetics project settings.';
 

@@ -201,6 +201,7 @@ type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
+  pattern?: string;
   match?: string;
   tags?: Array<string>;
   outfd?: number;
@@ -218,7 +219,6 @@ type BaseArgs = {
 export type CliArgs = BaseArgs & {
   config?: string;
   reporter?: BuiltInReporterName;
-  pattern?: string;
   inline?: boolean;
   require?: Array<string>;
   sandbox?: boolean;
@@ -238,19 +238,12 @@ export type RunOptions = BaseArgs & {
   reporter?: BuiltInReporterName | ReporterInstance;
 };
 
-export type PushOptions = Partial<ProjectSettings> & {
-  auth: string;
-  schedule?: MonitorConfig['schedule'];
-  locations?: MonitorConfig['locations'];
-  privateLocations?: MonitorConfig['privateLocations'];
-  params?: MonitorConfig['params'];
-  kibanaVersion?: number;
-  yes?: boolean;
-  pattern?: string;
-  match?: string;
-  tags?: Array<string>;
-  alert?: AlertConfig;
-};
+export type PushOptions = Partial<ProjectSettings> &
+  Partial<BaseArgs> & {
+    auth: string;
+    kibanaVersion?: number;
+    yes?: boolean;
+  };
 
 export type ProjectSettings = {
   id: string;
@@ -264,6 +257,7 @@ export type PlaywrightOptions = LaunchOptions &
     actionTimeout?: number;
     navigationTimeout?: number;
   };
+
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;

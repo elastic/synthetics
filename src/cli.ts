@@ -38,13 +38,7 @@ import { globalSetup } from './loader';
 import { run } from './';
 import { runner } from './core';
 import { SyntheticsLocations } from './dsl/monitor';
-import {
-  push,
-  loadSettings,
-  validateSettings,
-  catchIncorrectSettings,
-  warnIfThrottled,
-} from './push';
+import { push, loadSettings, validatePush, warnIfThrottled } from './push';
 import {
   formatLocations,
   getLocations,
@@ -61,7 +55,7 @@ import { getVersion } from './push/kibana_api';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, tags, match, playwrightOpts } = getCommonCommandOpts();
+const { params, pattern, playwrightOpts } = getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
@@ -71,9 +65,12 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .addOption(pattern)
-  .addOption(tags)
-  .addOption(match)
   .addOption(params)
+  .option('--tags <name...>', 'run tests with a tag that matches the glob')
+  .option(
+    '--match <name>',
+    'run tests with a name or tags that matches the glob'
+  )
   .addOption(
     new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)
@@ -194,8 +191,6 @@ program
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
   .addOption(pattern)
-  .addOption(tags)
-  .addOption(match)
   .addOption(params)
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
@@ -213,8 +208,7 @@ program
         },
         'push'
       ) as PushOptions;
-      validateSettings(options);
-      await catchIncorrectSettings(settings, options);
+      await validatePush(options, settings);
       const monitors = runner.buildMonitors(options);
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);

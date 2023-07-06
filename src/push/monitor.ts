@@ -28,7 +28,7 @@ import { extname, join } from 'path';
 import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import { SYNTHETICS_PATH, totalist, indent, warn, isMatch } from '../helpers';
+import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
   AlertConfig,
@@ -203,10 +203,6 @@ export async function createLightweightMonitors(
         continue;
       }
       const config = monNode.toJSON();
-      // Filter based on matched tags and name
-      if (!isMatch(config.tags, config.name, options.tags, options.match)) {
-        continue;
-      }
       const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
       try {
         const mon = buildMonitorFromYaml(config, options);
@@ -237,11 +233,14 @@ export function buildMonitorFromYaml(
   }
   const schedule = config.schedule && parseSchedule(String(config.schedule));
   const privateLocations =
-    config['private_locations'] || options.privateLocations;
+    config['private_locations'] ||
+    config.privateLocations ||
+    options.privateLocations;
   delete config['private_locations'];
   const alertConfig = parseAlertConfig(config, options.alert);
   const mon = new Monitor({
     locations: options.locations,
+    tags: options.tags,
     ...config,
     privateLocations,
     schedule: schedule || options.schedule,
