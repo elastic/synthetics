@@ -44,6 +44,7 @@ import {
   RunOptions,
   JourneyResult,
   StepResult,
+  PushOptions,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -383,7 +384,7 @@ export default class Runner {
     await mkdir(CACHE_PATH, { recursive: true });
   }
 
-  buildMonitors(options: RunOptions) {
+  buildMonitors(options: PushOptions) {
     /**
      * Update the global monitor configuration required for
      * setting defaults
@@ -396,13 +397,12 @@ export default class Runner {
       params: options.params,
       playwrightOptions: options.playwrightOptions,
       screenshot: options.screenshots,
+      tags: options.tags,
+      alert: options.alert,
     });
 
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
-      if (!journey.isMatch(options.match, options.tags)) {
-        continue;
-      }
       this.#currentJourney = journey;
       /**
        * Execute dummy callback to get all monitor specific

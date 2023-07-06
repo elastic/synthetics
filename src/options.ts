@@ -127,7 +127,7 @@ export function normalizeOptions(
        */
       const monitor = config.monitor;
       for (const key of Object.keys(monitor || {})) {
-        // TODO: screenshots require special handling as the flags are different
+        // screenshots require special handling as the flags are different
         if (key === 'screenshot') {
           options.screenshots = options.screenshots ?? monitor[key];
           continue;
@@ -139,7 +139,7 @@ export function normalizeOptions(
   return options;
 }
 
-export function validatePushOptions(opts: PushOptions & { match?: string }) {
+export function validatePushOptions(opts: PushOptions) {
   if (opts.tags || opts.match) {
     throw error(`Aborted. Invalid CLI flags.
 
