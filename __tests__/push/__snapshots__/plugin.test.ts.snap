@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`SyntheticsBundlePlugin skip locally resolved synthetics package 1`] = `
-"var import__ = require(\\"../../\\");
-(0, import__.journey)(\\"journey 1\\", () => {
-  import__.monitor.use({ id: \\"duplicate id\\" });
-  (0, import__.step)(\\"step1\\", () => {
+"var import__ = require("../../");
+(0, import__.journey)("journey 1", () => {
+  import__.monitor.use({ id: "duplicate id" });
+  (0, import__.step)("step1", () => {
   });
 });
 "

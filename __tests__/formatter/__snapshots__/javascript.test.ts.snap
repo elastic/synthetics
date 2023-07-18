@@ -17,7 +17,7 @@ journey('Recorded journey', async ({ page, context }) => {
     const page1Promise = page.waitForEvent('popup');
     await page.locator('text=Babel Minify').click();
     page1 = await page1Promise;
-    await page1.locator('a:has-text(\\"smoke\\")').click();
+    await page1.locator('a:has-text("smoke")').click();
   });
   step('Close page', async () => {
     await page1.close();
@@ -86,7 +86,7 @@ step('Click text=Babel Minify', async () => {
   const page2Promise = page.waitForEvent('popup');
   await page.locator('text=Babel Minify').click();
   page2 = await page2Promise;
-  await page2.locator(':nth-match(a:has-text(\\"babel-minify\\"), 3)').click();
+  await page2.locator(':nth-match(a:has-text("babel-minify"), 3)').click();
 });
 step('Close page', async () => {
   await page2.frame({
