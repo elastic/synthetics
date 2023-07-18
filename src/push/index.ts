@@ -73,8 +73,12 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     return await pushLegacy(monitors, options);
   }
 
-  const local = getLocalMonitors(monitors);
   const { monitors: remote } = await bulkGetMonitors(options);
+
+  progress(`bundling ${monitors.length} monitors`);
+  const schemas = await buildMonitorSchema(monitors, true);
+  const local = getLocalMonitors(schemas);
+
   const { newIDs, changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
     local,
     remote
@@ -83,9 +87,6 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
-    const toBundle = monitors.filter(m => updatedMonitors.has(m.config.id));
-    progress(`bundling ${toBundle.length} monitors`);
-    const schemas = await buildMonitorSchema(toBundle, true);
     const chunks = getChunks(schemas, CHUNK_SIZE);
     for (const chunk of chunks) {
       await liveProgress(
