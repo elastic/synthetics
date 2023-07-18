@@ -31,6 +31,7 @@ import {
   now,
   findPWLogsIndexes,
   rewriteErrorStack,
+  CACHE_PATH,
 } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import {
@@ -39,6 +40,9 @@ import {
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
+import path, { join } from 'path';
+import fs from 'fs';
+import { gatherScreenshots } from './utils';
 
 function renderError(error) {
   let output = '';
@@ -72,8 +76,8 @@ export default class BaseReporter implements Reporter {
     skipped: 0,
   };
 
-  constructor(options: ReporterOptions = {}) {
-    this.fd = options.fd || process.stdout.fd;
+  constructor({ fd }: ReporterOptions = {}) {
+    this.fd = fd || process.stdout.fd;
     /**
      * minLength is set to 1 byte to make sure we flush the
      * content even if its the last byte on the stream buffer
@@ -86,18 +90,30 @@ export default class BaseReporter implements Reporter {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(_: Journey, step: Step, result: StepEndResult) {
+  onStepEnd({ monitor, name }: Journey, step: Step, result: StepEndResult) {
     const { status, end, start, error } = result;
     const message = `${symbols[status]}  Step: '${
       step.name
     }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
     this.write(indent(message));
     error && this.write(renderError(error));
+    const screenshotOpt = monitor.config.screenshot ?? 'on';
+
+    const whenFailed =
+      screenshotOpt === 'only-on-failure' && status === 'failed';
+    const filePath = path.resolve(`.screenshots/${name}/${step.name}.jpg`);
+
+    if (screenshotOpt === 'on' || whenFailed) {
+      this.write(indent(cyan(`  Screenshot: ${filePath}`)));
+    }
     this.metrics[status]++;
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(_: Journey, { error }: JourneyEndResult) {
+  async onJourneyEnd(
+    { name, monitor }: Journey,
+    { error, status }: JourneyEndResult
+  ) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**
@@ -107,6 +123,32 @@ export default class BaseReporter implements Reporter {
     if (total === 0 && error) {
       this.write(renderError(error));
     }
+
+    await fs.promises.mkdir(`.screenshots/${name}/`, {
+      recursive: true,
+    });
+
+    await gatherScreenshots(
+      join(CACHE_PATH, 'screenshots'),
+      async screenshot => {
+        const { data, step } = screenshot;
+        const screenshotOpt = monitor.config.screenshot ?? 'on';
+        const whenFailed =
+          screenshotOpt === 'only-on-failure' && status === 'failed';
+
+        if (screenshotOpt === 'on' || whenFailed) {
+          await (async () => {
+            await fs.promises.writeFile(
+              join(`.screenshots/${name}/`, `${step.name}.jpg`),
+              data,
+              {
+                encoding: 'base64',
+              }
+            );
+          })();
+        }
+      }
+    );
   }
 
   onEnd() {

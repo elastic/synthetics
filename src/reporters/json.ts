@@ -23,7 +23,6 @@
  *
  */
 
-import { readFileSync } from 'fs';
 import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
@@ -32,8 +31,6 @@ import {
   formatError,
   getTimestamp,
   CACHE_PATH,
-  totalist,
-  isDirectory,
   getDurationInUs,
 } from '../helpers';
 import { Journey, Step } from '../dsl';
@@ -52,6 +49,7 @@ import {
   JourneyEndResult,
   PageMetrics,
 } from '../common_types';
+import { gatherScreenshots } from './utils';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -274,28 +272,6 @@ export async function getScreenshotBlocks(screenshot: Buffer) {
   }
 
   return { blocks, reference, blob_mime: 'image/jpeg' };
-}
-
-/**
- * Get all the screenshots from the cached screenshot location
- * at the end of each journey and construct equally sized blocks out
- * of the individual screenshot image.
- */
-export async function gatherScreenshots(
-  screenshotsPath: string,
-  callback: (data: Screenshot) => Promise<void>
-) {
-  if (isDirectory(screenshotsPath)) {
-    await totalist(screenshotsPath, async (_, absPath) => {
-      try {
-        const content = readFileSync(absPath, 'utf8');
-        const screenshot: Screenshot = JSON.parse(content);
-        await callback(screenshot);
-      } catch (_) {
-        // TODO: capture progarammatic synthetic errors under different type
-      }
-    });
-  }
 }
 
 export default class JSONReporter extends BaseReporter {

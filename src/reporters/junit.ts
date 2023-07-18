@@ -119,7 +119,7 @@ export default class JUnitReporter extends BaseReporter {
     entry.children.push(caseEntry);
   }
 
-  override onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  override async onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
     }
