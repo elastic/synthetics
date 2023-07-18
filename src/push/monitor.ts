@@ -146,7 +146,6 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
     }
     if (isV2) {
       schema.hash = monitor.hash();
-      console.log(schema.hash);
     }
     schemas.push(schema);
   }
