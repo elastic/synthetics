@@ -30,12 +30,12 @@ import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
-  gatherScreenshots,
   getScreenshotBlocks,
 } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
+import { gatherScreenshots } from '../../src/reporters/utils';
 
 /**
  * Mock package version to avoid breaking JSON payload
