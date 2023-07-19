@@ -106,6 +106,8 @@ export function normalizeOptions(
   );
   options.playwrightOptions = {
     ...playwrightOpts,
+    timezoneId: playwrightOpts?.timezoneId ?? 'GMT',
+    locale: playwrightOpts?.locale ?? 'en-GB',
     chromiumSandbox: cliArgs.sandbox ?? playwrightOpts?.chromiumSandbox,
     ignoreHTTPSErrors:
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
