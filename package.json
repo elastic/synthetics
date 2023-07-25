@@ -41,6 +41,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@babel/core": "^7.22.9",
     "archiver": "^5.3.1",
     "commander": "^10.0.1",
     "deepmerge": "^4.3.1",

@@ -24,12 +24,13 @@
  */
 
 import path from 'path';
-import { stat, unlink, readFile } from 'fs/promises';
+import { stat, unlink, readFile, writeFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
 import { commonOptions } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
+import { transform } from './transform-journey';
 
 const SIZE_LIMIT_KB = 800;
 
@@ -41,7 +42,11 @@ export class Bundler {
   moduleMap = new Map<string, string>();
   constructor() {}
 
-  async prepare(absPath: string) {
+  async prepare(absPath: string, id: string) {
+    const original = await readFile(absPath, 'utf-8');
+    const { code } = await transform(absPath, id);
+    await writeFile(absPath, code);
+
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
       ...{
@@ -57,7 +62,9 @@ export class Bundler {
     if (result.errors.length > 0) {
       throw result.errors;
     }
+    // console.log(result.outputFiles[0].text);
     this.moduleMap.set(absPath, result.outputFiles[0].text);
+    await writeFile(absPath, original);
   }
 
   async zip(outputPath: string) {
@@ -82,8 +89,8 @@ export class Bundler {
     });
   }
 
-  async build(entry: string, output: string) {
-    await this.prepare(entry);
+  async build(entry: string, output: string, id: string) {
+    await this.prepare(entry, id);
     await this.zip(output);
     const data = await this.encode(output);
     await this.checkSize(output);
