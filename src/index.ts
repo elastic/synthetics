@@ -72,3 +72,8 @@ export type {
   Steps,
   actionTitle,
 } from './formatter/javascript';
+
+/**
+ * Export things related to playwright/test
+ */
+export { devices } from '@playwright/test';

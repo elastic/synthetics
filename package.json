@@ -40,6 +40,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@playwright/test": "=1.35.0",
     "archiver": "^5.3.1",
     "commander": "^10.0.1",
     "deepmerge": "^4.3.1",

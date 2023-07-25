@@ -25,10 +25,10 @@
 
 import { stdin, cwd } from 'process';
 import { extname, resolve } from 'path';
+import { expect } from '@playwright/test';
 import { CliArgs } from './common_types';
 import { step, journey } from './core';
 import { log } from './core/logger';
-import { expect } from './core/expect';
 import {
   isDepInstalled,
   isDirectory,

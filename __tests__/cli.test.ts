@@ -319,7 +319,7 @@ describe('CLI', () => {
     }
   });
 
-  it('run expect assetions with type check', async () => {
+  it('run expect assertions with type check', async () => {
     // flag turns on type checking
     process.env['TS_NODE_TYPE_CHECK'] = 'true';
     const cli = new CLIMock()
