@@ -110,12 +110,12 @@ export function diffMonitors(
   return result;
 }
 
-export function getLocalMonitors(monitorSchemas: MonitorSchema[]) {
+export function getLocalMonitors(schemas: MonitorSchema[]) {
   const data: MonitorHashID[] = [];
-  for (const monitor of monitorSchemas) {
+  for (const schema of schemas) {
     data.push({
-      journey_id: monitor.id,
-      hash: monitor.hash,
+      journey_id: schema.id,
+      hash: schema.hash,
     });
   }
   return data;
@@ -141,9 +141,13 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
     if (type === 'browser') {
       const outPath = join(bundlePath, config.name + '.zip');
       const content = await bundler.build(source.file, outPath);
-      monitor.content = content;
+      monitor.setContent(content);
       Object.assign(schema, { content, filter });
     }
+    /**
+     * Generate hash only after the bundled content is created
+     * to capture code changes in imported files
+     */
     if (isV2) {
       schema.hash = monitor.hash();
     }

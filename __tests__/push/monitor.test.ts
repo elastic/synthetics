@@ -103,9 +103,9 @@ describe('Monitors', () => {
         match: 'test',
       },
     });
-    monitor.setContent('foo');
+    monitor.update({ locations: ['brazil'] });
     const schema1 = await buildMonitorSchema([monitor], true);
-    expect(schema1[0].hash).toEqual(schema[0].hash);
+    expect(schema1[0].hash).not.toEqual(schema[0].hash);
   });
 
   it('parse @every schedule format', async () => {
