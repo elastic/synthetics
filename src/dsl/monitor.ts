@@ -109,6 +109,7 @@ export class Monitor {
 
   /**
    * The underlying journey code of the monitor
+   * along with its dependencies
    */
   setContent(content = '') {
     this.content = content;

@@ -121,3 +121,5 @@ __tests__/e2e/junit.xml
 seccomp/build
 
 test-projects/
+
+.DS_Store

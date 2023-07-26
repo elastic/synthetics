@@ -97,7 +97,6 @@ export class Journey {
       ...config,
     });
     this.monitor.setSource(this.location);
-    this.monitor.setContent(this.callback.toString());
     this.monitor.setFilter({ match: this.name });
   }
 
