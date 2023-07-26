@@ -34,17 +34,25 @@ export function JourneyTransformPlugin(
   { types: t }: { types: typeof types },
   opts: JourneyPluginOptions
 ): PluginObj {
+  // TODO: Perform a Program level visit to check if import/require declarations are tampered
+  // If so, dont perform any transformation
+  // Ex: import * as synthetics from '@elastic/synthetics'
+  // synthetics.journey('name', () => {})
   return {
     name: 'transform-journeys',
     visitor: {
       CallExpression(path) {
+        if (!path.parentPath.isExpressionStatement()) {
+          return;
+        }
         const { callee } = path.node;
         if (t.isIdentifier(callee) && callee.name === 'journey') {
           const args = path.node.arguments;
           if (!t.isStringLiteral(args[0])) {
             return;
           }
-          if (args[0].value === opts.name) {
+          // TODO: Compare based on function body, solid than relying on name
+          if (opts.name == '' || args[0].value === opts.name) {
             path.skip();
           } else {
             path.parentPath.remove();
@@ -61,6 +69,13 @@ export async function transform(absPath: string, journeyName: string) {
     retainLines: true,
     babelrc: false,
     configFile: false,
-    plugins: [[JourneyTransformPlugin, { name: journeyName }]],
+    plugins: [
+      [
+        JourneyTransformPlugin,
+        {
+          name: journeyName,
+        },
+      ],
+    ],
   });
 }

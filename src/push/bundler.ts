@@ -42,9 +42,9 @@ export class Bundler {
   moduleMap = new Map<string, string>();
   constructor() {}
 
-  async prepare(absPath: string, id: string) {
+  async prepare(absPath: string, name: string) {
     const original = await readFile(absPath, 'utf-8');
-    const { code } = await transform(absPath, id);
+    const { code } = await transform(absPath, name);
     await writeFile(absPath, code);
 
     const options: esbuild.BuildOptions = {
@@ -89,8 +89,8 @@ export class Bundler {
     });
   }
 
-  async build(entry: string, output: string, id: string) {
-    await this.prepare(entry, id);
+  async build(entry: string, name: string, output: string) {
+    await this.prepare(entry, name);
     await this.zip(output);
     const data = await this.encode(output);
     await this.checkSize(output);
