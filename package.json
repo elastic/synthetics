@@ -9,6 +9,7 @@
     "prepublish": "npm run clean && npm run build",
     "build": "tsc",
     "build:locations": "sh utils/update_locations.sh",
+    "build:bundles": "cd bundles && npm run build",
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",

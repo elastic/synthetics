@@ -23,4 +23,45 @@
  *
  */
 
-export { expect } from '../../dist/bundles/lib/index';
+const path = require('path');
+const esbuild = require('esbuild');
+const fs = require('fs');
+
+const outdir = path.join(__dirname, '../dist/bundles');
+
+if (!fs.existsSync(outdir)) fs.mkdirSync(outdir);
+
+function IgnorePlugin() {
+  return {
+    name: 'ignore-plugin',
+    setup(build) {
+      build.onResolve({ filter: /.(json|node)$/ }, async () => {
+        return {
+          external: true,
+        };
+      });
+    },
+  };
+}
+
+(async () => {
+  const ctx = await esbuild.context({
+    entryPoints: [path.join(__dirname, 'src', 'index.ts')],
+    bundle: true,
+    external: ['playwright-core'],
+    outfile: path.join(outdir, 'lib', 'index.js'),
+    format: 'cjs',
+    logLevel: 'silent',
+    platform: 'node',
+    plugins: [IgnorePlugin()],
+    target: `node${process.version.slice(1)}`,
+    minify: process.argv.includes('--minify'),
+    sourcemap: process.argv.includes('--sourcemap'),
+    sourcesContent: false,
+  });
+  await ctx.rebuild();
+  await ctx.dispose();
+})().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

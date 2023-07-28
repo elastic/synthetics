@@ -23,4 +23,4 @@
  *
  */
 
-export { expect } from '../../dist/bundles/lib/index';
+export { expect } from '@playwright/test/lib/expect';
