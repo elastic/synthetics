@@ -25,11 +25,8 @@
 
 const path = require('path');
 const esbuild = require('esbuild');
-const fs = require('fs');
 
-const outdir = path.join(__dirname, '../dist/bundles');
-
-if (!fs.existsSync(outdir)) fs.mkdirSync(outdir);
+const outdir = path.join(__dirname, '..', 'dist', 'bundles');
 
 function IgnorePlugin() {
   return {
