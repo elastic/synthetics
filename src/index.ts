@@ -43,6 +43,7 @@ export {
   after,
 } from './core';
 export { expect } from './core/expect';
+
 /**
  * Export all the driver related types to be consumed
  * and used by suites
@@ -53,12 +54,8 @@ export type {
   ChromiumBrowserContext,
   CDPSession,
   APIRequestContext,
+  devices,
 } from 'playwright-chromium';
-
-/**
- * Export things related to playwright-core
- */
-export { devices } from 'playwright-core';
 
 /**
  * Export the types necessary to write custom reporters
