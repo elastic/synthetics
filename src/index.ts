@@ -56,6 +56,11 @@ export type {
 } from 'playwright-chromium';
 
 /**
+ * Export things related to playwright-core
+ */
+export { devices } from 'playwright-core';
+
+/**
  * Export the types necessary to write custom reporters
  */
 export type { default as Runner } from './core/runner';
