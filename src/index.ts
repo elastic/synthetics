@@ -56,7 +56,7 @@ export type {
 } from 'playwright-chromium';
 
 /**
- * Export types related to playwright-core
+ * Export things related to playwright-core
  */
 export { devices } from 'playwright-core';
 
