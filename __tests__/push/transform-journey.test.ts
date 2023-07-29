@@ -41,7 +41,7 @@ describe('TransformJourneyPlugin', () => {
   it('static journeys', async () => {
     await writeFile(
       journeyFile,
-      `import {journey, step, monitor} from '../../';
+      `import {journey, step, monitor} from '@elastic/synthetics';
 journey('j1', () => {
 monitor.use({ id: 'duplicate id' });
 });
@@ -62,7 +62,7 @@ journey('j2', () => {});`
   it('dynamic journeys', async () => {
     await writeFile(
       journeyFile,
-      `import {journey, step, monitor} from '../../';
+      `import {journey, step, monitor} from '@elastic/synthetics';
 
 journey('j1', () => {});
 
@@ -74,6 +74,24 @@ const createJourney = (name) => {
 };
 
 createJourney('j2');
+`
+    );
+
+    const res1 = await transform(journeyFile, 'j1');
+    expect(res1?.code).toMatchSnapshot();
+    const res2 = await transform(journeyFile, 'j2');
+    expect(res2?.code).toMatchSnapshot();
+    const res3 = await transform(journeyFile, '');
+    expect(res3?.code).toMatchSnapshot();
+  });
+
+  it('alias import specifier', async () => {
+    await writeFile(
+      journeyFile,
+      `import {journey as x} from '@elastic/synthetics';
+
+x('j1', () => {});
+x('j2', ()=>{});
 `
     );
 

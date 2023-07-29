@@ -30,23 +30,50 @@ type JourneyPluginOptions = {
   name: string;
 };
 
+const SYNTHETICS_IMPORT = '@elastic/synthetics';
+
 export function JourneyTransformPlugin(
   { types: t }: { types: typeof types },
   opts: JourneyPluginOptions
 ): PluginObj {
-  // TODO: Perform a Program level visit to check if import/require declarations are tampered
-  // If so, dont perform any transformation
-  // Ex: import * as synthetics from '@elastic/synthetics'
-  // synthetics.journey('name', () => {})
+  // This handles when the import specifier is renamed
+  // Ex: import { journey as journeyAlias } from '@elastic/synthetics'
+  let importSpecifierName = 'journey';
+
   return {
     name: 'transform-journeys',
     visitor: {
+      Program(path) {
+        path.traverse({
+          ImportDeclaration(path) {
+            const { source } = path.node;
+            if (
+              t.isStringLiteral(source) &&
+              source.value === SYNTHETICS_IMPORT
+            ) {
+              const specifiers = path.node.specifiers;
+              for (const specifier of specifiers) {
+                if (t.isImportSpecifier(specifier)) {
+                  const { imported, local } = specifier;
+                  if (t.isIdentifier(imported) && imported.name === 'journey') {
+                    importSpecifierName = local.name;
+                  }
+                }
+              }
+            }
+          },
+        });
+      },
       CallExpression(path) {
         if (!path.parentPath.isExpressionStatement()) {
           return;
         }
         const { callee } = path.node;
-        if (t.isIdentifier(callee) && callee.name === 'journey') {
+        if (
+          t.isIdentifier(callee) &&
+          importSpecifierName &&
+          callee.name === importSpecifierName
+        ) {
           const args = path.node.arguments;
           if (!t.isStringLiteral(args[0])) {
             return;

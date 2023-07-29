@@ -1,7 +1,27 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`TransformJourneyPlugin alias import specifier 1`] = `
+"import { journey as x } from '@elastic/synthetics';
+
+x('j1', () => {});"
+`;
+
+exports[`TransformJourneyPlugin alias import specifier 2`] = `
+"import { journey as x } from '@elastic/synthetics';
+
+
+x('j2', () => {});"
+`;
+
+exports[`TransformJourneyPlugin alias import specifier 3`] = `
+"import { journey as x } from '@elastic/synthetics';
+
+x('j1', () => {});
+x('j2', () => {});"
+`;
+
 exports[`TransformJourneyPlugin dynamic journeys 1`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 
 journey('j1', () => {});
 
@@ -16,7 +36,7 @@ createJourney('j2');"
 `;
 
 exports[`TransformJourneyPlugin dynamic journeys 2`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 
 
 
@@ -31,7 +51,7 @@ createJourney('j2');"
 `;
 
 exports[`TransformJourneyPlugin dynamic journeys 3`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 
 journey('j1', () => {});
 
@@ -46,7 +66,7 @@ createJourney('j2');"
 `;
 
 exports[`TransformJourneyPlugin static journeys 1`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 journey('j1', () => {
   monitor.use({ id: 'duplicate id' });
 });
@@ -55,7 +75,7 @@ function util() {}"
 `;
 
 exports[`TransformJourneyPlugin static journeys 2`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 
 
 
@@ -66,7 +86,7 @@ journey('j2', () => {});"
 `;
 
 exports[`TransformJourneyPlugin static journeys 3`] = `
-"import { journey, step, monitor } from '../../';
+"import { journey, step, monitor } from '@elastic/synthetics';
 journey('j1', () => {
   monitor.use({ id: 'duplicate id' });
 });
