@@ -95,18 +95,23 @@ export function renderLocations({
   privateLocations?: Array<string>;
   publicLocations: Array<string>;
 }) {
-  let outer = 'Public locations: \n';
-  let inner = '';
-  for (const location of publicLocations) {
-    inner += `* ${location}\n`;
+  let outer = '';
+  if (publicLocations.length) {
+    outer = 'Public locations: \n';
+    let inner = '';
+    for (const location of publicLocations) {
+      inner += `* ${location}\n`;
+    }
+    outer += indent(inner);
   }
-  outer += indent(inner);
-  outer += '\nPrivate locations: \n';
-  let privateInner = '';
-  for (const location of privateLocations) {
-    privateInner += `* ${location}\n`;
+  if (privateLocations.length > 0) {
+    outer += '\nPrivate locations: \n';
+    let privateInner = '';
+    for (const location of privateLocations) {
+      privateInner += `* ${location}\n`;
+    }
+    outer += indent(privateInner);
   }
-  outer += indent(privateInner);
   outer += `\nSet default location for monitors via
   - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
   - Monitor API 'monitor.use({ locations: ["japan"], privateLocations: ["custom-location"] }')`;
