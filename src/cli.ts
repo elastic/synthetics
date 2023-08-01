@@ -150,21 +150,19 @@ program
       tearDown();
     }
   });
-
+const authOption = new Option(
+  '--auth <auth>',
+  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+)
+  .env('SYNTHETICS_API_KEY')
+  .makeOptionMandatory(true);
 // Push command
 program
   .command('push')
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .addOption(
-    new Option(
-      '--auth <auth>',
-      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-    )
-      .env('SYNTHETICS_API_KEY')
-      .makeOptionMandatory(true)
-  )
+  .addOption(authOption)
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
@@ -245,21 +243,36 @@ program
     `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
-  .option(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-  )
+  .addOption(authOption)
   .action(async (cmdOpts: LocationCmdOptions) => {
+    const workDir = cwd();
+    let url = cmdOpts.url;
+    let tearDown = () => {};
     try {
-      let locations = Object.keys(LocationsMap);
-      if (cmdOpts.auth && cmdOpts.url) {
-        const allLocations = await getLocations(cmdOpts);
-        locations = formatLocations(allLocations);
+      if (!url) {
+        tearDown = await globalSetup({ inline: false, ...program.opts() }, [
+          workDir,
+        ]);
+        const settings = await loadSettings();
+        url = settings.url;
       }
-      renderLocations(locations);
+    } catch (e) {}
+
+    try {
+      if (url && cmdOpts.auth) {
+        const allLocations = await getLocations({
+          url,
+          auth: cmdOpts.auth,
+        });
+        renderLocations(formatLocations(allLocations));
+      } else {
+        renderLocations({ publicLocations: Object.keys(LocationsMap) });
+      }
     } catch (e) {
       e && error(e);
       process.exit(1);
+    } finally {
+      tearDown();
     }
   });
 

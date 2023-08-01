@@ -54,18 +54,19 @@ export async function getLocations(options: LocationCmdOptions) {
 }
 
 export function formatLocations(locations: Array<LocationMetadata>) {
-  const formatted: Array<string> = [];
+  const publicLocations: Array<string> = [];
+  const privateLocations: Array<string> = [];
   for (const location of locations) {
     let name = location.label;
     if (location.isServiceManaged) {
       [, name] = name.includes('-') ? name.split('-') : [, name];
       name = name.toLowerCase().trim().split(' ').join('_');
+      publicLocations.push(name);
     } else {
-      name = `${name}${PRIVATE_KEYWORD}`;
+      privateLocations.push(name);
     }
-    formatted.push(name);
   }
-  return formatted;
+  return { publicLocations, privateLocations };
 }
 
 export function groupLocations(locations: Array<string>) {
@@ -80,13 +81,25 @@ export function groupLocations(locations: Array<string>) {
   return grouped;
 }
 
-export function renderLocations(locations: Array<string>) {
-  let outer = 'Available locations: \n';
+export function renderLocations({
+  publicLocations,
+  privateLocations = [],
+}: {
+  privateLocations?: Array<string>;
+  publicLocations: Array<string>;
+}) {
+  let outer = 'Public locations: \n';
   let inner = '';
-  for (const location of locations) {
+  for (const location of publicLocations) {
     inner += `* ${location}\n`;
   }
   outer += indent(inner);
+  outer += '\nPrivate locations: \n';
+  let privateInner = '';
+  for (const location of privateLocations) {
+    privateInner += `* ${location}\n`;
+  }
+  outer += indent(privateInner);
   outer += `\nSet default location for monitors via
   - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
   - Monitor API 'monitor.use({ locations: ["japan"], privateLocations: ["custom-location"] }')`;
