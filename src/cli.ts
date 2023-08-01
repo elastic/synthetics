@@ -145,24 +145,27 @@ program
       }
     } catch (e) {
       console.error(e);
+      console.log('what the hell', e);
       process.exit(1);
     } finally {
       tearDown();
     }
   });
-const authOption = new Option(
-  '--auth <auth>',
-  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-)
-  .env('SYNTHETICS_API_KEY')
-  .makeOptionMandatory(true);
+
 // Push command
 program
   .command('push')
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .addOption(authOption)
+  .addOption(
+    new Option(
+      '--auth <auth>',
+      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+    )
+      .env('SYNTHETICS_API_KEY')
+      .makeOptionMandatory(true)
+  )
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
@@ -243,7 +246,12 @@ program
     `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
-  .addOption(authOption)
+  .addOption(
+    new Option(
+      '--auth <auth>',
+      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+    ).env('SYNTHETICS_API_KEY')
+  )
   .action(async (cmdOpts: LocationCmdOptions) => {
     const workDir = cwd();
     let url = cmdOpts.url;
@@ -269,6 +277,7 @@ program
         renderLocations({ publicLocations: Object.keys(LocationsMap) });
       }
     } catch (e) {
+      console.log('what the hell', e);
       e && error(e);
       process.exit(1);
     } finally {

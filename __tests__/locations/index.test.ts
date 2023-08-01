@@ -60,17 +60,21 @@ describe('Locations', () => {
       auth: apiKey,
     });
     const formatted = formatLocations(locations);
-    expect(formatted).toEqual([
-      'japan',
-      'new_location',
-      'custom location 1(private)',
-      'custom location 2(private)',
-      'us_west',
-    ]);
-
-    expect(groupLocations(formatted)).toEqual({
-      locations: ['japan', 'new_location', 'us_west'],
+    expect(formatted).toEqual({
       privateLocations: ['custom location 1', 'custom location 2'],
+      publicLocations: ['japan', 'new_location', 'us_west'],
+      allLocations: [
+        'japan',
+        'new_location',
+        'us_west',
+        'custom location 1 (private)',
+        'custom location 2 (private)',
+      ],
+    });
+
+    expect(groupLocations(formatted.allLocations)).toEqual({
+      privateLocations: ['custom location 1', 'custom location 2'],
+      locations: ['japan', 'new_location', 'us_west'],
     });
   });
 
@@ -94,7 +98,7 @@ describe('Locations', () => {
         '--auth',
         apiKey,
       ]);
-      expect(output).toContain(`custom location 1(private)`);
+      expect(output).toContain(`custom location 1`);
     });
   });
 });
