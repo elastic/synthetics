@@ -119,4 +119,18 @@ describe('options', () => {
       },
     });
   });
+
+  it('cli arg headless override playwright headless arg', () => {
+    const cliArgs: CliArgs = {
+      playwrightOptions: {
+        headless: false,
+      },
+      headless: true,
+    };
+    expect(normalizeOptions(cliArgs)).toMatchObject({
+      playwrightOptions: {
+        headless: true,
+      },
+    });
+  });
 });

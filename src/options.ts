@@ -106,6 +106,7 @@ export function normalizeOptions(
   );
   options.playwrightOptions = {
     ...playwrightOpts,
+    headless: cliArgs.headless ?? playwrightOpts?.headless,
     chromiumSandbox: cliArgs.sandbox ?? playwrightOpts?.chromiumSandbox,
     ignoreHTTPSErrors:
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,

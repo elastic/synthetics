@@ -223,6 +223,7 @@ export type CliArgs = BaseArgs & {
   require?: Array<string>;
   sandbox?: boolean;
   richEvents?: boolean;
+  headless?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
 };
