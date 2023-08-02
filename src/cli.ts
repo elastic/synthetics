@@ -245,7 +245,10 @@ program
   .option('--auth <auth>', apiDocsLink)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
-    const url = cmdOpts.url ?? (await loadSettings()).url;
+    let url = cmdOpts.url;
+    try {
+      url = (await loadSettings())?.url;
+    } catch (e) {}
 
     try {
       if (url && cmdOpts.auth) {
