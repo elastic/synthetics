@@ -152,10 +152,8 @@ program
     }
   });
 
-const authOption = new Option(
-  '--auth <auth>',
-  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-).env('SYNTHETICS_API_KEY');
+const apiDocsLink =
+  'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).';
 
 // Push command
 program
@@ -163,7 +161,7 @@ program
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .addOption(authOption.makeOptionMandatory(true))
+  .addOption(new Option('--auth <auth>', apiDocsLink).makeOptionMandatory(true))
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
@@ -244,7 +242,7 @@ program
     `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
-  .addOption(authOption)
+  .option('--auth <auth>', apiDocsLink)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings()).url;
