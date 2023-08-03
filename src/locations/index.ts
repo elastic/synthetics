@@ -66,13 +66,13 @@ export function formatLocations(locations: Array<LocationMetadata>) {
       privateLocations.push(name);
     }
   }
+
   return {
     publicLocations,
     privateLocations,
-    allLocations: [
-      ...publicLocations,
-      ...privateLocations.map(loc => `${loc} ${PRIVATE_KEYWORD}`),
-    ],
+    allLocations: publicLocations.concat(
+      privateLocations.map(loc => `${loc} ${PRIVATE_KEYWORD}`)
+    ),
   };
 }
 
