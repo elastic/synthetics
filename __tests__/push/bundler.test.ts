@@ -111,21 +111,21 @@ describe('Bundler', () => {
   });
 
   it('build journey', async () => {
-    const content = await bundler.build(journeyFile, generateTempPath());
+    const content = await bundler.build(journeyFile, '', generateTempPath());
     await validateZip(content);
   });
 
   it('bundle should be idempotent', async () => {
-    const content1 = await bundler.build(journeyFile, generateTempPath());
-    const content2 = await bundler.build(journeyFile, generateTempPath());
+    const content1 = await bundler.build(journeyFile, '', generateTempPath());
+    const content2 = await bundler.build(journeyFile, '', generateTempPath());
     expect(content1).toEqual(content2);
   });
 
   it('throw errors on incorrect path', async () => {
     try {
-      await bundler.build(join(PROJECT_DIR, 'blah.ts'), generateTempPath());
+      await bundler.build(join(PROJECT_DIR, 'blah.ts'), '', generateTempPath());
     } catch (e) {
-      expect(e.message).toContain('Build failed');
+      expect(e.message).toContain('no such file or directory');
     }
   });
 });

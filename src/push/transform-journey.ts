@@ -96,6 +96,9 @@ export async function transform(absPath: string, journeyName: string) {
     retainLines: true,
     babelrc: false,
     configFile: false,
+    parserOpts: {
+      plugins: ['typescript'],
+    },
     plugins: [
       [
         JourneyTransformPlugin,
