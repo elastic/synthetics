@@ -23,6 +23,7 @@
  *
  */
 
+import { join } from 'path';
 import {
   formatLocations,
   getLocations,
@@ -31,6 +32,7 @@ import {
 import { LOCATIONS } from '../fixtures/locationinfo';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
+import { mkdir, rm, writeFile } from 'fs/promises';
 
 describe('Locations', () => {
   const apiKey = 'foo';
@@ -79,13 +81,29 @@ describe('Locations', () => {
   });
 
   describe('CLI command', () => {
+    const PROJECT_DIR = join(__dirname, 'new-project');
+    async function fakeProjectSetup(settings) {
+      await writeFile(
+        join(PROJECT_DIR, 'synthetics.config.ts'),
+        `export default { project: ${JSON.stringify(settings)} }`
+      );
+    }
+
+    beforeAll(async () => {
+      await mkdir(PROJECT_DIR, { recursive: true });
+    });
+    afterAll(async () => {
+      await rm(PROJECT_DIR, { recursive: true, force: true });
+    });
+
     const runLocations = async (args: Array<string> = []) => {
       const cli = new CLIMock()
         .args(['locations', ...args])
-        .run({ cwd: __dirname });
+        .run({ cwd: PROJECT_DIR, env: process.env });
       expect(await cli.exitCode).toBe(0);
       return cli.stderr();
     };
+
     it('render public locations by default', async () => {
       const output = await runLocations();
       expect(output).not.toContain(`custom location`);
@@ -99,6 +117,13 @@ describe('Locations', () => {
         apiKey,
       ]);
       expect(output).toContain(`custom location 1`);
+    });
+
+    it('use project url settings for private locations', async () => {
+      await fakeProjectSetup({ url: server.PREFIX });
+      const output = await runLocations(['--auth', apiKey]);
+      expect(output).toContain(`custom location 1`);
+      expect(output).toContain(`custom location 2`);
     });
   });
 });
