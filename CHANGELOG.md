@@ -5,6 +5,123 @@ All notable changes to this project will be documented in this file.
 **For detailed release notes, please refer to the [GitHub
 releases](https://github.com/elastic/synthetics/releases) page.**
 
+## v1.0.0-beta-39 (20222-11-29)
+
+### Features
+
+- Improve the performance of push command when monitors are created or updated
+  by chunking the monitors #666
+- Add an example lightweight monitor yaml file when a new synthetics project is
+  created via `init` command #650
+
+### Bug Fixes
+
+- Parse varying NDJSON chunked responses sizes from Kibana when the API endpoint is
+  behind a proxy #680
+- Skip adding empty values for locations when creating new synthetics project
+  using `init` command #658
+
+## v1.0.0-beta-38 (20222-11-02)
+
+### Features
+
+- Improve the validation of project monitor `schedule` for both browser and
+  lightweight monitors. Error would be thrown if users would configure monitor
+  schedule that are not supported. For lightweight monitors, we would save the
+  schedule to the nearest supported schedule frequency #622
+
+  **Current allowed schedule values are 1, 3, 5, 10, 15, 30, 60 minutes respectively.**
+
+- Improve the push command experience by showing the monitor management URL link
+  once the push has been completed successfully #637
+
+### Bug Fixes
+
+- Pick the correct loader when bundling TypeScript or JavaScript journey files
+  during push command #626
+
+## v1.0.0-beta-37 (20222-10-07)
+
+### Bug Fixes
+
+- fix an issue in newer versions of sharp by creating separate sharp instance to produce screenshots data #623
+
+## v1.0.0-beta-36 (20222-09-30)
+
+### Features
+
+#### Project based lightweight monitors
+
+In addition to pushing Project based browser monitors to Monitor management UI, the agent now supports pushing existing lightweight monitors directly from the `heartbeat.yml` files #542. Users can directly import the existing `heartbeat.yml` files in to their Synthetics project and configure the required project settings (Kibana host, auth key, locations, etc.) and run the `push` command.
+
+1. Create a new Synthetics project using `npx @elastic/synthetics init <dir-name>` and configure the project related settings.
+2. Copy the existing `heartbeat.yml` files in to the synthetics project directory. Example
+
+```yml
+   // heartbeat.yml example
+  - type: http
+    enabled: true
+    id: my-monitor
+    name: My Monitor
+    urls: ["http://localhost:9200"]
+    schedule: @every 10m
+    locations: ["singapore"]
+    timeout: 16s
+```
+
+3. Override the `schedule`, `locations` and `private locations` for specific monitors. Otherwise the defaults would be picked from `synthetics.config.ts` files.
+4. Run the push command `SYNTHETICS_API_KEY=<key> npm run push`.
+
+#### Browser version
+
+- Playwright version has been updated to `1.26.0`, this means the tests will be run on `Google Chrome/106.0.5249.30`.
+
+### Bug Fixes
+
+- Transfer size of network requests now includes both the response header and body sizes #615
+
+## v1.0.0-beta.35 (2022-09-19)
+
+### Features
+
+- Agent now prompts a warning question in interactive mode when users attempt to
+  run push command without any active monitors which would nuke an entire project #598
+- Users can suppress all prompt questions when running push command with `--yes` flag #602
+  ```sh
+  SYNTHETICS_API_KEY="key" npx @ealstic/synthetics push --yes
+  ```
+
+## v1.0.0-beta.34 (2022-09-14)
+
+### Features
+
+- Synthetics push command now supports bundling external packages from `node_modules` folder for browser monitors, users can now use external packages utility packages like `lodash, moment.js, etc,` in their synthetics scripts and push them instantaneously to Kibana. https://github.com/elastic/synthetics/pull/580
+
+  Example journey code below using an external package `is-positive` from NPM.
+
+  ```ts
+  // test.journey.ts
+  import { journey, step, monitor, expect } from '@elastic/synthetics';
+  import isPositive from 'is-positive';
+
+  journey('bundle test', ({ page, params }) => {
+    step('check if positive', () => {
+      expect(isPositive(4)).toBe(true);
+    });
+  });
+  ```
+
+  If you run `npm run push` inside the synthetics project, we would bundle the whole journey file along with the package `is-positive` to make the experience smooth. However, there are a few caveats when pushing external modules.
+
+  1. Packages that use native bindings will not work.
+  2. Users cannot push bundles that are more than `800 Kilobytes`.
+
+- Introduce configuring project monitor settings in the Synthetics config file https://github.com/elastic/synthetics/pull/592. Comes in handy when running `push` command, users would be able to configure project-related settings like `projectId`, `kibana host`, and `schedule` and save them for successive runs.
+
+- Support the `SYNTHETICS_API_KEY` env variable for Kibana authentication when pushing monitors to Kibana https://github.com/elastic/synthetics/pull/588
+
+**Full Changelog**: https://github.com/elastic/synthetics/compare/v1.0.0-beta.33...v1.0.0-beta.34
+
 ## v1.0.0-beta.33 (2022-09-06)
 
 - Issue individual requests when pushing monitors to Kibana. This is to avoid

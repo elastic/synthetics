@@ -34,6 +34,7 @@ import {
   findPWLogsIndexes,
   microSecsToSeconds,
   wrapFnWithLocation,
+  isMatch,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -57,14 +58,32 @@ it('convert trace timestamp to internal time', () => {
   expect(elapsedTime).toBe(392583.998697);
 });
 
-it('format errors', () => {
-  const error = new Error('testing');
-  const { name, message, stack } = error;
-  const formatted = formatError(error);
-  expect(formatted).toStrictEqual({
-    name,
-    message,
-    stack,
+describe('formatting errors', () => {
+  it('formats proper errors', () => {
+    const error = new Error('testing');
+    const { name, message, stack } = error;
+    const formatted = formatError(error);
+    expect(formatted).toStrictEqual({
+      name,
+      message,
+      stack,
+    });
+  });
+
+  ["c'est ne pas une Error", 42, { an: 'object' }].forEach(obj => {
+    it(`formats thrown non-error errors like: ${obj}(${typeof obj})`, () => {
+      const formatted = formatError(obj) as Error;
+      expect(formatted.message).toContain(`${obj}`);
+      expect(formatted.name).toStrictEqual('');
+      expect(formatted.stack).toStrictEqual('');
+      expect(typeof formatted.message).toBe('string');
+    });
+  });
+
+  [null, undefined].forEach(obj => {
+    it(`returns undefined for ${typeof obj}`, () => {
+      expect(formatError(obj)).toBe(undefined);
+    });
   });
 });
 
@@ -129,7 +148,7 @@ it('rewrite error stack from Playwright', () => {
 });
 
 it('does not rewrite non playwright errors', () => {
-  const normalStack = new Error('Tets').stack;
+  const normalStack = new Error('Tets').stack as string;
   const indexes = findPWLogsIndexes(normalStack);
   const newNormalStack = rewriteErrorStack(normalStack, indexes);
   expect(normalStack).toStrictEqual(newNormalStack);
@@ -142,4 +161,18 @@ it('location info on execution', () => {
   // line no and column no will not match as we are using
   // ts-jest preset to transpile code.
   expect(checkLoc().file).toBe(__filename);
+});
+
+it('match tags and names', () => {
+  // match tags
+  expect(isMatch(['foo', 'bar'], 'test', ['foo*'])).toBe(true);
+  expect(isMatch(['bar', 'baz'], 'test', ['b*'])).toBe(true);
+  expect(isMatch(['bar', 'baz'], 'test', ['c*'])).toBe(false);
+  // prefer tags over names
+  expect(isMatch(['bar', 'baz'], 'foo', ['c*'], 'foo')).toBe(false);
+  // match names when no tags
+  expect(isMatch(['bar'], 'foo', undefined, 'fo*')).toBe(true);
+  // match both name and tags
+  expect(isMatch(['bar'], 'foo', undefined, 'ba*')).toBe(true);
+  expect(isMatch(['bar'], 'foo', undefined, 'test*')).toBe(false);
 });

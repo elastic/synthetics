@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-if [ -z "${JENKINS_URL}" ]; then
+if ! "${CI}"; then
   # formatting
   bold=$(tput bold)
   normal=$(tput sgr0)

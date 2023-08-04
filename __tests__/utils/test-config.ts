@@ -25,15 +25,16 @@
 
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
-import { Monitor } from '../../dist/dsl/monitor';
+import { Monitor } from '../../src/dsl/monitor';
 
-export const wsEndpoint = process.env.WSENDPOINT;
+export const wsEndpoint = process.env.WSENDPOINT || '';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
-export function createTestMonitor(filename: string) {
+export function createTestMonitor(filename: string, type = 'browser') {
   const monitor = new Monitor({
     id: 'test-monitor',
     name: 'test',
+    type,
     schedule: 10,
     enabled: true,
     locations: ['united_kingdom', 'australia_east'],
@@ -79,7 +80,11 @@ export class CLIMock {
   run(spawnOverrides?: { cwd?: string; env?: NodeJS.ProcessEnv }): CLIMock {
     this.process = spawn(
       'node',
-      [join(__dirname, '..', '..', 'dist', 'cli.js'), ...this.cliArgs],
+      [
+        '--no-warnings',
+        join(__dirname, '..', '..', 'dist', 'cli.js'),
+        ...this.cliArgs,
+      ],
       {
         env: process.env,
         stdio: 'pipe',
@@ -88,9 +93,9 @@ export class CLIMock {
     );
 
     if (this.stdinStr) {
-      this.process.stdin.setDefaultEncoding('utf8');
-      this.process.stdin.write(this.stdinStr);
-      this.process.stdin.end();
+      this.process.stdin?.setDefaultEncoding('utf8');
+      this.process.stdin?.write(this.stdinStr);
+      this.process.stdin?.end();
     }
 
     const dataListener = data => {
@@ -101,21 +106,21 @@ export class CLIMock {
       this.chunks.push(this.data);
       if (this.waitForPromise && this.data.includes(this.waitForText)) {
         if (!this.debug) {
-          this.process.stdout.off('data', dataListener);
+          this.process.stdout?.off('data', dataListener);
         }
         this.waitForPromise();
       }
     };
-    this.process.stdout.on('data', dataListener);
+    this.process.stdout?.on('data', dataListener);
 
     this.exitCode = new Promise(res => {
-      this.process.stderr.on('data', data => {
+      this.process.stderr?.on('data', data => {
         this.stderrStr += data;
         if (this.debug) {
           console.log('CLIMock.stderr:', data.toString());
         }
       });
-      this.process.on('exit', code => res(code));
+      this.process.on('exit', code => res(code ?? 0));
     });
 
     return this;

@@ -24,7 +24,7 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions, parseThrottling } from '../src/options';
+import { normalizeOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
@@ -33,7 +33,9 @@ describe('options', () => {
       params: {
         foo: 'bar',
       },
-      headless: true,
+      playwrightOptions: {
+        headless: false,
+      },
       sandbox: false,
       screenshots: 'on',
       dryRun: true,
@@ -44,6 +46,7 @@ describe('options', () => {
     expect(normalizeOptions({})).toMatchObject({
       environment: 'test',
       params: {},
+      screenshots: 'on',
     });
     expect(normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
@@ -59,11 +62,11 @@ describe('options', () => {
         defaultBrowserType: 'chromium',
         deviceScaleFactor: 4.5,
         hasTouch: true,
-        headless: true,
+        headless: false,
         ignoreHTTPSErrors: undefined,
         isMobile: true,
         userAgent:
-          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4929.0 Mobile Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.5790.24 Mobile Safari/537.36',
         viewport: {
           height: 658,
           width: 320,
@@ -74,32 +77,60 @@ describe('options', () => {
   });
 
   it('normalize monitor configs', () => {
-    expect(normalizeOptions({ throttling: false })).toMatchObject({
-      throttling: {},
+    const config = join(__dirname, 'fixtures', 'synthetics.config.ts');
+    expect(normalizeOptions({ config }, 'push')).toMatchObject({
+      screenshots: 'off',
+      schedule: 10,
+      privateLocations: ['test-location'],
+      locations: ['us_east'],
+      alert: {
+        status: {
+          enabled: true,
+        },
+        tls: {
+          enabled: false,
+        },
+      },
     });
 
     expect(
-      normalizeOptions({ throttling: { download: 50 }, schedule: 2 })
+      normalizeOptions(
+        {
+          config,
+          schedule: 3,
+          screenshots: 'only-on-failure',
+          locations: ['australia_east'],
+          privateLocations: ['test'],
+        },
+        'push'
+      )
     ).toMatchObject({
-      schedule: 2,
-      throttling: {
-        download: 50,
-        upload: 3,
-        latency: 20,
+      screenshots: 'only-on-failure',
+      schedule: 3,
+      privateLocations: ['test'],
+      locations: ['australia_east'],
+      alert: {
+        status: {
+          enabled: true,
+        },
+        tls: {
+          enabled: false,
+        },
       },
     });
   });
 
-  it('parse throttling', () => {
-    expect(parseThrottling('{}')).toEqual({});
-    expect(parseThrottling('{"download": 20, "upload": 10}')).toEqual({
-      download: 20,
-      upload: 10,
-    });
-    expect(parseThrottling('100l/41u/9d')).toEqual({
-      download: 9,
-      upload: 41,
-      latency: 100,
+  it('cli arg headless override playwright headless arg', () => {
+    const cliArgs: CliArgs = {
+      playwrightOptions: {
+        headless: false,
+      },
+      headless: true,
+    };
+    expect(normalizeOptions(cliArgs)).toMatchObject({
+      playwrightOptions: {
+        headless: true,
+      },
     });
   });
 });

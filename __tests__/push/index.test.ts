@@ -28,11 +28,13 @@ import { mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
-import { APISchema } from '../../src/push/monitor';
+import { createKibanaTestServer } from '../utils/kibana-test-server';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
+import { THROTTLING_WARNING_MSG } from '../../src/helpers';
 
 describe('Push', () => {
+  let server: Server;
   const PROJECT_DIR = join(__dirname, 'new-project');
   const DEFAULT_ARGS = ['--auth', 'foo'];
 
@@ -54,23 +56,26 @@ describe('Push', () => {
   }
 
   beforeAll(async () => {
+    server = await createKibanaTestServer('8.6.0');
     await mkdir(PROJECT_DIR, { recursive: true });
   });
   afterAll(async () => {
     process.env.NO_COLOR = '';
+    await server.close();
     await rm(PROJECT_DIR, { recursive: true, force: true });
-  });
-
-  it('error when auth is ignored', async () => {
-    const output = await runPush([]);
-    expect(output).toContain(`required option '--auth <auth>' not specified`);
   });
 
   it('error when project is not setup', async () => {
     const output = await runPush();
     expect(output).toContain(
-      'Aborted (missing synthetics config file), Project not set up corrrectly.'
+      'Aborted (missing synthetics config file), Project not set up correctly.'
     );
+  });
+
+  it('error when auth is ignored', async () => {
+    await fakeProjectSetup({}, {});
+    const output = await runPush([]);
+    expect(output).toContain(`required option '--auth <auth>' not specified`);
   });
 
   it('error on empty project id', async () => {
@@ -85,8 +90,17 @@ describe('Push', () => {
     expect(output).toMatchSnapshot();
   });
 
-  it('error on invalid schedule', async () => {
+  it('error when schedule is not present', async () => {
     await fakeProjectSetup({ id: 'test-project' }, { locations: ['test-loc'] });
+    const output = await runPush();
+    expect(output).toMatchSnapshot();
+  });
+
+  it('error on invalid schedule', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 12 }
+    );
     const output = await runPush();
     expect(output).toMatchSnapshot();
   });
@@ -94,46 +108,102 @@ describe('Push', () => {
   it('abort on push with different project id', async () => {
     await fakeProjectSetup(
       { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { locations: ['test-loc'], schedule: 3 }
     );
-    const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
-      TEST_OVERRIDE: '',
-    });
+    const output = await runPush(
+      [...DEFAULT_ARGS, '-y', '--id', 'new-project'],
+      {
+        TEST_OVERRIDE: false,
+      }
+    );
+    expect(output).toContain('Push command Aborted');
+  });
+
+  it('abort on tags and match', async () => {
+    await fakeProjectSetup({}, {});
+    const output = await runPush([...DEFAULT_ARGS, '--tags', 'foo:*']);
     expect(output).toMatchSnapshot();
   });
 
-  it('push with different id when overriden', async () => {
+  it('error on invalid schedule in monitor DSL', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      { locations: ['test-loc'], schedule: 3 }
     );
-    const output = await runPush([...DEFAULT_ARGS, '--id', 'new-project'], {
-      TEST_OVERRIDE: 'true',
-    });
-    expect(output).toContain('No Monitors found');
+    const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
+    );
+    const output = await runPush();
+    expect(output).toContain('Invalid schedule: 8, allowed values are');
+    await rm(testJourney, { force: true });
   });
 
-  it('errors on duplicate monitors', async () => {
+  it('errors on duplicate browser monitors', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
-      { locations: ['test-loc'], schedule: 2 }
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { locations: ['test-loc'], schedule: 3 }
     );
 
     const dupJourney = join(PROJECT_DIR, 'duplicate.journey.ts');
     await writeFile(
       dupJourney,
-      `import {journey, monitor} from '../../../src';
+      `import {journey, monitor} from '../../../';
 journey('journey 1', () => monitor.use({ id: 'duplicate id' }));
 journey('journey 2', () => monitor.use({ id: 'duplicate id' }));
 
 journey('duplicate name', () => monitor.use({ schedule: 10 }));
-journey('duplicate name', () => monitor.use({ schedule: 20 }));`
+journey('duplicate name', () => monitor.use({ schedule: 15 }));`
     );
     const output = await runPush();
     expect(output).toContain(`Aborted: Duplicate monitors found`);
     expect(output).toContain(`duplicate id`);
     expect(output).toContain(`duplicate name`);
     await rm(dupJourney, { force: true });
+  });
+
+  it('warn if throttling config is set', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project' },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+  journey('journey 1', () => monitor.use({ throttling: {latency: 20} }));`
+    );
+    const output = await runPush();
+    await rm(testJourney, { force: true });
+    expect(output).toContain(THROTTLING_WARNING_MSG);
+  });
+
+  it('errors on duplicate lightweight monitors', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+
+    const heartbeatYml = join(PROJECT_DIR, 'hearbeat.duplicate.yml');
+    await writeFile(
+      heartbeatYml,
+      `
+heartbeat.monitors:
+- type: http
+  schedule: @every 1m
+  id: foo
+  name: foo1
+- type: http
+  schedule: @every 2m
+  id: foo
+  name: foo2
+    `
+    );
+    const output = await runPush();
+    expect(output).toContain(`Aborted: Duplicate monitors found`);
+    await rm(heartbeatYml, { force: true });
   });
 
   it('format duplicate monitors', () => {
@@ -150,64 +220,59 @@ journey('duplicate name', () => monitor.use({ schedule: 20 }));`
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
   });
 
-  describe('API', () => {
-    let server: Server;
-    beforeAll(async () => {
-      server = await Server.create();
-      const apiRes = { failedMonitors: [], failedStaleMonitors: [] };
-      server.route(
-        '/sync/s/dummy/api/synthetics/service/project/monitors',
-        (req, res) => {
-          res.end(JSON.stringify(apiRes));
-        }
-      );
-      server.route(
-        '/stream/s/dummy/api/synthetics/service/project/monitors',
-        async (req, res) => {
-          await new Promise(r => setTimeout(r, 20));
-          req.on('data', chunks => {
-            const schema = JSON.parse(chunks.toString()) as APISchema;
-            res.write(JSON.stringify(schema.monitors[0].name) + '\n');
-          });
-          req.on('end', () => {
-            res.end(JSON.stringify(apiRes));
-          });
-        }
-      );
-      await fakeProjectSetup(
-        {
-          id: 'test-project',
-          space: 'dummy',
-        },
-        { locations: ['test-loc'], schedule: 2 }
-      );
+  ['8.5.0', '8.6.0'].forEach(version => {
+    describe('API: ' + version, () => {
+      let server: Server;
+      const deleteProgress =
+        '8.5.0' === version
+          ? 'deleting all stale monitors'
+          : 'deleting 2 monitors';
+      beforeAll(async () => {
+        server = await createKibanaTestServer(version);
+        await fakeProjectSetup(
+          { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          { locations: ['test-loc'], schedule: 3 }
+        );
+      });
+      afterAll(async () => {
+        await server.close();
+      });
 
-      await writeFile(
-        join(PROJECT_DIR, 'test.journey.ts'),
-        `import {journey, monitor} from '../../../src/index';
-journey('journey 1', () => monitor.use({ id: 'j1' }));
-journey('journey 2', () => monitor.use({ id: 'j2' }));`
-      );
-    });
-    afterAll(async () => {
-      await server.close();
-    });
+      it('abort when delete is skipped', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y'], {
+          TEST_OVERRIDE: false,
+        });
+        expect(output).toContain('Push command Aborted');
+      });
 
-    it('handle sync response', async () => {
-      const output = await runPush([
-        '--url',
-        server.PREFIX + '/sync',
-        ...DEFAULT_ARGS,
-      ]);
-      expect(output).toMatchSnapshot();
-    });
-    it('handle streamed response', async () => {
-      const output = await runPush([
-        '--url',
-        server.PREFIX + '/stream',
-        ...DEFAULT_ARGS,
-      ]);
-      expect(output).toMatchSnapshot();
+      it('delete entire project with --yes flag', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y']);
+        expect(output).toContain(deleteProgress);
+      });
+
+      it('delete entire project with prompt override', async () => {
+        const output = await runPush([...DEFAULT_ARGS, '-y'], {
+          TEST_OVERRIDE: true,
+        });
+        expect(output).toContain(deleteProgress);
+      });
+
+      it('push journeys', async () => {
+        const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+        await writeFile(
+          testJourney,
+          `import {journey, monitor} from '../../../';
+        journey('journey 1', () => monitor.use({ id: 'j1' }));
+        journey('journey 2', () => monitor.use({ id: 'j2' }));`
+        );
+        const output = await runPush();
+        expect(output).toContain('Pushing monitors for project: test-project');
+        expect(output).toContain('bundling 2 monitors');
+        expect(output).toContain('creating or updating 2 monitors');
+        expect(output).toContain(deleteProgress);
+        expect(output).toContain('✓ Pushed:');
+        await rm(testJourney, { force: true });
+      });
     });
   });
 });

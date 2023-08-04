@@ -41,20 +41,34 @@ describe('BrowserConsole', () => {
   it('should capture browser console logs', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const browserConsole = new BrowserConsole(driver);
-    const { page } = driver;
     browserConsole.start();
-    await page.goto(server.TEST_PAGE);
     browserConsole._currentStep = currentStep;
-    await page.evaluate(() =>
-      console.warn('test-message', 1, { test: 'test' })
-    );
+    await driver.page.evaluate(() => {
+      console.warn('console.warn');
+      console.error('console.error');
+      console.info('console.info');
+    });
+    await Promise.all([
+      driver.page.evaluate(async () => {
+        const win = window.open();
+        (win as any).console.error('console.error popup');
+        (win as any).close();
+      }),
+      driver.page.context().waitForEvent('console'),
+      driver.page.waitForEvent('popup'),
+    ]);
+
     const messages = browserConsole.stop();
     await Gatherer.stop();
-    const testMessage = messages.find(m => m.text.indexOf('test-message') >= 0);
-    expect(testMessage.text).toEqual(`test-message 1 {test: test}`);
-    expect(testMessage.type).toEqual('warning');
-    expect(testMessage.timestamp).toBeDefined();
-    expect(testMessage.step).toEqual(currentStep);
+    const warnMessage = messages[0];
+    expect(warnMessage?.text).toEqual('console.warn');
+    expect(warnMessage?.type).toEqual('warning');
+    expect(warnMessage?.timestamp).toBeDefined();
+    expect(warnMessage?.step).toEqual(currentStep);
+    expect(messages.slice(1).map(m => m.text)).toEqual([
+      'console.error',
+      'console.error popup',
+    ]);
   });
 
   it('should capture browser page errors', async () => {
@@ -74,20 +88,20 @@ describe('BrowserConsole', () => {
     const notFoundMessage = messages.find(
       m => m.text.indexOf('Failed to load resource:') >= 0
     );
-    expect(notFoundMessage.text).toEqual(
+    expect(notFoundMessage?.text).toEqual(
       `Failed to load resource: the server responded with a status of 404 (Not Found)`
     );
-    expect(notFoundMessage.type).toEqual('error');
-    expect(notFoundMessage.step).toEqual(currentStep);
+    expect(notFoundMessage?.type).toEqual('error');
+    expect(notFoundMessage?.step).toEqual(currentStep);
 
     const referenceError = messages.find(
       m => m.text.indexOf('that is not defined') >= 0
     );
-    expect(referenceError.error.stack).toContain(
+    expect(referenceError?.error?.stack).toContain(
       `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
     );
-    expect(referenceError.type).toEqual('error');
-    expect(referenceError.step).toEqual(currentStep);
+    expect(referenceError?.type).toEqual('error');
+    expect(referenceError?.step).toEqual(currentStep);
   });
 
   it('should capture unhandled rejections', async () => {
@@ -104,8 +118,8 @@ describe('BrowserConsole', () => {
     await Gatherer.stop();
 
     const unhandledError = messages.find(m => m.text.indexOf('Boom') >= 0);
-    expect(unhandledError.type).toEqual('error');
-    expect(unhandledError.error.stack).toContain('Error: Boom');
-    expect(unhandledError.step).toEqual(currentStep);
+    expect(unhandledError?.type).toEqual('error');
+    expect(unhandledError?.step).toEqual(currentStep);
+    expect(unhandledError?.error?.stack).toContain('Error: Boom');
   });
 });

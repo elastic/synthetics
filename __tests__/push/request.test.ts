@@ -47,7 +47,7 @@ describe('Push api request', () => {
 
   it('format 404 error', () => {
     const message = 'Not Found';
-    expect(formatNotFoundError(message)).toMatchSnapshot();
+    expect(formatNotFoundError('http://foo', message)).toMatchSnapshot();
   });
 
   it('format failed monitors', () => {

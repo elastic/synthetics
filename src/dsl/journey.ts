@@ -30,10 +30,10 @@ import {
   CDPSession,
   APIRequestContext,
 } from 'playwright-chromium';
-import micromatch, { isMatch } from 'micromatch';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
+import { isMatch } from '../helpers';
 
 export type JourneyOptions = {
   name: string;
@@ -92,6 +92,7 @@ export class Journey {
     this.monitor = new Monitor({
       name: this.name,
       id: this.id,
+      type: 'browser',
       tags: this.tags ?? [],
       ...config,
     });
@@ -101,21 +102,8 @@ export class Journey {
 
   /**
    * Matches journeys based on the provided args. Proitize tags over match
-   * - tags pattern that matches only tags
-   * - match pattern that matches both name and tags
    */
   isMatch(matchPattern: string, tagsPattern: Array<string>) {
-    if (tagsPattern) {
-      return this.tagsMatch(tagsPattern);
-    }
-    if (matchPattern) {
-      return isMatch(this.name, matchPattern) || this.tagsMatch(matchPattern);
-    }
-    return true;
-  }
-
-  tagsMatch(pattern) {
-    const matchess = micromatch(this.tags || ['*'], pattern);
-    return matchess.length > 0;
+    return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
 }

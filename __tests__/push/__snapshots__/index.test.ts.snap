@@ -1,25 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Push API handle streamed response 1`] = `
-"> preparing all monitors
-> creating all monitors
-> journey 1
-> journey 2
-> deleting all stale monitors
-✓ Pushed
-"
-`;
+exports[`Push abort on tags and match 1`] = `
+"Aborted. Invalid CLI flags.
 
-exports[`Push API handle sync response 1`] = `
-"> preparing all monitors
-> creating all monitors
-> deleting all stale monitors
-✓ Pushed
-"
-`;
-
-exports[`Push abort on push with different project id 1`] = `
-"⚠ Push command Aborted
+Tags and Match are not supported in push command.
 "
 `;
 
@@ -46,6 +30,15 @@ Run 'npx @elastic/synthetics init' to create project with default settings.
 `;
 
 exports[`Push error on invalid schedule 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Set default schedule(12) to one of the allowed values - 1,3,5,10,15,20,30,60,120,240
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push error when schedule is not present 1`] = `
 "Aborted. Invalid synthetics project settings.
 
 Set default schedule in minutes for all monitors via

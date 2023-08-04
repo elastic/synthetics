@@ -24,11 +24,14 @@
  */
 
 import path from 'path';
-import { unlink, readFile } from 'fs/promises';
+import { stat, unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
-import { commonOptions, MultiAssetPlugin, PluginData } from './plugin';
+import { commonOptions } from '../core/transform';
+import { SyntheticsBundlePlugin } from './plugin';
+
+const SIZE_LIMIT_KB = 800;
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
@@ -39,17 +42,15 @@ export class Bundler {
   constructor() {}
 
   async prepare(absPath: string) {
-    const addToMap = (data: PluginData) => {
-      this.moduleMap.set(data.path, data.contents);
-    };
-
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
       ...{
-        entryPoints: {
-          [absPath]: absPath,
-        },
-        plugins: [MultiAssetPlugin(addToMap)],
+        entryPoints: [absPath],
+        bundle: true,
+        write: false,
+        sourcemap: 'inline',
+        external: ['@elastic/synthetics'],
+        plugins: [SyntheticsBundlePlugin()],
       },
     };
     const result = await esbuild.build(options);
@@ -85,12 +86,23 @@ export class Bundler {
     await this.prepare(entry);
     await this.zip(output);
     const data = await this.encode(output);
+    await this.checkSize(output);
     await this.cleanup(output);
     return data;
   }
 
   async encode(outputPath: string) {
     return await readFile(outputPath, 'base64');
+  }
+
+  async checkSize(outputPath: string) {
+    const { size } = await stat(outputPath);
+    const sizeKb = size / 1024;
+    if (sizeKb > SIZE_LIMIT_KB) {
+      throw new Error(
+        `You have monitors whose size exceeds the ${SIZE_LIMIT_KB}KB limit.`
+      );
+    }
   }
 
   async cleanup(outputPath: string) {

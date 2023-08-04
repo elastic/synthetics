@@ -34,7 +34,7 @@ import {
 } from 'playwright-chromium';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
-import { MonitorConfig } from './dsl/monitor';
+import { AlertConfig, MonitorConfig } from './dsl/monitor';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -201,32 +201,31 @@ type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
+  pattern?: string;
   match?: string;
   tags?: Array<string>;
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
-  ignoreHttpsErrors?: boolean;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
-  throttling?: ThrottlingOptions;
+  throttling?: MonitorConfig['throttling'];
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  alert?: AlertConfig;
 };
 
 export type CliArgs = BaseArgs & {
   config?: string;
   reporter?: BuiltInReporterName;
-  pattern?: string;
   inline?: boolean;
   require?: Array<string>;
-  headless?: boolean;
   sandbox?: boolean;
   richEvents?: boolean;
+  headless?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
-  throttling?: boolean | ThrottlingOptions;
 };
 
 export type RunOptions = BaseArgs & {
@@ -236,18 +235,17 @@ export type RunOptions = BaseArgs & {
   trace?: boolean;
   filmstrips?: boolean;
   environment?: string;
-  playwrightOptions?: PlaywrightOptions;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
   apm?: ApmOptions;
 };
 
-export type PushOptions = ProjectSettings & {
-  auth: string;
-  schedule?: MonitorConfig['schedule'];
-  locations?: MonitorConfig['locations'];
-  privateLocations?: MonitorConfig['privateLocations'];
-};
+export type PushOptions = Partial<ProjectSettings> &
+  Partial<BaseArgs> & {
+    auth: string;
+    kibanaVersion?: number;
+    yes?: boolean;
+  };
 
 export type ProjectSettings = {
   id: string;
@@ -259,7 +257,13 @@ export type ApmOptions = {
   origins: Array<string | RegExp>;
 };
 
-export type PlaywrightOptions = LaunchOptions & BrowserContextOptions;
+export type PlaywrightOptions = LaunchOptions &
+  BrowserContextOptions & {
+    testIdAttribute?: string;
+    actionTimeout?: number;
+    navigationTimeout?: number;
+  };
+
 export type SyntheticsConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;

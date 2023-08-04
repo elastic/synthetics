@@ -112,7 +112,7 @@ describe('Gatherer', () => {
     });
     expect(pluginManager).toBeInstanceOf(PluginManager);
     const network = pluginManager.get('network');
-    expect(network.start).toHaveBeenCalled();
+    expect(network?.start).toHaveBeenCalled();
     await Gatherer.stop();
   });
 
@@ -164,7 +164,42 @@ describe('Gatherer', () => {
     });
   });
 
-  describe('Network emulation', () => {
+  describe('Set Test ID Attribute', () => {
+    it('uses default when not set', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-testid="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('uses custom when provided', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { testIdAttribute: 'data-test-subj' },
+      });
+      const { page } = driver;
+      await page.goto(server.TEST_PAGE);
+      await page.setContent(
+        '<a target=_blank rel=noopener href="/popup.html" data-test-subj="username-button">Click me</a>'
+      );
+      expect(await page.getByTestId('username-button').isVisible()).toEqual(
+        true
+      );
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
+  describe.skip('Network emulation', () => {
     const networkConditions = {
       downloadThroughput: megabitsToBytes(3),
       uploadThroughput: megabitsToBytes(1),
@@ -227,6 +262,52 @@ describe('Gatherer', () => {
         page.click('a'),
       ]);
       await page1.close();
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+  });
+
+  describe('Timeouts', () => {
+    it('set navigation timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { navigationTimeout: 1, actionTimeout: 2 },
+      });
+      server.route('/hang.html', () => {});
+      let error: any = null;
+      await driver.page
+        .goto(server.PREFIX + '/hang.html')
+        .catch(e => (error = e));
+      expect(error.message).toContain('page.goto: Timeout 1ms exceeded.');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('prefer timeout over navigation timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { navigationTimeout: 3 },
+      });
+      server.route('/hang.html', () => {});
+      let error: any = null;
+      await driver.page
+        .goto(server.PREFIX + '/hang.html', { timeout: 1 })
+        .catch(e => (error = e));
+      expect(error.message).toContain('page.goto: Timeout 1ms exceeded.');
+      await Gatherer.dispose(driver);
+      await Gatherer.stop();
+    });
+
+    it('set action timeout', async () => {
+      const driver = await Gatherer.setupDriver({
+        wsEndpoint,
+        playwrightOptions: { actionTimeout: 2 },
+      });
+      await driver.page.setContent(
+        '<button disabled><span>Click Span</span></button>'
+      );
+      const error = await driver.page.click('text=Click Span').catch(e => e);
+      expect(error.message).toContain('page.click: Timeout 2ms exceeded.');
       await Gatherer.dispose(driver);
       await Gatherer.stop();
     });

@@ -39,27 +39,27 @@ describe('Trace metrics', () => {
     const processEvents = traceEvents.concat(USER_TIMING_EVENTS as any);
     const metrics = UserTimings.compute({ processEvents } as any);
     expect(metrics).toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "duration": Object {
+      [
+        {
+          "duration": {
             "us": 1212635,
           },
           "name": "Next.js-before-hydration",
-          "start": Object {
+          "start": {
             "us": 3069484776113,
           },
           "type": "measure",
         },
-        Object {
+        {
           "name": "beforeRender",
-          "start": Object {
+          "start": {
             "us": 3069485988763,
           },
           "type": "mark",
         },
-        Object {
+        {
           "name": "afterHydrate",
-          "start": Object {
+          "start": {
             "us": 3069486106274,
           },
           "type": "mark",

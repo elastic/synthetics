@@ -84,10 +84,10 @@ describe('network', () => {
     const network = new NetworkManager(driver);
     await network.start();
     await driver.page.goto('data:text/html,<title>Data URI test</title>');
-    const netinfo = await network.stop();
     expect(await driver.page.content()).toContain('Data URI test');
-    expect(netinfo).toEqual([]);
+    const netinfo = await network.stop();
     await Gatherer.stop();
+    expect(netinfo).toEqual([]);
   });
 
   it('produce distinct events for redirects', async () => {
@@ -104,11 +104,11 @@ describe('network', () => {
     });
     await driver.page.goto(server.PREFIX + '/route1');
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toEqual(3);
     expect(netinfo[0].response.status).toBe(302);
     expect(netinfo[1].response.status).toBe(302);
     expect(netinfo[2].response.status).toBe(200);
-    await Gatherer.stop();
   });
 
   it('measure resource and transfer size', async () => {
@@ -116,17 +116,16 @@ describe('network', () => {
     const network = new NetworkManager(driver);
     await network.start();
     server.route('/route1', (_, res) => {
+      res.setHeader('Content-Type', 'text/plain');
       res.end('A'.repeat(10));
     });
     await driver.page.goto(server.PREFIX + '/route1', {
       waitUntil: 'networkidle',
     });
     const netinfo = await network.stop();
-    expect(netinfo[0]).toMatchObject({
-      resourceSize: 0,
-      transferSize: 10,
-    });
     await Gatherer.stop();
+    expect(netinfo[0].response.body?.bytes).toBe(10);
+    expect(netinfo[0].transferSize).toBeGreaterThan(100);
   });
 
   it('timings for aborted requests', async () => {
@@ -139,7 +138,7 @@ describe('network', () => {
 
     const delayTime = 20;
     server.route('/abort', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.destroy();
     });
     server.route('/index', async (_, res) => {
@@ -150,8 +149,8 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/abort`,
@@ -175,12 +174,13 @@ describe('network', () => {
 
     const delayTime = 100;
     server.route('/chunked', async (req, res) => {
-      await delay(delayTime);
+      await delay(delayTime + 1);
       res.writeHead(200, {
+        'transfer-encoding': 'chunked',
         'content-type': 'application/javascript',
       });
       res.write('a');
-      await delay(delayTime);
+      await delay(delayTime + 1);
       return res.end('b');
     });
     server.route('/index', async (_, res) => {
@@ -191,8 +191,8 @@ describe('network', () => {
     await driver.page.goto(server.PREFIX + '/index', {
       waitUntil: 'networkidle',
     });
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo[1]).toMatchObject({
       url: `${server.PREFIX}/chunked`,
@@ -200,9 +200,11 @@ describe('network', () => {
       timings: expect.any(Object),
     });
     const timings = netinfo[1].timings;
-    expect(timings.wait).toBeGreaterThan(delayTime);
-    expect(timings.receive).toBeGreaterThan(delayTime);
-    expect(timings.total).toBeGreaterThan(timings.wait + timings.receive);
+    expect(timings.wait).toBeGreaterThanOrEqual(delayTime);
+    expect(timings.receive).toBeGreaterThanOrEqual(delayTime);
+    expect(timings.total).toBeGreaterThanOrEqual(
+      timings.wait + timings.receive
+    );
   });
 
   it('capture network data from popups', async () => {
@@ -225,8 +227,8 @@ describe('network', () => {
     await page1.waitForLoadState('load');
     expect(await page1.textContent('body')).toEqual('Not found');
 
-    await Gatherer.stop();
     const netinfo = await network.stop();
+    await Gatherer.stop();
     expect(netinfo.length).toBe(2);
     expect(netinfo).toMatchObject([
       {
@@ -242,41 +244,77 @@ describe('network', () => {
     const driver = await Gatherer.setupDriver({
       wsEndpoint,
     });
-
     const network = new NetworkManager(driver);
     await network.start();
-
     const delayTime = 5;
-    server.route('/test.js', async (req, res) => {
+
+    server.route('/test.css', async (req, res) => {
       res.writeHead(200, {
-        'content-type': 'application/javascript',
-        'cache-control': 'public; max-age=600',
+        'Content-Type': 'text/css',
+        'Cache-Control': 'public, max-age=10000',
       });
-      await delay(delayTime);
-      res.end('var a=10');
+      await delay(delayTime + 1);
+      res.end(`body { background: green }`);
     });
     server.route('/index', async (_, res) => {
       res.setHeader('content-type', 'text/html');
-      res.end(`<script src=${server.PREFIX}/test.js />`);
+      res.end(`<link rel="stylesheet" href=${server.PREFIX}/test.css />`);
     });
 
-    await driver.page.goto(server.PREFIX + '/index', {
-      waitUntil: 'networkidle',
-    });
-    await driver.page.reload();
+    await driver.page.goto(server.PREFIX + '/index');
+    const [response] = await Promise.all([
+      driver.page.waitForResponse('**/test.css'),
+      driver.page.reload(),
+    ]);
+    await response.finished();
+
     const netinfo = await network.stop();
     await Gatherer.stop();
     const resources = netinfo.filter(req =>
-      req.url.includes(`${server.PREFIX}/test.js`)
+      req.url.includes(`${server.PREFIX}/test.css`)
     );
     expect(resources.length).toBe(2);
+
+    const [uncached, cached] = resources;
+    expect(uncached.timings.wait).toBeGreaterThan(delayTime);
+    expect(cached.timings.wait).toBeLessThan(delayTime); // served from cache
     resources.forEach(res => {
       const timing = res.timings;
-      expect(timing.wait).toBeGreaterThan(delayTime);
-      expect(timing.total).toBeGreaterThan(timing.wait + timing.receive);
+      expect(timing.total).toBeGreaterThanOrEqual(timing.wait + timing.receive);
       // Check with absolute value to make sure we are not crossing absurd values
-      expect(timing.total).toBeLessThan(50);
+      // can be somewhat high on CI
+      expect(timing.total).toBeLessThan(100);
     });
+  });
+
+  it('timings for broken response', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    server.route('/index', async (_, res) => {
+      res.setHeader('content-type', 'text/html');
+      await delay(10);
+      res.write(`<head></head>`);
+      await delay(500);
+      res.end(`<body></body>`);
+    });
+
+    await driver.page
+      .goto(server.PREFIX + '/index', { timeout: 100 })
+      .catch(() => {});
+
+    const netinfo = await network.stop();
+    await Gatherer.stop();
+
+    expect(netinfo.length).toBe(1);
+    // responseEnd is never fired as we are not waiting for the
+    // `responseFinished` event instead cutting off after TTFB
+    expect(netinfo[0].timings.receive).toEqual(-1);
+    expect(netinfo[0].timings.total).toBeGreaterThan(10);
+    expect(netinfo[0].timings.total).toBeLessThan(500);
   });
 
   it("doesn't capture network info from request context", async () => {
@@ -288,8 +326,44 @@ describe('network', () => {
 
     await driver.request.get(server.TEST_PAGE);
     const netinfo = await network.stop();
-    expect(netinfo.length).toBe(0);
-    await Gatherer.dispose(driver);
     await Gatherer.stop();
+    expect(netinfo.length).toBe(0);
+  });
+
+  it('do not hang on slow chunked response', async () => {
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    await network.start();
+
+    server.route('/index', async (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/html',
+      });
+      res.end('');
+    });
+    server.route('/chunked.txt', async (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Transfer-Encoding': 'chunked',
+      });
+      res.write('start');
+      // response is never ended
+    });
+
+    await driver.page.goto(server.PREFIX + '/index');
+    await Promise.all([
+      driver.page.evaluate(() => {
+        // hangs forever
+        const x = new XMLHttpRequest();
+        x.open('GET', 'chunked.txt', true);
+        x.send();
+      }, [server.PREFIX + 'chunked.txt']),
+      delay(1000),
+    ]);
+    const netinfo = await network.stop();
+    await Gatherer.stop();
+    expect(netinfo.length).toBe(2);
   });
 });

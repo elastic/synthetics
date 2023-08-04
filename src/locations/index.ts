@@ -23,13 +23,9 @@
  *
  */
 
-import {
-  formatAPIError,
-  formatNotFoundError,
-  sendRequest,
-  ok,
-} from '../push/request';
-import { indent, removeTrailingSlash, write } from '../helpers';
+import { sendReqAndHandleError } from '../push/request';
+import { indent, write } from '../helpers';
+import { generateURL } from '../push/utils';
 
 export type LocationCmdOptions = {
   auth: string;
@@ -49,21 +45,12 @@ export type LocationAPIResponse = {
 const PRIVATE_KEYWORD = '(private)';
 
 export async function getLocations(options: LocationCmdOptions) {
-  const url =
-    removeTrailingSlash(options.url) + '/internal/uptime/service/locations';
-  const { body, statusCode } = await sendRequest({
-    url,
+  const resp = await sendReqAndHandleError<LocationAPIResponse>({
+    url: generateURL(options, 'location'),
     method: 'GET',
     auth: options.auth,
   });
-  if (statusCode === 404) {
-    throw formatNotFoundError(await body.text());
-  }
-  if (!ok(statusCode)) {
-    const { error, message } = await body.json();
-    throw formatAPIError(statusCode, error, message);
-  }
-  return ((await body.json()) as LocationAPIResponse).locations;
+  return resp.locations;
 }
 
 export function formatLocations(locations: Array<LocationMetadata>) {

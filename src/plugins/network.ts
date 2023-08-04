@@ -25,6 +25,7 @@
 
 import { Page, Request, Response } from 'playwright-chromium';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
+import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
@@ -36,6 +37,22 @@ import { getTimestamp } from '../helpers';
 function epochTimeInSeconds() {
   return getTimestamp() / 1e6;
 }
+
+/**
+ * Find the first positive number in an array for Resource timing data
+ */
+const firstPositive = (numbers: number[]) => {
+  for (let i = 0; i < numbers.length; ++i) {
+    if (numbers[i] > 0) {
+      return numbers[i];
+    }
+  }
+  return null;
+};
+
+const roundMilliSecs = (value: number): number => {
+  return Math.floor(value * 1000) / 1000;
+};
 
 /**
  * Used as a key in each Network Request to identify the
@@ -77,11 +94,11 @@ export class NetworkManager {
   }
 
   async start() {
+    log(`Plugins: started collecting network events`);
     const { client, context } = this.driver;
     const { product } = await client.send('Browser.getVersion');
     const [name, version] = product.split('/');
     this._browser = { name, version };
-    await client.send('Network.enable');
     /**
      * Listen for all network events from PW context
      */
@@ -116,7 +133,7 @@ export class NetworkManager {
       request: {
         url,
         method: request.method(),
-        headers: {},
+        headers: request.headers(),
         body: {
           bytes: request.postDataBuffer()?.length || 0,
         },
@@ -133,7 +150,16 @@ export class NetworkManager {
       responseReceivedTime: -1,
       resourceSize: 0,
       transferSize: 0,
-      timings: null,
+      timings: {
+        blocked: -1,
+        dns: -1,
+        ssl: -1,
+        connect: -1,
+        send: -1,
+        wait: -1,
+        receive: -1,
+        total: -1,
+      },
     };
 
     if (request.redirectedFrom()) {
@@ -160,76 +186,9 @@ export class NetworkManager {
       redirectURL: networkEntry.response.redirectURL,
     };
 
-    const page = request.frame().page();
-    this._addBarrier(
-      page,
-      request.allHeaders().then(reqHeaders => {
-        networkEntry.request.headers = reqHeaders;
-        networkEntry.request.referrer = reqHeaders?.referer;
-      })
-    );
-    this._addBarrier(
-      page,
-      response.serverAddr().then(server => {
-        networkEntry.response.remoteIPAddress = server?.ipAddress;
-        networkEntry.response.remotePort = server?.port;
-      })
-    );
-    this._addBarrier(
-      page,
-      response.securityDetails().then(details => {
-        if (details) networkEntry.response.securityDetails = details;
-      })
-    );
-    this._addBarrier(
-      page,
-      response.allHeaders().then(resHeaders => {
-        networkEntry.response.headers = resHeaders;
-
-        const contentType = resHeaders['content-type'];
-        if (contentType)
-          networkEntry.response.mimeType = contentType.split(';')[0];
-      })
-    );
-  }
-
-  private async _onRequestCompleted(request: Request) {
-    const networkEntry = this._findNetworkEntry(request);
-    if (!networkEntry) return;
-
-    networkEntry.loadEndTime = epochTimeInSeconds();
+    // Gather all resource timing information up until the
+    // TTFB(Time to first byte) is received
     const timing = request.timing();
-    const { loadEndTime, requestSentTime } = networkEntry;
-    networkEntry.timings = {
-      blocked: -1,
-      dns: -1,
-      ssl: -1,
-      connect: -1,
-      send: -1,
-      wait: -1,
-      receive: -1,
-      total: -1,
-    };
-
-    const firstPositive = (numbers: number[]) => {
-      for (let i = 0; i < numbers.length; ++i) {
-        if (numbers[i] > 0) {
-          return numbers[i];
-        }
-      }
-      return null;
-    };
-    const roundMilliSecs = (value: number): number => {
-      return Math.floor(value * 1000) / 1000;
-    };
-
-    if (timing.startTime === 0) {
-      // Convert to milliseconds before round off
-      const total = roundMilliSecs((loadEndTime - requestSentTime) * 1000);
-      networkEntry.timings.total = total;
-      return;
-    }
-
     const blocked =
       roundMilliSecs(
         firstPositive([
@@ -254,27 +213,72 @@ export class NetworkManager {
       timing.responseStart !== -1
         ? roundMilliSecs(timing.responseStart - timing.requestStart)
         : -1;
+
+    networkEntry.timings = {
+      blocked,
+      dns,
+      ssl,
+      connect,
+      send: 0, // not exposed via RT api
+      wait,
+      receive: -1, // will be available after full response is received
+      total: -1,
+    };
+    this._calcTotalTime(networkEntry, timing);
+
+    const page = request.frame().page();
+    this._addBarrier(
+      page,
+      request.allHeaders().then(reqHeaders => {
+        networkEntry.request.headers = reqHeaders;
+        networkEntry.request.referrer = reqHeaders?.referer;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.allHeaders().then(resHeaders => {
+        networkEntry.response.headers = resHeaders;
+
+        const contentType = resHeaders['content-type'];
+        if (contentType)
+          networkEntry.response.mimeType = contentType.split(';')[0];
+      })
+    );
+    this._addBarrier(
+      page,
+      response.serverAddr().then(server => {
+        networkEntry.response.remoteIPAddress = server?.ipAddress;
+        networkEntry.response.remotePort = server?.port;
+      })
+    );
+    this._addBarrier(
+      page,
+      response.securityDetails().then(details => {
+        if (details) networkEntry.response.securityDetails = details;
+      })
+    );
+  }
+
+  private async _onRequestCompleted(request: Request) {
+    const networkEntry = this._findNetworkEntry(request);
+    if (!networkEntry) return;
+
+    networkEntry.loadEndTime = epochTimeInSeconds();
+    // responseEnd is fired after the last byte of the response is received.
+    const timing = request.timing();
     const receive =
       timing.responseEnd !== -1
         ? roundMilliSecs(timing.responseEnd - timing.responseStart)
         : -1;
-    const total = [blocked, dns, connect, wait, receive].reduce(
-      (pre, cur) => (cur > 0 ? cur + pre : pre),
-      0
-    );
-    networkEntry.timings = {
-      blocked,
-      dns,
-      connect,
-      ssl,
-      wait,
-      send: 0, // not exposed via RT api
-      receive,
-      total,
-    };
+    networkEntry.timings.receive = receive;
+    this._calcTotalTime(networkEntry, timing);
+
+    // For aborted/failed requests sizes will not be present
+    if (timing.startTime <= 0) {
+      return;
+    }
 
     const page = request.frame().page();
-    // For aborted/failed requests sizes will not be present
     this._addBarrier(
       page,
       request.sizes().then(sizes => {
@@ -283,24 +287,61 @@ export class NetworkManager {
         networkEntry.request.body = {
           bytes: sizes.requestBodySize,
         };
-        networkEntry.response.bytes =
-          sizes.responseHeadersSize + sizes.responseBodySize;
+        const transferSize = sizes.responseHeadersSize + sizes.responseBodySize;
+        networkEntry.transferSize = transferSize;
+        networkEntry.response.bytes = transferSize;
         networkEntry.response.body = {
           bytes: sizes.responseBodySize,
         };
-        networkEntry.transferSize = sizes.responseBodySize;
       })
     );
   }
 
+  /**
+   * Calculates the total time for the network request based on the ResourceTiming
+   * data from Playwright. Fallbacks to the event timings if ResourceTiming data
+   * is not available.
+   */
+  private _calcTotalTime(
+    entry: NetworkInfo,
+    rtiming: ReturnType<Request['timing']>
+  ) {
+    const timings = entry.timings;
+    entry.timings.total = [
+      timings.blocked,
+      timings.dns,
+      timings.connect,
+      timings.wait,
+      timings.receive,
+    ].reduce((pre, cur) => ((cur || -1) > 0 ? cur + pre : pre), 0);
+
+    // fallback when ResourceTiming data is not available
+    if (rtiming.startTime <= 0) {
+      const end =
+        entry.loadEndTime ||
+        entry.responseReceivedTime ||
+        entry.requestSentTime;
+      const total = roundMilliSecs((end - entry.requestSentTime) * 1000);
+      entry.timings.total = total <= 0 ? -1 : total;
+    }
+  }
+
   async stop() {
-    await Promise.all(this._barrierPromises);
+    /**
+     * Waiting for all network events is error prone and might hang the tests
+     * from getting closed forever when there are upstream bugs in browsers or
+     * Playwright. So we log and drop these events once the test run is completed
+     */
+    if (this._barrierPromises.size > 0) {
+      log(`Plugins: dropping ${this._barrierPromises.size} network events`);
+    }
     const context = this.driver.context;
     context.off('request', this._onRequest.bind(this));
     context.off('response', this._onResponse.bind(this));
     context.off('requestfinished', this._onRequestCompleted.bind(this));
     context.off('requestfailed', this._onRequestCompleted.bind(this));
     this._barrierPromises.clear();
+    log(`Plugins: stopped collecting network events`);
     return this.results;
   }
 }

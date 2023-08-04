@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ -z "${JENKINS_URL}" ]; then
+if ! "${CI}"; then
   # formatting
   bold=$(tput bold)
   normal=$(tput sgr0)

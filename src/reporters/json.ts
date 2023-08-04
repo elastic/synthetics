@@ -45,7 +45,6 @@ import {
   TraceOutput,
   StatusValue,
   PerfMetrics,
-  Params,
   Screenshot,
   StartEvent,
   JourneyStartResult,
@@ -78,7 +77,6 @@ type Payload = {
   url?: string;
   status?: StatusValue;
   pagemetrics?: PageMetrics;
-  params?: Params;
   type?: OutputType;
   text?: string;
   index?: number;
@@ -224,8 +222,7 @@ function stepInfo(
 }
 
 export async function getScreenshotBlocks(screenshot: Buffer) {
-  const img = sharp(screenshot, { sequentialRead: true });
-  const { width, height } = await img.metadata();
+  const { width, height } = await sharp(screenshot).metadata();
   /**
    * Chop the screenshot image (1280*720) which is the default
    * viewport size in to 64 equal blocks for a given image
@@ -248,7 +245,9 @@ export async function getScreenshotBlocks(screenshot: Buffer) {
     const top = row * blockHeight;
     for (let col = 0; col < divisions; col++) {
       const left = col * blockWidth;
-      const buf = await img
+      // We create a new sharp instance for each block to avoid
+      // running in to extraction/orientation issues
+      const buf = await sharp(screenshot, { sequentialRead: true })
         .extract({ top, left, width: blockWidth, height: blockHeight })
         .jpeg()
         .toBuffer();
@@ -300,7 +299,7 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
-  onStart(params: StartEvent) {
+  onStart(event: StartEvent) {
     /**
      * report the number of journeys that exists on a suite which
      * could be used for better sharding
@@ -308,11 +307,11 @@ export default class JSONReporter extends BaseReporter {
     this.writeJSON({
       type: 'synthetics/metadata',
       root_fields: {
-        num_journeys: params.numJourneys,
+        num_journeys: event.numJourneys,
       },
-      payload: params.networkConditions
+      payload: event.networkConditions
         ? {
-            network_conditions: params.networkConditions,
+            network_conditions: event.networkConditions,
           }
         : undefined,
     });
@@ -325,15 +324,12 @@ export default class JSONReporter extends BaseReporter {
     });
   }
 
-  override onJourneyStart(
-    journey: Journey,
-    { timestamp, params }: JourneyStartResult
-  ) {
+  override onJourneyStart(journey: Journey, { timestamp }: JourneyStartResult) {
     this.writeJSON({
       type: 'journey/start',
       journey,
       timestamp,
-      payload: { params, source: journey.callback.toString() },
+      payload: { source: journey.callback.toString() },
     });
   }
 

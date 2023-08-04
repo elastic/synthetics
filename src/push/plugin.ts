@@ -23,96 +23,43 @@
  *
  */
 
-import path from 'path';
-import fs from 'fs/promises';
+import { join } from 'path';
 import * as esbuild from 'esbuild';
 
-export function commonOptions(): esbuild.BuildOptions {
-  return {
-    bundle: true,
-    external: ['node_modules', '@elastic/synthetics'],
-    minify: false,
-    platform: 'node',
-    logLevel: 'silent',
-    format: 'esm',
-    write: false,
-    outExtension: {
-      '.js': '.js',
-    },
-  };
-}
+// Source of the package - /src, /dist, etc.
+const SOURCE_DIR = join(__dirname, '..');
 
-export type PluginData = {
-  path: string;
-  contents: string;
+/**
+ * Avoid importing @elastic/synthetics package from source, this avoids
+ * bundling the synthetics package in tests or when resolved using
+ * absolute paths.
+ * ex: import {journey} from "../../"
+ */
+const isLocalSynthetics = (resolvedPath: string) => {
+  return resolvedPath.startsWith(SOURCE_DIR);
 };
-export type PluginCallback = (data: PluginData) => void;
 
-export function MultiAssetPlugin(callback: PluginCallback): esbuild.Plugin {
-  // Check that the path isn't in an external package by making sure it's at a standard
-  // local filesystem location
-  const isBare = (str: string) => {
-    // Note that we use `isAbsolute` to handle UNC/windows style paths like C:\path\to\thing
-    // This is not necessary for relative directories since `.\file` is not supported as an import
-    // nor is `~/path/to/file`.
-    if (path.isAbsolute(str) || str.startsWith('./') || str.startsWith('../')) {
-      return true;
-    }
-    return false;
-  };
-
+/**
+ * Esbuild Plugin to create separate bundles for all the journeys.
+ * Treats journeys as the entry point and bundles all the dependencies
+ * including the node_modules and ignores bundling the synthetics package
+ * when imported externally or from source.
+ */
+export function SyntheticsBundlePlugin(): esbuild.Plugin {
   return {
-    name: 'esbuild-multiasset-plugin',
+    name: 'synthetics-bundle-plugin',
     setup(build) {
       build.onResolve({ filter: /.*?/ }, async args => {
-        // External and other packages need be marked external to
-        // be removed from the bundle
-        if (
-          build.initialOptions.external?.includes(args.path) ||
-          !isBare(args.path)
-        ) {
-          return {
-            external: true,
-          };
-        }
-
+        // Ignore entry points as these refer to the journey files
         if (args.kind === 'entry-point') {
-          return {
-            path: args.path,
-            namespace: 'asset',
-          };
+          return;
         }
-
-        // If the modules are resolved locally, then
-        // use the imported path to get full path
-        const entryPath =
-          path.join(path.dirname(args.importer), args.path) +
-          path.extname(args.importer);
-        // Spin off another build to copy over the imported modules without bundling
-        const result = await esbuild.build({
-          ...commonOptions(),
-          entryPoints: {
-            [entryPath]: entryPath,
-          },
-          bundle: false,
-          external: [],
-        });
-
-        callback({
-          path: entryPath,
-          contents: result.outputFiles[0].text,
-        });
-
-        return {
-          errors: result.errors,
-          external: true,
-        };
-      });
-
-      build.onLoad({ filter: /.*?/, namespace: 'asset' }, async args => {
-        const contents = await fs.readFile(args.path, 'utf-8');
-        callback({ path: args.path, contents });
-        return { contents };
+        const resolvedPath = join(args.resolveDir, args.path);
+        if (isLocalSynthetics(resolvedPath)) {
+          return { external: true };
+        }
+        // Allow esbuild to resolve the module
+        return;
       });
     },
   };

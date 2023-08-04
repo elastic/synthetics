@@ -47,14 +47,14 @@ describe('plugin manager', () => {
   it('start plugin with given type', async () => {
     await pluginManager.register('network', {}).start();
     const instance = pluginManager.get('network');
-    expect(instance.start).toHaveBeenCalled();
+    expect(instance?.start).toHaveBeenCalled();
   });
 
   it('stop plugin by type', async () => {
     await pluginManager.register('network', {}).start();
     const instance = pluginManager.get('network');
     await pluginManager.stop('network');
-    expect(instance.start).toHaveBeenCalled();
-    expect(instance.stop).toHaveBeenCalled();
+    expect(instance?.start).toHaveBeenCalled();
+    expect(instance?.stop).toHaveBeenCalled();
   });
 });

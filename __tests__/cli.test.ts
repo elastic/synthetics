@@ -27,12 +27,7 @@ import { join } from 'path';
 import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
 import { CLIMock } from './utils/test-config';
-import {
-  DEFAULT_THROTTLING_OPTIONS,
-  getNetworkConditions,
-  megabitsToBytes,
-  safeNDJSONParse,
-} from '../src/helpers';
+import { THROTTLING_WARNING_MSG, safeNDJSONParse } from '../src/helpers';
 
 describe('CLI', () => {
   let server: Server;
@@ -131,32 +126,6 @@ describe('CLI', () => {
       });
       process.env['NODE_ENV'] = 'development';
       expect((await output()).payload).not.toMatchObject({
-        params: { url: 'dev' },
-      });
-    });
-
-    it('loads a configuration file when passing a config param', async () => {
-      const output = async () => {
-        const cli = new CLIMock()
-          .stdin(`step('fake step', async () => {})`)
-          .args([
-            '--reporter',
-            'json',
-            '--inline',
-            '--config',
-            join(FIXTURES_DIR, 'synthetics.config.ts'),
-          ])
-          .run({ cwd: FIXTURES_DIR });
-        await cli.waitFor('journey/start');
-        expect(await cli.exitCode).toBe(0);
-        return getJourneyStart(cli.output());
-      };
-
-      expect((await output()).payload).toMatchObject({
-        params: { url: 'non-dev' },
-      });
-      process.env['NODE_ENV'] = 'development';
-      expect((await output()).payload).toMatchObject({
         params: { url: 'dev' },
       });
     });
@@ -281,38 +250,10 @@ describe('CLI', () => {
     expect(await cli.exitCode).toBe(0);
   });
 
-  it('pass dynamic config to journey params', async () => {
-    const getJourneyStart = async () => {
-      const cli = new CLIMock()
-        .args([
-          join(FIXTURES_DIR, 'fake.journey.ts'),
-          '--reporter',
-          'json',
-          '--config',
-          join(FIXTURES_DIR, 'synthetics.config.ts'),
-        ])
-        .run();
-      await cli.waitFor('journey/start');
-      expect(await cli.exitCode).toBe(0);
-      return cli.output();
-    };
-
-    let [output] = safeNDJSONParse([await getJourneyStart()]);
-    expect(output.payload).toMatchObject({
-      params: { url: 'non-dev' },
-    });
-
-    process.env['NODE_ENV'] = 'development';
-    [output] = safeNDJSONParse([await getJourneyStart()]);
-    expect(output.payload).toMatchObject({
-      params: { url: 'dev' },
-    });
-  });
-
   it('params wins over config params', async () => {
     const cli = new CLIMock()
       .args([
-        join(FIXTURES_DIR, 'fake.journey.ts'),
+        join(FIXTURES_DIR, 'example.journey.ts'),
         '--reporter',
         'json',
         '--config',
@@ -321,12 +262,10 @@ describe('CLI', () => {
         '{"url": "suite-url"}',
       ])
       .run();
-    await cli.waitFor('journey/start');
-    const output = getJourneyStart(cli.output());
-    expect(await cli.exitCode).toBe(0);
-    expect(output.payload).toMatchObject({
-      params: { url: 'suite-url' },
-    });
+    await cli.waitFor('step/end');
+    expect(await cli.exitCode).toBe(1);
+    const [output] = safeNDJSONParse(cli.output());
+    expect(output.error.stack).toContain('suite-url');
   });
 
   it('throw error on modifying params', async () => {
@@ -456,88 +395,30 @@ describe('CLI', () => {
     });
   });
 
-  describe('throttling', () => {
+  describe('Throttling', () => {
     let cliArgs: Array<string>;
-
     beforeAll(async () => {
-      cliArgs = [
-        join(FIXTURES_DIR, 'example.journey.ts'),
-        '--params',
-        JSON.stringify(serverParams),
-        '--reporter',
-        'json',
-      ];
+      cliArgs = ['--reporter', 'json', '--inline'];
     });
 
-    it('applies --no-throttling', async () => {
-      const cli = new CLIMock().args(cliArgs.concat(['--no-throttling'])).run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
-      expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toBeUndefined();
-    });
-
-    it('applies default throttling', async () => {
-      const cli = new CLIMock().args(cliArgs).run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
-      expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty(
-        'network_conditions',
-        getNetworkConditions(DEFAULT_THROTTLING_OPTIONS)
-      );
-    });
-
-    it('applies custom throttling', async () => {
+    it('warns on --no-throttling', async () => {
       const cli = new CLIMock()
-        .args(
-          cliArgs.concat([
-            '--throttling',
-            JSON.stringify({
-              download: 3,
-              upload: 1,
-              latency: 30,
-            }),
-          ])
-        )
+        .stdin(`step('fake step', async () => {})`)
+        .args(cliArgs.concat('--no-throttling'))
         .run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        downloadThroughput: megabitsToBytes(3),
-        uploadThroughput: megabitsToBytes(1),
-        latency: 30,
-        offline: false,
-      });
+      const output = cli.stderr();
+      expect(output).toContain(THROTTLING_WARNING_MSG);
     });
 
-    it('supports older format', async () => {
+    it('warns on --throttling setting', async () => {
       const cli = new CLIMock()
-        .args(cliArgs.concat(['--throttling', '17u/30l/3d']))
+        .stdin(`step('fake step', async () => {})`)
+        .args(cliArgs.concat('--throttling', JSON.stringify({ upload: 10 })))
         .run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        downloadThroughput: megabitsToBytes(3),
-        uploadThroughput: megabitsToBytes(17),
-        latency: 30,
-        offline: false,
-      });
-    });
-
-    it('uses default throttling when specific params are not provided', async () => {
-      const cli = new CLIMock()
-        .args(cliArgs.concat(['--throttling', JSON.stringify({ download: 2 })]))
-        .run();
-      await cli.waitFor('synthetics/metadata');
-      const journeyStartOutput = JSON.parse(cli.output());
-      expect(await cli.exitCode).toBe(0);
-      expect(journeyStartOutput.payload).toHaveProperty('network_conditions', {
-        ...getNetworkConditions(DEFAULT_THROTTLING_OPTIONS),
-        downloadThroughput: megabitsToBytes(2),
-      });
+      const output = cli.stderr();
+      expect(output).toContain(THROTTLING_WARNING_MSG);
     });
   });
 

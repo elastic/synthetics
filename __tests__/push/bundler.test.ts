@@ -30,38 +30,80 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
+const PROJECT_DIR = join(__dirname, 'test-bundler');
+const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
+
+const setup = async () => {
+  await writeFile(
+    journeyFile,
+    `import {journey, step, monitor} from '@elastic/synthetics';
+import isPositive from 'is-positive';
+import utils from "./utils"
+journey('journey 1', () => {
+  // include utils to make sure it is bundled and not ignored via
+  // dead code elimination while bundling
+  utils();
+  monitor.use({ id: 'duplicate id' });
+  launchStep(-1);
+});
+const launchStep = (no: number) => {
+  step("step1", () => {
+    isPositive(no);
+  })
+};`
+  );
+
+  await writeFile(
+    join(PROJECT_DIR, 'utils.ts'),
+    `import isPositive from 'is-positive';
+    export default utils = () => {
+      isPositive(1);
+    };`
+  );
+};
+
 async function validateZip(content) {
+  const partialPath = join(
+    '__tests__',
+    'push',
+    'test-bundler',
+    'bundle.journey.ts'
+  );
   const decoded = Buffer.from(content, 'base64');
   const pathToZip = generateTempPath();
   await writeFile(pathToZip, decoded);
 
-  const files = [];
-  const entries = createReadStream(pathToZip).pipe(
-    unzipper.Parse({ forceStream: true })
-  );
-  for await (const entry of entries) {
-    files.push(entry.path);
-  }
+  const files: Array<string> = [];
 
-  expect(files).toEqual(['__tests__/push/test-bundler/bundle.journey.ts']);
+  let contents = '';
+  await new Promise(r => {
+    createReadStream(pathToZip)
+      .pipe(unzipper.Parse())
+      .on('entry', function (entry) {
+        files.push(entry.path);
+        contents += '\n' + entry.path + '\n';
+        entry.on('data', d => (contents += d));
+      })
+      .on('close', r);
+  });
+
+  expect(files).toEqual([partialPath]);
+
+  // Verify if files are bundled together
+  expect(contents).toContain('node_modules/is-positive/index.js');
+  expect(contents).toContain('test-bundler/bundle.journey.ts');
+  expect(contents).toContain('test-bundler/utils.ts');
+  // Verify if sourcemaps are present after bundling
+  expect(contents).toContain('sourceMappingURL=data:application/json;base64');
   await unlink(pathToZip);
 }
 
 describe('Bundler', () => {
-  const PROJECT_DIR = join(__dirname, 'test-bundler');
-  const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
   const bundler = new Bundler();
 
   beforeAll(async () => {
     await mkdir(PROJECT_DIR, { recursive: true });
-    await writeFile(
-      journeyFile,
-      `import {journey, step, monitor} from '@elastic/synthetics';
-journey('journey 1', () => {
-  monitor.use({ id: 'duplicate id' })
-  step("step1", () => {})
-});`
-    );
+    await setup();
   });
 
   afterAll(async () => {
@@ -83,7 +125,7 @@ journey('journey 1', () => {
     try {
       await bundler.build(join(PROJECT_DIR, 'blah.ts'), generateTempPath());
     } catch (e) {
-      expect(e.message).toContain('ENOENT');
+      expect(e.message).toContain('Build failed');
     }
   });
 });

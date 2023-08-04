@@ -26,19 +26,15 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import { getNetworkConditions, DEFAULT_THROTTLING_OPTIONS } from './helpers';
-import type { CliArgs, RunOptions, ThrottlingOptions } from './common_types';
+import type { CliArgs, PushOptions, RunOptions } from './common_types';
+import { THROTTLING_WARNING_MSG, error, warn } from './helpers';
 
-/**
- * Set debug based on DEBUG ENV and -d flags
- * namespace - synthetics
- */
-const namespace = 'synthetics';
-if (process.env.DEBUG && process.env.DEBUG.includes(namespace)) {
-  process.env.DEBUG = '1';
-}
+type Mode = 'run' | 'push';
 
-export function normalizeOptions(cliArgs: CliArgs): RunOptions {
+export function normalizeOptions(
+  cliArgs: CliArgs,
+  mode: Mode = 'run'
+): RunOptions {
   const options: RunOptions = {
     ...cliArgs,
     environment: process.env['NODE_ENV'] || 'development',
@@ -110,71 +106,69 @@ export function normalizeOptions(cliArgs: CliArgs): RunOptions {
   );
   options.playwrightOptions = {
     ...playwrightOpts,
-    headless: cliArgs.headless,
+    headless: cliArgs.headless ?? playwrightOpts?.headless,
     chromiumSandbox: cliArgs.sandbox ?? playwrightOpts?.chromiumSandbox,
     ignoreHTTPSErrors:
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
   };
 
   /**
-   * Get the default monitor config from synthetics.config.ts file
+   * Merge default options based on the mode of operation whether we are running tests locally
+   * or pushing the project monitors
    */
-  const monitor = config.monitor;
-  if (cliArgs.throttling) {
-    const throttleConfig = merge.all([
-      DEFAULT_THROTTLING_OPTIONS,
-      monitor?.throttling || {},
-      cliArgs.throttling as ThrottlingOptions,
-    ]);
-    options.throttling = throttleConfig;
-    options.networkConditions = getNetworkConditions(throttleConfig);
-  } else {
-    /**
-     * Do not apply throttling when `--no-throttling` flag is passed
-     */
-    options.throttling = {};
+  switch (mode) {
+    case 'run':
+      options.screenshots = cliArgs.screenshots ?? 'on';
+      break;
+    case 'push':
+      validatePushOptions(options as PushOptions);
+      /**
+       * Merge the default monitor config from synthetics.config.ts file
+       * with the CLI options passed via push command
+       */
+      const monitor = config.monitor;
+      for (const key of Object.keys(monitor || {})) {
+        // screenshots require special handling as the flags are different
+        if (key === 'screenshot') {
+          options.screenshots = options.screenshots ?? monitor[key];
+          continue;
+        }
+        options[key] = options[key] ?? monitor[key];
+      }
+      break;
   }
-
-  options.schedule = cliArgs.schedule ?? monitor?.schedule;
-  options.locations = cliArgs.locations ?? monitor?.locations;
-  options.privateLocations =
-    cliArgs.privateLocations ?? monitor?.privateLocations;
 
   options.apm = config.apm;
 
   return options;
 }
 
-/**
- * Parses the throttling CLI settings and also
- * adapts to the format to keep the backwards compatability
- * - Accepts old format `<5d/3u/20l>`
- * - Processess new format otherwise `{download: 5, upload: 3, latency: 20}`
- */
-export function parseThrottling(value: string, prev?: string) {
-  const THROTTLING_REGEX = /([0-9]{1,}u)|([0-9]{1,}d)|([0-9]{1,}l)/gm;
-  if (THROTTLING_REGEX.test(value)) {
-    const throttling: ThrottlingOptions = {};
-    const conditions = value.split('/');
+export function validatePushOptions(opts: PushOptions) {
+  if (opts.tags || opts.match) {
+    throw error(`Aborted. Invalid CLI flags.
 
-    conditions.forEach(condition => {
-      const setting = condition.slice(0, condition.length - 1);
-      const token = condition.slice(-1);
-      switch (token) {
-        case 'd':
-          throttling.download = Number(setting);
-          break;
-        case 'u':
-          throttling.upload = Number(setting);
-          break;
-        case 'l':
-          throttling.latency = Number(setting);
-          break;
-      }
-    });
-    return throttling;
+Tags and Match are not supported in push command.`);
   }
-  return JSON.parse(value || prev);
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+function toObject(value: boolean | Record<string, any>): Record<string, any> {
+  const defaulVal = {};
+  if (typeof value === 'boolean') {
+    return defaulVal;
+  }
+  return value || defaulVal;
+}
+
+/**
+ * Parses the throttling CLI settings with `{download: 5, upload: 3, latency:
+ * 20}` format
+ *
+ * Since throttling is disabled for now, we warn the users if throttling/nothrottling
+ * flag is passed to the CLI
+ */
+export function parseThrottling() {
+  warn(THROTTLING_WARNING_MSG);
 }
 
 export function getCommonCommandOpts() {
@@ -192,22 +186,12 @@ export function getCommonCommandOpts() {
 
   const pattern = createOption(
     '--pattern <pattern>',
-    'RegExp file patterns to search inside directory'
-  );
-  const tags = createOption(
-    '--tags <name...>',
-    'run only journeys with a tag that matches the glob'
-  );
-  const match = createOption(
-    '--match <name>',
-    'run only journeys with a name or tag that matches the glob'
+    'RegExp pattern to match journey/monitor files that are different from the default (ex: /*.journey.(ts|js)$/)'
   );
 
   return {
     params,
     playwrightOpts,
     pattern,
-    tags,
-    match,
   };
 }

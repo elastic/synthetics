@@ -28,10 +28,14 @@ import {
   ChromiumBrowser,
   BrowserContext,
   request as apiRequest,
+  selectors,
 } from 'playwright-chromium';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
 import { Driver, NetworkConditions, RunOptions } from '../common_types';
+
+// Default timeout for Playwright actions and Navigations
+const DEFAULT_TIMEOUT = 50000;
 
 /**
  * Purpose of the Gatherer is to set up the necessary browser driver
@@ -42,7 +46,7 @@ export class Gatherer {
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
     log('Gatherer: setup driver');
-    const { wsEndpoint, playwrightOptions, networkConditions } = options;
+    const { wsEndpoint, playwrightOptions } = options;
 
     if (Gatherer.browser == null) {
       if (wsEndpoint) {
@@ -62,11 +66,30 @@ export class Gatherer {
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
     });
-    Gatherer.setNetworkConditions(context, networkConditions);
+    // Set timeouts for actions and navigations
+    context.setDefaultTimeout(
+      playwrightOptions?.actionTimeout ?? DEFAULT_TIMEOUT
+    );
+    context.setDefaultNavigationTimeout(
+      playwrightOptions?.navigationTimeout ?? DEFAULT_TIMEOUT
+    );
+
+    // TODO: Network throttling via chrome devtools emulation is disabled for now.
+    // See docs/throttling.md for more details.
+    // Gatherer.setNetworkConditions(context, networkConditions);
+    if (playwrightOptions?.testIdAttribute) {
+      selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
+    }
 
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     const request = await apiRequest.newContext({ ...playwrightOptions });
+
+    // Register sig int handler to close the browser
+    process.on('SIGINT', async () => {
+      await Gatherer.closeBrowser();
+      process.exit(130);
+    });
     return { browser: Gatherer.browser, context, page, client, request };
   }
 
@@ -103,6 +126,14 @@ export class Gatherer {
     }
   }
 
+  static async closeBrowser() {
+    log(`Gatherer: closing browser`);
+    if (Gatherer.browser) {
+      await Gatherer.browser.close();
+      Gatherer.browser = null;
+    }
+  }
+
   /**
    * Starts recording all events related to the v8 devtools protocol
    * https://chromedevtools.github.io/devtools-protocol/v8/
@@ -121,14 +152,12 @@ export class Gatherer {
   }
 
   static async dispose(driver: Driver) {
+    log(`Gatherer: closing all contexts`);
     await driver.request.dispose();
     await driver.context.close();
   }
 
   static async stop() {
-    if (Gatherer.browser) {
-      await Gatherer.browser.close();
-      Gatherer.browser = null;
-    }
+    await Gatherer.closeBrowser();
   }
 }

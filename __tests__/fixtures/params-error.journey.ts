@@ -23,7 +23,7 @@
  *
  */
 
-import { journey, step, before } from '../../src';
+import { journey, step, before } from '../../';
 
 journey('journey 1', ({}) => {
   before(({ params }) => {

@@ -34,16 +34,11 @@ import {
   parseThrottling,
   getCommonCommandOpts,
 } from './options';
-import { loadTestFiles } from './loader';
+import { globalSetup } from './loader';
 import { run } from './';
 import { runner } from './core';
 import { SyntheticsLocations } from './dsl/monitor';
-import {
-  push,
-  loadSettings,
-  validateSettings,
-  catchIncorrectSettings,
-} from './push';
+import { push, loadSettings, validatePush, warnIfThrottled } from './push';
 import {
   formatLocations,
   getLocations,
@@ -54,11 +49,13 @@ import { resolve } from 'path';
 import { Generator } from './generator';
 import { error } from './helpers';
 import { LocationsMap } from './locations/public-locations';
+import { createLightweightMonitors } from './push/monitor';
+import { getVersion } from './push/kibana_api';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, tags, match, playwrightOpts } = getCommonCommandOpts();
+const { params, pattern, playwrightOpts } = getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
@@ -68,9 +65,12 @@ program
     'configuration path (default: synthetics.config.js)'
   )
   .addOption(pattern)
-  .addOption(tags)
-  .addOption(match)
   .addOption(params)
+  .option('--tags <name...>', 'run tests with a tag that matches the glob')
+  .option(
+    '--match <name>',
+    'run tests with a name or tags that matches the glob'
+  )
   .addOption(
     new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)
@@ -78,17 +78,18 @@ program
   )
   .option('--inline', 'Run inline journeys from heartbeat')
   .option('-r, --require <modules...>', 'module(s) to preload')
-  .option('--no-headless', 'run browser in headful mode')
-  .option('--sandbox', 'enable chromium sandboxing')
+  .option('--sandbox', 'enable chromium sand-boxing')
   .option('--rich-events', 'Mimics a heartbeat run')
+  .option('--no-headless', 'run browser in head-full mode')
   .option(
     '--capability <features...>',
     'Enable capabilities through feature flags'
   )
   .addOption(
-    new Option('--screenshots [flag]', 'take screenshots at end of each step')
-      .choices(['on', 'off', 'only-on-failure'])
-      .default('on')
+    new Option(
+      '--screenshots [flag]',
+      'take screenshots at end of each step'
+    ).choices(['on', 'off', 'only-on-failure'])
   )
   .option(
     '--dry-run',
@@ -118,17 +119,20 @@ program
   .option(
     '--throttling <config>',
     'JSON object to throttle network conditions for download and upload throughput in megabits/second and latency in milliseconds. Ex: { "download": 10, "upload": 5, "latency": 200 }.',
-    parseThrottling,
-    {}
+    parseThrottling
   )
-  .option('--no-throttling', 'Turns off default network throttling.')
+  .option(
+    '--no-throttling',
+    'Turns off default network throttling.',
+    parseThrottling
+  )
   .addOption(playwrightOpts)
   .version(version)
   .description('Run synthetic tests')
   .action(async (cliArgs: CliArgs) => {
+    const tearDown = await globalSetup(cliArgs, program.args);
     try {
-      await loadTestFiles(cliArgs, program.args);
-      const options = normalizeOptions(cliArgs);
+      const options = normalizeOptions(cliArgs, 'run');
       const results = await run(options);
       /**
        * Exit with error status if any journey fails
@@ -143,6 +147,8 @@ program
     } catch (e) {
       console.error(e);
       process.exit(1);
+    } finally {
+      tearDown();
     }
   });
 
@@ -184,27 +190,38 @@ program
     '--space <space>',
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
+  .option('-y, --yes', 'skip all questions and run non-interactively')
   .addOption(pattern)
-  .addOption(tags)
-  .addOption(match)
   .addOption(params)
   .addOption(playwrightOpts)
   .action(async (cmdOpts: PushOptions) => {
+    const workDir = cwd();
+    const tearDown = await globalSetup({ inline: false, ...program.opts() }, [
+      workDir,
+    ]);
     try {
-      await loadTestFiles({ inline: false }, [cwd()]);
       const settings = await loadSettings();
-      const options = normalizeOptions({
-        ...program.opts(),
-        ...settings,
-        ...cmdOpts,
-      }) as PushOptions;
-      validateSettings(options);
-      await catchIncorrectSettings(settings, options);
+      const options = normalizeOptions(
+        {
+          ...program.opts(),
+          ...settings,
+          ...cmdOpts,
+        },
+        'push'
+      ) as PushOptions;
+      await validatePush(options, settings);
       const monitors = runner.buildMonitors(options);
+      if ((options as CliArgs).throttling == null) {
+        warnIfThrottled(monitors);
+      }
+      options.kibanaVersion = await getVersion(options);
+      monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
     } catch (e) {
       e && console.error(e);
       process.exit(1);
+    } finally {
+      tearDown();
     }
   });
 

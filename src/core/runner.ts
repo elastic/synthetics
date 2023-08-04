@@ -45,6 +45,7 @@ import {
   RunOptions,
   JourneyResult,
   StepResult,
+  PushOptions,
 } from '../common_types';
 import { PluginManager } from '../plugins';
 import { PerformanceManager } from '../plugins';
@@ -120,6 +121,7 @@ export default class Runner {
         join(Runner.screenshotPath, fileName),
         JSON.stringify(screenshot)
       );
+      log(`Runner: captured screenshot for (${step.name})`);
     }
   }
 
@@ -201,18 +203,22 @@ export default class Runner {
     };
     driver.context.on('request', captureUrl);
 
+    const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
-      const traceEnabled = trace || filmstrips;
       pluginManager.onStep(step);
       traceEnabled && (await pluginManager.start('trace'));
       // call the step definition
       await step.callback();
+    } catch (error) {
+      data.status = 'failed';
+      data.error = error;
+    } finally {
       /**
-       * Collect all step level metrics
+       * Collect all step level metrics and trace events
        */
       if (metrics) {
         data.pagemetrics = await (
@@ -223,10 +229,6 @@ export default class Runner {
         const traceOutput = await pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
-    } catch (error) {
-      data.status = 'failed';
-      data.error = error;
-    } finally {
       /**
        * Capture screenshot for the newly created pages
        * via popup or new windows/tabs
@@ -384,7 +386,7 @@ export default class Runner {
     await mkdir(CACHE_PATH, { recursive: true });
   }
 
-  buildMonitors(options: RunOptions) {
+  buildMonitors(options: PushOptions) {
     /**
      * Update the global monitor configuration required for
      * setting defaults
@@ -396,24 +398,21 @@ export default class Runner {
       privateLocations: options.privateLocations,
       params: options.params,
       playwrightOptions: options.playwrightOptions,
+      screenshot: options.screenshots,
+      tags: options.tags,
+      alert: options.alert,
     });
-
-    const { match, tags } = options;
 
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
-      if (!journey.isMatch(match, tags)) {
-        continue;
-      }
-
       this.#currentJourney = journey;
-
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
        */
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
+      journey.monitor.validate();
       monitors.push(journey.monitor);
     }
     return monitors;

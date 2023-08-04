@@ -29,7 +29,7 @@ import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
 // @ts-ignore-next-line: has no exported member 'Input'
 import { prompt, Input } from 'enquirer';
-import { progress, removeTrailingSlash, write as stdWrite } from '../helpers';
+import { getProjectApiKeyURL, progress, write as stdWrite } from '../helpers';
 import {
   getPackageManager,
   replaceTemplates,
@@ -37,6 +37,7 @@ import {
   cloudIDToKibanaURL,
 } from './utils';
 import { formatLocations, getLocations, groupLocations } from '../locations';
+import { ALLOWED_SCHEDULES } from '../dsl/monitor';
 import type { ProjectSettings } from '../common_types';
 
 // Templates that are required for setting up new synthetics project
@@ -53,13 +54,11 @@ export const REGULAR_FILES_PATH = [
   'journeys/example.journey.ts',
   'journeys/advanced-example-helpers.ts',
   'journeys/advanced-example.journey.ts',
+  'lightweight/heartbeat.yml',
   '.github/workflows/run-synthetics.yml',
   'README.md',
 ];
 export const CONFIG_PATH = 'synthetics.config.ts';
-
-// Files to be overriden by default if the project is initialized multiple times
-const DEFAULT_OVERRIDES = [CONFIG_PATH];
 
 export class Generator {
   pkgManager = 'npm';
@@ -106,9 +105,7 @@ export class Generator {
     const auth = await new Input({
       name: 'auth',
       header: yellow(
-        `Generate API key from Kibana ${removeTrailingSlash(
-          url
-        )}/app/uptime/manage-monitors/all`
+        `Generate API key from Kibana ${getProjectApiKeyURL(url)}`
       ),
       required: true,
       message: 'What is your API key',
@@ -133,10 +130,12 @@ export class Generator {
         },
       },
       {
-        type: 'numeral',
+        type: 'select',
         name: 'schedule',
         message: 'Set default schedule in minutes for all monitors',
-        initial: 10,
+        initial: '10', // set default schedule to 10 minutes
+        choices: ALLOWED_SCHEDULES.map(String),
+        required: true,
       },
       {
         type: 'input',
@@ -154,6 +153,11 @@ export class Generator {
 
     // Split and group private and public locations from the answered list.
     const answers = await prompt<PromptOptions>(monitorQues);
+    // Casting the schedule value via the result() prompt option from enquirer
+    // causes a misbehaviour in certain circumstances. That's why we perform
+    // the casting here. Please see https://github.com/elastic/synthetics/pull/771#issuecomment-1551519148 for more context
+    answers.schedule = Number(answers.schedule);
+
     const { locations, privateLocations } = groupLocations(answers.locations);
     return { ...answers, url, locations, privateLocations };
   }
@@ -188,11 +192,7 @@ export class Generator {
   async createFile(relativePath: string, content: string, override = false) {
     const absolutePath = join(this.projectDir, relativePath);
 
-    if (
-      !override &&
-      !DEFAULT_OVERRIDES.includes(relativePath) &&
-      existsSync(absolutePath)
-    ) {
+    if (!override && existsSync(absolutePath)) {
       const { override } = await prompt<{ override: boolean }>({
         type: 'confirm',
         name: 'override',
@@ -243,10 +243,13 @@ export class Generator {
       pkgJSON.scripts = {};
     }
     // Add test command
-    pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
-
+    if (!pkgJSON.scripts.test) {
+      pkgJSON.scripts.test = 'npx @elastic/synthetics journeys';
+    }
     // Add push command
-    pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+    if (!pkgJSON.scripts.push) {
+      pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+    }
 
     await this.createFile(
       filename,
@@ -265,7 +268,9 @@ export class Generator {
     if (!gitIgnore.includes('node_modules')) {
       gitIgnore += 'node_modules/\n';
     }
-    gitIgnore += '.synthetics/\n';
+    if (!gitIgnore.includes('.synthetics')) {
+      gitIgnore += '.synthetics/\n';
+    }
     await writeFile(gitIgnorePath, gitIgnore, 'utf-8');
   }
 

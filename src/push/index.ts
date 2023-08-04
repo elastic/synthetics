@@ -22,100 +22,113 @@
  * THE SOFTWARE.
  *
  */
-
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold, yellow } from 'kleur/colors';
+import { bold, grey } from 'kleur/colors';
 import {
-  ok,
-  formatAPIError,
-  formatFailedMonitors,
-  formatNotFoundError,
-  formatStaleMonitors,
-} from './request';
-import { buildMonitorSchema, createMonitors, MonitorSchema } from './monitor';
-import { Monitor } from '../dsl/monitor';
+  getLocalMonitors,
+  buildMonitorSchema,
+  diffMonitors as diffMonitorHashIDs,
+  MonitorSchema,
+} from './monitor';
+import { ALLOWED_SCHEDULES, Monitor } from '../dsl/monitor';
 import {
   progress,
-  apiProgress,
+  liveProgress,
   write,
   error,
-  aborted,
+  warn,
   indent,
-  safeNDJSONParse,
   done,
+  getMonitorManagementURL,
+  THROTTLING_WARNING_MSG,
 } from '../helpers';
 import type { PushOptions, ProjectSettings } from '../common_types';
 import { findSyntheticsConfig, readConfig } from '../config';
+import {
+  bulkDeleteMonitors,
+  bulkGetMonitors,
+  bulkPutMonitors,
+  createMonitorsLegacy,
+  CHUNK_SIZE,
+} from './kibana_api';
+import {
+  getChunks,
+  isBulkAPISupported,
+  isLightweightMonitorSupported,
+  logDiff,
+} from './utils';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
-  if (monitors.length === 0) {
-    throw 'No Monitors found';
-  }
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
   }
+  progress(`Pushing monitors for project: ${options.id}`);
 
-  progress(`preparing all monitors`);
-  const schemas = await buildMonitorSchema(monitors);
-
-  progress(`creating all monitors`);
-  for (const schema of schemas) {
-    await pushMonitors({ schemas: [schema], keepStale: true, options });
+  /**
+   * Legacy API for kibana which does not support bulk operations
+   */
+  if (!isBulkAPISupported(options.kibanaVersion)) {
+    return await pushLegacy(monitors, options);
   }
 
-  progress(`deleting all stale monitors`);
-  await pushMonitors({ schemas, keepStale: false, options });
-  done('Pushed');
+  const { monitors: remote } = await bulkGetMonitors(options);
+
+  progress(`bundling ${monitors.length} monitors`);
+  const schemas = await buildMonitorSchema(monitors, true);
+  const local = getLocalMonitors(schemas);
+
+  const { newIDs, changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
+    local,
+    remote
+  );
+  logDiff(newIDs, changedIDs, removedIDs, unchangedIDs);
+
+  const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
+  if (updatedMonitors.size > 0) {
+    const chunks = getChunks(schemas, CHUNK_SIZE);
+    for (const chunk of chunks) {
+      await liveProgress(
+        bulkPutMonitors(options, chunk),
+        `creating or updating ${chunk.length} monitors`
+      );
+    }
+  }
+
+  if (removedIDs.size > 0) {
+    if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
+      await promptConfirmDeleteAll(options);
+    }
+    const chunks = getChunks(Array.from(removedIDs), CHUNK_SIZE);
+    for (const chunk of chunks) {
+      await liveProgress(
+        bulkDeleteMonitors(options, chunk),
+        `deleting ${chunk.length} monitors`
+      );
+    }
+  }
+
+  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
 }
 
-export async function pushMonitors({
-  schemas,
-  keepStale,
-  options,
-}: {
-  schemas: MonitorSchema[];
-  keepStale: boolean;
-  options: PushOptions;
-}) {
-  try {
-    const { body, statusCode } = await createMonitors(
-      schemas,
-      options,
-      keepStale
-    );
-    if (statusCode === 404) {
-      throw formatNotFoundError(await body.text());
-    }
-    if (!ok(statusCode)) {
-      const { error, message } = await body.json();
-      throw formatAPIError(statusCode, error, message);
-    }
-    body.setEncoding('utf-8');
-    for await (const data of body) {
-      // Its kind of hacky for now where Kibana streams the response by
-      // writing the data as NDJSON events (data can be interleaved), we
-      // distinguish the final data by checking if the event was a progress vs complete event
-      const chunks = safeNDJSONParse(data);
-      for (const chunk of chunks) {
-        if (typeof chunk === 'string') {
-          // TODO: add progress back for all states once we get the fix
-          // on kibana side
-          keepStale && apiProgress(chunk);
-          continue;
-        }
-        const { failedMonitors, failedStaleMonitors } = chunk;
-        if (failedMonitors && failedMonitors.length > 0) {
-          throw formatFailedMonitors(failedMonitors);
-        }
-        if (failedStaleMonitors.length > 0) {
-          write(yellow(formatStaleMonitors(failedStaleMonitors)));
-        }
+async function promptConfirmDeleteAll(options: PushOptions) {
+  write('');
+  const { deleteAll } = await prompt<{ deleteAll: boolean }>({
+    type: 'confirm',
+    skip() {
+      if (options.yes) {
+        this.initial = process.env.TEST_OVERRIDE ?? true;
+        return true;
       }
-    }
-  } catch (e) {
-    error(e);
+      return false;
+    },
+    name: 'deleteAll',
+    message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+    initial: false,
+  });
+  if (!deleteAll) {
+    throw warn('Push command Aborted');
   }
 }
 
@@ -149,17 +162,25 @@ const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project 
 
 export async function loadSettings() {
   try {
-    const config = await readConfig('asd');
+    const config = await readConfig(process.env['NODE_ENV'] || 'development');
     // Missing config file, fake throw to capture as missing file
     if (Object.keys(config).length === 0) {
       throw '';
     }
     return config.project || ({} as ProjectSettings);
   } catch (e) {
-    throw error(`Aborted (missing synthetics config file), Project not set up corrrectly.
+    throw error(`Aborted (missing synthetics config file), Project not set up correctly.
 
 ${INSTALLATION_HELP}`);
   }
+}
+
+export async function validatePush(
+  opts: PushOptions,
+  settings: ProjectSettings
+) {
+  validateSettings(opts);
+  await catchIncorrectSettings(settings, opts);
 }
 
 export function validateSettings(opts: PushOptions) {
@@ -178,6 +199,10 @@ export function validateSettings(opts: PushOptions) {
     reason = `Set default schedule in minutes for all monitors via
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
+  } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
+    reason = `Set default schedule(${
+      opts.schedule
+    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;
@@ -193,7 +218,7 @@ async function overrideSettings(oldValue: string, newValue: string) {
   const cwd = process.cwd();
   const configPath = await findSyntheticsConfig(cwd, cwd);
   if (!configPath) {
-    throw aborted(`Unable to find synthetics config file: ${configPath}`);
+    throw warn(`Unable to find synthetics config file: ${configPath}`);
   }
   const config = await readFile(configPath, 'utf-8');
   const updatedConfig = config.replace(
@@ -209,23 +234,63 @@ export async function catchIncorrectSettings(
 ) {
   let override = !settings.id;
   if (settings.id && settings.id !== options.id) {
-    if (process.env.TEST_OVERRIDE != null) {
-      override = Boolean(process.env.TEST_OVERRIDE);
-    } else {
-      // Add an extra line to make it easier to read the prompt
-      write('');
-      ({ override } = await prompt<{ override: boolean }>({
-        type: 'confirm',
-        name: 'override',
-        message: `Monitors were pushed under the '${settings.id}' project. Are you sure you want to push them under the new '${options.id}' (note that this will duplicate the monitors, the old ones being orphaned)`,
-        initial: false,
-      }));
-    }
+    // Add an extra line to make it easier to read the prompt
+    write('');
+    ({ override } = await prompt<{ override: boolean }>({
+      type: 'confirm',
+      name: 'override',
+      skip() {
+        if (options.yes) {
+          this.initial = process.env.TEST_OVERRIDE ?? true;
+          return true;
+        }
+        return false;
+      },
+      message: `Monitors were pushed under the '${settings.id}' project. Are you sure you want to push them under the new '${options.id}' (note that this will duplicate the monitors, the old ones being orphaned)`,
+      initial: false,
+    }));
     if (!override) {
-      throw aborted('Push command Aborted');
+      throw warn('Push command Aborted');
     }
   }
   if (override) {
     await overrideSettings(settings.id, options.id);
+  }
+}
+
+export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
+  if (isLightweightMonitorSupported(monitors, options)) {
+    throw error(
+      `Aborted: Lightweight monitors are not supported in ${options.kibanaVersion}. Please upgrade to 8.5.0 or above.`
+    );
+  }
+
+  let schemas: MonitorSchema[] = [];
+  if (monitors.length > 0) {
+    progress(`bundling ${monitors.length} monitors`);
+    schemas = await buildMonitorSchema(monitors, false);
+    const chunks = getChunks(schemas, 10);
+    for (const chunk of chunks) {
+      await liveProgress(
+        createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),
+        `creating or updating ${chunk.length} monitors`
+      );
+    }
+  } else {
+    await promptConfirmDeleteAll(options);
+  }
+  await liveProgress(
+    createMonitorsLegacy({ schemas, keepStale: false, options }),
+    `deleting all stale monitors`
+  );
+
+  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+}
+
+// prints warning if any of the monitors has throttling settings enabled during push
+export function warnIfThrottled(monitors: Monitor[]) {
+  const throttled = monitors.some(monitor => monitor.config.throttling != null);
+  if (throttled) {
+    warn(THROTTLING_WARNING_MSG);
   }
 }

@@ -29,7 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { lstat, readdir } from 'fs/promises';
 import { performance } from 'perf_hooks';
-import sourceMapSupport from '@cspotcode/source-map-support';
+import sourceMapSupport from 'source-map-support';
 import {
   HooksArgs,
   HooksCallback,
@@ -37,6 +37,7 @@ import {
   Location,
   ThrottlingOptions,
 } from './common_types';
+import micromatch from 'micromatch';
 
 const SEPARATOR = '\n';
 
@@ -233,9 +234,20 @@ export function rewriteErrorStack(stack: string, indexes: [number, number]) {
   return stack;
 }
 
-export function formatError(error: Error) {
-  if (!(error instanceof Error)) {
+// formatError prefers receiving proper Errors, but since at runtime
+// non Error exceptions can be thrown, it tolerates though. The
+// redundant type Error | any expresses that.
+export function formatError(error: Error | any) {
+  if (error === undefined || error === null) {
     return;
+  }
+
+  if (!(error instanceof Error)) {
+    return {
+      message: `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`,
+      name: '',
+      stack: '',
+    };
   }
   const { name, message, stack } = error;
   const indexes = findPWLogsIndexes(message);
@@ -289,6 +301,9 @@ export function getNetworkConditions(
   };
 }
 
+export const THROTTLING_WARNING_MSG = `Throttling may not be active when the tests run - see
+https://github.com/elastic/synthetics/blob/main/docs/throttling.md for more details`;
+
 const dstackTraceLimit = 10;
 
 // Uses the V8 Stacktrace API to get the function location
@@ -300,8 +315,8 @@ export function wrapFnWithLocation<A extends unknown[], R>(
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stackFrames) => {
       // Deafult CallSite would not map to the original transpiled source
-      // from ts-node properly, So we wrap it with the library that knows
-      // how to retrive those source-map for the transpiled code
+      // correctly, So we use source-map-support to map the CallSite to the
+      // original source from our cached source map
       const frame: NodeJS.CallSite = sourceMapSupport.wrapCallSite(
         stackFrames[1]
       );
@@ -322,10 +337,10 @@ export function wrapFnWithLocation<A extends unknown[], R>(
 }
 
 // Safely parse ND JSON (Newline delimitted JSON) chunks
-export function safeNDJSONParse(chunks: string[]) {
-  // chunks may not be at proper newline boundaries, so we make sure everything is split
+export function safeNDJSONParse(data: string | string[]) {
+  // data may not be at proper newline boundaries, so we make sure everything is split
   // on proper newlines
-  chunks = Array.isArray(chunks) ? chunks : [chunks];
+  const chunks = Array.isArray(data) ? data : [data];
   const lines = chunks.join('\n').split(/\r?\n/);
   return lines
     .filter(l => l.match(/\S/)) // remove blank lines
@@ -339,16 +354,27 @@ export function safeNDJSONParse(chunks: string[]) {
 }
 
 // Console helpers
-export function write(message: string) {
-  process.stderr.write(message + '\n');
+export function write(message: string, live?: boolean) {
+  process.stderr.write(message + (live ? '\r' : '\n'));
 }
 
 export function progress(message: string) {
   write(cyan(bold(`${symbols.progress} ${message}`)));
 }
 
-export function apiProgress(message: string) {
-  write(grey(`> ${message}`));
+export async function liveProgress(promise: Promise<any>, message: string) {
+  const start = now();
+  const interval = setInterval(() => {
+    apiProgress(`${message} (${Math.trunc(now() - start)}ms)`, true);
+  }, 500);
+  promise.finally(() => clearInterval(interval));
+  const result = await promise;
+  apiProgress(`${message} (${Math.trunc(now() - start)}ms)`);
+  return result;
+}
+
+export function apiProgress(message: string, live = false) {
+  write(grey(`> ${message}`), live);
 }
 
 export function error(message: string) {
@@ -359,10 +385,45 @@ export function done(message: string) {
   write(bold(green(`${symbols['succeeded']} ${message}`)));
 }
 
-export function aborted(message: string) {
+export function warn(message: string) {
   write(bold(yellow(`${symbols['warning']} ${message}`)));
 }
 
-export function removeTrailingSlash(url: string) {
+export function removeTrailingSlash(url = '') {
   return url.replace(/\/+$/, '');
+}
+
+export function getMonitorManagementURL(url: string) {
+  return removeTrailingSlash(url) + '/app/synthetics/monitors';
+}
+
+export function getProjectApiKeyURL(url: string) {
+  return removeTrailingSlash(url) + '/app/synthetics/settings/api-keys';
+}
+
+/**
+ * Matches tests based on the provided args. Proitize tags over match
+ * - tags pattern that matches only tags
+ * - match pattern that matches both name and tags
+ */
+export function isMatch(
+  tags: Array<string>,
+  name: string,
+  tagsPattern?: Array<string>,
+  matchPattern?: string
+) {
+  if (tagsPattern) {
+    return tagsMatch(tags, tagsPattern);
+  }
+  if (matchPattern) {
+    return (
+      micromatch.isMatch(name, matchPattern) || tagsMatch(tags, matchPattern)
+    );
+  }
+  return true;
+}
+
+export function tagsMatch(tags, pattern) {
+  const matchess = micromatch(tags || ['*'], pattern);
+  return matchess.length > 0;
 }

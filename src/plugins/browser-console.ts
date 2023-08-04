@@ -23,7 +23,9 @@
  *
  */
 
+import type { ConsoleMessage } from 'playwright-core';
 import { BrowserMessage, Driver } from '../common_types';
+import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
@@ -35,7 +37,7 @@ export class BrowserConsole {
 
   constructor(private driver: Driver) {}
 
-  private consoleEventListener = msg => {
+  private consoleEventListener = (msg: ConsoleMessage) => {
     if (!this._currentStep) {
       return;
     }
@@ -76,13 +78,15 @@ export class BrowserConsole {
   }
 
   start() {
-    this.driver.page.on('console', this.consoleEventListener);
+    log(`Plugins: started collecting console events`);
+    this.driver.context.on('console', this.consoleEventListener);
     this.driver.page.on('pageerror', this.pageErrorEventListener);
   }
 
   stop() {
-    this.driver.page.off('console', this.consoleEventListener);
+    this.driver.context.off('console', this.consoleEventListener);
     this.driver.page.off('pageerror', this.pageErrorEventListener);
+    log(`Plugins: stopped collecting console events`);
     return this.messages;
   }
 }

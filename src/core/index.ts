@@ -47,7 +47,7 @@ export const journey = wrapFnWithLocation(
     options: JourneyOptions | string,
     callback: JourneyCallback
   ) => {
-    log(`register journey: ${JSON.stringify(options)}`);
+    log(`Journey register: ${JSON.stringify(options)}`);
     if (typeof options === 'string') {
       options = { name: options, id: options };
     }
@@ -59,7 +59,7 @@ export const journey = wrapFnWithLocation(
 
 export const step = wrapFnWithLocation(
   (location: Location, name: string, callback: VoidCallback) => {
-    log(`register step: ${name}`);
+    log(`Step register: ${name}`);
     return runner.currentJourney?.addStep(name, callback, location);
   }
 );

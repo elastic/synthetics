@@ -1,0 +1,57 @@
+name: dist-tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version to dist tag.
+        required: true
+      dist-tag:
+        type: string
+        description: Dist tag to use.
+        required: true
+
+jobs:
+  dist-tag:
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      DIST_TAG: ${{ github.event.inputs.dist-tag }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: elastic/apm-pipeline-library/.github/actions/setup-npmrc@current
+        with:
+          secret: secret/jenkins-ci/npmjs/elasticmachine
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: ./.github/actions/setup-totp
+        with:
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Validate version input is a valid semver
+        run: |
+            if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?(\+[a-z0-9.]+)?$ ]]; then
+                echo "Version input '${VERSION}' is not a valid semver"
+                exit 1
+            fi
+
+      - name: Validate dist-tag input is a valid dist-tag
+        run: |
+          case "$DIST_TAG" in
+            alpha|beta|latest|stack_release)
+            exit 0 ;;
+            *)
+            echo "Dist tag input '${DIST_TAG}' is not a valid dist-tag"
+            exit 1 ;;
+          esac
+
+      - name: NPM dist-tag
+        run: |
+          NPM_PACKAGE=$(jq '.name' package.json)
+          npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" "${DIST_TAG}"

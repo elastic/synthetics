@@ -40,7 +40,7 @@ services:
       retries: 10
       start_period: 30s
     ports:
-      - 127.0.0.1:5620:5601
+      - '5620:5601'
     expose:
       - '5620'
     environment:

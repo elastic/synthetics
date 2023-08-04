@@ -23,8 +23,9 @@
  *
  */
 
-import { bold } from 'kleur/colors';
-import { Dispatcher, request } from 'undici';
+import { bold, red, yellow } from 'kleur/colors';
+import type { Dispatcher } from 'undici';
+import { request } from 'undici';
 import { indent, symbols } from '../helpers';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -47,8 +48,42 @@ export async function sendRequest(options: APIRequestOptions) {
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',
     },
-    headersTimeout: 60 * 1000
+    headersTimeout: 60 * 1000,
   });
+}
+
+export async function sendReqAndHandleError<T>(
+  options: APIRequestOptions
+): Promise<T> {
+  const { statusCode, body } = await sendRequest(options);
+  return await (await handleError(statusCode, options.url, body)).json();
+}
+
+// Handle bad status code errors from Kibana API and format the
+// error message to be displayed to the user.
+// returns the response stream if no error is found
+export async function handleError(
+  statusCode: number,
+  url: string,
+  body: Dispatcher.ResponseData['body']
+): Promise<Dispatcher.ResponseData['body']> {
+  if (statusCode === 404) {
+    throw formatNotFoundError(url, await body.text());
+  } else if (!ok(statusCode)) {
+    let parsed: { error: string; message: string };
+    try {
+      parsed = await body.json();
+    } catch (e) {
+      throw formatAPIError(
+        statusCode,
+        'unexpected non-JSON error',
+        await body.text()
+      );
+    }
+    throw formatAPIError(statusCode, parsed.error, parsed.message);
+  }
+
+  return body;
 }
 
 export function ok(statusCode: number) {
@@ -61,9 +96,11 @@ export type APIMonitorError = {
   details: string;
 };
 
-export function formatNotFoundError(message: string) {
-  return bold(
-    `${symbols['failed']} Please check your kibana url and try again - 404:${message}`
+export function formatNotFoundError(url: string, message: string) {
+  return red(
+    bold(
+      `${symbols['failed']} Please check your kibana url: ${url} and try again - 404:${message}`
+    )
   );
 }
 
@@ -78,7 +115,7 @@ export function formatAPIError(
   );
   inner += indent(message, '    ');
   outer += indent(inner);
-  return outer;
+  return red(outer);
 }
 
 function formatMonitorError(errors: APIMonitorError[]) {
@@ -95,10 +132,10 @@ function formatMonitorError(errors: APIMonitorError[]) {
 
 export function formatFailedMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['failed']} Error\n`);
-  return heading + formatMonitorError(errors);
+  return red(heading + formatMonitorError(errors));
 }
 
 export function formatStaleMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['warning']} Warnings\n`);
-  return heading + formatMonitorError(errors);
+  return yellow(heading + formatMonitorError(errors));
 }

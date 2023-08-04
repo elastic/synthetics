@@ -3,13 +3,14 @@
     "esModuleInterop": true,
     "allowJs": true,
     "declaration": true,
-    "incremental": true,
     "declarationMap": true,
     "noImplicitOverride": true,
     "sourceMap": true,
     "outDir": "dist",
-    "target": "es2020",
-    "module": "commonjs"
+    "target": "ES2022",
+    "module": "commonjs",
+    "skipLibCheck": true,
+    "moduleResolution": "Node"
   },
   "include": ["src/**/*"]
 }

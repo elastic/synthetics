@@ -1,0 +1,43 @@
+name: e2e
+
+on:
+  workflow_dispatch: ~
+  schedule:
+    - cron: "0 4,16 * * 1-5"
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
+      - run: npm ci
+      - run: npm run build
+      - run: npm install
+        working-directory: __tests__/e2e
+      - run: npm run test:ci_integration_all
+        working-directory: __tests__/e2e
+        env:
+          TERM: xterm # this is needed for tput
+      - if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: "**/junit_*.xml"
+          if-no-files-found: error
+      - if: always()
+        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        with:
+          vaultUrl: ${{ secrets.VAULT_ADDR }}
+          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
+          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
+          slackChannel: "#synthetics-notify"

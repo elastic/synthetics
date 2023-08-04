@@ -43,6 +43,7 @@ export {
   after,
 } from './core';
 export { expect } from './core/expect';
+
 /**
  * Export all the driver related types to be consumed
  * and used by suites
@@ -53,6 +54,7 @@ export type {
   ChromiumBrowserContext,
   CDPSession,
   APIRequestContext,
+  devices,
 } from 'playwright-chromium';
 
 /**
@@ -62,9 +64,11 @@ export type { default as Runner } from './core/runner';
 export type { Reporter, ReporterOptions } from './reporters';
 
 export type { SyntheticsConfig } from './common_types';
+
 export type {
   Action,
   ActionInContext,
+  FrameDescription,
   Signal,
   Step,
   Steps,
