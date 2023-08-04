@@ -242,10 +242,7 @@ program
   .addOption(auth.makeOptionMandatory(false))
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
-    let url = cmdOpts.url;
-    try {
-      url = (await loadSettings())?.url;
-    } catch (e) {}
+    const url = cmdOpts.url ?? (await loadSettings(true))?.url;
 
     try {
       if (url && cmdOpts.auth) {
