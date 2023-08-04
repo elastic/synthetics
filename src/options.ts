@@ -185,13 +185,19 @@ export function getCommonCommandOpts() {
     'RegExp pattern to match journey/monitor files that are different from the default (ex: /*.journey.(ts|js)$/)'
   );
 
-  const auth = createOption(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
+  const apiDocsLink =
+    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).';
+  const auth = createOption('--auth <auth>', apiDocsLink).env(
+    'SYNTHETICS_API_KEY'
   );
+
+  const authMandatory = createOption('--auth <auth>', apiDocsLink)
+    .env('SYNTHETICS_API_KEY')
+    .makeOptionMandatory(true);
 
   return {
     auth,
+    authMandatory,
     params,
     playwrightOpts,
     pattern,

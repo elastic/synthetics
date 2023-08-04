@@ -56,7 +56,8 @@ import { installTransform } from './core/transform';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, playwrightOpts, auth } = getCommonCommandOpts();
+const { params, pattern, playwrightOpts, auth, authMandatory } =
+  getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
@@ -183,7 +184,7 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
-  .addOption(auth.makeOptionMandatory(true))
+  .addOption(authMandatory)
   .addOption(pattern)
   .addOption(params)
   .addOption(playwrightOpts)
@@ -239,7 +240,7 @@ program
     `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
-  .addOption(auth.makeOptionMandatory(false))
+  .addOption(auth)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(true))?.url;
