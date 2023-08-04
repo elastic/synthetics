@@ -160,7 +160,7 @@ export function formatDuplicateError(monitors: Set<Monitor>) {
 
 const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project with default settings.`;
 
-export async function loadSettings() {
+export async function loadSettings(ignoreMissing = false) {
   try {
     const config = await readConfig(process.env['NODE_ENV'] || 'development');
     // Missing config file, fake throw to capture as missing file
@@ -169,9 +169,11 @@ export async function loadSettings() {
     }
     return config.project || ({} as ProjectSettings);
   } catch (e) {
-    throw error(`Aborted (missing synthetics config file), Project not set up correctly.
+    if (!ignoreMissing) {
+      throw error(`Aborted (missing synthetics config file), Project not set up correctly.
 
 ${INSTALLATION_HELP}`);
+    }
   }
 }
 

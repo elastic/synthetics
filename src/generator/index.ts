@@ -112,7 +112,8 @@ export class Generator {
     }).run();
 
     const allLocations = await getLocations({ url, auth });
-    const locChoices = formatLocations(allLocations);
+    const { allLocations: locChoices } = formatLocations(allLocations);
+
     if (locChoices.length === 0) {
       throw 'Follow the docs to set up your first private locations - https://www.elastic.co/guide/en/observability/current/uptime-set-up-choose-agent.html#private-locations';
     }

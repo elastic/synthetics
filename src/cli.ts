@@ -51,11 +51,13 @@ import { error } from './helpers';
 import { LocationsMap } from './locations/public-locations';
 import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
+import { installTransform } from './core/transform';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, playwrightOpts } = getCommonCommandOpts();
+const { params, pattern, playwrightOpts, auth, authMandatory } =
+  getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
@@ -158,14 +160,6 @@ program
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
-  .addOption(
-    new Option(
-      '--auth <auth>',
-      'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-    )
-      .env('SYNTHETICS_API_KEY')
-      .makeOptionMandatory(true)
-  )
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
@@ -191,6 +185,7 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
+  .addOption(authMandatory)
   .addOption(pattern)
   .addOption(params)
   .addOption(playwrightOpts)
@@ -246,21 +241,26 @@ program
     `List all locations to run the synthetics monitors. Pass optional '--url' and '--auth' to list private locations.`
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
-  .option(
-    '--auth <auth>',
-    'API key used for Kibana authentication(https://www.elastic.co/guide/en/kibana/master/api-keys.html).'
-  )
+  .addOption(auth)
   .action(async (cmdOpts: LocationCmdOptions) => {
+    const revert = installTransform();
+    const url = cmdOpts.url ?? (await loadSettings(true))?.url;
+
     try {
-      let locations = Object.keys(LocationsMap);
-      if (cmdOpts.auth && cmdOpts.url) {
-        const allLocations = await getLocations(cmdOpts);
-        locations = formatLocations(allLocations);
+      if (url && cmdOpts.auth) {
+        const allLocations = await getLocations({
+          url,
+          auth: cmdOpts.auth,
+        });
+        renderLocations(formatLocations(allLocations));
+      } else {
+        renderLocations({ publicLocations: Object.keys(LocationsMap) });
       }
-      renderLocations(locations);
     } catch (e) {
       e && error(e);
       process.exit(1);
+    } finally {
+      revert();
     }
   });
 

@@ -42,7 +42,7 @@ export type LocationAPIResponse = {
   locations: Array<LocationMetadata>;
 };
 
-const PRIVATE_KEYWORD = '(private)';
+export const PRIVATE_KEYWORD = '(private)';
 
 export async function getLocations(options: LocationCmdOptions) {
   const resp = await sendReqAndHandleError<LocationAPIResponse>({
@@ -54,25 +54,33 @@ export async function getLocations(options: LocationCmdOptions) {
 }
 
 export function formatLocations(locations: Array<LocationMetadata>) {
-  const formatted: Array<string> = [];
+  const publicLocations: Array<string> = [];
+  const privateLocations: Array<string> = [];
   for (const location of locations) {
     let name = location.label;
     if (location.isServiceManaged) {
       [, name] = name.includes('-') ? name.split('-') : [, name];
       name = name.toLowerCase().trim().split(' ').join('_');
+      publicLocations.push(name);
     } else {
-      name = `${name}${PRIVATE_KEYWORD}`;
+      privateLocations.push(name);
     }
-    formatted.push(name);
   }
-  return formatted;
+
+  return {
+    publicLocations,
+    privateLocations,
+    allLocations: publicLocations.concat(
+      privateLocations.map(loc => `${loc} ${PRIVATE_KEYWORD}`)
+    ),
+  };
 }
 
 export function groupLocations(locations: Array<string>) {
   const grouped = { locations: [], privateLocations: [] };
   for (const loc of locations) {
     if (loc.includes(PRIVATE_KEYWORD)) {
-      grouped.privateLocations.push(loc.replace(PRIVATE_KEYWORD, ''));
+      grouped.privateLocations.push(loc.replace(PRIVATE_KEYWORD, '').trim());
     } else {
       grouped.locations.push(loc);
     }
@@ -80,13 +88,30 @@ export function groupLocations(locations: Array<string>) {
   return grouped;
 }
 
-export function renderLocations(locations: Array<string>) {
-  let outer = 'Available locations: \n';
-  let inner = '';
-  for (const location of locations) {
-    inner += `* ${location}\n`;
+export function renderLocations({
+  publicLocations,
+  privateLocations = [],
+}: {
+  privateLocations?: Array<string>;
+  publicLocations: Array<string>;
+}) {
+  let outer = '';
+  if (publicLocations.length) {
+    outer = 'Public locations: \n';
+    let inner = '';
+    for (const location of publicLocations) {
+      inner += `* ${location}\n`;
+    }
+    outer += indent(inner);
   }
-  outer += indent(inner);
+  if (privateLocations.length > 0) {
+    outer += '\nPrivate locations: \n';
+    let privateInner = '';
+    for (const location of privateLocations) {
+      privateInner += `* ${location}\n`;
+    }
+    outer += indent(privateInner);
+  }
   outer += `\nSet default location for monitors via
   - Synthetics config file 'monitors.locations' | 'monitors.privateLocations' field
   - Monitor API 'monitor.use({ locations: ["japan"], privateLocations: ["custom-location"] }')`;
