@@ -137,7 +137,7 @@ export function normalizeOptions(
       }
       break;
   }
-
+  // Enables the tracing on the journey level
   options.apm = config.apm;
 
   return options;

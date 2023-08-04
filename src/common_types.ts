@@ -254,7 +254,8 @@ export type ProjectSettings = {
 };
 
 export type ApmOptions = {
-  origins: Array<string | RegExp>;
+  traceUrls: Array<string | RegExp>;
+  sampleRate?: number;
 };
 
 export type PlaywrightOptions = LaunchOptions &
