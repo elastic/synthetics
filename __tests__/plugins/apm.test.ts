@@ -23,10 +23,16 @@
  *
  */
 
-import { journey, runner } from '../../src/core';
+import { journey, runner, monitor } from '../../src/core';
 import { Gatherer } from '../../src/core/gatherer';
 import { NetworkManager } from '../../src/plugins';
-import { Apm, BAGGAGE_HEADER, TRACE_STATE_HEADER } from '../../src/plugins/apm';
+import {
+  Apm,
+  BAGGAGE_HEADER,
+  TRACE_STATE_HEADER,
+  genTraceStateHeader,
+  generateBaggageHeader,
+} from '../../src/plugins/apm';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
 
@@ -39,25 +45,52 @@ describe('apm', () => {
     await server.close();
   });
 
-  it('add baggage header', async () => {
+  it('propagate http header', async () => {
+    runner.registerJourney(
+      journey('j1', () => {}),
+      {} as any
+    );
     const driver = await Gatherer.setupDriver({
       wsEndpoint,
     });
-    // test journey
-    runner.addJourney(journey('example-journey', () => {}));
     const network = new NetworkManager(driver);
     const apm = new Apm(driver, { traceUrls: ['**/*'] });
     await network.start();
     await apm.start();
-
+    // visit test page
     await driver.page.goto(server.TEST_PAGE);
     await apm.stop();
     const [htmlReq] = await network.stop();
     await Gatherer.stop();
 
     expect(htmlReq.request.headers[BAGGAGE_HEADER]).toBe(
-      `synthetics.monitor.id=example-journey;`
+      `synthetics.monitor.id=j1;`
     );
     expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBe(`es=s:1`);
+  });
+
+  it('baggage generation', () => {
+    const j1 = journey('j1', () => {
+      monitor.use({ id: 'foo' });
+    });
+    runner.registerJourney(j1, {} as any);
+    expect(generateBaggageHeader(j1)).toBe(`synthetics.monitor.id=foo;`);
+
+    // Set Checkgroup
+    process.env['ELASTIC_SYNTHETICS_TRACE_ID'] = 'x-trace';
+    process.env['ELASTIC_SYNTHETICS_MONITOR_ID'] = 'global-foo';
+    expect(generateBaggageHeader(j1)).toBe(
+      `synthetics.trace.id=x-trace;synthetics.monitor.id=global-foo;`
+    );
+
+    delete process.env['ELASTIC_SYNTHETICS_TRACE_ID'];
+    delete process.env['ELASTIC_SYNTHETICS_MONITOR_ID'];
+  });
+
+  it('tracestate generation', () => {
+    expect(genTraceStateHeader(0.5)).toBe(`es=s:0.5`);
+    expect(genTraceStateHeader(0.921132)).toBe(`es=s:0.9211`);
+    expect(genTraceStateHeader(-1)).toBe(`es=s:1`);
+    expect(genTraceStateHeader(20)).toBe(`es=s:1`);
   });
 });

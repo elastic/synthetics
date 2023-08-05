@@ -52,7 +52,7 @@ function getValueFromEnv(key: string) {
  *
  * rate must be in the range [0,1] rounded up to 4 decimal precision (0.0001, 0.8122, )
  */
-function genTraceStateHeader(rate = 1) {
+export function genTraceStateHeader(rate = 1) {
   if (isNaN(rate) || rate < 0 || rate > 1) {
     rate = 1;
   } else if (rate > 0 && rate < 0.001) {
@@ -72,7 +72,7 @@ function genTraceStateHeader(rate = 1) {
  * 3. Location - location where the synthetics monitor is run from
  * 4. Type - type of the synthetics monitor (browser, http, tcp, etc)
  */
-function generateBaggageHeader(journey: Journey) {
+export function generateBaggageHeader(journey: Journey) {
   let monitorId = getValueFromEnv('ELASTIC_SYNTHETICS_MONITOR_ID');
   if (!monitorId) {
     monitorId = journey?.monitor.config.id;
