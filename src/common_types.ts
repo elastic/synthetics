@@ -242,7 +242,7 @@ export type RunOptions = BaseArgs & {
 export type PushOptions = Partial<ProjectSettings> &
   Partial<BaseArgs> & {
     auth: string;
-    kibanaVersion?: number;
+    kibanaVersion?: string;
     yes?: boolean;
   };
 

@@ -81,7 +81,7 @@ export function generateURL(options: PushOptions, operation: Operation) {
 /**
  * Bulk API is supported for push monitors only from 8.6.0 and above
  */
-export function isBulkAPISupported(version: number) {
+export function isBulkAPISupported(version: string) {
   return semver.satisfies(version, '>=8.6.0');
 }
 
@@ -103,6 +103,6 @@ export function isLightweightMonitorSupported(
  * Lighweight monitor param options are supported only from
  * 8.7.2 and above
  */
-export function isParamOptionSupported(version: number) {
+export function isParamOptionSupported(version: string) {
   return semver.satisfies(version, '>=8.7.2');
 }

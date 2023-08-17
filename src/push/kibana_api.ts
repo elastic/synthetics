@@ -125,7 +125,7 @@ export async function bulkDeleteMonitors(
 
 type StatusResponse = {
   version: {
-    number: number;
+    number: string;
   };
 };
 
