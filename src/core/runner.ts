@@ -237,7 +237,11 @@ export default class Runner {
       const page = pages[pages.length - 1];
       if (page) {
         data.url ??= page.url();
-        if (screenshots && screenshots !== 'off') {
+        if (
+          screenshots &&
+          screenshots !== 'off' &&
+          data.url !== 'about:blank'
+        ) {
           await this.captureScreenshot(page, step);
         }
       }

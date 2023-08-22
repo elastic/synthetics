@@ -81,6 +81,7 @@ type Payload = {
   text?: string;
   index?: number;
   network_conditions?: NetworkConditions;
+  has_screenshots?: boolean;
 };
 
 type OutputFields = {
@@ -292,7 +293,7 @@ export async function gatherScreenshots(
         const screenshot: Screenshot = JSON.parse(content);
         await callback(screenshot);
       } catch (_) {
-        // TODO: capture progarammatic synthetic errors under different type
+        // TODO: capture programmatic synthetic errors under different type
       }
     });
   }
@@ -404,6 +405,7 @@ export default class JSONReporter extends BaseReporter {
     const writeScreenshots =
       screenshots === 'on' ||
       (screenshots === 'only-on-failure' && status === 'failed');
+    let hasScreenshots = false;
     if (writeScreenshots) {
       await gatherScreenshots(
         join(CACHE_PATH, 'screenshots'),
@@ -412,6 +414,7 @@ export default class JSONReporter extends BaseReporter {
           if (!data) {
             return;
           }
+          hasScreenshots = true;
           if (ssblocks) {
             await this.writeScreenshotBlocks(journey, screenshot);
           } else {
@@ -467,6 +470,7 @@ export default class JSONReporter extends BaseReporter {
         start,
         end,
         status,
+        has_screenshots: hasScreenshots,
       },
     });
   }
