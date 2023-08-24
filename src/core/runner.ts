@@ -34,6 +34,7 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
+  filterBrowserConsoles,
 } from '../helpers';
 import {
   HooksCallback,
@@ -310,7 +311,10 @@ export default class Runner {
       timestamp: getTimestamp(),
       options,
       ...pluginOutput,
-      browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
+      browserconsole: filterBrowserConsoles(
+        pluginOutput.browserconsole,
+        status
+      ),
     });
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });

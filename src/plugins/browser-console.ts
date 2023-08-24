@@ -31,6 +31,8 @@ import { getTimestamp } from '../helpers';
 
 const defaultMessageLimit = 1000;
 
+const allowedTypes = ['error', 'warning', 'log'];
+
 export class BrowserConsole {
   private messages: BrowserMessage[] = [];
   _currentStep: Partial<Step> = null;
@@ -42,7 +44,7 @@ export class BrowserConsole {
       return;
     }
     const type = msg.type();
-    if (type === 'error' || type === 'warning') {
+    if (allowedTypes.includes(type)) {
       const { name, index } = this._currentStep;
       this.messages.push({
         timestamp: getTimestamp(),
@@ -73,7 +75,13 @@ export class BrowserConsole {
 
   private enforceMessagesLimit() {
     if (this.messages.length > defaultMessageLimit) {
-      this.messages.splice(0, 1);
+      // drop logs type first if they exceed the limit
+      const lastLogIndex = this.messages.findIndex(m => m.type === 'log');
+      if (lastLogIndex > -1) {
+        this.messages = this.messages.splice(lastLogIndex, 1);
+      } else {
+        this.messages = this.messages.splice(0, 1);
+      }
     }
   }
 
@@ -87,6 +95,7 @@ export class BrowserConsole {
     this.driver.context.off('console', this.consoleEventListener);
     this.driver.page.off('pageerror', this.pageErrorEventListener);
     log(`Plugins: stopped collecting console events`);
+
     return this.messages;
   }
 }
