@@ -434,7 +434,7 @@ export function filterBrowserConsoles(
   messages: BrowserMessage[],
   status: StatusValue
 ) {
-  if (status === 'failed') {
+  if (status === 'failed' || messages.length < 100) {
     return messages;
   }
   if (status === 'succeeded') {
