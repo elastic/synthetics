@@ -75,13 +75,7 @@ export class BrowserConsole {
 
   private enforceMessagesLimit() {
     if (this.messages.length > defaultMessageLimit) {
-      // drop logs type first if they exceed the limit
-      const lastLogIndex = this.messages.findIndex(m => m.type === 'log');
-      if (lastLogIndex > -1) {
-        this.messages = this.messages.splice(lastLogIndex, 1);
-      } else {
-        this.messages = this.messages.splice(0, 1);
-      }
+      this.messages = this.messages.splice(0, 1);
     }
   }
 
