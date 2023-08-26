@@ -34,7 +34,6 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
-  filterBrowserConsoles,
 } from '../helpers';
 import {
   HooksCallback,
@@ -47,8 +46,11 @@ import {
   StepResult,
   PushOptions,
 } from '../common_types';
-import { PluginManager } from '../plugins';
-import { PerformanceManager } from '../plugins';
+import {
+  PluginManager,
+  PerformanceManager,
+  filterBrowserMessages,
+} from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -311,7 +313,7 @@ export default class Runner {
       timestamp: getTimestamp(),
       options,
       ...pluginOutput,
-      browserconsole: filterBrowserConsoles(
+      browserconsole: filterBrowserMessages(
         pluginOutput.browserconsole,
         status
       ),

@@ -36,8 +36,6 @@ import {
   NetworkConditions,
   Location,
   ThrottlingOptions,
-  StatusValue,
-  BrowserMessage,
 } from './common_types';
 import micromatch from 'micromatch';
 
@@ -428,22 +426,4 @@ export function isMatch(
 export function tagsMatch(tags, pattern) {
   const matchess = micromatch(tags || ['*'], pattern);
   return matchess.length > 0;
-}
-
-export function filterBrowserConsoles(
-  messages: BrowserMessage[],
-  status: StatusValue
-) {
-  if (status === 'failed' || messages.length < 100) {
-    return messages;
-  }
-  if (status === 'succeeded') {
-    // we collect total 100 messages from the browser console, giving errors and warnings priority
-    const errors = messages.filter(msg => msg.type === 'error').slice(-50);
-    const warnings = messages.filter(msg => msg.type === 'warn').slice(-50);
-    const logs = messages.filter(msg => msg.type === 'warn').slice(-50);
-
-    return [...errors, ...warnings, ...logs].slice(100);
-  }
-  return [];
 }
