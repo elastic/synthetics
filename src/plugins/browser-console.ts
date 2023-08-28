@@ -76,7 +76,7 @@ export class BrowserConsole {
 
   private enforceMessagesLimit() {
     if (this.messages.length > DEFAULT_MSG_LIMIt) {
-      this.messages = this.messages.splice(0, 1);
+      this.messages.splice(0, 1);
     }
   }
 
