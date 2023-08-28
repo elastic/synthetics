@@ -24,12 +24,15 @@
  */
 
 import type { ConsoleMessage } from 'playwright-core';
-import { BrowserMessage, Driver } from '../common_types';
+import { BrowserMessage, Driver, StatusValue } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
 
-const defaultMessageLimit = 1000;
+const DEFAULT_MSG_LIMIt = 1000;
+const SUCCESSFUL_MSG_LIMIT = 100;
+
+const allowedTypes = ['error', 'warning', 'log'];
 
 export class BrowserConsole {
   private messages: BrowserMessage[] = [];
@@ -42,7 +45,7 @@ export class BrowserConsole {
       return;
     }
     const type = msg.type();
-    if (type === 'error' || type === 'warning') {
+    if (allowedTypes.includes(type)) {
       const { name, index } = this._currentStep;
       this.messages.push({
         timestamp: getTimestamp(),
@@ -72,7 +75,7 @@ export class BrowserConsole {
   };
 
   private enforceMessagesLimit() {
-    if (this.messages.length > defaultMessageLimit) {
+    if (this.messages.length > DEFAULT_MSG_LIMIt) {
       this.messages.splice(0, 1);
     }
   }
@@ -89,4 +92,31 @@ export class BrowserConsole {
     log(`Plugins: stopped collecting console events`);
     return this.messages;
   }
+}
+
+export function filterBrowserMessages(
+  messages: BrowserMessage[],
+  status: StatusValue
+) {
+  if (status == 'skipped') {
+    return [];
+  } else if (status === 'failed' || messages.length <= SUCCESSFUL_MSG_LIMIT) {
+    return messages;
+  }
+  // collect 100 messages from the browser console when the test is successful,
+  // giving priority to errors and warnings
+  const result = messages.filter(msg => msg.type === 'error');
+  if (result.length >= SUCCESSFUL_MSG_LIMIT) {
+    return result.slice(-SUCCESSFUL_MSG_LIMIT);
+  }
+
+  // collect warnings
+  result.push(...messages.filter(msg => msg.type === 'warning'));
+  if (result.length >= SUCCESSFUL_MSG_LIMIT) {
+    return result.slice(-SUCCESSFUL_MSG_LIMIT);
+  }
+
+  // collect logs
+  result.push(...messages.filter(msg => msg.type === 'log'));
+  return result.slice(-SUCCESSFUL_MSG_LIMIT);
 }
