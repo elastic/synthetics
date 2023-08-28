@@ -90,7 +90,6 @@ export class BrowserConsole {
     this.driver.context.off('console', this.consoleEventListener);
     this.driver.page.off('pageerror', this.pageErrorEventListener);
     log(`Plugins: stopped collecting console events`);
-
     return this.messages;
   }
 }
