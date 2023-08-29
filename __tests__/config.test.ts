@@ -33,7 +33,7 @@ const FIXTURES_DIR = join(__dirname, 'fixtures');
 describe('Config', () => {
   it('read config based on environment', async () => {
     const configPath = join(FIXTURES_DIR, 'synthetics.config.ts');
-    expect(readConfig('development', configPath)).toMatchObject({
+    expect(await readConfig('development', configPath)).toMatchObject({
       params: {
         url: 'dev',
       },
@@ -41,7 +41,7 @@ describe('Config', () => {
         ...devices['Galaxy S9+'],
       },
     });
-    expect(readConfig('testing', configPath)).toMatchObject({
+    expect(await readConfig('testing', configPath)).toMatchObject({
       params: {
         url: 'non-dev',
       },
@@ -50,15 +50,19 @@ describe('Config', () => {
 
   it('throw error when config does not exist', async () => {
     const tempPath = generateTempPath();
-    function getConfig() {
-      readConfig('development', tempPath);
+    async function getConfig() {
+      await readConfig('development', tempPath);
     }
-    expect(getConfig).toThrowError(
-      new Error('Synthetics config file does not exist: ' + tempPath)
-    );
+    try {
+      await getConfig();
+    } catch (e) {
+      expect(e).toEqual(
+        new Error('Synthetics config file does not exist: ' + tempPath)
+      );
+    }
   });
 
   it('recursively look for configs and exit', async () => {
-    expect(readConfig('development')).toEqual({});
+    expect(await readConfig('development')).toEqual({});
   });
 });
