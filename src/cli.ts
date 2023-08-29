@@ -134,7 +134,7 @@ program
   .action(async (cliArgs: CliArgs) => {
     const tearDown = await globalSetup(cliArgs, program.args);
     try {
-      const options = normalizeOptions(cliArgs, 'run');
+      const options = await normalizeOptions(cliArgs, 'run');
       const results = await run(options);
       /**
        * Exit with error status if any journey fails
@@ -196,14 +196,14 @@ program
     ]);
     try {
       const settings = await loadSettings();
-      const options = normalizeOptions(
+      const options = (await normalizeOptions(
         {
           ...program.opts(),
           ...settings,
           ...cmdOpts,
         },
         'push'
-      ) as PushOptions;
+      )) as PushOptions;
       await validatePush(options, settings);
       const monitors = runner.buildMonitors(options);
       if ((options as CliArgs).throttling == null) {

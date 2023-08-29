@@ -31,10 +31,10 @@ import { THROTTLING_WARNING_MSG, error, warn } from './helpers';
 
 type Mode = 'run' | 'push';
 
-export function normalizeOptions(
+export async function normalizeOptions(
   cliArgs: CliArgs,
   mode: Mode = 'run'
-): RunOptions {
+): Promise<RunOptions> {
   const options: RunOptions = {
     ...cliArgs,
     environment: process.env['NODE_ENV'] || 'development',
@@ -85,7 +85,7 @@ export function normalizeOptions(
    */
   const config =
     cliArgs.config || !cliArgs.inline
-      ? readConfig(options.environment, cliArgs.config)
+      ? await readConfig(options.environment, cliArgs.config)
       : {};
 
   /**

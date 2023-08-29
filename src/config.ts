@@ -27,7 +27,10 @@ import { isAbsolute, resolve, dirname } from 'path';
 import { SyntheticsConfig } from './common_types';
 import { isFile } from './helpers';
 
-export function readConfig(env: string, config?: string): SyntheticsConfig {
+export async function readConfig(
+  env: string,
+  config?: string
+): Promise<SyntheticsConfig> {
   let options = {};
   const cwd = process.cwd();
   /**
@@ -47,6 +50,9 @@ export function readConfig(env: string, config?: string): SyntheticsConfig {
   }
   if (typeof options === 'function') {
     options = options(env);
+    if (options instanceof Promise) {
+      return await options;
+    }
   }
   return options;
 }
