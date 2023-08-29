@@ -28,7 +28,7 @@ import { normalizeOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
-  it('normalize', () => {
+  it('normalize', async () => {
     const cliArgs: CliArgs = {
       params: {
         foo: 'bar',
@@ -43,12 +43,12 @@ describe('options', () => {
       pauseOnError: true,
       config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
     };
-    expect(normalizeOptions({})).toMatchObject({
+    expect(await normalizeOptions({})).toMatchObject({
       environment: 'test',
       params: {},
       screenshots: 'on',
     });
-    expect(normalizeOptions(cliArgs)).toMatchObject({
+    expect(await normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
       environment: 'test',
       match: 'check*',
@@ -76,9 +76,9 @@ describe('options', () => {
     });
   });
 
-  it('normalize monitor configs', () => {
+  it('normalize monitor configs', async () => {
     const config = join(__dirname, 'fixtures', 'synthetics.config.ts');
-    expect(normalizeOptions({ config }, 'push')).toMatchObject({
+    expect(await normalizeOptions({ config }, 'push')).toMatchObject({
       screenshots: 'off',
       schedule: 10,
       privateLocations: ['test-location'],
@@ -94,7 +94,7 @@ describe('options', () => {
     });
 
     expect(
-      normalizeOptions(
+      await normalizeOptions(
         {
           config,
           schedule: 3,
@@ -120,14 +120,14 @@ describe('options', () => {
     });
   });
 
-  it('cli arg headless override playwright headless arg', () => {
+  it('cli arg headless override playwright headless arg', async () => {
     const cliArgs: CliArgs = {
       playwrightOptions: {
         headless: false,
       },
       headless: true,
     };
-    expect(normalizeOptions(cliArgs)).toMatchObject({
+    expect(await normalizeOptions(cliArgs)).toMatchObject({
       playwrightOptions: {
         headless: true,
       },
