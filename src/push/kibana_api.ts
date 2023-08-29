@@ -124,8 +124,8 @@ export async function bulkDeleteMonitors(
 }
 
 type StatusResponse = {
-  version: {
-    number: string;
+  version?: {
+    number?: string;
   };
 };
 
@@ -135,6 +135,13 @@ export async function getVersion(options: PushOptions) {
     method: 'GET',
     auth: options.auth,
   });
+
+  if (!data.version || typeof data.version?.number === 'undefined') {
+    throw Error(
+      'Unable to retrieve version. Are your auth credentials correct?'
+    );
+  }
+
   return data.version.number;
 }
 
