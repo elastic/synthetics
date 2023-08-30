@@ -25,32 +25,18 @@
 
 const path = require('path');
 const esbuild = require('esbuild');
+const { ENTRY_POINTS } = require('./src');
 
 const outdir = path.join(__dirname, '..', 'dist', 'bundles');
 
-function IgnorePlugin() {
-  return {
-    name: 'ignore-plugin',
-    setup(build) {
-      build.onResolve({ filter: /.(json|node)$/ }, async () => {
-        return {
-          external: true,
-        };
-      });
-    },
-  };
-}
-
 (async () => {
   const ctx = await esbuild.context({
-    entryPoints: [path.join(__dirname, 'src', 'index.ts')],
+    entryPoints: ENTRY_POINTS,
     bundle: true,
-    external: ['playwright-core'],
+    external: ['playwright-core', '@playwright/test/lib/transform/esmLoader'],
     outfile: path.join(outdir, 'lib', 'index.js'),
     format: 'cjs',
-    logLevel: 'silent',
     platform: 'node',
-    plugins: [IgnorePlugin()],
     target: `node${process.version.slice(1)}`,
     minify: process.argv.includes('--minify'),
     sourcemap: process.argv.includes('--sourcemap'),

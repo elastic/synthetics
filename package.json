@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
-    "prepublish": "npm run clean && npm run build",
+    "prepublish": "npm run clean && npm run build:bundles && npm run build",
     "build": "tsc",
     "build:locations": "sh utils/update_locations.sh",
     "build:bundles": "cd bundles && npm run build",

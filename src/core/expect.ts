@@ -23,4 +23,11 @@
  *
  */
 
-export { expect } from '../../dist/bundles/lib/index';
+const expectLib = require('../../dist/bundles/lib/index').expect;
+
+type ExpectLibrary =
+  typeof import('../../bundles/node_modules/@playwright/test/types/test').expect;
+
+type ModifiedExpect = Omit<ExpectLibrary, 'toMatchSnapshot'>;
+
+export const expect: ModifiedExpect = expectLib;

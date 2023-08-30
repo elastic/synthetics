@@ -23,4 +23,8 @@
  *
  */
 
-export { expect } from '@playwright/test/lib/expect';
+const path = require('path');
+
+module.exports.ENTRY_POINTS = [
+  path.resolve('node_modules/@playwright/test/lib/matchers/expect.js'),
+];
