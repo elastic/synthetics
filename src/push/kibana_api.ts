@@ -124,8 +124,8 @@ export async function bulkDeleteMonitors(
 }
 
 type StatusResponse = {
-  version?: {
-    number?: string;
+  kibana: {
+    version: string;
   };
 };
 
@@ -136,13 +136,7 @@ export async function getVersion(options: PushOptions) {
     auth: options.auth,
   });
 
-  if (!data.version || typeof data.version?.number === 'undefined') {
-    throw Error(
-      'Unable to retrieve version. Are your auth credentials correct?'
-    );
-  }
-
-  return data.version.number;
+  return data.kibana.version;
 }
 
 export type LegacyAPISchema = {
