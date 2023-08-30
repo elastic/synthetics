@@ -23,7 +23,7 @@
  *
  */
 
-//eslint-disable-next-line @typescript-eslint/no-var-requires
+/* eslint-disable @typescript-eslint/no-var-requires */
 const expectLib = require('../../dist/bundles/lib/index').expect;
 
 type ExpectLibrary =

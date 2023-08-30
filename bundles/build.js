@@ -23,6 +23,7 @@
  *
  */
 
+/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
 const esbuild = require('esbuild');
 const { ENTRY_POINTS } = require('./src');
