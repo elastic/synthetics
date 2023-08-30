@@ -33,6 +33,16 @@ declare global {
   }
 }
 
+// Declare the global matcher in the PW namesapce to be used in tests
+// to satisfy the type checker and IDE
+declare global {
+  namespace PlaywrightTest {
+    interface Matchers<R> {
+      toBeWithinRange(a: number, b: number): R;
+    }
+  }
+}
+
 expect.extend({
   toBeWithinRange(received, floor, ceiling) {
     const pass = received >= floor && received <= ceiling;
@@ -52,7 +62,7 @@ expect.extend({
   },
 });
 
-journey('expect journey', ({}) => {
+journey('expect journey', ({ page }) => {
   step('exports work', () => {
     expect(100).toBe(100);
     expect([1, 2, 3]).toEqual(expect.arrayContaining([1, 2, 3]));
@@ -62,5 +72,10 @@ journey('expect journey', ({}) => {
   step('extends work', () => {
     expect(100).toBeWithinRange(90, 120);
     expect(101).not.toBeWithinRange(0, 100);
+  });
+
+  step('pw test methods work', async () => {
+    await expect(page).toHaveURL('about:blank');
+    await expect(page).toHaveTitle('', { timeout: 100 });
   });
 });
