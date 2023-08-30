@@ -124,8 +124,8 @@ export async function bulkDeleteMonitors(
 }
 
 type StatusResponse = {
-  version: {
-    number: string;
+  kibana: {
+    version: string;
   };
 };
 
@@ -135,7 +135,8 @@ export async function getVersion(options: PushOptions) {
     method: 'GET',
     auth: options.auth,
   });
-  return data.version.number;
+
+  return data.kibana.version;
 }
 
 export type LegacyAPISchema = {
