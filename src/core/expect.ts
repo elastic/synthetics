@@ -36,7 +36,7 @@ expectLib.extend({
     throw new Error('toHaveScreenshot is not supported in elastic synthetics.');
   },
   toMatchSnapshot: () => {
-    throw new Error('toHaveScreenshot is not supported in elastic synthetics.');
+    throw new Error('toMatchSnapshot is not supported in elastic synthetics.');
   },
 });
 
