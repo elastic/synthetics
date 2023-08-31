@@ -29,6 +29,7 @@ import { fileURLToPath } from 'url';
 import { resolve, sep } from 'path';
 import { Location, StackFrame } from '../common_types';
 import { readFileSync } from 'fs';
+import { inspect } from 'util';
 
 const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
 
@@ -69,6 +70,7 @@ function prepareStackFrame(line: string): StackFrame {
 }
 
 export function filterLibInternals(file: string) {
+  // To signore filtering the stack trace on tests
   if (process.env.TEST_OVERRIDE) {
     return true;
   }
@@ -81,11 +83,11 @@ export function filterLibInternals(file: string) {
 export function constructStackFromFrames(frames: StackFrame[]) {
   const stackLines: string[] = [];
   for (const frame of frames) {
-    if (frame.function)
-      stackLines.push(
-        `    at ${frame.function} (${frame.file}:${frame.line}:${frame.column})`
-      );
-    else stackLines.push(`    at ${frame.file}:${frame.line}:${frame.column}`);
+    stackLines.push(
+      `    at ${frame.function ? frame.function + ' ' : ''}(${frame.file}:${
+        frame.line
+      }:${frame.column})`
+    );
   }
   return stackLines;
 }

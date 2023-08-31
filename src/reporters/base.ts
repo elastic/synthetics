@@ -35,6 +35,7 @@ import {
   TestError,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
+import { inspect } from 'util';
 
 function renderError(error: TestError) {
   const summary = [];
@@ -86,14 +87,22 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
-  serializeError(error: TestError) {
-    const { message, stack, location } = prepareError(error);
-    error.message = message;
-    error.stack = stack;
-    if (location) {
-      error.location = location;
+  serializeError(error: Error | any): TestError {
+    // handle non error types and subclass of errors
+    if (!(error instanceof Error) || !error.stack) {
+      return { message: `thrown: ${inspect(error)}` };
     }
-    error.source = highLightSource(error.location);
+    const { message, stack, location } = prepareError(error);
+    const testErr: TestError = error;
+    testErr.message = message;
+    if (stack) {
+      testErr.stack = stack;
+    }
+    if (location) {
+      testErr.location = location;
+      testErr.source = highLightSource(testErr.location);
+    }
+    return testErr;
   }
 
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {
@@ -107,8 +116,7 @@ export default class BaseReporter implements Reporter {
     )}`;
     this.write(indent(message));
     if (error) {
-      this.serializeError(error);
-      this.write(renderError(error));
+      this.write(renderError(this.serializeError(error)));
     }
     this.metrics[status]++;
   }
@@ -122,8 +130,7 @@ export default class BaseReporter implements Reporter {
      * be executed which means the error happened in one of the hooks
      */
     if (total === 0 && error) {
-      this.serializeError(error);
-      this.write(renderError(error));
+      this.write(renderError(this.serializeError(error)));
     }
   }
 
