@@ -14,18 +14,6 @@ No tests found! (0 ms)
 "
 `;
 
-exports[`buildkite cli reporter store screenshots in provided output dir 1`] = `
-"   ---
-      stack: |-
-        Error: before hook failed
-   ---
-
-✖ Took  (1 seconds)
-No tests found! (0 ms) 
-
-"
-`;
-
 exports[`buildkite cli reporter writes each step to the FD 1`] = `
 "
 --- Journey: j1
