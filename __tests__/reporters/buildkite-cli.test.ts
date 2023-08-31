@@ -23,6 +23,8 @@
  *
  */
 
+import * as jsonReporter from '../../src/reporters/json';
+
 /**
  * Disable the ANSI codes for kleur/colors module
  */
@@ -35,6 +37,7 @@ import BuildKiteCLIReporter, {
   writeScreenshotsToPath,
 } from '../../src/reporters/build_kite_cli';
 import * as helpers from '../../src/helpers';
+import { Screenshot } from '../../src/common_types';
 
 describe('buildkite cli reporter', () => {
   let dest: string;
@@ -110,6 +113,37 @@ describe('buildkite cli reporter', () => {
   });
 
   it('store screenshots in provided output dir', async () => {
-    await writeScreenshotsToPath('on', 'screenshots');
+    const data = {
+      step: {
+        name: 'do something',
+        index: 2,
+        location: {
+          file: '/Users/shahzad/elastic/synthetics/test-projects/journeys/example.journey.ts',
+          line: 12,
+          column: 30,
+        },
+      },
+      timestamp: 1693471547477914.5,
+      data: '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkS',
+    } as Screenshot;
+
+    jest
+      .spyOn(jsonReporter, 'gatherScreenshots')
+      .mockImplementation(
+        async (
+          screenshotsPath: string,
+          callback: (data: Screenshot) => Promise<void>
+        ) => {
+          await callback(data);
+        }
+      );
+
+    const spy = jest.spyOn(fs, 'writeFileSync');
+    await writeScreenshotsToPath('on', 'screenshots', 'failed');
+    expect(spy).toHaveBeenCalledWith(
+      'screenshots/do something.jpg',
+      '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkS',
+      { encoding: 'base64' }
+    );
   });
 });

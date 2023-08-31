@@ -42,7 +42,8 @@ import Runner from '../core/runner';
 
 export async function writeScreenshotsToPath(
   screenshotOptions: ScreenshotOptions,
-  outputDir: string
+  outputDir: string,
+  status: StepEndResult['status']
 ) {
   const FAILED_STEPS_PATH = join(outputDir, 'failed_steps');
   await fs.promises.mkdir(FAILED_STEPS_PATH, { recursive: true });
@@ -53,14 +54,14 @@ export async function writeScreenshotsToPath(
       const filename = sanitizeFilename(`${step.name}.jpg`);
 
       if (screenshotOptions === 'on') {
-        await fs.promises.writeFile(join(outputDir, filename), data, {
+        fs.writeFileSync(join(outputDir, filename), data, {
           encoding: 'base64',
         });
       } else if (
         screenshotOptions === 'only-on-failure' &&
         status === 'failed'
       ) {
-        await fs.promises.writeFile(join(FAILED_STEPS_PATH, filename), data, {
+        fs.writeFileSync(join(FAILED_STEPS_PATH, filename), data, {
           encoding: 'base64',
         });
       }
@@ -121,7 +122,7 @@ export default class BuildKiteCLIReporter extends BaseReporter {
       const FAILED_STEPS_PATH = join(outputDir, 'failed_steps');
       await fs.promises.mkdir(FAILED_STEPS_PATH, { recursive: true });
 
-      await writeScreenshotsToPath(screenshots, outputDir);
+      await writeScreenshotsToPath(screenshots, outputDir, status);
     }
   }
 
