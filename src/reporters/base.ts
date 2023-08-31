@@ -25,114 +25,22 @@
 
 import SonicBoom from 'sonic-boom';
 import { green, red, cyan, gray } from 'kleur/colors';
-import { codeFrameColumns } from '@babel/code-frame';
-import StackUtils from 'stack-utils';
-import { fileURLToPath } from 'url';
-import { resolve, sep } from 'path';
-import {
-  symbols,
-  indent,
-  now,
-  findPWLogsIndexes,
-  rewriteErrorStack,
-} from '../helpers';
+import { prepareLocation, highLightSource } from './reporterUtil';
+import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
   TestError,
-  Location,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
-import { readFileSync } from 'fs';
-
-const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
-
-function prepareStackLine(
-  line: string
-): (Location & { function?: string }) | null {
-  const frame = stackUtils.parseLine(line);
-  if (!frame) {
-    return null;
-  }
-  // ignore node internals
-  if (frame.file?.startsWith('internal') || frame.file?.startsWith('node:')) {
-    return null;
-  }
-
-  // handle relative URLs
-  const file = frame.file?.startsWith('file://')
-    ? fileURLToPath(frame.file)
-    : resolve(process.cwd(), frame.file);
-
-  // ignore node_modules
-  if (file.includes(`${sep}node_modules${sep}`)) {
-    return null;
-  }
-
-  return {
-    file,
-    line: frame.line || 0,
-    column: frame.column || 0,
-    function: frame.function,
-  };
-}
-
-function prepareLocation(stack: string) {
-  const lines = stack.split('\n');
-  let startAt = lines.findIndex(line => line.startsWith('    at '));
-  if (startAt === -1) startAt = lines.length;
-  const message = lines.slice(0, startAt).join('\n');
-  const stackLines = lines.slice(startAt);
-  // figure out the location of the journey/step that throws the error
-  let location: Location | undefined;
-  let stackLine: string;
-  for (const line of stackLines) {
-    const frame = prepareStackLine(line);
-    if (!frame || !frame.file) continue;
-    location = {
-      file: frame.file,
-      column: frame.column || 0,
-      line: frame.line || 0,
-    };
-    stackLine = line;
-    break;
-  }
-
-  return {
-    message,
-    stackLine,
-    location,
-  };
-}
-
-function highLightSource(location: Location): string {
-  if (!location) {
-    return;
-  }
-
-  try {
-    const source = readFileSync(location.file, 'utf-8');
-    const frame = codeFrameColumns(
-      source,
-      { start: location },
-      {
-        highlightCode: true,
-      }
-    );
-    return frame;
-  } catch (_) {
-    // ignore error
-  }
-}
 
 function renderError(error: TestError) {
-  const { message, stackLine, location } = prepareLocation(error.stack);
   let outer = indent('');
-  outer += '\n' + outer + message + '\n\n';
-  outer += highLightSource(location) + '\n\n';
-  outer += gray(stackLine) + '\n';
+  outer += '\n' + outer + error.message + '\n\n';
+  outer += error.source + '\n\n';
+  // outer += gray(stackLine) + '\n';
   return outer;
   // let output = '';
   // const outer = indent('');
@@ -183,6 +91,13 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
+  addLocAndSourceToError(error: TestError) {
+    if (error.stack && !error.location) {
+      error.location = prepareLocation(error.stack).location;
+    }
+    error.source = highLightSource(error.location);
+  }
+
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
@@ -193,7 +108,10 @@ export default class BaseReporter implements Reporter {
       '(' + renderDuration((end - start) * 1000) + ' ms)'
     )}`;
     this.write(indent(message));
-    error && this.write(renderError(error));
+    if (error) {
+      this.addLocAndSourceToError(error);
+      this.write(renderError(error));
+    }
     this.metrics[status]++;
   }
 
@@ -206,6 +124,7 @@ export default class BaseReporter implements Reporter {
      * be executed which means the error happened in one of the hooks
      */
     if (total === 0 && error) {
+      this.addLocAndSourceToError(error);
       this.write(renderError(error));
     }
   }
