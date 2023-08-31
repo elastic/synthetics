@@ -112,6 +112,8 @@ export function normalizeOptions(
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
   };
 
+  options.outputDir = cliArgs.outputDir ?? config.outputDir;
+
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
    * or pushing the project monitors

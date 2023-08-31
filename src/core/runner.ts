@@ -34,6 +34,7 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
+  replaceFileNameWithJourneyName,
 } from '../helpers';
 import {
   HooksCallback,
@@ -54,6 +55,7 @@ import {
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
+import fs from 'fs';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
@@ -152,12 +154,13 @@ export default class Runner {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd } = options;
+    const { reporter, outfd, playwrightOptions } = options;
+    const { recordVideo } = playwrightOptions ?? {};
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd });
+    this.#reporter = new Reporter({ fd: outfd, recordVideo });
   }
 
   async runBeforeAllHook(args: HooksArgs) {
@@ -291,7 +294,7 @@ export default class Runner {
       params,
     });
     /**
-     * Exeucute the journey callback which would
+     * Execute the journey callback which would
      * register the steps for the current journey
      */
     journey.callback({ ...context.driver, params });
@@ -303,7 +306,7 @@ export default class Runner {
     options: RunOptions
   ) {
     const end = monotonicTimeInSeconds();
-    const { pluginManager, start, status, error } = result;
+    const { pluginManager, start, status, error, driver } = result;
     const pluginOutput = await pluginManager.output();
     await this.#reporter?.onJourneyEnd?.(journey, {
       status,
@@ -320,6 +323,28 @@ export default class Runner {
     });
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
+
+    const pages = driver.context.pages();
+    const videoDir = options.playwrightOptions?.recordVideo?.dir;
+    if (videoDir && fs.existsSync(videoDir)) {
+      for (const page of pages) {
+        try {
+          const filePath = await page.video()?.path();
+          if (!filePath) continue;
+          const newVideoPath = replaceFileNameWithJourneyName({
+            filePath,
+            journeyName: journey.name,
+          });
+
+          fs.renameSync(filePath, newVideoPath);
+        } catch (e) {
+          console.log(
+            `Error while renaming video file for journey ${journey.name}`,
+            e
+          );
+        }
+      }
+    }
   }
 
   /**

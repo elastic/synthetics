@@ -73,6 +73,7 @@ program
     '--match <name>',
     'run tests with a name or tags that matches the glob'
   )
+  .option('--outputDir <outputDir>', 'output directory for screenshots')
   .addOption(
     new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)

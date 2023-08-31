@@ -23,6 +23,7 @@
  *
  */
 
+import fs from 'fs';
 import { join } from 'path';
 import { devices } from 'playwright-chromium';
 import { Server } from './utils/server';
@@ -319,7 +320,7 @@ describe('CLI', () => {
     }
   });
 
-  it('run expect assetions with type check', async () => {
+  it('run expect assertions with type check', async () => {
     // flag turns on type checking
     process.env['TS_NODE_TYPE_CHECK'] = 'true';
     const cli = new CLIMock()
@@ -461,6 +462,39 @@ describe('CLI', () => {
       expect(JSON.parse(output).step).toMatchObject({
         status: 'failed',
       });
+    });
+
+    it('outputs video urls for pages when recordVideo is enabled', async () => {
+      const videosDir = `${process.cwd()}/.journey/videos`;
+      // remove directory if exists
+      if (fs.existsSync(videosDir)) {
+        fs.rmdirSync(videosDir, { recursive: true });
+      }
+
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'pwoptions.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+          '--playwright-options',
+          JSON.stringify({
+            ...devices['iPad Pro 11'],
+            recordVideo: {
+              dir: videosDir,
+            },
+          }),
+        ])
+        .run();
+      await cli.waitFor('journey/end');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // check if directory exists
+      expect(fs.existsSync(videosDir)).toBe(true);
+
+      const files = fs.readdirSync(videosDir);
+      expect(files.length).toBe(1);
+      expect(files[0]).toContain('.webm');
     });
   });
 });

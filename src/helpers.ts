@@ -23,9 +23,9 @@
  *
  */
 
-import { red, green, yellow, cyan, bold, grey } from 'kleur/colors';
+import { bold, cyan, green, grey, red, yellow } from 'kleur/colors';
 import os from 'os';
-import { resolve, join, dirname } from 'path';
+import path, { dirname, join, resolve } from 'path';
 import fs from 'fs';
 import { lstat, readdir } from 'fs/promises';
 import { performance } from 'perf_hooks';
@@ -33,8 +33,8 @@ import sourceMapSupport from 'source-map-support';
 import {
   HooksArgs,
   HooksCallback,
-  NetworkConditions,
   Location,
+  NetworkConditions,
   ThrottlingOptions,
 } from './common_types';
 import micromatch from 'micromatch';
@@ -426,4 +426,24 @@ export function isMatch(
 export function tagsMatch(tags, pattern) {
   const matchess = micromatch(tags || ['*'], pattern);
   return matchess.length > 0;
+}
+
+export function replaceFileNameWithJourneyName({
+  filePath,
+  journeyName,
+}: {
+  filePath: string;
+  journeyName: string;
+}) {
+  const fileName = path.basename(filePath).replace('.webm', '');
+
+  return filePath?.replace(fileName, journeyName);
+}
+
+export function sanitizeFilename(filename: string) {
+  // Define a regular expression to match invalid characters
+  const invalidCharsRegex = /[\/\\?%*:|"<>]/g;
+
+  // Replace invalid characters with underscores
+  return filename.replace(invalidCharsRegex, '_');
 }

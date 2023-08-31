@@ -34,6 +34,7 @@ import {
   findPWLogsIndexes,
   microSecsToSeconds,
   wrapFnWithLocation,
+  replaceFileNameWithJourneyName,
   isMatch,
 } from '../src/helpers';
 
@@ -175,4 +176,13 @@ it('match tags and names', () => {
   // match both name and tags
   expect(isMatch(['bar'], 'foo', undefined, 'ba*')).toBe(true);
   expect(isMatch(['bar'], 'foo', undefined, 'test*')).toBe(false);
+});
+
+it('replace default path fileName with journey name', () => {
+  const newPath = replaceFileNameWithJourneyName({
+    filePath: '.journeys/videos/34567898765678237jnsdjkhfhjdsbf.webm',
+    journeyName: 'test-journey',
+  });
+
+  expect(newPath).toBe('.journeys/videos/test-journey.webm');
 });

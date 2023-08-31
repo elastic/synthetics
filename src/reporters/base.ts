@@ -36,11 +36,12 @@ import { Reporter, ReporterOptions } from '.';
 import {
   JourneyEndResult,
   JourneyStartResult,
+  PlaywrightOptions,
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 
-function renderError(error) {
+export function renderError(error) {
   let output = '';
   const outer = indent('');
   const inner = indent(outer);
@@ -59,13 +60,14 @@ function renderError(error) {
   return red(output);
 }
 
-function renderDuration(durationMs) {
+export function renderDuration(durationMs) {
   return parseInt(durationMs);
 }
 
 export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
+  recordVideo: PlaywrightOptions['recordVideo'];
   metrics = {
     succeeded: 0,
     failed: 0,
@@ -80,6 +82,7 @@ export default class BaseReporter implements Reporter {
      * before destroying the pipe with underlying file descriptor
      */
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
+    this.recordVideo = options.recordVideo;
   }
 
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {

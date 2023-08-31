@@ -226,6 +226,7 @@ export type CliArgs = BaseArgs & {
   headless?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
+  outputDir?: string;
 };
 
 export type RunOptions = BaseArgs & {
@@ -237,6 +238,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  outputDir?: string;
 };
 
 export type PushOptions = Partial<ProjectSettings> &
@@ -264,6 +266,7 @@ export type SyntheticsConfig = {
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  outputDir?: string;
 };
 
 /** Runner Payload types */
