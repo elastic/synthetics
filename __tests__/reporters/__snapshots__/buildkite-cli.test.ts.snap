@@ -1,0 +1,50 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`buildkite cli reporter render hook errors without steps 1`] = `
+"
+--- Journey: j1
+[31m   ---
+      stack: |-
+        Error: before hook failed
+   ---
+[39m
+[31m✖[39m Took  (1 seconds)
+No tests found! (0 ms) 
+
+"
+`;
+
+exports[`buildkite cli reporter store screenshots in provided output dir 1`] = `
+"   ---
+      stack: |-
+        Error: before hook failed
+   ---
+
+✖ Took  (1 seconds)
+No tests found! (0 ms) 
+
+"
+`;
+
+exports[`buildkite cli reporter writes each step to the FD 1`] = `
+"
+--- Journey: j1
+   [31m✖[39m  Step: 's1' failed (1000 ms)
+[31m   ---
+      stack: |-
+        Error: step failed
+   ---
+[39m
+
++++ [31mJourney: j1 🥵[39m
+   [31m✖[39m  Step: 's1' failed (1000 ms)
+[31m   ---
+      stack: |-
+        Error: step failed
+   ---
+[39m
+
+[31m 1 failed[39m (0 seconds) 
+
+"
+`;
