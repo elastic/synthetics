@@ -290,6 +290,7 @@ export async function gatherScreenshots(
       try {
         const content = readFileSync(absPath, 'utf8');
         const screenshot: Screenshot = JSON.parse(content);
+        console.log(screenshot);
         await callback(screenshot);
       } catch (_) {
         // TODO: capture progarammatic synthetic errors under different type

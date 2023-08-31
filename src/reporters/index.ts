@@ -34,7 +34,7 @@ import {
   StepEndResult,
   PlaywrightOptions,
 } from '../common_types';
-import { BuildKiteCLIReporter } from './build_kite_cli';
+import BuildKiteCLIReporter from './build_kite_cli';
 
 export type ReporterOptions = {
   fd?: number;

@@ -33,13 +33,45 @@ import { CACHE_PATH, indent, now, sanitizeFilename, symbols } from '../helpers';
 import {
   JourneyEndResult,
   JourneyStartResult,
+  ScreenshotOptions,
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 import { gatherScreenshots } from './json';
 import Runner from '../core/runner';
 
-export class BuildKiteCLIReporter extends BaseReporter {
+export async function writeScreenshotsToPath(
+  screenshotOptions: ScreenshotOptions,
+  outputDir: string
+) {
+  const FAILED_STEPS_PATH = join(outputDir, 'failed_steps');
+  await fs.promises.mkdir(FAILED_STEPS_PATH, { recursive: true });
+
+  await gatherScreenshots(Runner.screenshotPath, async screenshot => {
+    const { data, step } = screenshot;
+    try {
+      const filename = sanitizeFilename(`${step.name}.jpg`);
+
+      if (screenshotOptions === 'on') {
+        await fs.promises.writeFile(join(outputDir, filename), data, {
+          encoding: 'base64',
+        });
+      } else if (
+        screenshotOptions === 'only-on-failure' &&
+        status === 'failed'
+      ) {
+        await fs.promises.writeFile(join(FAILED_STEPS_PATH, filename), data, {
+          encoding: 'base64',
+        });
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log(e);
+    }
+  });
+}
+
+export default class BuildKiteCLIReporter extends BaseReporter {
   screenshotsPath: string;
 
   journeys: Map<string, Array<StepEndResult & { name: string }>> = new Map();
@@ -85,28 +117,12 @@ export class BuildKiteCLIReporter extends BaseReporter {
     )} seconds)`;
     this.write(message);
 
-    const FAILED_STEPS_PATH = join(outputDir, 'failed_steps');
-    await fs.promises.mkdir(FAILED_STEPS_PATH, { recursive: true });
+    if (outputDir) {
+      const FAILED_STEPS_PATH = join(outputDir, 'failed_steps');
+      await fs.promises.mkdir(FAILED_STEPS_PATH, { recursive: true });
 
-    await gatherScreenshots(Runner.screenshotPath, async screenshot => {
-      const { data, step } = screenshot;
-      try {
-        const filename = sanitizeFilename(`${step.name}.jpg`);
-
-        if (screenshots === 'on') {
-          await fs.promises.writeFile(join(outputDir, filename), data, {
-            encoding: 'base64',
-          });
-        } else if (screenshots === 'only-on-failure' && status === 'failed') {
-          await fs.promises.writeFile(join(FAILED_STEPS_PATH, filename), data, {
-            encoding: 'base64',
-          });
-        }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.log(e);
-      }
-    });
+      await writeScreenshotsToPath(screenshots, outputDir);
+    }
   }
 
   override onEnd() {
