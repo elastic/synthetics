@@ -274,10 +274,16 @@ export type JourneyResult = {
   browserconsole?: PluginOutput['browserconsole'];
 };
 
+export type TestError = Error & {
+  location?: Location;
+  // source location highlighting the error source
+  source?: string;
+};
+
 export type StepResult = {
   status: StatusValue;
   url?: string;
-  error?: Error;
+  error?: TestError;
   pagemetrics?: PageMetrics;
   filmstrips?: PluginOutput['filmstrips'];
   metrics?: PluginOutput['metrics'];
