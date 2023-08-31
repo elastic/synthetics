@@ -62,7 +62,7 @@ expect.extend({
   },
 });
 
-journey('expect journey', ({ page }) => {
+journey('expect extends', ({ page }) => {
   step('exports work', () => {
     expect(100).toBe(100);
     expect([1, 2, 3]).toEqual(expect.arrayContaining([1, 2, 3]));
@@ -77,5 +77,11 @@ journey('expect journey', ({ page }) => {
   step('pw test methods work', async () => {
     await expect(page).toHaveURL('about:blank');
     await expect(page).toHaveTitle('', { timeout: 100 });
+  });
+});
+
+journey('expect unsupported', ({ page }) => {
+  step('throw unsupported', async () => {
+    await expect(page).toHaveScreenshot();
   });
 });

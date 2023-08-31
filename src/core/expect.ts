@@ -26,18 +26,18 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const expectLib = require('../../dist/bundles/lib/index').expect;
 
-type ExpectLibrary =
-  typeof import('../../bundles/node_modules/@playwright/test/types/test').expect;
+function notSupported(name: string) {
+  throw new Error(`expect.${name} is not supported in @elastic/synthetics.`);
+}
 
-// exclude toHaveScreenshot and toMatchSnapshot from expect
-// since they are not supported in synthetics
+/**
+ * Exclude toHaveScreenshot and toMatchSnapshot from our custom expect
+ * since they are expected to be running inside PW test runner for it to work properly.
+ */
 expectLib.extend({
-  toHaveScreenshot: () => {
-    throw new Error('toHaveScreenshot is not supported in elastic synthetics.');
-  },
-  toMatchSnapshot: () => {
-    throw new Error('toMatchSnapshot is not supported in elastic synthetics.');
-  },
+  toHaveScreenshot: () => notSupported('toHaveScreenshot'),
+  toMatchSnapshot: () => notSupported('toMatchSnapshot'),
 });
 
-export const expect: ExpectLibrary = expectLib;
+export const expect: typeof import('../../bundles/node_modules/@playwright/test/types/test').expect =
+  expectLib;
