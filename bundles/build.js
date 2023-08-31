@@ -24,20 +24,28 @@
  */
 
 /* eslint-disable @typescript-eslint/no-var-requires */
-const expectLib = require('../../dist/bundles/lib/index').expect;
+const path = require('path');
+const esbuild = require('esbuild');
+const { ENTRY_POINTS } = require('./src');
 
-function notSupported(name: string) {
-  throw new Error(`expect.${name} is not supported in @elastic/synthetics.`);
-}
+const outdir = path.join(__dirname, '..', 'dist', 'bundles');
 
-/**
- * Exclude toHaveScreenshot and toMatchSnapshot from our custom expect
- * since they are expected to be running inside PW test runner for it to work properly.
- */
-expectLib.extend({
-  toHaveScreenshot: () => notSupported('toHaveScreenshot'),
-  toMatchSnapshot: () => notSupported('toMatchSnapshot'),
+(async () => {
+  const ctx = await esbuild.context({
+    entryPoints: ENTRY_POINTS,
+    bundle: true,
+    external: ['playwright-core', '@playwright/test/lib/transform/esmLoader'],
+    outfile: path.join(outdir, 'lib', 'index.js'),
+    format: 'cjs',
+    platform: 'node',
+    target: `node${process.version.slice(1)}`,
+    minify: process.argv.includes('--minify'),
+    sourcemap: process.argv.includes('--sourcemap'),
+    sourcesContent: false,
+  });
+  await ctx.rebuild();
+  await ctx.dispose();
+})().catch(error => {
+  console.error(error);
+  process.exit(1);
 });
-
-export const expect: typeof import('../../bundles/node_modules/@playwright/test/types/test').expect =
-  expectLib;

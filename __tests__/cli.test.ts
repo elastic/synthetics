@@ -323,10 +323,25 @@ describe('CLI', () => {
     // flag turns on type checking
     process.env['TS_NODE_TYPE_CHECK'] = 'true';
     const cli = new CLIMock()
-      .args([join(FIXTURES_DIR, 'expect.journey.ts')])
+      .args([
+        join(FIXTURES_DIR, 'expect.journey.ts'),
+        '--match',
+        'expect extends',
+      ])
       .run();
     expect(await cli.exitCode).toBe(0);
     process.env['TS_NODE_TYPE_CHECK'] = 'false';
+  });
+
+  it('error on unsupported expect assertions', async () => {
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'expect.journey.ts'),
+        '--match',
+        'expect unsupported',
+      ])
+      .run();
+    expect(await cli.exitCode).toBe(1);
   });
 
   describe('TLS site with self-signed cert', () => {

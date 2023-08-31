@@ -7,8 +7,9 @@
   "scripts": {
     "clean": "rimraf dist",
     "prepublish": "npm run clean && npm run build",
-    "build": "tsc",
+    "build:lib": "tsc",
     "build:locations": "sh utils/update_locations.sh",
+    "build": "node utils/build.js",
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
@@ -45,7 +46,6 @@
     "deepmerge": "^4.3.1",
     "enquirer": "^2.3.6",
     "esbuild": "^0.18.11",
-    "expect": "^28.1.3",
     "http-proxy": "^1.18.1",
     "kleur": "^4.1.5",
     "micromatch": "^4.0.5",

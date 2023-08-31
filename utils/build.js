@@ -24,20 +24,64 @@
  */
 
 /* eslint-disable @typescript-eslint/no-var-requires */
-const expectLib = require('../../dist/bundles/lib/index').expect;
+const { spawnSync } = require('child_process');
+const { join } = require('path');
+const { cyan } = require('kleur/colors');
 
-function notSupported(name: string) {
-  throw new Error(`expect.${name} is not supported in @elastic/synthetics.`);
-}
-
+const ROOT_DIR = join(__dirname, '..');
 /**
- * Exclude toHaveScreenshot and toMatchSnapshot from our custom expect
- * since they are expected to be running inside PW test runner for it to work properly.
+ * @typedef {{
+ *   cmd: string,
+ *   args: string[],
+ *   env?: NodeJS.ProcessEnv,
+ *   cwd?: string,
+ * }} Script
  */
-expectLib.extend({
-  toHaveScreenshot: () => notSupported('toHaveScreenshot'),
-  toMatchSnapshot: () => notSupported('toMatchSnapshot'),
+
+/** @type {Script[]} */
+const scripts = [];
+
+// bundles
+const BUNDLES_DIR = join(ROOT_DIR, 'bundles');
+
+scripts.push({
+  cmd: 'npm',
+  args: ['ci', '--no-fund', '--no-audit', '--no-save'],
+  cwd: BUNDLES_DIR,
 });
 
-export const expect: typeof import('../../bundles/node_modules/@playwright/test/types/test').expect =
-  expectLib;
+scripts.push({
+  cmd: 'npm',
+  args: ['run', 'build'],
+  cwd: BUNDLES_DIR,
+});
+
+// test-runner
+scripts.push({
+  cmd: 'npm',
+  args: ['run', 'build:lib'],
+});
+
+function runBuild() {
+  for (const script of scripts) {
+    console.log(
+      cyan(
+        `Running '${script.cmd} ${script.args.join(' ')}' in ${
+          script.cwd || process.cwd()
+        }`
+      )
+    );
+    const out = spawnSync(script.cmd, script.args, {
+      stdio: 'inherit',
+      shell: true,
+      env: {
+        ...process.env,
+        ...script.env,
+      },
+      cwd: script.cwd,
+    });
+    if (out.status > 0) process.exit(out.status);
+  }
+}
+
+runBuild();
