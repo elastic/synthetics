@@ -25,7 +25,7 @@
 
 import SonicBoom from 'sonic-boom';
 import { green, red, cyan, gray } from 'kleur/colors';
-import { prepareLocation, highLightSource } from './reporterUtil';
+import { highLightSource, prepareError } from './reporterUtil';
 import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import {
@@ -37,27 +37,22 @@ import {
 import { Journey, Step } from '../dsl';
 
 function renderError(error: TestError) {
-  let outer = indent('');
-  outer += '\n' + outer + error.message + '\n\n';
-  outer += error.source + '\n\n';
-  // outer += gray(stackLine) + '\n';
-  return outer;
-  // let output = '';
-  // const outer = indent('');
-  // const inner = indent(outer);
-  // const container = outer + '---\n';
-  // output += container;
-  // let stack = error.stack;
-  // if (stack) {
-  //   output += inner + 'stack: |-\n';
-  //   stack = rewriteErrorStack(stack, findPWLogsIndexes(stack));
-  //   const lines = String(stack).split('\n');
-  //   for (const line of lines) {
-  //     output += inner + '  ' + line + '\n';
-  //   }
-  // }
-  // output += container;
-  // return red(output);
+  const summary = [];
+  summary.push('');
+  summary.push(red(error.message));
+
+  if (error.source) {
+    summary.push('');
+    summary.push(error.source);
+  }
+
+  if (error.stack) {
+    summary.push('');
+    summary.push(gray(error.stack));
+  }
+  summary.join('');
+
+  return indent(summary.join('\n')) + '\n';
 }
 
 function renderDuration(durationMs) {
@@ -91,9 +86,12 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
-  addLocAndSourceToError(error: TestError) {
-    if (error.stack && !error.location) {
-      error.location = prepareLocation(error.stack).location;
+  serializeError(error: TestError) {
+    const { message, stack, location } = prepareError(error);
+    error.message = message;
+    error.stack = stack;
+    if (location) {
+      error.location = location;
     }
     error.source = highLightSource(error.location);
   }
@@ -109,7 +107,7 @@ export default class BaseReporter implements Reporter {
     )}`;
     this.write(indent(message));
     if (error) {
-      this.addLocAndSourceToError(error);
+      this.serializeError(error);
       this.write(renderError(error));
     }
     this.metrics[status]++;
@@ -124,7 +122,7 @@ export default class BaseReporter implements Reporter {
      * be executed which means the error happened in one of the hooks
      */
     if (total === 0 && error) {
-      this.addLocAndSourceToError(error);
+      this.serializeError(error);
       this.write(renderError(error));
     }
   }

@@ -43,6 +43,10 @@ export type Location = {
   column: number;
 };
 
+export type StackFrame = Location & {
+  function?: string;
+};
+
 export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;

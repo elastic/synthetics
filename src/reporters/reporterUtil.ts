@@ -27,12 +27,15 @@ import { codeFrameColumns } from '@babel/code-frame';
 import StackUtils from 'stack-utils';
 import { fileURLToPath } from 'url';
 import { resolve, sep } from 'path';
-import { Location } from '../common_types';
+import { Location, StackFrame } from '../common_types';
 import { readFileSync } from 'fs';
 
 const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
 
-function prepareStackLine(line: string): Location | undefined {
+const SYNTHETICS_PATH = resolve(__dirname, '..', '..');
+const PW_CORE_PATH = require.resolve('playwright-core');
+
+function prepareStackFrame(line: string): StackFrame {
   const frame = stackUtils.parseLine(line);
   if (!frame) {
     return;
@@ -52,14 +55,43 @@ function prepareStackLine(line: string): Location | undefined {
     return;
   }
 
+  // filter library and PW files
+  if (!filterLibInternals(file)) {
+    return;
+  }
+
   return {
     file,
     line: frame.line || 0,
     column: frame.column || 0,
+    function: frame.function,
   };
 }
 
-export function prepareLocation(stack: string) {
+export function filterLibInternals(file: string) {
+  if (process.env.TEST_OVERRIDE) {
+    return true;
+  }
+  if (file.startsWith(SYNTHETICS_PATH)) return false;
+  // should have been filtered by node_modules, but just in case
+  if (file.startsWith(PW_CORE_PATH)) return false;
+  return true;
+}
+
+export function constructStackFromFrames(frames: StackFrame[]) {
+  const stackLines: string[] = [];
+  for (const frame of frames) {
+    if (frame.function)
+      stackLines.push(
+        `    at ${frame.function} (${frame.file}:${frame.line}:${frame.column})`
+      );
+    else stackLines.push(`    at ${frame.file}:${frame.line}:${frame.column}`);
+  }
+  return stackLines;
+}
+
+export function prepareError(error: Error) {
+  const stack = error.stack;
   const lines = stack.split('\n');
   let startAt = lines.findIndex(line => line.startsWith('    at '));
   if (startAt === -1) startAt = lines.length;
@@ -67,23 +99,26 @@ export function prepareLocation(stack: string) {
   const stackLines = lines.slice(startAt);
   // figure out the location of the journey/step that throws the error and
   // correct stack line corresponding to that error
-  let location: Location | undefined;
-  let stackLine: string;
+  const stackFrames: StackFrame[] = [];
   for (const line of stackLines) {
-    const frame = prepareStackLine(line);
+    const frame = prepareStackFrame(line);
     if (!frame || !frame.file) continue;
-    stackLine = line;
+    stackFrames.push(frame);
+  }
+
+  let location: Location | undefined;
+  if (stackFrames.length) {
+    const frame = stackFrames[0];
     location = {
       file: frame.file,
       column: frame.column || 0,
       line: frame.line || 0,
     };
-    break;
   }
 
   return {
     message,
-    stackLine,
+    stack: constructStackFromFrames(stackFrames).join('\n'),
     location,
   };
 }
