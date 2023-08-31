@@ -70,6 +70,7 @@ export default class BaseReporter implements Reporter {
     succeeded: 0,
     failed: 0,
     skipped: 0,
+    registered: 0,
   };
 
   constructor(options: ReporterOptions = {}) {
@@ -80,6 +81,11 @@ export default class BaseReporter implements Reporter {
      * before destroying the pipe with underlying file descriptor
      */
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
+  }
+
+  onJourneyRegister(journey: Journey): void {
+    this.write(`\nJourney: ${journey.name}`);
+    this.metrics.registered++;
   }
 
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {
@@ -109,9 +115,14 @@ export default class BaseReporter implements Reporter {
     }
   }
 
-  onEnd() {
-    const { failed, succeeded, skipped } = this.metrics;
+  onEnd(dryRun?: boolean): void {
+    const { failed, succeeded, skipped, registered } = this.metrics;
     const total = failed + succeeded + skipped;
+
+    if (dryRun) {
+      this.write(`\n${registered} journey(s) registered`);
+      return;
+    }
 
     let message = '\n';
     if (total === 0) {

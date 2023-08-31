@@ -451,11 +451,11 @@ export default class Runner {
       env: options.environment,
       params: options.params,
     });
-    await this.reset();
+    await this.reset(options);
     return result;
   }
 
-  async reset() {
+  async reset(options: RunOptions) {
     this.#currentJourney = null;
     this.journeys = [];
     this.#active = false;
@@ -464,6 +464,6 @@ export default class Runner {
      * the current synthetic agent run
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
-    await this.#reporter?.onEnd?.();
+    await this.#reporter?.onEnd?.(options.dryRun);
   }
 }
