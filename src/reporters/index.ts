@@ -55,5 +55,5 @@ export interface Reporter {
     journey: Journey,
     result: JourneyEndResult
   ): void | Promise<void>;
-  onEnd?(): void | Promise<void>;
+  onEnd?(dryRun?: boolean): void | Promise<void>;
 }
