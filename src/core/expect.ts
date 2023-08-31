@@ -29,4 +29,15 @@ const expectLib = require('../../dist/bundles/lib/index').expect;
 type ExpectLibrary =
   typeof import('../../bundles/node_modules/@playwright/test/types/test').expect;
 
+// exclude toHaveScreenshot and toMatchSnapshot from expect
+// since they are not supported in synthetics
+expectLib.extend({
+  toHaveScreenshot: () => {
+    throw new Error('toHaveScreenshot is not supported in elastic synthetics.');
+  },
+  toMatchSnapshot: () => {
+    throw new Error('toHaveScreenshot is not supported in elastic synthetics.');
+  },
+});
+
 export const expect: ExpectLibrary = expectLib;
