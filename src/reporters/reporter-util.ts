@@ -23,13 +23,14 @@
  *
  */
 
-import { codeFrameColumns } from '@babel/code-frame';
-import StackUtils from 'stack-utils';
 import { fileURLToPath } from 'url';
 import { resolve, sep } from 'path';
-import { Location, StackFrame } from '../common_types';
 import { readFileSync } from 'fs';
 import { inspect } from 'util';
+import { gray, red } from 'kleur/colors';
+import { codeFrameColumns } from '@babel/code-frame';
+import StackUtils from 'stack-utils';
+import { Location, StackFrame, TestError } from '../common_types';
 
 const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
 
@@ -69,7 +70,7 @@ function prepareStackFrame(line: string): StackFrame {
   };
 }
 
-export function filterLibInternals(file: string) {
+function filterLibInternals(file: string) {
   // To signore filtering the stack trace on tests
   if (process.env.TEST_OVERRIDE) {
     return true;
@@ -80,7 +81,7 @@ export function filterLibInternals(file: string) {
   return true;
 }
 
-export function constructStackFromFrames(frames: StackFrame[]) {
+function constructStackFromFrames(frames: StackFrame[]) {
   const stackLines: string[] = [];
   for (const frame of frames) {
     stackLines.push(
@@ -143,4 +144,56 @@ export function highLightSource(location: Location): string {
   } catch (_) {
     // ignore error
   }
+}
+
+// serializeError prefers receiving proper Errors, but since at runtime
+// non Error exceptions can be thrown, it tolerates though. The
+// redundant type Error | any expresses that.
+export function serializeError(error: Error | any): TestError {
+  if (!(error instanceof Error) || !error.stack) {
+    return { message: `thrown: ${inspect(error)}` };
+  }
+
+  const testErr: TestError = { message: error.message };
+  const { message, stack, location } = prepareError(error);
+  testErr.message = message;
+  if (stack) {
+    testErr.stack = stack;
+  }
+  if (location) {
+    testErr.location = location;
+    testErr.source = highLightSource(testErr.location);
+  }
+  return testErr;
+}
+
+export function renderError(error: TestError) {
+  const summary = [];
+  summary.push('');
+  summary.push(red(error.message));
+
+  if (error.source) {
+    summary.push('');
+    summary.push(error.source);
+  }
+
+  if (error.stack) {
+    summary.push('');
+    summary.push(gray(error.stack));
+  }
+  summary.join('');
+
+  return summary.join('\n');
+}
+
+// strip color codes and ansi escape codes
+const ansiRegex = new RegExp(
+  [
+    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))',
+  ].join('|'),
+  'g'
+);
+export function stripAnsiCodes(msg = '') {
+  return msg.replace(ansiRegex, '');
 }

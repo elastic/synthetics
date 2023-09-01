@@ -25,36 +25,15 @@
 
 import SonicBoom from 'sonic-boom';
 import { green, red, cyan, gray } from 'kleur/colors';
-import { highLightSource, prepareError } from './reporterUtil';
+import { renderError, serializeError } from './reporter-util';
 import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
-  TestError,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
-import { inspect } from 'util';
-
-function renderError(error: TestError) {
-  const summary = [];
-  summary.push('');
-  summary.push(red(error.message));
-
-  if (error.source) {
-    summary.push('');
-    summary.push(error.source);
-  }
-
-  if (error.stack) {
-    summary.push('');
-    summary.push(gray(error.stack));
-  }
-  summary.join('');
-
-  return indent(summary.join('\n')) + '\n';
-}
 
 function renderDuration(durationMs) {
   return parseInt(durationMs);
@@ -87,24 +66,6 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
-  serializeError(error: Error | any): TestError {
-    // handle non error types and subclass of errors
-    if (!(error instanceof Error) || !error.stack) {
-      return { message: `thrown: ${inspect(error)}` };
-    }
-    const { message, stack, location } = prepareError(error);
-    const testErr: TestError = error;
-    testErr.message = message;
-    if (stack) {
-      testErr.stack = stack;
-    }
-    if (location) {
-      testErr.location = location;
-      testErr.source = highLightSource(testErr.location);
-    }
-    return testErr;
-  }
-
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
@@ -116,7 +77,8 @@ export default class BaseReporter implements Reporter {
     )}`;
     this.write(indent(message));
     if (error) {
-      this.write(renderError(this.serializeError(error)));
+      const message = renderError(serializeError(error));
+      this.write(indent(message) + '\n');
     }
     this.metrics[status]++;
   }
@@ -130,7 +92,8 @@ export default class BaseReporter implements Reporter {
      * be executed which means the error happened in one of the hooks
      */
     if (total === 0 && error) {
-      this.write(renderError(this.serializeError(error)));
+      const message = renderError(serializeError(error));
+      this.write(indent(message) + '\n');
     }
   }
 

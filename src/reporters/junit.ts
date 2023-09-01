@@ -31,8 +31,9 @@ import {
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
-import { formatError, indent, now } from '../helpers';
+import { indent, now } from '../helpers';
 import BaseReporter from './base';
+import { serializeError, stripAnsiCodes } from './reporter-util';
 
 type XMLEntry = {
   name: string;
@@ -97,14 +98,13 @@ export default class JUnitReporter extends BaseReporter {
 
     entry.attributes.tests++;
     if (status === 'failed') {
-      const { name, message, stack } = formatError(error);
       caseEntry.children.push({
         name: 'failure',
         attributes: {
-          message,
-          type: name,
+          message: error.message,
+          type: error.name,
         },
-        text: stack,
+        text: stripAnsiCodes(serializeError(error).stack),
       });
       entry.attributes.failures++;
     } else if (status === 'skipped') {

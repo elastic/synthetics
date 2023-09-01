@@ -16,7 +16,6 @@ exports[`junit reporter writes the output to fd 1`] = `
    <testsuite name="j1" tests="2" failures="1" skipped="1" errors="0">
       <testcase name="s1" classname="j1 s1" time="1">
          <failure message="Boom" type="Error">
-         at /__tests/reporters/junit.test.ts
          </failure>
       </testcase>
       <testcase name="s2" classname="j1 s2" time="1">

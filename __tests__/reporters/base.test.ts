@@ -33,6 +33,7 @@ import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
 import BaseReporter from '../../src/reporters/base';
 import * as helpers from '../../src/helpers';
+import { Step } from '../../src/dsl';
 
 describe('base reporter', () => {
   let dest: string;
@@ -69,13 +70,9 @@ describe('base reporter', () => {
     reporter.onJourneyStart(j1, {
       timestamp,
     });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
+    reporter.onStepEnd(j1, step('s1', helpers.noop) as Step, {
       status: 'failed',
-      error: {
-        name: 'Error',
-        message: 'step failed',
-        stack: 'Error: step failed',
-      },
+      error: new Error('step failed'),
       url: 'dummy',
       start: 0,
       end: 1,
@@ -88,11 +85,7 @@ describe('base reporter', () => {
     reporter.onJourneyStart(j1, {
       timestamp,
     });
-    const error = {
-      name: 'Error',
-      message: 'before hook failed',
-      stack: 'Error: before hook failed',
-    };
+    const error = new Error('before hook failed');
     reporter.onJourneyEnd(j1, {
       timestamp,
       status: 'failed',
