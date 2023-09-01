@@ -317,7 +317,7 @@ export default class JSONReporter extends BaseReporter {
     });
   }
 
-  onJourneyRegister(journey: Journey): void {
+  override onJourneyRegister(journey: Journey): void {
     this.writeJSON({
       type: 'journey/register',
       journey,

@@ -34,7 +34,11 @@ import {
   StepEndResult,
 } from '../common_types';
 
-export type ReporterOptions = { fd?: number; colors?: boolean };
+export type ReporterOptions = {
+  fd?: number;
+  colors?: boolean;
+  dryRun?: boolean;
+};
 export type BuiltInReporterName = 'default' | 'json' | 'junit';
 export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
 export const reporters: {

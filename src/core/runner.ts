@@ -152,12 +152,12 @@ export default class Runner {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd } = options;
+    const { reporter, outfd, dryRun } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd });
+    this.#reporter = new Reporter({ fd: outfd, dryRun });
   }
 
   async runBeforeAllHook(args: HooksArgs) {

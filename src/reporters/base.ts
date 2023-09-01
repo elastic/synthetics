@@ -66,20 +66,28 @@ function renderDuration(durationMs) {
 export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
+  dryRun: boolean;
   metrics = {
     succeeded: 0,
     failed: 0,
     skipped: 0,
+    registered: 0,
   };
 
   constructor(options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
+    this.dryRun = options.dryRun ?? false;
     /**
      * minLength is set to 1 byte to make sure we flush the
      * content even if its the last byte on the stream buffer
      * before destroying the pipe with underlying file descriptor
      */
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
+  }
+
+  onJourneyRegister(journey: Journey): void {
+    this.write(`\nJourney: ${journey.name}`);
+    this.metrics.registered++;
   }
 
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {
@@ -110,8 +118,13 @@ export default class BaseReporter implements Reporter {
   }
 
   onEnd() {
-    const { failed, succeeded, skipped } = this.metrics;
+    const { failed, succeeded, skipped, registered } = this.metrics;
     const total = failed + succeeded + skipped;
+
+    if (this.dryRun) {
+      this.write(`\n${registered} journey(s) registered`);
+      return;
+    }
 
     let message = '\n';
     if (total === 0) {
