@@ -34,7 +34,11 @@ import {
   StepEndResult,
 } from '../common_types';
 
-export type ReporterOptions = { fd?: number; colors?: boolean };
+export type ReporterOptions = {
+  fd?: number;
+  colors?: boolean;
+  dryRun?: boolean;
+};
 export type BuiltInReporterName = 'default' | 'json' | 'junit';
 export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
 export const reporters: {
@@ -55,5 +59,5 @@ export interface Reporter {
     journey: Journey,
     result: JourneyEndResult
   ): void | Promise<void>;
-  onEnd?(dryRun?: boolean): void | Promise<void>;
+  onEnd?(): void | Promise<void>;
 }

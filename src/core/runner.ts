@@ -149,12 +149,12 @@ export default class Runner {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd } = options;
+    const { reporter, outfd, dryRun } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd });
+    this.#reporter = new Reporter({ fd: outfd, dryRun });
   }
 
   async runBeforeAllHook(args: HooksArgs) {
@@ -451,11 +451,11 @@ export default class Runner {
       env: options.environment,
       params: options.params,
     });
-    await this.reset(options);
+    await this.reset();
     return result;
   }
 
-  async reset(options?: RunOptions) {
+  async reset() {
     this.#currentJourney = null;
     this.journeys = [];
     this.#active = false;
@@ -464,6 +464,6 @@ export default class Runner {
      * the current synthetic agent run
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
-    await this.#reporter?.onEnd?.(options?.dryRun);
+    await this.#reporter?.onEnd?.();
   }
 }
