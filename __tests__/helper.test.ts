@@ -27,7 +27,6 @@ import { cwd } from 'process';
 import {
   indent,
   monotonicTimeInSeconds,
-  formatError,
   findPkgJsonByTraversing,
   generateTempPath,
   rewriteErrorStack,
@@ -56,35 +55,6 @@ it('convert trace timestamp to internal time', () => {
   const traceTimestamp = 392583998697;
   const elapsedTime = microSecsToSeconds(traceTimestamp);
   expect(elapsedTime).toBe(392583.998697);
-});
-
-describe('formatting errors', () => {
-  it('formats proper errors', () => {
-    const error = new Error('testing');
-    const { name, message, stack } = error;
-    const formatted = formatError(error);
-    expect(formatted).toStrictEqual({
-      name,
-      message,
-      stack,
-    });
-  });
-
-  ["c'est ne pas une Error", 42, { an: 'object' }].forEach(obj => {
-    it(`formats thrown non-error errors like: ${obj}(${typeof obj})`, () => {
-      const formatted = formatError(obj) as Error;
-      expect(formatted.message).toContain(`${obj}`);
-      expect(formatted.name).toStrictEqual('');
-      expect(formatted.stack).toStrictEqual('');
-      expect(typeof formatted.message).toBe('string');
-    });
-  });
-
-  [null, undefined].forEach(obj => {
-    it(`returns undefined for ${typeof obj}`, () => {
-      expect(formatError(obj)).toBe(undefined);
-    });
-  });
 });
 
 it('throw error when no package.json found', async () => {
