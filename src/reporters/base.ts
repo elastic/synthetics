@@ -66,7 +66,7 @@ function renderDuration(durationMs) {
 export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
-  dryRun?: boolean;
+  dryRun: boolean;
   metrics = {
     succeeded: 0,
     failed: 0,
@@ -76,7 +76,7 @@ export default class BaseReporter implements Reporter {
 
   constructor(options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
-    this.dryRun = options.dryRun;
+    this.dryRun = options.dryRun ?? false;
     /**
      * minLength is set to 1 byte to make sure we flush the
      * content even if its the last byte on the stream buffer
@@ -117,7 +117,7 @@ export default class BaseReporter implements Reporter {
     }
   }
 
-  onEnd(): void {
+  onEnd() {
     const { failed, succeeded, skipped, registered } = this.metrics;
     const total = failed + succeeded + skipped;
 
