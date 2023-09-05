@@ -3,16 +3,14 @@ name: release
 on:
   workflow_dispatch:
     inputs:
-      is-stack-release:
-        type: boolean
-        description: Should we tag the current version as a stack release?
+      dry-run:
+        description: "Should we run in dry-run mode?"
+        required: true
         default: false
+        type: boolean
 
 permissions:
-  contents: write
-
-env:
-   GH_TOKEN: ${{ github.token }}
+  contents: write # needed to push the tag and create the release
 
 jobs:
   release:
@@ -27,29 +25,10 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: npm ci # runs npm prepublish
-      - name: Bump the version
-        run: |
-          echo "VERSION=$(npm version)" >> $GITHUB_ENV
-          echo "NPM_PACKAGE=$(jq '.name' package.json) >> $GITHUB_ENV
-      - run: git push --tags
-      - uses: ./.github/actions/setup-totp
-        with:
-          vault-url: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: NPM Publish
-        run: npm publish --otp=${TOTP_CODE}
-      - name: Create 'latest' dist-tag
-        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" latest
-      - name: Create 'stack_release' dist-tag
-        if: ${{ github.event.inputs.is-stack-release }}
-        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
-      - name: Create Draft Release Notes
-        run: >-
-          gh release create "${VERSION}"
-          --title="${VERSION}"
-          --generate-notes
-          --draft
+      - run: npx semantic-release --dry-run="${DRY_RUN}"
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry-run }}
+          GITHUB_TOKEN: ${{ github.token }}
       - if: always()
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
         with:
