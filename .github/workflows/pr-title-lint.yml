@@ -1,0 +1,25 @@
+name: pr-title-lint
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - edited
+
+jobs:
+  pr-title-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: npm
+          node-version-file: .nvmrc
+      - run: npm ci
+      - name: Lint PR title
+        run: echo "${PR_TITLE}" | npx commitlint
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
