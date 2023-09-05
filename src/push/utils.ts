@@ -64,7 +64,7 @@ export function generateURL(options: PushOptions, operation: Operation) {
   const url = removeTrailingSlash(options.url);
   switch (operation) {
     case 'status':
-      return `${url}/s/${options.space}/api/status`;
+      return `${url}/s/${options.space}/api/stats`;
     case 'bulk_get':
     case 'bulk_update':
     case 'bulk_delete':

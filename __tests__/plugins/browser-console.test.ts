@@ -24,7 +24,8 @@
  */
 
 import { Gatherer } from '../../src/core/gatherer';
-import { BrowserConsole } from '../../src/plugins';
+import { BrowserConsole, filterBrowserMessages } from '../../src/plugins';
+import { BrowserMessage } from '../../src/common_types';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
 
@@ -121,5 +122,60 @@ describe('BrowserConsole', () => {
     expect(unhandledError?.type).toEqual('error');
     expect(unhandledError?.step).toEqual(currentStep);
     expect(unhandledError?.error?.stack).toContain('Error: Boom');
+  });
+
+  describe('Filtering', () => {
+    function getBrowserMessages({ errors = 100, warnings = 100, log = 100 }) {
+      const messages: BrowserMessage[] = [];
+      for (let i = 0; i < errors; i++) {
+        messages.push({ type: 'error', text: `error ${i}`, timestamp: 0 });
+      }
+      for (let i = 0; i < warnings; i++) {
+        messages.push({ type: 'warning', text: `warning ${i}`, timestamp: 0 });
+      }
+      for (let i = 0; i < log; i++) {
+        messages.push({ type: 'log', text: `log ${i}`, timestamp: 0 });
+      }
+      return messages;
+    }
+
+    it('skipped journey', () => {
+      expect(
+        filterBrowserMessages(getBrowserMessages({}), 'skipped').length
+      ).toEqual(0);
+    });
+
+    it('failed journey', () => {
+      expect(
+        filterBrowserMessages(getBrowserMessages({}), 'failed').length
+      ).toEqual(300);
+    });
+
+    it('successful journey', () => {
+      expect(
+        filterBrowserMessages(
+          getBrowserMessages({ errors: 10, warnings: 10, log: 10 }),
+          'succeeded'
+        ).length
+      ).toEqual(30);
+
+      expect(
+        filterBrowserMessages(getBrowserMessages({}), 'succeeded').length
+      ).toEqual(100);
+
+      const withoutLog = filterBrowserMessages(
+        getBrowserMessages({ errors: 10, log: 200 }),
+        'succeeded'
+      );
+      expect(withoutLog.every(msg => msg.type !== 'log')).toBe(true);
+      expect(withoutLog.length).toEqual(100);
+
+      const withLog = filterBrowserMessages(
+        getBrowserMessages({ errors: 5, warnings: 5 }),
+        'succeeded'
+      );
+      expect(withLog.some(msg => msg.type === 'log')).toBe(true);
+      expect(withLog.length).toEqual(100);
+    });
   });
 });

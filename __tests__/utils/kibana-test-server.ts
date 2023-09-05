@@ -34,6 +34,9 @@ export const createKibanaTestServer = async (kibanaVersion: string) => {
   server.route('/s/dummy/api/status', (req, res) =>
     res.end(JSON.stringify({ version: { number: kibanaVersion } }))
   );
+  server.route('/s/dummy/api/stats', (req, res) =>
+    res.end(JSON.stringify({ kibana: { version: kibanaVersion } }))
+  );
   // Legacy
   server.route(
     '/s/dummy/api/synthetics/service/project/monitors',

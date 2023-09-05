@@ -24,20 +24,8 @@
  */
 
 /* eslint-disable @typescript-eslint/no-var-requires */
-const expectLib = require('../../dist/bundles/lib/index').expect;
+const path = require('path');
 
-function notSupported(name: string) {
-  throw new Error(`expect.${name} is not supported in @elastic/synthetics.`);
-}
-
-/**
- * Exclude toHaveScreenshot and toMatchSnapshot from our custom expect
- * since they are expected to be running inside PW test runner for it to work properly.
- */
-expectLib.extend({
-  toHaveScreenshot: () => notSupported('toHaveScreenshot'),
-  toMatchSnapshot: () => notSupported('toMatchSnapshot'),
-});
-
-export const expect: typeof import('../../bundles/node_modules/@playwright/test/types/test').expect =
-  expectLib;
+module.exports.ENTRY_POINTS = [
+  path.resolve('node_modules/@playwright/test/lib/matchers/expect.js'),
+];

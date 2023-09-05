@@ -46,8 +46,11 @@ import {
   StepResult,
   PushOptions,
 } from '../common_types';
-import { PluginManager } from '../plugins';
-import { PerformanceManager } from '../plugins';
+import {
+  PluginManager,
+  PerformanceManager,
+  filterBrowserMessages,
+} from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -149,12 +152,12 @@ export default class Runner {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd } = options;
+    const { reporter, outfd, dryRun } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd });
+    this.#reporter = new Reporter({ fd: outfd, dryRun });
   }
 
   async runBeforeAllHook(args: HooksArgs) {
@@ -310,7 +313,10 @@ export default class Runner {
       timestamp: getTimestamp(),
       options,
       ...pluginOutput,
-      browserconsole: status == 'failed' ? pluginOutput.browserconsole : [],
+      browserconsole: filterBrowserMessages(
+        pluginOutput.browserconsole,
+        status
+      ),
     });
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
