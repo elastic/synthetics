@@ -43,7 +43,7 @@ export type Location = {
   column: number;
 };
 
-export type Params = Record<string, any>;
+export type Params = Record<string, string | number>;
 export type HooksArgs = {
   env: string;
   params: Params;

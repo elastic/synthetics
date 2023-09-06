@@ -53,16 +53,43 @@ describe('Config', () => {
     async function getConfig() {
       await readConfig('development', tempPath);
     }
-    try {
-      await getConfig();
-    } catch (e) {
-      expect(e).toEqual(
-        new Error('Synthetics config file does not exist: ' + tempPath)
-      );
-    }
+    expect(await getConfig).rejects.toThrow(
+      new Error('Synthetics config file does not exist: ' + tempPath)
+    );
   });
 
   it('recursively look for configs and exit', async () => {
     expect(await readConfig('development')).toEqual({});
+  });
+
+  describe('read config async', () => {
+    it('read config async and merge', async () => {
+      const configPath = join(FIXTURES_DIR, 'async_synthetics.config.ts');
+      expect(await readConfig('development', configPath)).toMatchObject({
+        params: {
+          url: 'dev',
+        },
+        playwrightOptions: {
+          ...devices['Galaxy S9+'],
+        },
+      });
+      expect(await readConfig('testing', configPath)).toMatchObject({
+        params: {
+          url: 'non-dev',
+        },
+      });
+    });
+
+    it('read config async with errors and merge', async () => {
+      const configPath = join(FIXTURES_DIR, 'async_synthetics_err.config.ts');
+      async function getConfig() {
+        await readConfig('development', configPath);
+      }
+      try {
+        await getConfig();
+      } catch (e) {
+        expect(e.message).toEqual('cannot read params');
+      }
+    });
   });
 });
