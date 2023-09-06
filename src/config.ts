@@ -33,20 +33,19 @@ export async function readConfig(
 ): Promise<SyntheticsConfig> {
   let options = {};
   const cwd = process.cwd();
-  let configPath;
   /**
    * If config is passed via `--config` flag, try to resolve it relative to the
    * current working directory
    */
   if (typeof config === 'string') {
-    configPath = resolveConfigPath(config, cwd);
+    const configPath = resolveConfigPath(config, cwd);
     options = readAndParseConfig(configPath);
   } else {
     /**
      * resolve to `synthetics.config.js` and `synthetics.config.ts`
      * recursively till root
      */
-    configPath = findSyntheticsConfig(cwd, cwd);
+    const configPath = findSyntheticsConfig(cwd, cwd);
     configPath && (options = readAndParseConfig(configPath));
   }
   if (typeof options === 'function') {
@@ -57,15 +56,7 @@ export async function readConfig(
       typeof optionsPromise.then === 'function' &&
       typeof optionsPromise.catch === 'function'
     ) {
-      try {
-        return await options;
-      } catch (e) {
-        console.log(
-          'Unable to read synthetics config, failed to resolve file ' +
-            configPath
-        );
-        throw e;
-      }
+      options = await optionsPromise;
     }
   }
   return options;

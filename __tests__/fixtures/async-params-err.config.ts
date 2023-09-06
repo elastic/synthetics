@@ -23,38 +23,18 @@
  *
  */
 
-import { devices } from 'playwright-chromium';
 import type { SyntheticsConfig } from '../../src';
 
 const getParams = async () => {
   // return delayed error promise to simulate async
-  return new Promise<Record<string, string>>((resolve, reject) => {
-    setTimeout(() => {
-      reject(new Error('cannot read params'));
-    }, 1000);
+  return new Promise<Record<string, string>>((_, reject) => {
+    reject(new Error('failed to fetch params'));
   });
 };
 
 module.exports = async env => {
   const config: SyntheticsConfig = {
     params: await getParams(),
-    playwrightOptions: {
-      ...devices['Galaxy S9+'],
-    },
-    monitor: {
-      screenshot: 'off',
-      schedule: 10,
-      locations: ['us_east'],
-      privateLocations: ['test-location'],
-      alert: {
-        status: {
-          enabled: true,
-        },
-        tls: {
-          enabled: false,
-        },
-      },
-    },
   };
   if (env !== 'development' && config.params) {
     config.params.url = 'non-dev';

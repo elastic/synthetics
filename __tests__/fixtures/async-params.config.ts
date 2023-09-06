@@ -23,40 +23,18 @@
  *
  */
 
-import { devices } from 'playwright-chromium';
 import type { SyntheticsConfig } from '../../src';
 
 const getParams = async () => {
-  // return delayed promise to simulate async
+  // resolve with delayed promise to simulate async
   return new Promise<Record<string, string>>(resolve => {
-    setTimeout(() => {
-      resolve({
-        url: 'dev',
-      });
-    }, 1000);
+    setTimeout(() => resolve({ url: 'dev' }));
   });
 };
 
-module.exports = async env => {
+export default async env => {
   const config: SyntheticsConfig = {
     params: await getParams(),
-    playwrightOptions: {
-      ...devices['Galaxy S9+'],
-    },
-    monitor: {
-      screenshot: 'off',
-      schedule: 10,
-      locations: ['us_east'],
-      privateLocations: ['test-location'],
-      alert: {
-        status: {
-          enabled: true,
-        },
-        tls: {
-          enabled: false,
-        },
-      },
-    },
   };
   if (env !== 'development' && config.params) {
     config.params.url = 'non-dev';
