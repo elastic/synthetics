@@ -1,6 +1,6 @@
 {
   "name": "@elastic/synthetics",
-  "version": "1.4.0",
+  "version": "0.0.0-development",
   "description": "Elastic synthetic monitoring agent",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -63,6 +63,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.7.1",
     "@commitlint/config-conventional": "^17.7.0",
+    "@semantic-release/exec": "^6.0.3",
     "@types/jest": "^28.1.8",
     "@types/micromatch": "^4.0.2",
     "@types/node": "^16.11.59",
@@ -78,6 +79,7 @@
     "lint-staged": "^10.5.3",
     "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
+    "semantic-release": "^21.1.1",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6",
     "unzipper": "^0.10.11"

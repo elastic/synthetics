@@ -6,19 +6,24 @@ on:
       is-stack-release:
         type: boolean
         description: Should we tag the current version as a stack release?
+        required: true
+        default: false
+      dry-run:
+        type: boolean
+        description: "Should we run in dry-run mode?"
+        required: true
         default: false
 
 permissions:
-  contents: write
-
-env:
-   GH_TOKEN: ${{ github.token }}
+  contents: write # needed to push the tag and create the release
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: elastic/apm-pipeline-library/.github/actions/setup-git@current
       - uses: elastic/apm-pipeline-library/.github/actions/setup-npmrc@current
         with:
@@ -27,30 +32,31 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: npm ci # runs npm prepublish
-      - name: Bump the version
-        run: |
-          echo "VERSION=$(npm version)" >> $GITHUB_ENV
-          echo "NPM_PACKAGE=$(jq '.name' package.json) >> $GITHUB_ENV
-      - run: git push --tags
       - uses: ./.github/actions/setup-totp
         with:
           vault-url: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: NPM Publish
-        run: npm publish --otp=${TOTP_CODE}
+      - run: npx semantic-release --dry-run="${DRY_RUN}"
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry-run }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Get version and package name
+        if: ${{ !github.event.inputs.dry-run }}
+        run: |
+          echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
+          echo "NPM_PACKAGE=$(jq -r '.name' package.json) >> $GITHUB_ENV
+
       - name: Create 'latest' dist-tag
+        if: ${{ !github.event.inputs.dry-run }}
         run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" latest
+
       - name: Create 'stack_release' dist-tag
-        if: ${{ github.event.inputs.is-stack-release }}
+        if: ${{ !github.event.inputs.dry-run && github.event.inputs.is-stack-release }}
         run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
-      - name: Create Draft Release Notes
-        run: >-
-          gh release create "${VERSION}"
-          --title="${VERSION}"
-          --generate-notes
-          --draft
-      - if: always()
+
+      - if: ${{ always() && !github.event.inputs.dry-run }}
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
         with:
           vaultUrl: ${{ secrets.VAULT_ADDR }}
