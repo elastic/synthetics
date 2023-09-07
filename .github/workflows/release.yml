@@ -3,11 +3,16 @@ name: release
 on:
   workflow_dispatch:
     inputs:
+      is-stack-release:
+        type: boolean
+        description: Should we tag the current version as a stack release?
+        required: true
+        default: false
       dry-run:
+        type: boolean
         description: "Should we run in dry-run mode?"
         required: true
         default: false
-        type: boolean
 
 permissions:
   contents: write # needed to push the tag and create the release
@@ -36,6 +41,18 @@ jobs:
         env:
           DRY_RUN: ${{ github.event.inputs.dry-run }}
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Get version and package name
+        run: |
+          echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
+          echo "NPM_PACKAGE=$(jq -r '.name' package.json) >> $GITHUB_ENV
+
+      - name: Create 'latest' dist-tag
+        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" latest
+
+      - name: Create 'stack_release' dist-tag
+        if: ${{ github.event.inputs.is-stack-release }}
+        run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
 
       - if: always()
         uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
