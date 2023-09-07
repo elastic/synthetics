@@ -12,7 +12,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "npm publish --otp=${TOTP_COPE}"
+        "publishCmd": "npm publish --otp=${process.env.TOTP_CODE}"
       }
     ],
     "@semantic-release/github"
