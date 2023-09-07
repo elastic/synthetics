@@ -63,6 +63,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.7.1",
     "@commitlint/config-conventional": "^17.7.0",
+    "@semantic-release/exec": "^6.0.3",
     "@types/jest": "^28.1.8",
     "@types/micromatch": "^4.0.2",
     "@types/node": "^16.11.59",
