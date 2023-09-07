@@ -151,6 +151,11 @@ The release process is also automated in the way any specific commit from the ma
 1. Click the green `Run workflow` button to trigger the release workflow.
 1. Then you can go to the `https://www.npmjs.com/package/@elastic/synthetics` to validate that the bundles have been published.
 
+#### Versioning
+
+The version is computed automatically with [semantic-release](https://github.com/semantic-release/semantic-release).
+You must not modify the `0.0.0-development` version in the package.json file. It will be overwritten by the release process.
+
 ## CI
 
 The CI will not run builds for collaborators PRs that are not approval by a members of Elastic org,
