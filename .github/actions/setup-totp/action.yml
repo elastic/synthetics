@@ -27,8 +27,8 @@ runs:
       uses: hashicorp/vault-action@v2.5.0
       with:
         url: ${{ inputs.vault-url }}
-        roleId: ${{ secrets.vault-role-id }}
-        secretId: ${{ secrets.vault-secret-id }}
+        roleId: ${{ inputs.vault-role-id }}
+        secretId: ${{ inputs.vault-secret-id }}
         method: approle
         secrets: |
           ${{ inputs.secret }} ${{ inputs.secret-key }} | ${{ inputs.env-name }};
