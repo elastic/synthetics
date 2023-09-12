@@ -26,9 +26,9 @@ runs:
     - name: Set up TOTP_CODE
       uses: hashicorp/vault-action@v2.5.0
       with:
-        url: ${{ secrets.VAULT_ADDR }}
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        url: ${{ inputs.vault-url }}
+        roleId: ${{ secrets.vault-role-id }}
+        secretId: ${{ secrets.vault-secret-id }}
         method: approle
         secrets: |
           ${{ inputs.secret }} ${{ inputs.secret-key }} | ${{ inputs.env-name }};
