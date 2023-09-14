@@ -24,7 +24,7 @@
  */
 
 import { join } from 'path';
-import { devices } from 'playwright-chromium';
+import { devices } from 'playwright-core';
 import { Server } from './utils/server';
 import { CLIMock } from './utils/test-config';
 import { THROTTLING_WARNING_MSG, safeNDJSONParse } from '../src/helpers';
