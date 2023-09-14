@@ -23,7 +23,7 @@
  *
  */
 
-import type { ConsoleMessage, WebError } from 'playwright-core';
+import type { ConsoleMessage } from 'playwright-core';
 import { BrowserMessage, Driver, StatusValue } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
@@ -58,12 +58,11 @@ export class BrowserConsole {
     }
   };
 
-  private webErrorListener = (webErr: WebError) => {
+  private pageErrorEventListener = (error: Error) => {
     if (!this._currentStep) {
       return;
     }
     const { name, index } = this._currentStep;
-    const error = webErr.error();
     this.messages.push({
       timestamp: getTimestamp(),
       text: error.message,
@@ -84,12 +83,12 @@ export class BrowserConsole {
   start() {
     log(`Plugins: started collecting console events`);
     this.driver.context.on('console', this.consoleEventListener);
-    this.driver.context.on('weberror', this.webErrorListener);
+    this.driver.page.on('pageerror', this.pageErrorEventListener);
   }
 
   stop() {
     this.driver.context.off('console', this.consoleEventListener);
-    this.driver.context.off('weberror', this.webErrorListener);
+    this.driver.page.off('pageerror', this.pageErrorEventListener);
     log(`Plugins: stopped collecting console events`);
     return this.messages;
   }

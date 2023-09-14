@@ -269,7 +269,7 @@ describe('CLI', () => {
   });
 
   it('throw error on modifying params', async () => {
-    const cli = new CLIMock(true)
+    const cli = new CLIMock()
       .args([
         join(FIXTURES_DIR, 'params-error.journey.ts'),
         '--reporter',
