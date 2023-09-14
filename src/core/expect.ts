@@ -39,5 +39,5 @@ expectLib.extend({
   toMatchSnapshot: () => notSupported('toMatchSnapshot'),
 });
 
-export const expect: typeof import('../../bundles/node_modules/@playwright/test/types/test').expect =
+export const expect: typeof import('../../bundles/node_modules/playwright/types/test').expect =
   expectLib;
