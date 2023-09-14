@@ -23,7 +23,7 @@
  *
  */
 
-import { Page, Request, Response } from 'playwright-core';
+import { Frame, Page, Request, Response } from 'playwright-core';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
@@ -91,6 +91,17 @@ export class NetworkManager {
     ]);
     this._barrierPromises.add(race);
     race.then(() => this._barrierPromises.delete(race));
+  }
+
+  private _nullableFrameBarrier(req: Request): Frame | null {
+    try {
+      return req.frame();
+    } catch (_) {
+      // frame might be unavailable for certain requests if they are issued
+      // before the frame is created - true for navigation requests
+      // https://playwright.dev/docs/api/class-request#request-frame
+    }
+    return null;
   }
 
   async start() {
@@ -226,7 +237,8 @@ export class NetworkManager {
     };
     this._calcTotalTime(networkEntry, timing);
 
-    const page = request.frame().page();
+    const frame = this._nullableFrameBarrier(request);
+    const page = frame?.page();
     this._addBarrier(
       page,
       request.allHeaders().then(reqHeaders => {
@@ -278,9 +290,8 @@ export class NetworkManager {
       return;
     }
 
-    console.log('request', request.url());
-
-    const page = request.frame().page();
+    const frame = this._nullableFrameBarrier(request);
+    const page = frame?.page();
     this._addBarrier(
       page,
       request.sizes().then(sizes => {

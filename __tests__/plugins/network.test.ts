@@ -207,7 +207,7 @@ describe('network', () => {
     );
   });
 
-  it.only('capture network data from popups', async () => {
+  it('capture network data from popups', async () => {
     const driver = await Gatherer.setupDriver({
       wsEndpoint,
     });
