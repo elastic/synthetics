@@ -23,7 +23,7 @@
  *
  */
 
-import { devices } from 'playwright-chromium';
+import { devices } from 'playwright-core';
 import type { SyntheticsConfig } from '../../src';
 
 module.exports = env => {

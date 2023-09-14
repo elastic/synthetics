@@ -31,7 +31,7 @@ import {
   ChromiumBrowserContext,
   Page,
   APIRequestContext,
-} from 'playwright-chromium';
+} from 'playwright-core';
 import { Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';

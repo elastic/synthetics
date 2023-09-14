@@ -105,23 +105,37 @@ describe('BrowserConsole', () => {
     expect(referenceError?.step).toEqual(currentStep);
   });
 
-  it('should capture unhandled rejections', async () => {
+  it('capture unhandled rejections on all pages', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const browserConsole = new BrowserConsole(driver);
     browserConsole.start();
     browserConsole._currentStep = currentStep;
     await driver.page.goto(server.TEST_PAGE);
-    await driver.page.setContent(
-      `<script>Promise.reject(new Error("Boom"))</script>`
-    );
-    await driver.page.waitForLoadState('networkidle');
+    await Promise.all([
+      driver.context.waitForEvent('weberror'),
+      driver.page.setContent(
+        `<script>Promise.reject(new Error("Boom"))</script>`
+      ),
+    ]);
+    // throw rejection inside new window
+    await Promise.all([
+      driver.page.evaluate(async () => {
+        const win = window.open();
+        Promise.reject('popup error');
+        (win as any).close();
+      }),
+      driver.context.waitForEvent('weberror'),
+      driver.page.waitForEvent('popup'),
+    ]);
     const messages = browserConsole.stop();
     await Gatherer.stop();
 
-    const unhandledError = messages.find(m => m.text.indexOf('Boom') >= 0);
-    expect(unhandledError?.type).toEqual('error');
-    expect(unhandledError?.step).toEqual(currentStep);
-    expect(unhandledError?.error?.stack).toContain('Error: Boom');
+    expect(messages.length).toEqual(2);
+    const [page1Err, page2Err] = messages;
+    expect(page1Err?.type).toEqual('error');
+    expect(page1Err?.step).toEqual(currentStep);
+    expect(page1Err?.error?.stack).toContain('Error: Boom');
+    expect(page2Err?.text).toEqual('popup error');
   });
 
   describe('Filtering', () => {

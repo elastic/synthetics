@@ -23,7 +23,7 @@
  *
  */
 
-import { Page, Request, Response } from 'playwright-chromium';
+import { Page, Request, Response } from 'playwright-core';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
@@ -277,6 +277,8 @@ export class NetworkManager {
     if (timing.startTime <= 0) {
       return;
     }
+
+    console.log('request', request.url());
 
     const page = request.frame().page();
     this._addBarrier(

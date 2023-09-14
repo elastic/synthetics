@@ -51,7 +51,6 @@
     "micromatch": "^4.0.5",
     "pirates": "^4.0.5",
     "playwright": "=1.38.0",
-    "playwright-chromium": "=1.38.0",
     "playwright-core": "=1.38.0",
     "semver": "^7.5.2",
     "sharp": "^0.32.0",

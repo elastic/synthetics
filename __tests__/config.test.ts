@@ -24,7 +24,7 @@
  */
 
 import { join } from 'path';
-import { devices } from 'playwright-chromium';
+import { devices } from 'playwright-core';
 import { generateTempPath } from '../src/helpers';
 import { readConfig } from '../src/config';
 

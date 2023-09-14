@@ -6,7 +6,7 @@ export default env => {
       url: 'http://localhost:8080',
     },
     playwrightOptions: {
-      // Note, this is mostly equivalent to `...devices["iPhone 6"]` with import { devices } from 'playwright-chromium';
+      // Note, this is mostly equivalent to `...devices["iPhone 6"]` with import { devices } from 'playwright-core';
       // Just expanded for illustration
       userAgent:
         'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1',

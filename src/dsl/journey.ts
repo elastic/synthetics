@@ -29,7 +29,7 @@ import {
   BrowserContext,
   CDPSession,
   APIRequestContext,
-} from 'playwright-chromium';
+} from 'playwright-core';
 import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';

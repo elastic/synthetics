@@ -55,7 +55,7 @@ export type {
   CDPSession,
   APIRequestContext,
   devices,
-} from 'playwright-chromium';
+} from 'playwright-core';
 
 /**
  * Export the types necessary to write custom reporters
