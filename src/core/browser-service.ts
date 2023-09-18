@@ -26,7 +26,7 @@
 import { URL } from 'url';
 import { createServer } from 'http';
 import { createProxyServer } from 'http-proxy';
-import { chromium } from 'playwright-chromium';
+import { chromium } from 'playwright-core';
 import { log } from './logger';
 
 export class BrowserService {

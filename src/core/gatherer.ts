@@ -29,7 +29,7 @@ import {
   BrowserContext,
   request as apiRequest,
   selectors,
-} from 'playwright-chromium';
+} from 'playwright-core';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
 import { Driver, NetworkConditions, RunOptions } from '../common_types';

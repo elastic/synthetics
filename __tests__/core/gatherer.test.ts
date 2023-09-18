@@ -26,10 +26,9 @@
 import { Gatherer } from '../../src/core/gatherer';
 import { PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
-import { devices } from 'playwright-chromium';
+import { devices, chromium } from 'playwright-core';
 import { Server } from '../utils/server';
 import { megabitsToBytes } from '../../src/helpers';
-import { chromium } from 'playwright-chromium';
 
 jest.mock('../../src/plugins/network');
 

@@ -34,7 +34,7 @@ const outdir = path.join(__dirname, '..', 'dist', 'bundles');
   const ctx = await esbuild.context({
     entryPoints: ENTRY_POINTS,
     bundle: true,
-    external: ['playwright-core', '@playwright/test/lib/transform/esmLoader'],
+    external: ['playwright-core', 'playwright/lib/transform/esmLoader'],
     outfile: path.join(outdir, 'lib', 'index.js'),
     format: 'cjs',
     platform: 'node',
