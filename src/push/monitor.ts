@@ -140,7 +140,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
 
     if (type === 'browser') {
       const outPath = join(bundlePath, config.name + '.zip');
-      const content = await bundler.build(source.file, outPath);
+      const content = await bundler.build(source.file, config.name, outPath);
       monitor.setContent(content);
       Object.assign(schema, { content, filter });
     }
