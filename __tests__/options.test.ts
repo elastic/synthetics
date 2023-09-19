@@ -123,13 +123,27 @@ describe('options', () => {
   it('cli arg headless override playwright headless arg', async () => {
     const cliArgs: CliArgs = {
       playwrightOptions: {
+        headless: true,
+      },
+      headless: false,
+    };
+    expect(await normalizeOptions(cliArgs)).toMatchObject({
+      playwrightOptions: {
+        headless: false,
+      },
+    });
+  });
+
+  it('cli arg headless default value is overridden by config file', async () => {
+    const cliArgs: CliArgs = {
+      playwrightOptions: {
         headless: false,
       },
       headless: true,
     };
     expect(await normalizeOptions(cliArgs)).toMatchObject({
       playwrightOptions: {
-        headless: true,
+        headless: false,
       },
     });
   });

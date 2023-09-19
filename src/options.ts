@@ -106,7 +106,7 @@ export async function normalizeOptions(
   );
   options.playwrightOptions = {
     ...playwrightOpts,
-    headless: cliArgs.headless ?? playwrightOpts?.headless,
+    headless: getHeadlessFlag(cliArgs.headless, playwrightOpts?.headless),
     chromiumSandbox: cliArgs.sandbox ?? playwrightOpts?.chromiumSandbox,
     ignoreHTTPSErrors:
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
@@ -138,6 +138,18 @@ export async function normalizeOptions(
       break;
   }
   return options;
+}
+
+export function getHeadlessFlag(
+  cliHeadless: boolean,
+  configHeadless?: boolean
+) {
+  // if cliHeadless is false, then we don't care about configHeadless
+  if (!cliHeadless) {
+    return false;
+  }
+  // default is headless
+  return configHeadless ?? true;
 }
 
 export function validatePushOptions(opts: PushOptions) {
