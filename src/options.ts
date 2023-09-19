@@ -145,7 +145,7 @@ export function getHeadlessFlag(
   configHeadless?: boolean
 ) {
   // if cliHeadless is false, then we don't care about configHeadless
-  if (cliHeadless === false) {
+  if (!cliHeadless) {
     return false;
   }
   // default is headless
