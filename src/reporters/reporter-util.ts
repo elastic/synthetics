@@ -31,7 +31,6 @@ import { gray } from 'kleur/colors';
 import { codeFrameColumns } from '@babel/code-frame';
 import StackUtils from 'stack-utils';
 import { Location, StackFrame, TestError } from '../common_types';
-import { SourceMapConsumer } from 'source-map';
 
 const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
 
@@ -68,7 +67,7 @@ function prepareStackFrame(line: string): StackFrame {
   // extract the sourcemap file location, the stacktrace will be relatively
   // resolved to these files which would be under `journeys` folder. So we strip
   // these extra `journeys` from the path to get the correct file location.
-  if (frame.file?.startsWith('journeys/journeys')) {
+  if (frame.file?.includes('journeys/journeys')) {
     file = file.replace('journeys/journeys', 'journeys');
   }
 
