@@ -32,12 +32,14 @@ import {
 describe('Reporter utils', () => {
   const error = new Error('test error');
   error.stack = `Error: test error
-    at Step.callback (/tmp/elastic-synthetics-unzip-2816040413/journeys/journeys/debug-timeout.journey.ts:42:11)
-    at Runner.runStep (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:212:7)
-    at Runner.runSteps (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:262:16)
-    at Runner.runJourney (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:352:27)
-    at Runner.run (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:445:11)
-    at Command.<anonymous> (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/cli.ts:136:23)
+    at Step.callback (/tmp/elastic-synthetics-unzip-3180424903/journeys/journeys/errors.journey.ts:15:11)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at processImmediate (node:internal/timers:447:9)
+    at Runner.runStep (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:213:7)
+    at Runner.runSteps (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:263:16)
+    at Runner.runJourney (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:353:27)
+    at Runner.run (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/core/runner.ts:446:11)
+    at Command.<anonymous> (/usr/share/heartbeat/.node/node/lib/node_modules/@elastic/synthetics/src/cli.ts:138:23)
   `;
 
   it('prepare error', () => {
@@ -46,11 +48,11 @@ describe('Reporter utils', () => {
     expect(err).toEqual({
       message: 'Error: test error',
       stack:
-        '    at Step.callback (/tmp/elastic-synthetics-unzip-2816040413/journeys/debug-timeout.journey.ts:42:11)',
+        '    at Step.callback (/tmp/elastic-synthetics-unzip-3180424903/journeys/errors.journey.ts:15:11)',
       location: {
-        file: '/tmp/elastic-synthetics-unzip-2816040413/journeys/debug-timeout.journey.ts',
+        file: '/tmp/elastic-synthetics-unzip-3180424903/journeys/errors.journey.ts',
         column: 11,
-        line: 42,
+        line: 15,
       },
     });
   });
@@ -69,9 +71,8 @@ describe('Reporter utils', () => {
       process.env['TEST_OVERRIDE'] = undefined;
     });
 
-    const error = new Error('test error');
-
     it('highlight source', () => {
+      const error = new Error('test error');
       const err = serializeError(error);
       expect(stripAnsiCodes(err.source)).toMatchSnapshot();
     });

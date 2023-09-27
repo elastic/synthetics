@@ -265,7 +265,7 @@ describe('CLI', () => {
     await cli.waitFor('step/end');
     expect(await cli.exitCode).toBe(1);
     const [output] = safeNDJSONParse(cli.output());
-    expect(output.error.message).toContain('suite-url');
+    expect(output.error.stack).toContain('suite-url');
   });
 
   it('throw error on modifying params', async () => {
@@ -278,9 +278,10 @@ describe('CLI', () => {
       .run();
     expect(await cli.exitCode).toBe(1);
     const [output] = safeNDJSONParse([cli.output()]);
-    expect(output.error.message).toContain(
-      'TypeError: Cannot add property foo, object is not extensible'
-    );
+    expect(output.error).toMatchObject({
+      name: 'TypeError',
+      message: 'Cannot add property foo, object is not extensible',
+    });
   });
 
   it('support capability flag', async () => {

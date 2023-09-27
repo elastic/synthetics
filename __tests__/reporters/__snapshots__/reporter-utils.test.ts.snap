@@ -1,11 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Reporter utils render error highlight source 1`] = `
-"  72 |     });
-  73 |
-> 74 |     const error = new Error('test error');
-     |                   ^
-  75 |
-  76 |     it('highlight source', () => {
-  77 |       const err = serializeError(error);"
+"  73 |
+  74 |     it('highlight source', () => {
+> 75 |       const error = new Error('test error');
+     |                     ^
+  76 |       const err = serializeError(error);
+  77 |       expect(stripAnsiCodes(err.source)).toMatchSnapshot();
+  78 |     });"
 `;
