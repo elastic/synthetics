@@ -23,10 +23,8 @@
  *
  */
 
-import { after } from '../../src/core';
 import {
   prepareError,
-  renderError,
   serializeError,
   stripAnsiCodes,
 } from '../../src/reporters/reporter-util';
