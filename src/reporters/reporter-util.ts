@@ -27,10 +27,11 @@ import { fileURLToPath } from 'url';
 import { resolve, sep } from 'path';
 import { readFileSync } from 'fs';
 import { inspect } from 'util';
-import { gray, red } from 'kleur/colors';
+import { gray } from 'kleur/colors';
 import { codeFrameColumns } from '@babel/code-frame';
 import StackUtils from 'stack-utils';
 import { Location, StackFrame, TestError } from '../common_types';
+import { SourceMapConsumer } from 'source-map';
 
 const stackUtils = new StackUtils({ internals: StackUtils.nodeInternals() });
 
@@ -48,7 +49,7 @@ function prepareStackFrame(line: string): StackFrame {
   }
 
   // handle relative URLs
-  const file = frame.file?.startsWith('file://')
+  let file = frame.file?.startsWith('file://')
     ? fileURLToPath(frame.file)
     : resolve(process.cwd(), frame.file);
 
@@ -60,6 +61,15 @@ function prepareStackFrame(line: string): StackFrame {
   // filter library and PW files
   if (!filterLibInternals(file)) {
     return;
+  }
+
+  // When we bundle the journeys, we store the absolute path of the journey
+  // files and write the sourcemap relative to these files. When we try to
+  // extract the sourcemap file location, the stacktrace will be relatively
+  // resolved to these files which would be under `journeys` folder. So we strip
+  // these extra `journeys` from the path to get the correct file location.
+  if (frame.file?.startsWith('journeys/journeys')) {
+    file = file.replace('journeys/journeys', 'journeys');
   }
 
   return {
@@ -136,9 +146,7 @@ export function highLightSource(location: Location): string {
     const code = codeFrameColumns(
       source,
       { start: location },
-      {
-        highlightCode: true,
-      }
+      { highlightCode: true }
     );
     return code;
   } catch (_) {
@@ -149,7 +157,10 @@ export function highLightSource(location: Location): string {
 // serializeError prefers receiving proper Errors, but since at runtime
 // non Error exceptions can be thrown, it tolerates though. The
 // redundant type Error | any expresses that.
-export function serializeError(error: Error | any): TestError {
+export function serializeError(
+  error: Error | any,
+  highlightCode = true
+): TestError {
   if (!(error instanceof Error) || !error.stack) {
     return { message: `thrown: ${inspect(error)}` };
   }
@@ -160,7 +171,7 @@ export function serializeError(error: Error | any): TestError {
   if (stack) {
     testErr.stack = stack;
   }
-  if (location) {
+  if (location && highlightCode) {
     testErr.location = location;
     testErr.source = highLightSource(testErr.location);
   }
@@ -170,7 +181,7 @@ export function serializeError(error: Error | any): TestError {
 export function renderError(error: TestError) {
   const summary = [];
   summary.push('');
-  summary.push(red(error.message));
+  summary.push(error.message);
 
   if (error.source) {
     summary.push('');

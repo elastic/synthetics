@@ -28,7 +28,7 @@ import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
 import BaseReporter from './base';
-import { renderError, serializeError } from './reporter-util';
+import { renderError, serializeError, stripAnsiCodes } from './reporter-util';
 import {
   getTimestamp,
   CACHE_PATH,
@@ -198,6 +198,9 @@ function formatJSONError(error: Error | any, type: OutputType) {
     return;
   }
 
+  /**
+   * Do not process browser errors - console.error and unhandled exceptions
+   */
   if (type != null && type === 'journey/browserconsole') {
     return {
       name: error.name,
@@ -206,8 +209,13 @@ function formatJSONError(error: Error | any, type: OutputType) {
     };
   }
 
+  /**
+   * Do not highlight source for these errors and strip ANSI codes
+   */
   return {
-    message: renderError(serializeError(error)),
+    name: error.name,
+    message: stripAnsiCodes(error.message.split('\n')[0]),
+    stack: stripAnsiCodes(renderError(serializeError(error, false))),
   };
 }
 

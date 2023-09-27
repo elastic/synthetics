@@ -208,7 +208,7 @@ describe('json reporter', () => {
     const stepEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'step/end'
     );
-    expect(stepEnd.error.message).toContain(`Error: myError`);
+    expect(stepEnd.error.stack).toContain(`Error: myError`);
   });
 
   it('writes journey errors to the top level', async () => {
@@ -226,7 +226,7 @@ describe('json reporter', () => {
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
     );
-    expect(journeyEnd.error.message).toContain(`Error: myError`);
+    expect(journeyEnd.error.stack).toContain(`Error: myError`);
   });
 
   it('writes full journey info if present', async () => {
