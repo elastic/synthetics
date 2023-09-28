@@ -29,6 +29,13 @@ import {
   stripAnsiCodes,
 } from '../../src/reporters/reporter-util';
 
+beforeAll(() => {
+  process.env['TEST_OVERRIDE'] = 'true';
+});
+afterAll(() => {
+  process.env['TEST_OVERRIDE'] = undefined;
+});
+
 describe('Reporter utils', () => {
   const error = new Error('test error');
   error.stack = `Error: test error
@@ -59,22 +66,13 @@ describe('Reporter utils', () => {
 
   it('serialize error', () => {
     const error = new Error('test error');
-    const err = serializeError(error);
+    const err = serializeError(error, false);
     expect(err.source).toBeUndefined();
   });
 
-  describe('render error', () => {
-    beforeAll(() => {
-      process.env['TEST_OVERRIDE'] = 'true';
-    });
-    afterAll(() => {
-      process.env['TEST_OVERRIDE'] = undefined;
-    });
-
-    it('highlight source', () => {
-      const error = new Error('test error');
-      const err = serializeError(error);
-      expect(stripAnsiCodes(err.source)).toMatchSnapshot();
-    });
+  it('render error and highlight source', () => {
+    const error = new Error('test error');
+    const err = serializeError(error);
+    expect(stripAnsiCodes(err.source)).toMatchSnapshot();
   });
 });
