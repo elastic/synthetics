@@ -212,8 +212,9 @@ export default class Runner {
        */
       pluginManager.onStep(step);
       traceEnabled && (await pluginManager.start('trace'));
-      // call the step definition
-      await step.callback();
+      // invoke the step callback by extracting to a variable to get better stack trace
+      const cb = step.callback;
+      await cb();
     } catch (error) {
       data.status = 'failed';
       data.error = error;
@@ -291,8 +292,7 @@ export default class Runner {
       params,
     });
     /**
-     * Exeucute the journey callback which would
-     * register the steps for the current journey
+     * Exeucute the journey callback which registers the steps for current journey
      */
     journey.callback({ ...context.driver, params });
   }

@@ -449,9 +449,9 @@ describe('CLI', () => {
         ])
         .run();
       await cli.waitFor('step/end');
-      const output = cli.output();
+      const [output] = safeNDJSONParse(cli.output());
       expect(await cli.exitCode).toBe(0);
-      expect(JSON.parse(output).step).toMatchObject({
+      expect(output.step).toMatchObject({
         status: 'succeeded',
       });
     });

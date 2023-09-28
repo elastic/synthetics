@@ -24,14 +24,9 @@
  */
 
 import SonicBoom from 'sonic-boom';
-import { green, red, cyan } from 'kleur/colors';
-import {
-  symbols,
-  indent,
-  now,
-  findPWLogsIndexes,
-  rewriteErrorStack,
-} from '../helpers';
+import { green, red, cyan, gray } from 'kleur/colors';
+import { renderError, serializeError } from './reporter-util';
+import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import {
   JourneyEndResult,
@@ -39,25 +34,6 @@ import {
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
-
-function renderError(error) {
-  let output = '';
-  const outer = indent('');
-  const inner = indent(outer);
-  const container = outer + '---\n';
-  output += container;
-  let stack = error.stack;
-  if (stack) {
-    output += inner + 'stack: |-\n';
-    stack = rewriteErrorStack(stack, findPWLogsIndexes(stack));
-    const lines = String(stack).split('\n');
-    for (const line of lines) {
-      output += inner + '  ' + line + '\n';
-    }
-  }
-  output += container;
-  return red(output);
-}
 
 function renderDuration(durationMs) {
   return parseInt(durationMs);
@@ -96,11 +72,14 @@ export default class BaseReporter implements Reporter {
 
   onStepEnd(_: Journey, step: Step, result: StepEndResult) {
     const { status, end, start, error } = result;
-    const message = `${symbols[status]}  Step: '${
-      step.name
-    }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
+    const message = `${symbols[status]}  Step: '${step.name}' ${status} ${gray(
+      '(' + renderDuration((end - start) * 1000) + ' ms)'
+    )}`;
     this.write(indent(message));
-    error && this.write(renderError(error));
+    if (error) {
+      const message = renderError(serializeError(error));
+      this.write(indent(message) + '\n');
+    }
     this.metrics[status]++;
   }
 
@@ -113,7 +92,8 @@ export default class BaseReporter implements Reporter {
      * be executed which means the error happened in one of the hooks
      */
     if (total === 0 && error) {
-      this.write(renderError(error));
+      const message = renderError(serializeError(error));
+      this.write(indent(message) + '\n');
     }
   }
 

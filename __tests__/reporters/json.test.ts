@@ -36,6 +36,7 @@ import JSONReporter, {
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
+import { Step } from '../../src/dsl';
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -107,7 +108,7 @@ describe('json reporter', () => {
     reporter.onJourneyStart(j1, {
       timestamp,
     });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
+    reporter.onStepEnd(j1, step('s1', helpers.noop) as Step, {
       status: 'succeeded',
       url: 'dummy',
       start: 0,
@@ -196,7 +197,7 @@ describe('json reporter', () => {
   it('writes step errors to the top level', async () => {
     const myErr = new Error('myError');
 
-    reporter.onStepEnd(j1, step('s2', helpers.noop), {
+    reporter.onStepEnd(j1, step('s2', helpers.noop) as Step, {
       status: 'failed',
       url: 'dummy2',
       start: 11,
@@ -207,7 +208,7 @@ describe('json reporter', () => {
     const stepEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'step/end'
     );
-    expect(stepEnd.error).toEqual(helpers.formatError(myErr));
+    expect(stepEnd.error.stack).toContain(`Error: myError`);
   });
 
   it('writes journey errors to the top level', async () => {
@@ -225,7 +226,7 @@ describe('json reporter', () => {
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
     );
-    expect(journeyEnd.error).toEqual(helpers.formatError(myErr));
+    expect(journeyEnd.error.stack).toContain(`Error: myError`);
   });
 
   it('writes full journey info if present', async () => {

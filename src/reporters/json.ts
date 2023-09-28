@@ -28,8 +28,8 @@ import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
 import BaseReporter from './base';
+import { renderError, serializeError, stripAnsiCodes } from './reporter-util';
 import {
-  formatError,
   getTimestamp,
   CACHE_PATH,
   totalist,
@@ -187,6 +187,36 @@ export function formatNetworkFields(network: NetworkInfo) {
   }, {});
 
   return { ecs, payload };
+}
+
+/**
+ * formatJSONError formats the error in a structured format
+ * we restructure the error with code frame and stack trace for test errors
+ */
+function formatJSONError(error: Error | any, type: OutputType) {
+  if (error == null) {
+    return;
+  }
+
+  /**
+   * Do not process browser errors - console.error and unhandled exceptions
+   */
+  if (type != null && type === 'journey/browserconsole') {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  /**
+   * Do not highlight source for these errors and strip ANSI codes
+   */
+  return {
+    name: error.name,
+    message: stripAnsiCodes(error.message.split('\n')[0]),
+    stack: stripAnsiCodes(renderError(serializeError(error, false))),
+  };
 }
 
 function journeyInfo(
@@ -550,7 +580,7 @@ export default class JSONReporter extends BaseReporter {
       payload,
       blob,
       blob_mime,
-      error: formatError(error),
+      error: formatJSONError(error, type),
       url,
       package_version: version,
     });

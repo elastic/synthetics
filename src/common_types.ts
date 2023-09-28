@@ -43,6 +43,10 @@ export type Location = {
   column: number;
 };
 
+export type StackFrame = Location & {
+  function?: string;
+};
+
 export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
@@ -272,6 +276,14 @@ export type JourneyResult = {
   error?: Error;
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
+};
+
+export type TestError = {
+  message: string;
+  stack?: string;
+  location?: Location;
+  // source location highlighting the error source
+  source?: string;
 };
 
 export type StepResult = {

@@ -234,30 +234,6 @@ export function rewriteErrorStack(stack: string, indexes: [number, number]) {
   return stack;
 }
 
-// formatError prefers receiving proper Errors, but since at runtime
-// non Error exceptions can be thrown, it tolerates though. The
-// redundant type Error | any expresses that.
-export function formatError(error: Error | any) {
-  if (error === undefined || error === null) {
-    return;
-  }
-
-  if (!(error instanceof Error)) {
-    return {
-      message: `Error "${error}" received, with type "${typeof error}". (Do not throw exceptions without using \`new Error("my message")\`)`,
-      name: '',
-      stack: '',
-    };
-  }
-  const { name, message, stack } = error;
-  const indexes = findPWLogsIndexes(message);
-  return {
-    name,
-    message: rewriteErrorMessage(message, indexes[0]),
-    stack: rewriteErrorStack(stack, indexes),
-  };
-}
-
 const cwd = process.cwd();
 /**
  * All the settings that are related to the Synthetics is stored

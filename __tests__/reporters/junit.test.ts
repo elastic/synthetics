@@ -29,6 +29,7 @@ import SonicBoom from 'sonic-boom';
 import { step, journey } from '../../src/core';
 import JUnitReporter from '../../src/reporters/junit';
 import * as helpers from '../../src/helpers';
+import { Step } from '../../src/dsl';
 
 describe('junit reporter', () => {
   beforeEach(() => {});
@@ -37,7 +38,7 @@ describe('junit reporter', () => {
   let reporter: JUnitReporter;
   const timestamp = 1600300800000000;
   const j1 = journey('j1', () => {});
-  const s1 = step('s1', () => {});
+  const s1 = step('s1', () => {}) as Step;
 
   beforeEach(() => {
     dest = helpers.generateTempPath();
@@ -53,18 +54,14 @@ describe('junit reporter', () => {
       timestamp,
     });
     const error = new Error('Boom');
-    /**
-     * Snapshots would be different for everyone
-     * so keep it simple
-     */
-    error.stack = 'at /__tests/reporters/junit.test.ts';
+
     reporter.onStepEnd(j1, s1, {
       status: 'failed',
       error,
       start: 0,
       end: 1,
     });
-    reporter.onStepEnd(j1, step('s2', helpers.noop), {
+    reporter.onStepEnd(j1, step('s2', helpers.noop) as Step, {
       status: 'skipped',
       start: 0,
       end: 1,
