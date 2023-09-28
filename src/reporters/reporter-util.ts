@@ -80,14 +80,17 @@ function prepareStackFrame(line: string): StackFrame {
 }
 
 function filterLibInternals(file: string) {
-  // To signore filtering the stack trace on tests
+  // To ignore filtering the stack trace on tests
   if (process.env.TEST_OVERRIDE) {
     return true;
   }
-  if (file.startsWith(SYNTHETICS_PATH)) return false;
+  if (file.startsWith(SYNTHETICS_PATH)) {
+    return false;
+  }
   // should have been filtered by node_modules, but just in case
-  if (file.startsWith(PW_CORE_PATH)) return false;
-  return true;
+  if (file.startsWith(PW_CORE_PATH)) {
+    return false;
+  }
 }
 
 function constructStackFromFrames(frames: StackFrame[]) {
@@ -106,7 +109,9 @@ export function prepareError(error: Error) {
   const stack = error.stack;
   const lines = stack.split('\n');
   let startAt = lines.findIndex(line => line.startsWith('    at '));
-  if (startAt === -1) startAt = lines.length;
+  if (startAt === -1) {
+    startAt = lines.length;
+  }
   const message = lines.slice(0, startAt).join('\n');
   const stackLines = lines.slice(startAt);
   // figure out the location of the journey/step that throws the error and
@@ -114,7 +119,9 @@ export function prepareError(error: Error) {
   const stackFrames: StackFrame[] = [];
   for (const line of stackLines) {
     const frame = prepareStackFrame(line);
-    if (!frame || !frame.file) continue;
+    if (!frame || !frame.file) {
+      continue;
+    }
     stackFrames.push(frame);
   }
 
@@ -179,6 +186,7 @@ export function serializeError(
 
 export function renderError(error: TestError) {
   const summary = [];
+  // push empty string to add a new line before rendering error
   summary.push('');
   summary.push(error.message);
 
