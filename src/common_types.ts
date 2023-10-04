@@ -218,6 +218,7 @@ type BaseArgs = {
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
   alert?: AlertConfig;
+  retestOnFailure?: MonitorConfig['retestOnFailure'];
 };
 
 export type CliArgs = BaseArgs & {

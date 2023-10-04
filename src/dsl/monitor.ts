@@ -72,6 +72,10 @@ export type MonitorConfig = {
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   alert?: AlertConfig;
+  /**
+   * By default, the monitor will be retested on failure
+   */
+  retestOnFailure?: boolean;
 };
 
 type MonitorFilter = {

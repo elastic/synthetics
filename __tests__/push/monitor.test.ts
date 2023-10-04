@@ -245,6 +245,7 @@ heartbeat.monitors:
   tags:
     - ltag1
     - ltag2
+  retestOnFailure: true
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
@@ -254,6 +255,7 @@ heartbeat.monitors:
         tags: ['gtag1', 'gtag2'],
         privateLocations: ['gbaz'],
         schedule: 10,
+        retestOnFailure: false,
       } as any);
 
       expect(mon.config).toEqual({
@@ -265,6 +267,7 @@ heartbeat.monitors:
         params: { foo: 'bar' },
         schedule: 5,
         tags: ['ltag1', 'ltag2'],
+        retestOnFailure: true,
       });
     });
 
@@ -280,6 +283,7 @@ heartbeat.monitors:
         tags: ['gtag1', 'gtag2'],
         privateLocations: ['gbaz'],
         schedule: 10,
+        retestOnFailure: false,
       } as PushOptions);
 
       expect(mon.config).toEqual({
@@ -289,6 +293,7 @@ heartbeat.monitors:
         type: 'icmp',
         schedule: 10,
         tags: ['gtag1', 'gtag2'],
+        retestOnFailure: false,
       });
     });
 
