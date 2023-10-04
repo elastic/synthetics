@@ -246,7 +246,7 @@ export function buildMonitorFromYaml(
   const alertConfig = parseAlertConfig(config, options.alert);
   const mon = new Monitor({
     locations: options.locations,
-    retestOnFailure: options.retestOnFailure ?? true,
+    retestOnFailure: options.retestOnFailure,
     tags: options.tags,
     ...config,
     privateLocations,
