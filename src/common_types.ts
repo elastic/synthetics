@@ -217,8 +217,6 @@ type BaseArgs = {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
-  alert?: AlertConfig;
-  retestOnFailure?: MonitorConfig['retestOnFailure'];
 };
 
 export type CliArgs = BaseArgs & {
@@ -249,6 +247,8 @@ export type PushOptions = Partial<ProjectSettings> &
     auth: string;
     kibanaVersion?: string;
     yes?: boolean;
+    alert?: AlertConfig;
+    retestOnFailure?: MonitorConfig['retestOnFailure'];
   };
 
 export type ProjectSettings = {
