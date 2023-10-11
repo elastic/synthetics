@@ -242,13 +242,15 @@ export function buildMonitorFromYaml(
     config['private_locations'] ||
     config.privateLocations ||
     options.privateLocations;
-  delete config['private_locations'];
+  const retestOnFailure =
+    config['retest_on_failure'] ?? options.retestOnFailure;
   const alertConfig = parseAlertConfig(config, options.alert);
+
   const mon = new Monitor({
     locations: options.locations,
-    retestOnFailure: options.retestOnFailure,
     tags: options.tags,
-    ...config,
+    ...normalizeConfig(config),
+    retestOnFailure,
     privateLocations,
     schedule: schedule || options.schedule,
     alert: alertConfig,
@@ -262,6 +264,14 @@ export function buildMonitorFromYaml(
     mon.config.params = options.params;
   }
   return mon;
+}
+
+// Deletes unncessary fields from the lightweight monitor config
+//  that is not supported by the Kibana API
+function normalizeConfig(config: MonitorConfig) {
+  delete config['private_locations'];
+  delete config['retest_on_failure'];
+  return config;
 }
 
 export const parseAlertConfig = (

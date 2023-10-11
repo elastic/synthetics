@@ -245,10 +245,11 @@ heartbeat.monitors:
   tags:
     - ltag1
     - ltag2
-  retestOnFailure: true
+  retest_on_failure: true
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
         params: { foo: 'bar' },
         kibanaVersion: '8.8.0',
         locations: ['australia_east'],
@@ -256,7 +257,7 @@ heartbeat.monitors:
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
-      } as any);
+      });
 
       expect(mon.config).toEqual({
         id: 'test-icmp',
@@ -280,11 +281,12 @@ heartbeat.monitors:
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
         tags: ['gtag1', 'gtag2'],
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
-      } as PushOptions);
+      });
 
       expect(mon.config).toEqual({
         id: 'test-icmp',
