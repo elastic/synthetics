@@ -8,6 +8,6 @@
     "build": "npm run bundle -- --minify"
   },
   "dependencies": {
-    "playwright": "=1.38.0"
+    "playwright": "=1.38.1"
   }
 }
