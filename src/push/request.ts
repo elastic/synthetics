@@ -57,7 +57,9 @@ export async function sendReqAndHandleError<T>(
   options: APIRequestOptions
 ): Promise<T> {
   const { statusCode, body } = await sendRequest(options);
-  return (await (await handleError(statusCode, options.url, body)).json()) as T;
+  return (
+    await handleError(statusCode, options.url, body)
+  ).json() as Promise<T>;
 }
 
 type APIError = {
