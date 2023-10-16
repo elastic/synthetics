@@ -57,8 +57,15 @@ export async function sendReqAndHandleError<T>(
   options: APIRequestOptions
 ): Promise<T> {
   const { statusCode, body } = await sendRequest(options);
-  return await (await handleError(statusCode, options.url, body)).json();
+  return (
+    await handleError(statusCode, options.url, body)
+  ).json() as Promise<T>;
 }
+
+type APIError = {
+  error: string;
+  message: string;
+};
 
 // Handle bad status code errors from Kibana API and format the
 // error message to be displayed to the user.
@@ -71,9 +78,9 @@ export async function handleError(
   if (statusCode === 404) {
     throw formatNotFoundError(url, await body.text());
   } else if (!ok(statusCode)) {
-    let parsed: { error: string; message: string };
+    let parsed: APIError;
     try {
-      parsed = await body.json();
+      parsed = (await body.json()) as APIError;
     } catch (e) {
       throw formatAPIError(
         statusCode,
