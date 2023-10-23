@@ -52,6 +52,7 @@ import {
   JourneyEndResult,
   PageMetrics,
 } from '../common_types';
+import { inspect } from 'util';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -196,6 +197,11 @@ export function formatNetworkFields(network: NetworkInfo) {
 function formatJSONError(error: Error | any, type: OutputType) {
   if (error == null) {
     return;
+  }
+
+  // Early exit for non Error objects
+  if (!(error instanceof Error) || !error.stack) {
+    return { message: `thrown: ${inspect(error)}` };
   }
 
   /**

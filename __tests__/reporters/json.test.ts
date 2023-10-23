@@ -103,7 +103,7 @@ describe('json reporter', () => {
 
   it('writes each step as NDJSON to the FD', async () => {
     const error = new Error('boom');
-    error.stack = '';
+    error.stack = 'at /foo/bar.js:1:1';
     reporter.onJourneyRegister(j1);
     reporter.onJourneyStart(j1, {
       timestamp,
@@ -227,6 +227,22 @@ describe('json reporter', () => {
       json => json.type == 'journey/end'
     );
     expect(journeyEnd.error.stack).toContain(`Error: myError`);
+  });
+
+  it('captures non-error types', async () => {
+    reporter.onJourneyEnd(j1, {
+      timestamp,
+      start: 0,
+      end: 1,
+      status: 'failed',
+      error: 'boom' as any,
+      options: {},
+    });
+
+    const journeyEnd = (await readAndCloseStreamJson()).find(
+      json => json.type == 'journey/end'
+    );
+    expect(journeyEnd.error.message).toContain(`thrown: 'boom'`);
   });
 
   it('writes full journey info if present', async () => {
