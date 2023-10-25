@@ -46,7 +46,7 @@ jobs:
         if: ${{ github.event.inputs.dry-run == 'false' }}
         run: |
           echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
-          echo "NPM_PACKAGE=$(jq -r '.name' package.json) >> $GITHUB_ENV
+          echo "NPM_PACKAGE=$(jq -r '.name' package.json)" >> $GITHUB_ENV
 
       - name: Create 'stack_release' dist-tag
         if: ${{ github.event.inputs.dry-run == 'false' && github.event.inputs.is-stack-release == 'true' }}
