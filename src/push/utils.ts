@@ -106,3 +106,18 @@ export function isLightweightMonitorSupported(
 export function isParamOptionSupported(version: string) {
   return semver.satisfies(version, '>=8.7.2');
 }
+
+/**
+ * Helper that replaces url paths traversal issues when bundling
+ */
+export function normalizeMonitorName(p: string, replacement = '_') {
+  // replace encoded and non encoded dots
+  p = p.replace(/%2e|\./gi, replacement);
+  // encoded slashes
+  p = p.replace(/%2f|%5c/gi, replacement);
+  // backslashes
+  p = p.replace(/[/\\]+/g, replacement);
+  // remove colons
+  p = p.replace(/[:]+/g, replacement);
+  return p;
+}
