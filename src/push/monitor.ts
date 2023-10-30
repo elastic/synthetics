@@ -37,7 +37,7 @@ import {
   MonitorConfig,
 } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { isParamOptionSupported } from './utils';
+import { isParamOptionSupported, normalizeMonitorName } from './utils';
 
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
@@ -139,7 +139,10 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
     };
 
     if (type === 'browser') {
-      const outPath = join(bundlePath, config.name + '.zip');
+      const outPath = join(
+        bundlePath,
+        normalizeMonitorName(config.name) + '.zip'
+      );
       const content = await bundler.build(source.file, outPath);
       monitor.setContent(content);
       Object.assign(schema, { content, filter });
