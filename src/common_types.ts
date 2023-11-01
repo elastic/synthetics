@@ -182,7 +182,6 @@ export type PageMetrics = Record<string, number>;
 export type BrowserMessage = {
   text: string;
   type: string;
-  error?: Error;
 } & DefaultPluginOutput;
 
 export type PluginOutput = {
