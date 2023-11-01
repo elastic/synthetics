@@ -98,9 +98,6 @@ describe('BrowserConsole', () => {
     const referenceError = messages.find(
       m => m.text.indexOf('that is not defined') >= 0
     );
-    expect(referenceError?.error?.stack).toContain(
-      `ReferenceError: that is not defined\n    at HTMLImageElement.onerror`
-    );
     expect(referenceError?.type).toEqual('error');
     expect(referenceError?.step).toEqual(currentStep);
   });
@@ -134,7 +131,6 @@ describe('BrowserConsole', () => {
     const [page1Err, page2Err] = messages;
     expect(page1Err?.type).toEqual('error');
     expect(page1Err?.step).toEqual(currentStep);
-    expect(page1Err?.error?.stack).toContain('Error: Boom');
     expect(page2Err?.text).toEqual('popup error');
   });
 

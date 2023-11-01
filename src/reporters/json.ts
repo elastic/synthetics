@@ -194,7 +194,7 @@ export function formatNetworkFields(network: NetworkInfo) {
  * formatJSONError formats the error in a structured format
  * we restructure the error with code frame and stack trace for test errors
  */
-function formatJSONError(error: Error | any, type: OutputType) {
+function formatJSONError(error: Error | any) {
   if (error == null) {
     return;
   }
@@ -202,17 +202,6 @@ function formatJSONError(error: Error | any, type: OutputType) {
   // Early exit for non Error objects
   if (!(error instanceof Error) || !error.stack) {
     return { message: `thrown: ${inspect(error)}` };
-  }
-
-  /**
-   * Do not process browser errors - console.error and unhandled exceptions
-   */
-  if (type != null && type === 'journey/browserconsole') {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    };
   }
 
   /**
@@ -479,13 +468,12 @@ export default class JSONReporter extends BaseReporter {
     }
 
     if (browserconsole) {
-      browserconsole.forEach(({ timestamp, text, type, step, error }) => {
+      browserconsole.forEach(({ timestamp, text, type, step }) => {
         this.writeJSON({
           type: 'journey/browserconsole',
           journey,
           timestamp,
           step,
-          error,
           payload: {
             text,
             type,
@@ -586,7 +574,7 @@ export default class JSONReporter extends BaseReporter {
       payload,
       blob,
       blob_mime,
-      error: formatJSONError(error, type),
+      error: formatJSONError(error),
       url,
       package_version: version,
     });

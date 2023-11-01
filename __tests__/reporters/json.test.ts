@@ -174,7 +174,6 @@ describe('json reporter', () => {
           text: 'Boom',
           type: 'error',
           step: { name: 'step-name', index: 0 },
-          error,
         },
       ],
     });
