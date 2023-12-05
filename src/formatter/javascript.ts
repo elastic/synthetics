@@ -101,23 +101,15 @@ function toAssertCall(pageAlias: string, action: Action) {
 }
 
 function toSignalMap(action: Action) {
-  let waitForNavigation: Signal | undefined;
-  let assertNavigation: Signal | undefined;
   let popup: Signal | undefined;
   let download: Signal | undefined;
   let dialog: Signal | undefined;
   for (const signal of action.signals) {
-    if (signal.name === 'navigation' && signal.isAsync)
-      waitForNavigation = signal;
-    else if (signal.name === 'navigation' && !signal.isAsync)
-      assertNavigation = signal;
-    else if (signal.name === 'popup') popup = signal;
+    if (signal.name === 'popup') popup = signal;
     else if (signal.name === 'download') download = signal;
     else if (signal.name === 'dialog') dialog = signal;
   }
   return {
-    waitForNavigation,
-    assertNavigation,
     popup,
     download,
     dialog,
@@ -280,8 +272,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     if (isAssert && action.command) {
       formatter.add(toAssertCall(pageAlias, action));
     } else {
-      const actionCall = super._generateActionCall(action);
-      formatter.add(`await ${subject}.${actionCall};`);
+      formatter.add(super._generateActionCall(subject, action));
     }
 
     if (signals.popup)
