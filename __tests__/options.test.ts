@@ -66,7 +66,7 @@ describe('options', () => {
         ignoreHTTPSErrors: undefined,
         isMobile: true,
         userAgent:
-          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.5938.62 Mobile Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.28 Mobile Safari/537.36',
         viewport: {
           height: 658,
           width: 320,
