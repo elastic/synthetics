@@ -83,7 +83,8 @@ export default class BuildKiteCLIReporter extends BaseReporter {
       ([, steps]) => steps.some(step => step.status === 'failed')
     );
 
-    if (failedJourneys.length > 0) {
+    // if more than 5 journeys, we also report failed journeys at the end
+    if (failedJourneys.length > 0 && this.journeys.size > 2) {
       failedJourneys.forEach(([journeyName, steps]) => {
         const name = red(`Journey: ${journeyName} 🥵`);
         this.write(`\n+++ ${name}`);
