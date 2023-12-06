@@ -35,7 +35,7 @@ import {
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 
-function renderDuration(durationMs) {
+export function renderDuration(durationMs) {
   return parseInt(durationMs);
 }
 

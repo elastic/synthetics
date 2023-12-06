@@ -33,13 +33,18 @@ import {
   JourneyStartResult,
   StepEndResult,
 } from '../common_types';
+import BuildKiteCLIReporter from './build_kite_cli';
 
 export type ReporterOptions = {
   fd?: number;
   colors?: boolean;
   dryRun?: boolean;
 };
-export type BuiltInReporterName = 'default' | 'json' | 'junit';
+export type BuiltInReporterName =
+  | 'default'
+  | 'json'
+  | 'junit'
+  | 'buildkite-cli';
 export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
 export const reporters: {
   [key in BuiltInReporterName]: ReporterInstance;
@@ -47,6 +52,7 @@ export const reporters: {
   default: BaseReporter,
   json: JSONReporter,
   junit: JUnitReporter,
+  'buildkite-cli': BuildKiteCLIReporter,
 };
 
 export interface Reporter {
