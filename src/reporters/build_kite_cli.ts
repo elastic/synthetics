@@ -34,7 +34,7 @@ import {
   StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
-import { renderError } from './reporter-util';
+import { renderError, serializeError } from './reporter-util';
 
 export default class BuildKiteCLIReporter extends BaseReporter {
   journeys: Map<string, Array<StepEndResult & { name: string }>> = new Map();
@@ -48,15 +48,7 @@ export default class BuildKiteCLIReporter extends BaseReporter {
   }
 
   override onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
-    const { status, end, start, error } = result;
-    const message = `${symbols[status]}  Step: '${
-      step.name
-    }' ${status} (${renderDuration((end - start) * 1000)} ms)`;
-    this.write(indent(message));
-    if (error) {
-      this.write(renderError(error));
-    }
-    this.metrics[status]++;
+    super.onStepEnd(journey, step, result);
     if (!this.journeys.has(journey.name)) {
       this.journeys.set(journey.name, []);
     }
@@ -70,41 +62,43 @@ export default class BuildKiteCLIReporter extends BaseReporter {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     if (total === 0 && error) {
-      this.write(renderError(error));
+      this.write(renderError(serializeError(error)));
     }
-    const message = `${symbols[status]} Took  (${renderDuration(
+    const message = `${symbols[status]} Took (${renderDuration(
       end - start
     )} seconds)`;
     this.write(message);
   }
 
   override onEnd() {
-    const failedJourneys = Array.from(this.journeys.entries()).filter(
-      ([, steps]) => steps.some(step => step.status === 'failed')
-    );
-
-    // if more than 5 journeys, we also report failed journeys at the end
-    if (failedJourneys.length > 0 && this.journeys.size > 2) {
-      failedJourneys.forEach(([journeyName, steps]) => {
-        const name = red(`Journey: ${journeyName} 🥵`);
-        this.write(`\n+++ ${name}`);
-        steps.forEach(stepResult => {
-          const { status, end, start, error, name: stepName } = stepResult;
-          const message = `${
-            symbols[status]
-          }  Step: '${stepName}' ${status} (${renderDuration(
-            (end - start) * 1000
-          )} ms)`;
-          this.write(indent(message));
-          if (error) {
-            this.write(renderError(error));
-          }
-        });
-      });
-    }
-
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
+
+    if (total > 0) {
+      const failedJourneys = Array.from(this.journeys.entries()).filter(
+        ([, steps]) => steps.some(step => step.status === 'failed')
+      );
+
+      // if more than 5 journeys, we also report failed journeys at the end
+      if (failedJourneys.length > 0 && this.journeys.size > 5) {
+        failedJourneys.forEach(([journeyName, steps]) => {
+          const name = red(`Journey: ${journeyName} :slightly_frowning_face:`);
+          this.write(`\n+++ ${name}`);
+          steps.forEach(stepResult => {
+            const { status, end, start, error, name: stepName } = stepResult;
+            const message = `${
+              symbols[status]
+            }  Step: '${stepName}' ${status} (${renderDuration(
+              (end - start) * 1000
+            )} ms)`;
+            this.write(indent(message));
+            if (error) {
+              this.write(renderError(serializeError(error)));
+            }
+          });
+        });
+      }
+    }
 
     let message = '\n';
     if (total === 0) {

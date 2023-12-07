@@ -80,6 +80,18 @@ describe('buildkite cli reporter', () => {
       start: 0,
       end: 1,
     });
+    reporter.onJourneyEnd(j1, {
+      timestamp,
+      status: 'failed',
+      error: {
+        name: 'Error',
+        message: 'step failed',
+        stack: 'Error: step failed',
+      },
+      start: 0,
+      end: 1,
+      options: {},
+    });
     reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
@@ -99,6 +111,33 @@ describe('buildkite cli reporter', () => {
       error,
       start: 0,
       end: 1,
+      options: {},
+    });
+    reporter.onEnd();
+    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+  });
+
+  it('writes multiple steps to the FD', async () => {
+    reporter.onJourneyStart(j1, {
+      timestamp,
+    });
+    reporter.onStepEnd(j1, step('s1', helpers.noop), {
+      status: 'succeeded',
+      url: 'dummy',
+      start: 0,
+      end: 1,
+    });
+    reporter.onStepEnd(j1, step('s1', helpers.noop), {
+      status: 'succeeded',
+      url: 'http://localhost:8080',
+      start: 2,
+      end: 6,
+    });
+    reporter.onJourneyEnd(j1, {
+      timestamp,
+      status: 'succeeded',
+      start: 4,
+      end: 6,
       options: {},
     });
     reporter.onEnd();

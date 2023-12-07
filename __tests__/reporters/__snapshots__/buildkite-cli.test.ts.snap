@@ -4,10 +4,12 @@ exports[`buildkite cli reporter render hook errors without steps 1`] = `
 "
 --- Journey: j1
 
-before hook failed
-
-Error: before hook failed
-✖ Took  (1 seconds)
+thrown: {
+  name: 'Error',
+  message: 'before hook failed',
+  stack: 'Error: before hook failed'
+}
+✖ Took (1 seconds)
 No tests found! (0 ms) 
 
 "
@@ -17,12 +19,24 @@ exports[`buildkite cli reporter writes each step to the FD 1`] = `
 "
 --- Journey: j1
    ✖  Step: 's1' failed (1000 ms)
+   
+   thrown: { name: 'Error', message: 'step failed', stack: 'Error: step failed' }
 
-step failed
-
-Error: step failed
+✖ Took (1 seconds)
 
  1 failed (0 seconds) 
+
+"
+`;
+
+exports[`buildkite cli reporter writes multiple steps to the FD 1`] = `
+"
+--- Journey: j1
+   ✓  Step: 's1' succeeded (1000 ms)
+   ✓  Step: 's1' succeeded (4000 ms)
+✓ Took (2 seconds)
+
+ 2 passed (0 seconds) 
 
 "
 `;
