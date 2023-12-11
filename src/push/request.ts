@@ -47,6 +47,7 @@ export async function sendRequest(options: APIRequestOptions) {
       'content-type': 'application/json',
       'user-agent': `Elastic/Synthetics ${version}`,
       'kbn-xsrf': 'true',
+      'x-elastic-internal-origin': 'elastic-synthetics',
     },
     // align with the default timeout of the kibana route
     headersTimeout: 2 * 60 * 1000,
