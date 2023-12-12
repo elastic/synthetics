@@ -70,6 +70,7 @@ export type {
   JourneyStartResult,
   JourneyResult,
   StepResult,
+  StartEvent,
 } from './common_types';
 
 export type { Journey, JourneyCallback } from './dsl';

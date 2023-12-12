@@ -3,12 +3,13 @@
 exports[`buildkite cli reporter render hook errors without steps 1`] = `
 "
 --- Journey: j1
+   
+   thrown: {
+     name: 'Error',
+     message: 'before hook failed',
+     stack: 'Error: before hook failed'
+   }
 
-thrown: {
-  name: 'Error',
-  message: 'before hook failed',
-  stack: 'Error: before hook failed'
-}
 ✖ Took (1 seconds)
 No tests found! (0 ms) 
 

@@ -55,15 +55,9 @@ export default class BuildKiteCLIReporter extends BaseReporter {
     this.journeys.get(journey.name)?.push({ name: step.name, ...result });
   }
 
-  override async onJourneyEnd(
-    journey: Journey,
-    { error, start, end, status }: JourneyEndResult
-  ) {
-    const { failed, succeeded, skipped } = this.metrics;
-    const total = failed + succeeded + skipped;
-    if (total === 0 && error) {
-      this.write(renderError(serializeError(error)));
-    }
+  override async onJourneyEnd(journey: Journey, endResult: JourneyEndResult) {
+    const { start, end, status } = endResult;
+    super.onJourneyEnd(journey, endResult);
     const message = `${symbols[status]} Took (${renderDuration(
       end - start
     )} seconds)`;
