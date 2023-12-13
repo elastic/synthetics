@@ -63,7 +63,17 @@ export type {
 export type { default as Runner } from './core/runner';
 export type { Reporter, ReporterOptions } from './reporters';
 
-export type { SyntheticsConfig } from './common_types';
+export type {
+  SyntheticsConfig,
+  StepEndResult,
+  JourneyEndResult,
+  JourneyStartResult,
+  JourneyResult,
+  StepResult,
+  StartEvent,
+} from './common_types';
+
+export type { Journey, JourneyCallback } from './dsl';
 
 export type {
   Action,
