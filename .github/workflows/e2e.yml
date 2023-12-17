@@ -29,7 +29,7 @@ jobs:
         env:
           TERM: xterm # this is needed for tput
       - if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: "**/junit_*.xml"
