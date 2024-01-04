@@ -261,7 +261,7 @@ export default class Runner {
       const start = monotonicTimeInSeconds();
       this.#reporter?.onStepStart?.(journey, step);
       let data: StepResult = { status: 'succeeded' };
-      if (skipStep) {
+      if (skipStep || step.isSkipped) {
         data.status = 'skipped';
       } else {
         data = await this.runStep(step, context, options);

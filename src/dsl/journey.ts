@@ -75,8 +75,19 @@ export class Journey {
     this.updateMonitor({});
   }
 
-  addStep(name: string, callback: VoidCallback, location?: Location) {
-    const step = new Step(name, this.steps.length + 1, callback, location);
+  addStep(
+    name: string,
+    callback: VoidCallback,
+    location?: Location,
+    skip = false
+  ) {
+    const step = new Step(
+      name,
+      this.steps.length + 1,
+      callback,
+      location,
+      skip
+    );
     this.steps.push(step);
     return step;
   }

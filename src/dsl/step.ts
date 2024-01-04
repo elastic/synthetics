@@ -30,16 +30,19 @@ export class Step {
   index: number;
   callback: VoidCallback;
   location?: Location;
+  isSkipped = false;
 
   constructor(
     name: string,
     index: number,
     callback: VoidCallback,
-    location: Location
+    location: Location,
+    skip = false
   ) {
     this.name = name;
     this.index = index;
     this.callback = callback;
     this.location = location;
+    this.isSkipped = skip;
   }
 }

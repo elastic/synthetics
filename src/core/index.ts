@@ -23,7 +23,7 @@
  *
  */
 
-import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
+import { Journey, JourneyCallback, JourneyOptions, Step } from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
@@ -57,10 +57,23 @@ export const journey = wrapFnWithLocation(
   }
 );
 
-export const step = wrapFnWithLocation(
+type StepType = (name: string, callback: VoidCallback) => Step;
+
+interface StepWithSkipType extends StepType {
+  skip?: (name: string, callback: VoidCallback) => Step;
+}
+
+export const step: StepWithSkipType = wrapFnWithLocation(
   (location: Location, name: string, callback: VoidCallback) => {
     log(`Step register: ${name}`);
     return runner.currentJourney?.addStep(name, callback, location);
+  }
+);
+
+step.skip = wrapFnWithLocation(
+  (location: Location, name: string, callback: VoidCallback) => {
+    log(`Step register: ${name}`);
+    return runner.currentJourney?.addStep(name, callback, location, true);
   }
 );
 
