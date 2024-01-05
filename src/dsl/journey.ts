@@ -63,6 +63,7 @@ export class Journey {
   hooks: Hooks = { before: [], after: [] };
   monitor: Monitor;
   skip = false;
+  only = false;
 
   constructor(
     options: JourneyOptions,

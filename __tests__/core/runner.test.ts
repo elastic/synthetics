@@ -819,6 +819,29 @@ describe('runner', () => {
       expect(data).toContain('1 passed');
     });
 
+    it('only journey', async () => {
+      runner.addJourney(
+        journey.only('j1', async () => {
+          step('step1', async () => {});
+        })
+      );
+      runner.addJourney(
+        journey('j2', async () => {
+          step('step1', async () => {});
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toEqual({
+        j1: {
+          status: 'succeeded',
+          stepResults: [],
+        },
+        j2: {
+          status: 'skipped',
+        },
+      });
+    });
+
     it('skip step', async () => {
       runner.addJourney(
         journey('j1', async () => {

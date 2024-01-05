@@ -80,6 +80,23 @@ journey.skip = wrapFnWithLocation(
   }
 );
 
+journey.only = wrapFnWithLocation(
+  (
+    location: Location,
+    options: JourneyOptions | string,
+    callback: JourneyCallback
+  ) => {
+    log(`Journey register: ${JSON.stringify(options)}`);
+    if (typeof options === 'string') {
+      options = { name: options, id: options };
+    }
+    const j = new Journey(options, callback, location);
+    j.only = true;
+    runner.addJourney(j);
+    return j;
+  }
+);
+
 export const step: StepWithAnnotations = wrapFnWithLocation(
   (location: Location, name: string, callback: VoidCallback) => {
     log(`Step register: ${name}`);

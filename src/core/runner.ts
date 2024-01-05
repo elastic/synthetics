@@ -445,11 +445,17 @@ export default class Runner {
 
     const { dryRun, match, tags } = options;
     for (const journey of this.journeys) {
+      // skipped because of some other journey is running with only flag
+      const isSkipped =
+        this.journeys.filter(j => j.only && j.name !== journey.name).length > 0;
       /**
        * Used by heartbeat to gather all registered journeys
        */
-      if (dryRun || journey.skip) {
+      if (dryRun || journey.skip || isSkipped) {
         this.#reporter.onJourneyRegister?.(journey);
+        result[journey.name] = {
+          status: 'skipped',
+        };
         continue;
       }
       if (!journey.isMatch(match, tags)) {
