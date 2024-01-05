@@ -73,7 +73,13 @@ export type {
   StartEvent,
 } from './common_types';
 
-export type { Journey, JourneyCallback } from './dsl';
+export type {
+  Journey,
+  JourneyCallback,
+  JourneyWithAnnotations,
+  JourneyOptions,
+  StepWithAnnotations,
+} from './dsl';
 
 export type {
   Action,
