@@ -368,6 +368,7 @@ export default class Runner {
           result.error = stepResult.error;
         }
       }
+      result.stepResults = stepResults;
       await this.runAfterHook(journey, hookArgs);
     } catch (e) {
       result.status = 'failed';

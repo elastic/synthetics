@@ -793,4 +793,121 @@ describe('runner', () => {
       });
     });
   });
+
+  describe.only('journey and step annotations', () => {
+    const getBufferData = () => {
+      const fd = fs.openSync(dest, 'r');
+      const buffer = fs.readFileSync(fd, 'utf-8');
+      // get as string and remove the last line
+      return buffer.split('\n').slice(0, -1).join('\n');
+    };
+
+    it('skip journey', async () => {
+      runner.addJourney(
+        journey.skip('j1', async () => {
+          step('step1', async () => {});
+        })
+      );
+      runner.addJourney(
+        journey('j2', async () => {
+          step('step1', async () => {});
+        })
+      );
+      await runner.run(defaultRunOptions);
+      const data = getBufferData();
+      expect(data).toContain('1 skipped');
+      expect(data).toContain('1 passed');
+    });
+
+    it('skip step', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', async () => {});
+          step.skip('step2', async () => {});
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toEqual({
+        j1: {
+          status: 'succeeded',
+          stepResults: [
+            {
+              status: 'succeeded',
+              url: 'about:blank',
+            },
+            {
+              status: 'skipped',
+            },
+          ],
+        },
+      });
+    });
+    it('soft step failure', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', async () => {});
+          step.soft('step2', async () => {
+            throw new Error('soft error');
+          });
+          step.soft('step3', async () => {});
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+
+      expect(result).toEqual({
+        j1: {
+          error: new Error('soft error'),
+          status: 'failed',
+          stepResults: [
+            {
+              status: 'succeeded',
+              url: 'about:blank',
+            },
+            {
+              error: new Error('soft error'),
+              status: 'failed',
+              url: 'about:blank',
+            },
+            {
+              status: 'succeeded',
+              url: 'about:blank',
+            },
+          ],
+        },
+      });
+    });
+
+    it('only step', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', async () => {});
+          step.only('step2', async () => {
+            throw new Error('soft error');
+          });
+          step('step3', async () => {});
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+
+      expect(result).toEqual({
+        j1: {
+          error: new Error('soft error'),
+          status: 'failed',
+          stepResults: [
+            {
+              status: 'skipped',
+            },
+            {
+              error: new Error('soft error'),
+              status: 'failed',
+              url: 'about:blank',
+            },
+            {
+              status: 'skipped',
+            },
+          ],
+        },
+      });
+    });
+  });
 });
