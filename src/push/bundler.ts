@@ -31,7 +31,8 @@ import archiver from 'archiver';
 import { commonOptions } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
 
-const SIZE_LIMIT_KB = 800;
+// 1500KB Max Gzipped limit for bundled code to be pushed as Kibana project monitors.
+const SIZE_LIMIT_KB = 200;
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
@@ -100,7 +101,7 @@ export class Bundler {
     const sizeKb = size / 1024;
     if (sizeKb > SIZE_LIMIT_KB) {
       throw new Error(
-        `You have monitors whose size exceeds the ${SIZE_LIMIT_KB}KB limit.`
+        `Bundled monitor code exceeds the recommended ${SIZE_LIMIT_KB}KB limit. Please check your dependencies and try again.`
       );
     }
   }
