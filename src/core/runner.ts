@@ -261,14 +261,16 @@ export default class Runner {
       const start = monotonicTimeInSeconds();
       this.#reporter?.onStepStart?.(journey, step);
       let data: StepResult = { status: 'succeeded' };
-      if (skipStep || step.isSkipped) {
+      const isSkipped =
+        journey.steps.filter(s => s.only && s.index !== step.index).length > 0;
+      if (skipStep || step.skip || isSkipped) {
         data.status = 'skipped';
       } else {
         data = await this.runStep(step, context, options);
         /**
          * skip next steps if the previous step returns error
          */
-        if (data.error) skipStep = true;
+        if (data.error && !step.soft) skipStep = true;
       }
       this.#reporter?.onStepEnd?.(journey, step, {
         start,
@@ -417,6 +419,11 @@ export default class Runner {
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
       journey.monitor.validate();
+      if (journey.skip && !options.force) {
+        throw new Error(
+          `Journey ${journey.name} is skipped. Remove the skip method or use -f, --force to ignore this.`
+        );
+      }
       monitors.push(journey.monitor);
     }
     return monitors;
@@ -440,7 +447,7 @@ export default class Runner {
       /**
        * Used by heartbeat to gather all registered journeys
        */
-      if (dryRun) {
+      if (dryRun || journey.skip) {
         this.#reporter.onJourneyRegister?.(journey);
         continue;
       }

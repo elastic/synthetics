@@ -39,6 +39,7 @@ export type JourneyOptions = {
   name: string;
   id?: string;
   tags?: string[];
+  skip?: boolean;
 };
 
 type HookType = 'before' | 'after';
@@ -61,6 +62,7 @@ export class Journey {
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
   monitor: Monitor;
+  skip = false;
 
   constructor(
     options: JourneyOptions,
@@ -79,15 +81,16 @@ export class Journey {
     name: string,
     callback: VoidCallback,
     location?: Location,
-    skip = false
+    { skip, soft, only }: { skip?: boolean; soft?: boolean; only?: boolean } = {
+      skip: false,
+      soft: false,
+      only: false,
+    }
   ) {
-    const step = new Step(
-      name,
-      this.steps.length + 1,
-      callback,
-      location,
-      skip
-    );
+    const step = new Step(name, this.steps.length + 1, callback, location);
+    step.skip = skip;
+    step.soft = soft;
+    step.only = only;
     this.steps.push(step);
     return step;
   }
@@ -117,4 +120,14 @@ export class Journey {
   isMatch(matchPattern: string, tagsPattern: Array<string>) {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
+}
+
+type JourneyType = (
+  name: string | JourneyOptions,
+  callback: JourneyCallback
+) => Journey;
+
+export interface JourneyWithAnnotations extends JourneyType {
+  skip?: JourneyType;
+  only?: JourneyType;
 }

@@ -23,7 +23,13 @@
  *
  */
 
-import { Journey, JourneyCallback, JourneyOptions, Step } from '../dsl';
+import {
+  Journey,
+  JourneyCallback,
+  JourneyOptions,
+  JourneyWithAnnotations,
+  StepWithAnnotations,
+} from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
@@ -41,7 +47,7 @@ if (!global[SYNTHETICS_RUNNER]) {
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
-export const journey = wrapFnWithLocation(
+export const journey: JourneyWithAnnotations = wrapFnWithLocation(
   (
     location: Location,
     options: JourneyOptions | string,
@@ -57,13 +63,24 @@ export const journey = wrapFnWithLocation(
   }
 );
 
-type StepType = (name: string, callback: VoidCallback) => Step;
+journey.skip = wrapFnWithLocation(
+  (
+    location: Location,
+    options: JourneyOptions | string,
+    callback: JourneyCallback
+  ) => {
+    log(`Journey register: ${JSON.stringify(options)}`);
+    if (typeof options === 'string') {
+      options = { name: options, id: options };
+    }
+    const j = new Journey(options, callback, location);
+    j.skip = true;
+    runner.addJourney(j);
+    return j;
+  }
+);
 
-interface StepWithSkipType extends StepType {
-  skip?: (name: string, callback: VoidCallback) => Step;
-}
-
-export const step: StepWithSkipType = wrapFnWithLocation(
+export const step: StepWithAnnotations = wrapFnWithLocation(
   (location: Location, name: string, callback: VoidCallback) => {
     log(`Step register: ${name}`);
     return runner.currentJourney?.addStep(name, callback, location);
@@ -73,7 +90,33 @@ export const step: StepWithSkipType = wrapFnWithLocation(
 step.skip = wrapFnWithLocation(
   (location: Location, name: string, callback: VoidCallback) => {
     log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location, true);
+    return runner.currentJourney?.addStep(name, callback, location, {
+      skip: true,
+    });
+  }
+);
+
+/**
+ * Failure of soft step will not skip rest of the steps
+ */
+step.soft = wrapFnWithLocation(
+  (location: Location, name: string, callback: VoidCallback) => {
+    log(`Step register: ${name}`);
+    return runner.currentJourney?.addStep(name, callback, location, {
+      soft: true,
+    });
+  }
+);
+
+/**
+ * Only run this step and skip rest of the steps
+ */
+step.only = wrapFnWithLocation(
+  (location: Location, name: string, callback: VoidCallback) => {
+    log(`Step register: ${name}`);
+    return runner.currentJourney?.addStep(name, callback, location, {
+      only: true,
+    });
   }
 );
 

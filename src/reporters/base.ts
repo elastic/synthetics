@@ -64,6 +64,9 @@ export default class BaseReporter implements Reporter {
   onJourneyRegister(journey: Journey): void {
     this.write(`\nJourney: ${journey.name}`);
     this.metrics.registered++;
+    if (journey.skip) {
+      this.metrics.skipped++;
+    }
   }
 
   onJourneyStart(journey: Journey, {}: JourneyStartResult) {

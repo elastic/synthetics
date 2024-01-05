@@ -30,19 +30,27 @@ export class Step {
   index: number;
   callback: VoidCallback;
   location?: Location;
-  isSkipped = false;
+  skip = false;
+  soft = false;
+  only = false;
 
   constructor(
     name: string,
     index: number,
     callback: VoidCallback,
-    location: Location,
-    skip = false
+    location: Location
   ) {
     this.name = name;
     this.index = index;
     this.callback = callback;
     this.location = location;
-    this.isSkipped = skip;
   }
+}
+
+type StepType = (name: string, callback: VoidCallback) => Step;
+
+export interface StepWithAnnotations extends StepType {
+  skip?: StepType;
+  soft?: StepType;
+  only?: StepType;
 }
