@@ -32,7 +32,7 @@ import { commonOptions } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
 
 // 1500KB Max Gzipped limit for bundled code to be pushed as Kibana project monitors.
-const SIZE_LIMIT_KB = 200;
+const SIZE_LIMIT_KB = 1500;
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
