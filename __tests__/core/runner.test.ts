@@ -834,7 +834,7 @@ describe('runner', () => {
       expect(result).toEqual({
         j1: {
           status: 'succeeded',
-          stepResults: [],
+          steps: [],
         },
         j2: {
           status: 'skipped',
@@ -853,7 +853,7 @@ describe('runner', () => {
       expect(result).toEqual({
         j1: {
           status: 'succeeded',
-          stepResults: [
+          steps: [
             {
               status: 'succeeded',
               url: 'about:blank',
@@ -881,7 +881,7 @@ describe('runner', () => {
         j1: {
           error: new Error('soft error'),
           status: 'failed',
-          stepResults: [
+          steps: [
             {
               status: 'succeeded',
               url: 'about:blank',
@@ -916,7 +916,7 @@ describe('runner', () => {
         j1: {
           error: new Error('soft error'),
           status: 'failed',
-          stepResults: [
+          steps: [
             {
               status: 'skipped',
             },

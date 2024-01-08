@@ -48,7 +48,10 @@ describe('Run', () => {
     const results = await Promise.all(promises);
 
     expect(results).toEqual([
-      { j1: { status: 'succeeded' }, j2: { status: 'succeeded' } },
+      {
+        j1: { status: 'succeeded', steps: [] },
+        j2: { status: 'succeeded', steps: [] },
+      },
       {},
     ]);
   });
