@@ -794,7 +794,7 @@ describe('runner', () => {
     });
   });
 
-  describe.only('journey and step annotations', () => {
+  describe('journey and step annotations', () => {
     const getBufferData = () => {
       const fd = fs.openSync(dest, 'r');
       const buffer = fs.readFileSync(fd, 'utf-8');
