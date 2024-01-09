@@ -248,7 +248,6 @@ export type PushOptions = Partial<ProjectSettings> &
     yes?: boolean;
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
-    force?: boolean;
   };
 
 export type ProjectSettings = {

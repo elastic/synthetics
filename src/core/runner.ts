@@ -413,6 +413,11 @@ export default class Runner {
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
       this.#currentJourney = journey;
+      if (journey.skip) {
+        throw new Error(
+          `Journey ${journey.name} is skipped. Please remove the skip annotation from the journey to try again.`
+        );
+      }
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
@@ -420,11 +425,6 @@ export default class Runner {
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
       journey.monitor.validate();
-      if (journey.skip && !options.force) {
-        throw new Error(
-          `Journey ${journey.name} is skipped. Remove the skip method or use -f, --force to ignore this.`
-        );
-      }
       monitors.push(journey.monitor);
     }
     return monitors;

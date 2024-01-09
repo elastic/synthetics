@@ -39,7 +39,6 @@ export type JourneyOptions = {
   name: string;
   id?: string;
   tags?: string[];
-  skip?: boolean;
 };
 
 type HookType = 'before' | 'after';
@@ -78,20 +77,8 @@ export class Journey {
     this.updateMonitor({});
   }
 
-  addStep(
-    name: string,
-    callback: VoidCallback,
-    location?: Location,
-    { skip, soft, only }: { skip?: boolean; soft?: boolean; only?: boolean } = {
-      skip: false,
-      soft: false,
-      only: false,
-    }
-  ) {
+  addStep(name: string, callback: VoidCallback, location?: Location) {
     const step = new Step(name, this.steps.length + 1, callback, location);
-    step.skip = skip;
-    step.soft = soft;
-    step.only = only;
     this.steps.push(step);
     return step;
   }

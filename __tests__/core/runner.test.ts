@@ -794,7 +794,7 @@ describe('runner', () => {
     });
   });
 
-  describe.only('journey and step annotations', () => {
+  describe('journey and step annotations', () => {
     const getBufferData = () => {
       const fd = fs.openSync(dest, 'r');
       const buffer = fs.readFileSync(fd, 'utf-8');
@@ -805,12 +805,12 @@ describe('runner', () => {
     it('skip journey', async () => {
       runner.addJourney(
         journey.skip('j1', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
         })
       );
       runner.addJourney(
         journey('j2', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
         })
       );
       await runner.run(defaultRunOptions);
@@ -822,12 +822,12 @@ describe('runner', () => {
     it('only journey', async () => {
       runner.addJourney(
         journey.only('j1', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
         })
       );
       runner.addJourney(
         journey('j2', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);
@@ -845,8 +845,8 @@ describe('runner', () => {
     it('skip step', async () => {
       runner.addJourney(
         journey('j1', async () => {
-          step('step1', async () => {});
-          step.skip('step2', async () => {});
+          step('step1', noop);
+          step.skip('step2', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);
@@ -868,11 +868,11 @@ describe('runner', () => {
     it('soft step failure', async () => {
       runner.addJourney(
         journey('j1', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
           step.soft('step2', async () => {
             throw new Error('soft error');
           });
-          step.soft('step3', async () => {});
+          step.soft('step3', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);
@@ -903,11 +903,11 @@ describe('runner', () => {
     it('only step', async () => {
       runner.addJourney(
         journey('j1', async () => {
-          step('step1', async () => {});
+          step('step1', noop);
           step.only('step2', async () => {
             throw new Error('soft error');
           });
-          step('step3', async () => {});
+          step('step3', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);

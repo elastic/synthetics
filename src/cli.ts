@@ -185,7 +185,6 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
-  .option('-f, --force', 'Ignore warnings and force push')
   .addOption(authMandatory)
   .addOption(pattern)
   .addOption(params)

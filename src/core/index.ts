@@ -47,95 +47,61 @@ if (!global[SYNTHETICS_RUNNER]) {
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
-export const journey: JourneyWithAnnotations = wrapFnWithLocation(
-  (
-    location: Location,
-    options: JourneyOptions | string,
-    callback: JourneyCallback
-  ) => {
-    log(`Journey register: ${JSON.stringify(options)}`);
-    if (typeof options === 'string') {
-      options = { name: options, id: options };
+const createJourney = (type?: 'skip' | 'only') =>
+  wrapFnWithLocation(
+    (
+      location: Location,
+      options: JourneyOptions | string,
+      callback: JourneyCallback
+    ) => {
+      log(`Journey register: ${JSON.stringify(options)}`);
+      if (typeof options === 'string') {
+        options = { name: options, id: options };
+      }
+      const j = new Journey(options, callback, location);
+
+      if (type) {
+        j[type] = true;
+      }
+
+      runner.addJourney(j);
+      return j;
     }
-    const j = new Journey(options, callback, location);
-    runner.addJourney(j);
-    return j;
-  }
-);
+  );
 
-journey.skip = wrapFnWithLocation(
-  (
-    location: Location,
-    options: JourneyOptions | string,
-    callback: JourneyCallback
-  ) => {
-    log(`Journey register: ${JSON.stringify(options)}`);
-    if (typeof options === 'string') {
-      options = { name: options, id: options };
+export const journey: JourneyWithAnnotations = createJourney();
+
+journey.skip = createJourney('skip');
+journey.only = createJourney('only');
+
+const createStep = (type?: 'skip' | 'soft' | 'only') =>
+  wrapFnWithLocation(
+    (location: Location, name: string, callback: VoidCallback) => {
+      log(`Step register: ${name}`);
+      const step = runner.currentJourney?.addStep(name, callback, location);
+      if (type) {
+        step[type] = true;
+      }
+      return step;
     }
-    const j = new Journey(options, callback, location);
-    j.skip = true;
-    runner.addJourney(j);
-    return j;
-  }
-);
+  );
 
-journey.only = wrapFnWithLocation(
-  (
-    location: Location,
-    options: JourneyOptions | string,
-    callback: JourneyCallback
-  ) => {
-    log(`Journey register: ${JSON.stringify(options)}`);
-    if (typeof options === 'string') {
-      options = { name: options, id: options };
-    }
-    const j = new Journey(options, callback, location);
-    j.only = true;
-    runner.addJourney(j);
-    return j;
-  }
-);
+export const step: StepWithAnnotations = createStep();
 
-export const step: StepWithAnnotations = wrapFnWithLocation(
-  (location: Location, name: string, callback: VoidCallback) => {
-    log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location);
-  }
-);
-
-step.skip = wrapFnWithLocation(
-  (location: Location, name: string, callback: VoidCallback) => {
-    log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location, {
-      skip: true,
-    });
-  }
-);
+/**
+ * Skip this step
+ */
+step.skip = createStep('skip');
 
 /**
  * Failure of soft step will not skip rest of the steps
  */
-step.soft = wrapFnWithLocation(
-  (location: Location, name: string, callback: VoidCallback) => {
-    log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location, {
-      soft: true,
-    });
-  }
-);
+step.soft = createStep('soft');
 
 /**
  * Only run this step and skip rest of the steps
  */
-step.only = wrapFnWithLocation(
-  (location: Location, name: string, callback: VoidCallback) => {
-    log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location, {
-      only: true,
-    });
-  }
-);
+step.only = createStep('only');
 
 export const monitor = {
   use: wrapFnWithLocation((location: Location, config: MonitorConfig) => {
