@@ -90,9 +90,8 @@ async function validateZip(content) {
   expect(files).toEqual([partialPath]);
 
   // Verify if files are bundled together
-  expect(contents).toContain('node_modules/is-positive/index.js');
-  expect(contents).toContain('test-bundler/bundle.journey.ts');
-  expect(contents).toContain('test-bundler/utils.ts');
+  expect(contents).toContain('import_is_positive');
+  expect(contents).toContain('utils_default');
   // Verify if sourcemaps are present after bundling
   expect(contents).toContain('sourceMappingURL=data:application/json;base64');
   await unlink(pathToZip);

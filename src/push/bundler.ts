@@ -49,6 +49,7 @@ export class Bundler {
         entryPoints: [absPath],
         bundle: true,
         write: false,
+        minifyWhitespace: true,
         sourcemap: 'inline',
         external: ['@elastic/synthetics'],
         plugins: [SyntheticsBundlePlugin()],

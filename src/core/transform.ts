@@ -81,9 +81,6 @@ export function commonOptions(): CommonOptions {
    */
   return {
     minify: false,
-    minifyIdentifiers: false,
-    minifySyntax: false,
-    minifyWhitespace: false,
     sourcemap: 'both',
     sourcesContent: false,
     platform: 'node',
