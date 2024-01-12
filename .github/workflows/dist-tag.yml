@@ -53,5 +53,4 @@ jobs:
 
       - name: NPM dist-tag
         run: |
-          NPM_PACKAGE=$(jq '.name' package.json)
-          npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" "${DIST_TAG}"
+          npm dist-tag --otp=${TOTP_CODE} add "@elastic/synthetics@${VERSION}" "${DIST_TAG}"
