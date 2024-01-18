@@ -424,7 +424,7 @@ export default class Runner {
       this.#currentJourney = journey;
       if (journey.skip) {
         throw new Error(
-          `Journey ${journey.name} is skipped. Please remove the skip annotation from the journey to try again.`
+          `Journey ${journey.name} is skipped. Please remove the journey.skip annotation and try again.`
         );
       }
       /**
@@ -467,9 +467,6 @@ export default class Runner {
        */
       if (dryRun) {
         this.#reporter.onJourneyRegister?.(journey);
-        result[journey.name] = {
-          status: 'skipped',
-        };
         continue;
       }
       if (!journey.isMatch(match, tags) || journey.skip) {
