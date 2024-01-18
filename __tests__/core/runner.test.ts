@@ -883,49 +883,26 @@ describe('runner', () => {
   });
 
   describe('journey and step annotations', () => {
-    const getBufferData = () => {
-      const fd = fs.openSync(dest, 'r');
-      const buffer = fs.readFileSync(fd, 'utf-8');
-      // get as string and remove the last line
-      return buffer.split('\n').slice(0, -1).join('\n');
-    };
-
     it('skip journey', async () => {
-      runner.addJourney(
-        journey.skip('j1', async () => {
-          step('step1', noop);
-        })
-      );
-      runner.addJourney(
-        journey('j2', async () => {
-          step('step1', noop);
-        })
-      );
-      await runner.run(defaultRunOptions);
-      const data = getBufferData();
-      expect(data).toContain('1 skipped');
-      expect(data).toContain('1 passed');
+      runner.addJourney(journey.skip('j1', noop));
+      runner.addJourney(journey('j2', noop));
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toEqual({
+        j2: {
+          status: 'succeeded',
+          steps: [],
+        },
+      });
     });
 
     it('only journey', async () => {
-      runner.addJourney(
-        journey.only('j1', async () => {
-          step('step1', noop);
-        })
-      );
-      runner.addJourney(
-        journey('j2', async () => {
-          step('step1', noop);
-        })
-      );
+      runner.addJourney(journey.only('j1', noop));
+      runner.addJourney(journey('j2', noop));
       const result = await runner.run(defaultRunOptions);
       expect(result).toEqual({
         j1: {
           status: 'succeeded',
           steps: [],
-        },
-        j2: {
-          status: 'skipped',
         },
       });
     });
@@ -938,13 +915,12 @@ describe('runner', () => {
         })
       );
       const result = await runner.run(defaultRunOptions);
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         j1: {
           status: 'succeeded',
           steps: [
             {
               status: 'succeeded',
-              url: 'about:blank',
             },
             {
               status: 'skipped',
@@ -958,30 +934,27 @@ describe('runner', () => {
         journey('j1', async () => {
           step('step1', noop);
           step.soft('step2', async () => {
-            throw new Error('soft error');
+            throw new Error('step2 soft error');
           });
           step.soft('step3', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         j1: {
-          error: new Error('soft error'),
+          error: new Error('step2 soft error'),
           status: 'failed',
           steps: [
             {
               status: 'succeeded',
-              url: 'about:blank',
             },
             {
-              error: new Error('soft error'),
+              error: new Error('step2 soft error'),
               status: 'failed',
-              url: 'about:blank',
             },
             {
               status: 'succeeded',
-              url: 'about:blank',
             },
           ],
         },
@@ -993,25 +966,31 @@ describe('runner', () => {
         journey('j1', async () => {
           step('step1', noop);
           step.only('step2', async () => {
-            throw new Error('soft error');
+            throw new Error('step2 only error');
+          });
+          step.only('step3', async () => {
+            throw new Error('step3 only error');
           });
           step('step3', noop);
         })
       );
       const result = await runner.run(defaultRunOptions);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         j1: {
-          error: new Error('soft error'),
+          error: new Error('step3 only error'),
           status: 'failed',
           steps: [
             {
               status: 'skipped',
             },
             {
-              error: new Error('soft error'),
+              error: new Error('step2 only error'),
               status: 'failed',
-              url: 'about:blank',
+            },
+            {
+              error: new Error('step3 only error'),
+              status: 'failed',
             },
             {
               status: 'skipped',

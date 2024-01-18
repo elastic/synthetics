@@ -111,11 +111,17 @@ export class Journey {
 }
 
 type JourneyType = (
-  name: string | JourneyOptions,
+  options: string | JourneyOptions,
   callback: JourneyCallback
 ) => Journey;
 
-export interface JourneyWithAnnotations extends JourneyType {
-  skip?: JourneyType;
-  only?: JourneyType;
-}
+export type JourneyWithAnnotations = JourneyType & {
+  /**
+   * Skip this journey and all its steps
+   */
+  skip: JourneyType;
+  /**
+   * Run only this journey and skip rest of the journeys
+   */
+  only: JourneyType;
+};

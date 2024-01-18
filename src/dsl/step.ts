@@ -49,8 +49,17 @@ export class Step {
 
 type StepType = (name: string, callback: VoidCallback) => Step;
 
-export interface StepWithAnnotations extends StepType {
-  skip?: StepType;
-  soft?: StepType;
-  only?: StepType;
-}
+export type StepWithAnnotations = StepType & {
+  /**
+   * Skip this step on the journey
+   */
+  skip: StepType;
+  /**
+   * Failure of soft step will not skip rest of the steps in the journey
+   */
+  soft: StepType;
+  /**
+   * Run only this step and skip rest of the steps in the journey
+   */
+  only: StepType;
+};

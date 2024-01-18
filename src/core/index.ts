@@ -69,8 +69,7 @@ const createJourney = (type?: 'skip' | 'only') =>
     }
   );
 
-export const journey: JourneyWithAnnotations = createJourney();
-
+export const journey = createJourney() as JourneyWithAnnotations;
 journey.skip = createJourney('skip');
 journey.only = createJourney('only');
 
@@ -86,21 +85,9 @@ const createStep = (type?: 'skip' | 'soft' | 'only') =>
     }
   );
 
-export const step: StepWithAnnotations = createStep();
-
-/**
- * Skip this step
- */
+export const step = createStep() as StepWithAnnotations;
 step.skip = createStep('skip');
-
-/**
- * Failure of soft step will not skip rest of the steps
- */
 step.soft = createStep('soft');
-
-/**
- * Only run this step and skip rest of the steps
- */
 step.only = createStep('only');
 
 export const monitor = {
