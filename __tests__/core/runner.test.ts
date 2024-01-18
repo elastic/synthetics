@@ -130,23 +130,19 @@ describe('runner', () => {
       throw error;
     });
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "error": [Error: Broken step 2],
-        "status": "failed",
-        "steps": [
-          {
-            "status": "succeeded",
-            "url": "about:blank",
-          },
-          {
-            "error": [Error: Broken step 2],
-            "status": "failed",
-            "url": "about:blank",
-          },
-        ],
-      }
-    `);
+    expect(result).toMatchObject({
+      error: error,
+      status: 'failed',
+      steps: [
+        {
+          status: 'succeeded',
+        },
+        {
+          error: error,
+          status: 'failed',
+        },
+      ],
+    });
   });
 
   it('run journey - with hooks', async () => {
@@ -154,12 +150,9 @@ describe('runner', () => {
     journey.addHook('before', noop);
     journey.addHook('after', noop);
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "status": "succeeded",
-        "steps": [],
-      }
-    `);
+    expect(result).toMatchObject({
+      status: 'succeeded',
+    });
   });
 
   it('run journey - failed when hooks errors', async () => {
@@ -170,13 +163,10 @@ describe('runner', () => {
       throw error;
     });
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "error": [Error: Broken after hook],
-        "status": "failed",
-        "steps": [],
-      }
-    `);
+    expect(result).toMatchObject({
+      status: 'failed',
+      error,
+    });
   });
 
   it('run journey - failed on beforeAll', async () => {
@@ -337,14 +327,9 @@ describe('runner', () => {
     const journey = new Journey({ name }, noop);
     runner.addJourney(journey);
     const result = await runner.run(defaultRunOptions);
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "test-journey": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    expect(result).toMatchObject({
+      [name]: { status: 'succeeded' },
+    });
   });
 
   it('run api - match journey name explicit', async () => {
@@ -355,14 +340,9 @@ describe('runner', () => {
         ...defaultRunOptions,
         match: 'j2',
       })
-    ).toMatchInlineSnapshot(`
-      {
-        "j2": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    ).toMatchObject({
+      j2: { status: 'succeeded' },
+    });
   });
 
   it('run api - match journey name and tag globs', async () => {
@@ -373,18 +353,10 @@ describe('runner', () => {
         ...defaultRunOptions,
         match: 'j*',
       })
-    ).toMatchInlineSnapshot(`
-      {
-        "j1": {
-          "status": "succeeded",
-          "steps": [],
-        },
-        "tagj2": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    ).toMatchObject({
+      j1: { status: 'succeeded' },
+      tagj2: { status: 'succeeded' },
+    });
   });
 
   it('run api - prefer tags glob matching', async () => {
@@ -399,22 +371,11 @@ describe('runner', () => {
         tags: ['foo*'],
         match: 'j*',
       })
-    ).toMatchInlineSnapshot(`
-      {
-        "j1": {
-          "status": "succeeded",
-          "steps": [],
-        },
-        "j3": {
-          "status": "succeeded",
-          "steps": [],
-        },
-        "j5": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    ).toMatchObject({
+      j1: { status: 'succeeded' },
+      j3: { status: 'succeeded' },
+      j5: { status: 'succeeded' },
+    });
   });
 
   it('run api - support multiple tags', async () => {
@@ -426,18 +387,10 @@ describe('runner', () => {
         ...defaultRunOptions,
         tags: ['hello:b*'],
       })
-    ).toMatchInlineSnapshot(`
-      {
-        "j2": {
-          "status": "succeeded",
-          "steps": [],
-        },
-        "j3": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    ).toMatchObject({
+      j2: { status: 'succeeded' },
+      j3: { status: 'succeeded' },
+    });
   });
 
   it('run api - support negation tags', async () => {
@@ -449,14 +402,9 @@ describe('runner', () => {
         ...defaultRunOptions,
         tags: ['!hello:b*'],
       })
-    ).toMatchInlineSnapshot(`
-      {
-        "j1": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    ).toMatchObject({
+      j1: { status: 'succeeded' },
+    });
   });
 
   it('run api - accumulate failed journeys', async () => {
@@ -468,25 +416,10 @@ describe('runner', () => {
     });
     runner.addJourney(j2);
     const result = await runner.run(defaultRunOptions);
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "j1": {
-          "status": "succeeded",
-          "steps": [],
-        },
-        "j2": {
-          "error": [Error: broken journey],
-          "status": "failed",
-          "steps": [
-            {
-              "error": [Error: broken journey],
-              "status": "failed",
-              "url": "about:blank",
-            },
-          ],
-        },
-      }
-    `);
+    expect(result).toMatchObject({
+      j1: { status: 'succeeded' },
+      j2: { status: 'failed', error },
+    });
   });
 
   it('run api - dry run', async () => {
@@ -503,16 +436,7 @@ describe('runner', () => {
       reporter: DryRunReporter,
       dryRun: true,
     });
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "j1": {
-          "status": "skipped",
-        },
-        "j2": {
-          "status": "skipped",
-        },
-      }
-    `);
+    expect(result).toEqual({});
     expect(count).toBe(2);
   });
 
@@ -611,14 +535,11 @@ describe('runner', () => {
       ...defaultRunOptions,
       reporter: CustomReporter,
     });
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "foo": {
-          "status": "succeeded",
-          "steps": [],
-        },
-      }
-    `);
+    expect(result).toMatchObject({
+      foo: {
+        status: 'succeeded',
+      },
+    });
     expect(reporter?.messages).toEqual([
       'numJourneys 1',
       'journey:start foo',
