@@ -61,6 +61,8 @@ export class Journey {
   steps: Step[] = [];
   hooks: Hooks = { before: [], after: [] };
   monitor: Monitor;
+  skip = false;
+  only = false;
 
   constructor(
     options: JourneyOptions,
@@ -107,3 +109,19 @@ export class Journey {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
 }
+
+type JourneyType = (
+  options: string | JourneyOptions,
+  callback: JourneyCallback
+) => Journey;
+
+export type JourneyWithAnnotations = JourneyType & {
+  /**
+   * Skip this journey and all its steps
+   */
+  skip: JourneyType;
+  /**
+   * Run only this journey and skip rest of the journeys
+   */
+  only: JourneyType;
+};

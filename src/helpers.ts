@@ -312,7 +312,7 @@ export function wrapFnWithLocation<A extends unknown[], R>(
   };
 }
 
-// Safely parse ND JSON (Newline delimitted JSON) chunks
+// Safely parse ND JSON (Newline delimited JSON) chunks
 export function safeNDJSONParse(data: string | string[]) {
   // data may not be at proper newline boundaries, so we make sure everything is split
   // on proper newlines

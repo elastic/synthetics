@@ -130,9 +130,18 @@ describe('runner', () => {
       throw error;
     });
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
+      error: error,
       status: 'failed',
-      error,
+      steps: [
+        {
+          status: 'succeeded',
+        },
+        {
+          error: error,
+          status: 'failed',
+        },
+      ],
     });
   });
 
@@ -141,7 +150,7 @@ describe('runner', () => {
     journey.addHook('before', noop);
     journey.addHook('after', noop);
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       status: 'succeeded',
     });
   });
@@ -154,7 +163,7 @@ describe('runner', () => {
       throw error;
     });
     const result = await runner.runJourney(journey, defaultRunOptions);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       status: 'failed',
       error,
     });
@@ -318,7 +327,7 @@ describe('runner', () => {
     const journey = new Journey({ name }, noop);
     runner.addJourney(journey);
     const result = await runner.run(defaultRunOptions);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       [name]: { status: 'succeeded' },
     });
   });
@@ -331,7 +340,7 @@ describe('runner', () => {
         ...defaultRunOptions,
         match: 'j2',
       })
-    ).toEqual({
+    ).toMatchObject({
       j2: { status: 'succeeded' },
     });
   });
@@ -344,7 +353,7 @@ describe('runner', () => {
         ...defaultRunOptions,
         match: 'j*',
       })
-    ).toEqual({
+    ).toMatchObject({
       j1: { status: 'succeeded' },
       tagj2: { status: 'succeeded' },
     });
@@ -362,7 +371,7 @@ describe('runner', () => {
         tags: ['foo*'],
         match: 'j*',
       })
-    ).toEqual({
+    ).toMatchObject({
       j1: { status: 'succeeded' },
       j3: { status: 'succeeded' },
       j5: { status: 'succeeded' },
@@ -378,7 +387,7 @@ describe('runner', () => {
         ...defaultRunOptions,
         tags: ['hello:b*'],
       })
-    ).toEqual({
+    ).toMatchObject({
       j2: { status: 'succeeded' },
       j3: { status: 'succeeded' },
     });
@@ -393,7 +402,7 @@ describe('runner', () => {
         ...defaultRunOptions,
         tags: ['!hello:b*'],
       })
-    ).toEqual({
+    ).toMatchObject({
       j1: { status: 'succeeded' },
     });
   });
@@ -407,7 +416,7 @@ describe('runner', () => {
     });
     runner.addJourney(j2);
     const result = await runner.run(defaultRunOptions);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       j1: { status: 'succeeded' },
       j2: { status: 'failed', error },
     });
@@ -526,7 +535,7 @@ describe('runner', () => {
       ...defaultRunOptions,
       reporter: CustomReporter,
     });
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       foo: {
         status: 'succeeded',
       },
@@ -790,6 +799,125 @@ describe('runner', () => {
         tags: ['g1', 'g2'],
         throttling: { latency: 1000 },
         alert: { tls: { enabled: true } },
+      });
+    });
+  });
+
+  describe('journey and step annotations', () => {
+    it('skip journey', async () => {
+      runner.addJourney(journey.skip('j1', noop));
+      runner.addJourney(journey('j2', noop));
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toEqual({
+        j2: {
+          status: 'succeeded',
+          steps: [],
+        },
+      });
+    });
+
+    it('only journey', async () => {
+      runner.addJourney(journey.only('j1', noop));
+      runner.addJourney(journey('j2', noop));
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toEqual({
+        j1: {
+          status: 'succeeded',
+          steps: [],
+        },
+      });
+    });
+
+    it('skip step', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', noop);
+          step.skip('step2', noop);
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+      expect(result).toMatchObject({
+        j1: {
+          status: 'succeeded',
+          steps: [
+            {
+              status: 'succeeded',
+            },
+            {
+              status: 'skipped',
+            },
+          ],
+        },
+      });
+    });
+    it('soft step failure', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', noop);
+          step.soft('step2', async () => {
+            throw new Error('step2 soft error');
+          });
+          step.soft('step3', noop);
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+
+      expect(result).toMatchObject({
+        j1: {
+          error: new Error('step2 soft error'),
+          status: 'failed',
+          steps: [
+            {
+              status: 'succeeded',
+            },
+            {
+              error: new Error('step2 soft error'),
+              status: 'failed',
+            },
+            {
+              status: 'succeeded',
+            },
+          ],
+        },
+      });
+    });
+
+    it('only step', async () => {
+      runner.addJourney(
+        journey('j1', async () => {
+          step('step1', noop);
+          step.only('step2', async () => {
+            throw new Error('step2 only error');
+          });
+          step.only('step3', async () => {
+            throw new Error('step3 only error');
+          });
+          step('step3', noop);
+        })
+      );
+      const result = await runner.run(defaultRunOptions);
+
+      expect(result).toMatchObject({
+        j1: {
+          error: new Error('step3 only error'),
+          status: 'failed',
+          steps: [
+            {
+              status: 'skipped',
+            },
+            {
+              error: new Error('step2 only error'),
+              status: 'failed',
+            },
+            {
+              error: new Error('step3 only error'),
+              status: 'failed',
+            },
+            {
+              status: 'skipped',
+            },
+          ],
+        },
       });
     });
   });

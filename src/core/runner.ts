@@ -256,19 +256,30 @@ export default class Runner {
     options: RunOptions
   ) {
     const results: Array<StepResult> = [];
+    const isOnlyExists = journey.steps.filter(s => s.only).length > 0;
     let skipStep = false;
     for (const step of journey.steps) {
       const start = monotonicTimeInSeconds();
       this.#reporter?.onStepStart?.(journey, step);
       let data: StepResult = { status: 'succeeded' };
-      if (skipStep) {
+      /**
+       * Skip the step
+       * - if the step is marked as skip
+       * - if the previous step fails and the current step is not marked as soft
+       * - if the step is not marked as only and there are steps marked as only
+       */
+      if (
+        step.skip ||
+        (skipStep && !step.only) ||
+        (isOnlyExists && !step.only)
+      ) {
         data.status = 'skipped';
       } else {
         data = await this.runStep(step, context, options);
         /**
          * skip next steps if the previous step returns error
          */
-        if (data.error) skipStep = true;
+        if (data.error && !step.soft) skipStep = true;
       }
       this.#reporter?.onStepEnd?.(journey, step, {
         start,
@@ -366,6 +377,7 @@ export default class Runner {
           result.error = stepResult.error;
         }
       }
+      result.steps = stepResults;
       await this.runAfterHook(journey, hookArgs);
     } catch (e) {
       result.status = 'failed';
@@ -410,6 +422,11 @@ export default class Runner {
     const monitors: Monitor[] = [];
     for (const journey of this.journeys) {
       this.#currentJourney = journey;
+      if (journey.skip) {
+        throw new Error(
+          `Journey ${journey.name} is skipped. Please remove the journey.skip annotation and try again.`
+        );
+      }
       /**
        * Execute dummy callback to get all monitor specific
        * configurations for the current journey
@@ -436,6 +453,14 @@ export default class Runner {
     }).catch(e => (this.hookError = e));
 
     const { dryRun, match, tags } = options;
+    /**
+     * Skip other journeys when using `.only`
+     */
+    const onlyJournerys = this.journeys.filter(j => j.only);
+    if (onlyJournerys.length > 0) {
+      this.journeys = onlyJournerys;
+    }
+
     for (const journey of this.journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
@@ -444,7 +469,7 @@ export default class Runner {
         this.#reporter.onJourneyRegister?.(journey);
         continue;
       }
-      if (!journey.isMatch(match, tags)) {
+      if (!journey.isMatch(match, tags) || journey.skip) {
         continue;
       }
       const journeyResult: JourneyResult = this.hookError

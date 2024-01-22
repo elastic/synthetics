@@ -30,6 +30,9 @@ export class Step {
   index: number;
   callback: VoidCallback;
   location?: Location;
+  skip = false;
+  soft = false;
+  only = false;
 
   constructor(
     name: string,
@@ -43,3 +46,20 @@ export class Step {
     this.location = location;
   }
 }
+
+type StepType = (name: string, callback: VoidCallback) => Step;
+
+export type StepWithAnnotations = StepType & {
+  /**
+   * Skip this step on the journey
+   */
+  skip: StepType;
+  /**
+   * Failure of soft step will not skip rest of the steps in the journey
+   */
+  soft: StepType;
+  /**
+   * Run only this step and skip rest of the steps in the journey
+   */
+  only: StepType;
+};

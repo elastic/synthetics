@@ -23,7 +23,13 @@
  *
  */
 
-import { Journey, JourneyCallback, JourneyOptions } from '../dsl';
+import {
+  Journey,
+  JourneyCallback,
+  JourneyOptions,
+  JourneyWithAnnotations,
+  StepWithAnnotations,
+} from '../dsl';
 import Runner from './runner';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
@@ -41,28 +47,48 @@ if (!global[SYNTHETICS_RUNNER]) {
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
 
-export const journey = wrapFnWithLocation(
-  (
-    location: Location,
-    options: JourneyOptions | string,
-    callback: JourneyCallback
-  ) => {
-    log(`Journey register: ${JSON.stringify(options)}`);
-    if (typeof options === 'string') {
-      options = { name: options, id: options };
-    }
-    const j = new Journey(options, callback, location);
-    runner.addJourney(j);
-    return j;
-  }
-);
+const createJourney = (type?: 'skip' | 'only') =>
+  wrapFnWithLocation(
+    (
+      location: Location,
+      options: JourneyOptions | string,
+      callback: JourneyCallback
+    ) => {
+      log(`Journey register: ${JSON.stringify(options)}`);
+      if (typeof options === 'string') {
+        options = { name: options, id: options };
+      }
+      const j = new Journey(options, callback, location);
 
-export const step = wrapFnWithLocation(
-  (location: Location, name: string, callback: VoidCallback) => {
-    log(`Step register: ${name}`);
-    return runner.currentJourney?.addStep(name, callback, location);
-  }
-);
+      if (type) {
+        j[type] = true;
+      }
+
+      runner.addJourney(j);
+      return j;
+    }
+  );
+
+export const journey = createJourney() as JourneyWithAnnotations;
+journey.skip = createJourney('skip');
+journey.only = createJourney('only');
+
+const createStep = (type?: 'skip' | 'soft' | 'only') =>
+  wrapFnWithLocation(
+    (location: Location, name: string, callback: VoidCallback) => {
+      log(`Step register: ${name}`);
+      const step = runner.currentJourney?.addStep(name, callback, location);
+      if (type) {
+        step[type] = true;
+      }
+      return step;
+    }
+  );
+
+export const step = createStep() as StepWithAnnotations;
+step.skip = createStep('skip');
+step.soft = createStep('soft');
+step.only = createStep('only');
 
 export const monitor = {
   use: wrapFnWithLocation((location: Location, config: MonitorConfig) => {

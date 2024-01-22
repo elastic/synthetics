@@ -276,6 +276,7 @@ export type JourneyResult = {
   error?: Error;
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
+  steps?: Array<StepResult>;
 };
 
 export type TestError = {
