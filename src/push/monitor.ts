@@ -250,6 +250,7 @@ export function buildMonitorFromYaml(
   const alertConfig = parseAlertConfig(config, options.alert);
 
   const mon = new Monitor({
+    enabled: config.enabled ?? options.enabled,
     locations: options.locations,
     tags: options.tags,
     ...normalizeConfig(config),

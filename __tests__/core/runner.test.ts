@@ -754,6 +754,7 @@ describe('runner', () => {
     });
 
     it('runner - build monitors with global config', async () => {
+      // Faking monitor.use across file level
       runner.updateMonitor({
         schedule: 5,
         locations: ['us_east'],
@@ -772,16 +773,22 @@ describe('runner', () => {
         schedule: 3,
         locations: ['united_kingdom'],
         privateLocations: ['spain'],
+        retestOnFailure: true,
       });
-      j2.updateMonitor({ throttling: { latency: 1000 } });
+      j2.updateMonitor({ throttling: { latency: 1000 }, enabled: true });
       runner.addJourney(j1);
       runner.addJourney(j2);
 
-      const monitors = runner.buildMonitors(options);
+      const monitors = runner.buildMonitors({
+        ...options,
+        enabled: false,
+        retestOnFailure: false,
+      });
       expect(monitors.length).toBe(2);
       expect(monitors[0].config).toEqual({
         id: 'test-j1',
         name: 'j1',
+        enabled: false,
         type: 'browser',
         tags: ['foo*'],
         locations: ['united_kingdom'],
@@ -791,11 +798,13 @@ describe('runner', () => {
         playwrightOptions: { ignoreHTTPSErrors: true },
         throttling: { download: 100, latency: 20, upload: 50 },
         alert: { tls: { enabled: true } },
+        retestOnFailure: true,
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],
         privateLocations: ['germany'],
         schedule: 5,
+        enabled: true,
         tags: ['g1', 'g2'],
         throttling: { latency: 1000 },
         alert: { tls: { enabled: true } },

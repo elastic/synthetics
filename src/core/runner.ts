@@ -417,6 +417,8 @@ export default class Runner {
       screenshot: options.screenshots,
       tags: options.tags,
       alert: options.alert,
+      retestOnFailure: options.retestOnFailure,
+      enabled: options.enabled,
     });
 
     const monitors: Monitor[] = [];
