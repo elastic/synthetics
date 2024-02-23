@@ -204,11 +204,8 @@ export async function createLightweightMonitors(
     }
 
     for (const monNode of monitorSeq.items) {
-      // Skip browser monitors and disabled monitors from pushing
-      if (
-        monNode.get('type') === 'browser' ||
-        monNode.get('enabled') === false
-      ) {
+      // Skip browser monitors from the YML files
+      if (monNode.get('type') === 'browser') {
         continue;
       }
       const config = monNode.toJSON();
