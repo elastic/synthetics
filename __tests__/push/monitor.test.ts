@@ -205,8 +205,10 @@ heartbeat.monitors:
   id: "foo"
   name: "foo"
       `);
-      opts.pattern = '.yaml$';
-      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, {
+        ...opts,
+        pattern: '.yaml$',
+      });
       expect(monitors.length).toBe(0);
     });
 
@@ -221,16 +223,17 @@ heartbeat.monitors:
       expect(monitors.length).toBe(0);
     });
 
-    it('skip disabled monitors', async () => {
+    it('push disabled monitors', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: http
+  name: "disabled"
   schedule: "@every 1m"
-  id: "http"
+  id: "disabled"
   enabled: false
       `);
       const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
-      expect(monitors.length).toBe(0);
+      expect(monitors.length).toBe(1);
     });
 
     it('prefer local monitor config', async () => {
