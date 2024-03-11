@@ -25,7 +25,7 @@
 
 import { mkdir, rm, readFile } from 'fs/promises';
 import { extname, join } from 'path';
-import { LineCounter, parseDocument, YAMLSeq, YAMLMap } from 'yaml';
+import { LineCounter, parseDocument, Document, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
@@ -188,8 +188,9 @@ export async function createLightweightMonitors(
     const lineCounter = new LineCounter();
     const parsedDoc = parseDocument(content, {
       lineCounter,
+      merge: true,
       keepSourceTokens: true,
-    });
+    }) as Document.Parsed;
     // Skip other yml files that are not relevant
     const monitorSeq = parsedDoc.get('heartbeat.monitors') as YAMLSeq<YAMLMap>;
     if (!monitorSeq) {
@@ -203,21 +204,29 @@ export async function createLightweightMonitors(
       warnOnce = true;
     }
 
+    // Store the offsets of each monitor in the sequence to construct the source
+    // location later for capturing the error
+    const offsets = [];
     for (const monNode of monitorSeq.items) {
+      offsets.push(monNode.srcToken.offset);
+    }
+
+    const mergedConfig = parsedDoc.toJS()['heartbeat.monitors'];
+    for (let i = 0; i < mergedConfig.length; i++) {
+      const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
-      if (monNode.get('type') === 'browser') {
+      if (monitor['type'] === 'browser') {
         continue;
       }
-      const config = monNode.toJSON();
-      const { line, col } = lineCounter.linePos(monNode.srcToken.offset);
+      const { line, col } = lineCounter.linePos(offsets[i]);
       try {
-        const mon = buildMonitorFromYaml(config, options);
+        const mon = buildMonitorFromYaml(monitor, options);
         mon.setSource({ file, line, column: col });
         monitors.push(mon);
       } catch (e) {
         let outer = bold(`Aborted: ${e}\n`);
         outer += indent(
-          `* ${config.id || config.name} - ${file}:${line}:${col}\n`
+          `* ${monitor.id || monitor.name} - ${file}:${line}:${col}\n`
         );
         throw red(outer);
       }
