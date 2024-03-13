@@ -9,6 +9,9 @@ on:
       - synchronize
       - edited
 
+permissions:
+  contents: read
+
 jobs:
   pr-title-lint:
     runs-on: ubuntu-latest
