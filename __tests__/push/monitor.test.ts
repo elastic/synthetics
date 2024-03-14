@@ -347,6 +347,63 @@ heartbeat.monitors:
         },
       });
     });
+
+    it('support anchors', async () => {
+      await writeHBFile(`
+http-type: &http-type
+  type: http
+schedule5: &schedule-5
+  schedule: '@every 5m'
+team-tag: &team-tag
+  tags:
+    - team1
+    - team2
+
+heartbeat.monitors:
+- id: http1
+  name: "http1"
+  schedule: '@every 1m'
+  <<: *http-type
+  <<: *team-tag
+  urls: "https://blog.elastic.co"
+- id: http2
+  name: "http2"
+  <<: *http-type
+  <<: *schedule-5
+  urls: "https://elastic.co"
+- id: tcp1
+  name: "tcp1"
+  type: tcp
+  <<: *schedule-5
+  hosts: ["elastic.co:443"]
+      `);
+      const [mon1, mon2, mon3] = await createLightweightMonitors(
+        PROJECT_DIR,
+        opts
+      );
+      expect(mon1.config).toMatchObject({
+        id: 'http1',
+        name: 'http1',
+        schedule: 1,
+        type: 'http',
+        tags: ['team1', 'team2'],
+        urls: 'https://blog.elastic.co',
+      });
+      expect(mon2.config).toMatchObject({
+        id: 'http2',
+        name: 'http2',
+        schedule: 5,
+        type: 'http',
+        urls: 'https://elastic.co',
+      });
+      expect(mon3.config).toMatchObject({
+        id: 'tcp1',
+        name: 'tcp1',
+        schedule: 5,
+        type: 'tcp',
+        hosts: ['elastic.co:443'],
+      });
+    });
   });
 
   describe('parseAlertConfig', () => {
