@@ -154,8 +154,36 @@ function formatTLS(tls: SecurityDetails) {
   };
 }
 
+/**
+ * List of wildcard header keys that should be sanitized/redacted from the request/response headers
+ *
+ * Spec followed by APM agent is used as a reference.
+ * https://github.com/elastic/apm/blob/36a5abd49ff156c80cf0c9e2e1eac919873cb18b/specs/agents/sanitization.md?plain=1#L27
+ */
+const SANITIZE_HEADER_KEYS = [
+  /^password$/i,
+  /^secret$/i,
+  /^.*key$/i,
+  /^.*token.*$/i,
+  /^.*session.*$/i,
+  /^.*auth.*$/i,
+  /^set\x2dcookie$/i,
+];
+export function redactKeys(obj: Record<string, string>) {
+  const result = {};
+  for (const key of Object.keys(obj)) {
+    const shouldRedact = SANITIZE_HEADER_KEYS.some(regex => regex.test(key));
+    result[key] = shouldRedact ? '[REDACTED]' : obj[key];
+  }
+  return result;
+}
+
 export function formatNetworkFields(network: NetworkInfo) {
   const { request, response, url, browser } = network;
+  // Perform redaction on the headers before writing results
+  request.headers = redactKeys(request.headers);
+  response.headers = redactKeys(response.headers);
+
   const ecs = {
     // URL would be parsed and mapped by heartbeat
     url,
