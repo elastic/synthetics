@@ -167,9 +167,10 @@ const SANITIZE_HEADER_KEYS = [
   /^.*token.*$/i,
   /^.*session.*$/i,
   /^.*auth.*$/i,
+  /^cookie$/i,
   /^set\x2dcookie$/i,
 ];
-export function redactKeys(obj: Record<string, string>) {
+export function redactKeys(obj: Record<string, string> = {}) {
   const result = {};
   for (const key of Object.keys(obj)) {
     const shouldRedact = SANITIZE_HEADER_KEYS.some(regex => regex.test(key));
@@ -181,8 +182,12 @@ export function redactKeys(obj: Record<string, string>) {
 export function formatNetworkFields(network: NetworkInfo) {
   const { request, response, url, browser } = network;
   // Perform redaction on the headers before writing results
-  request.headers = redactKeys(request.headers);
-  response.headers = redactKeys(response.headers);
+  if (request?.headers) {
+    request.headers = redactKeys(request.headers);
+  }
+  if (response?.headers) {
+    response.headers = redactKeys(response.headers);
+  }
 
   const ecs = {
     // URL would be parsed and mapped by heartbeat

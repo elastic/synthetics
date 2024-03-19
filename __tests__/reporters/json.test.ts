@@ -32,6 +32,7 @@ import JSONReporter, {
   formatNetworkFields,
   gatherScreenshots,
   getScreenshotBlocks,
+  redactKeys,
 } from '../../src/reporters/json';
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
@@ -191,6 +192,26 @@ describe('json reporter', () => {
       expect(duplicates).toBe(false);
       expect(snakeCaseKeys(event)).toMatchSnapshot();
     }
+  });
+
+  it('redact sensitive req/response headers', async () => {
+    expect(
+      redactKeys({
+        'content-type': 'application/json',
+        authorization: 'Bearer Blah',
+        'x-access-token': 'bbb',
+        'x-api-key': 'ccc',
+        cookie: 'foo=bar',
+        'set-cookie': 'foo=bar; Secure; HttpOnly; SameSite=None',
+      })
+    ).toEqual({
+      authorization: '[REDACTED]',
+      'content-type': 'application/json',
+      cookie: '[REDACTED]',
+      'set-cookie': '[REDACTED]',
+      'x-access-token': '[REDACTED]',
+      'x-api-key': '[REDACTED]',
+    });
   });
 
   it('writes step errors to the top level', async () => {
