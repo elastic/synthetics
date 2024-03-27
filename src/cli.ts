@@ -56,16 +56,13 @@ import { installTransform } from './core/transform';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, playwrightOpts, auth, authMandatory } =
+const { params, pattern, playwrightOpts, auth, authMandatory, configOpt } =
   getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
-  .option(
-    '-c, --config <path>',
-    'configuration path (default: synthetics.config.js)'
-  )
+  .addOption(configOpt)
   .addOption(pattern)
   .addOption(params)
   .option('--tags <name...>', 'run tests with a tag that matches the glob')
@@ -189,16 +186,17 @@ program
   .addOption(pattern)
   .addOption(params)
   .addOption(playwrightOpts)
-  .action(async (cmdOpts: PushOptions) => {
+  .addOption(configOpt)
+  .action(async cmdOpts => {
+    cmdOpts = { ...cmdOpts, ...program.opts() };
     const workDir = cwd();
-    const tearDown = await globalSetup({ inline: false, ...program.opts() }, [
+    const tearDown = await globalSetup({ inline: false, ...cmdOpts }, [
       workDir,
     ]);
     try {
-      const settings = await loadSettings();
+      const settings = await loadSettings(cmdOpts.config);
       const options = (await normalizeOptions(
         {
-          ...program.opts(),
           ...settings,
           ...cmdOpts,
         },
@@ -244,8 +242,7 @@ program
   .addOption(auth)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
-    const url = cmdOpts.url ?? (await loadSettings(true))?.url;
-
+    const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
     try {
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({

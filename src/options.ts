@@ -208,11 +208,17 @@ export function getCommonCommandOpts() {
     .env('SYNTHETICS_API_KEY')
     .makeOptionMandatory(true);
 
+  const configOpt = createOption(
+    '-c, --config <path>',
+    'configuration path (default: synthetics.config.js)'
+  );
+
   return {
     auth,
     authMandatory,
     params,
     playwrightOpts,
     pattern,
+    configOpt,
   };
 }
