@@ -204,6 +204,7 @@ type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
+  config?: string;
   pattern?: string;
   match?: string;
   tags?: Array<string>;
@@ -219,7 +220,6 @@ type BaseArgs = {
 };
 
 export type CliArgs = BaseArgs & {
-  config?: string;
   reporter?: BuiltInReporterName;
   inline?: boolean;
   require?: Array<string>;

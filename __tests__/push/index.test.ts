@@ -46,9 +46,13 @@ describe('Push', () => {
     return cli.stderr();
   }
 
-  async function fakeProjectSetup(settings, monitor) {
+  async function fakeProjectSetup(
+    settings,
+    monitor,
+    filename = 'synthetics.config.ts'
+  ) {
     await writeFile(
-      join(PROJECT_DIR, 'synthetics.config.ts'),
+      join(PROJECT_DIR, filename),
       `export default { monitor: ${JSON.stringify(
         monitor
       )}, project: ${JSON.stringify(settings)} }`
@@ -266,11 +270,36 @@ heartbeat.monitors:
         journey('journey 2', () => monitor.use({ id: 'j2' }));`
         );
         const output = await runPush();
-        expect(output).toContain('Pushing monitors for project: test-project');
+        expect(output).toContain(
+          "Pushing monitors for 'test-project' project in kibana 'dummy' space"
+        );
         expect(output).toContain('bundling 2 monitors');
         expect(output).toContain('creating or updating 2 monitors');
         expect(output).toContain(deleteProgress);
         expect(output).toContain('✓ Pushed:');
+        await rm(testJourney, { force: true });
+      });
+
+      it('push journeys with --config', async () => {
+        const testJourney = join(PROJECT_DIR, 'test.journey.ts');
+        await writeFile(
+          testJourney,
+          `import {journey, monitor} from '../../../';
+        journey('journey 1', () => monitor.use({ id: 'j1' }));`
+        );
+        await fakeProjectSetup(
+          { id: 'bar', space: 'dummy', url: server.PREFIX },
+          { locations: ['test-loc'], schedule: 3 },
+          'synthetics.config.test.ts'
+        );
+        const output = await runPush([
+          ...DEFAULT_ARGS,
+          '--config',
+          join(PROJECT_DIR, 'synthetics.config.test.ts'),
+        ]);
+        expect(output).toContain(
+          "Pushing monitors for 'bar' project in kibana 'dummy' space"
+        );
         await rm(testJourney, { force: true });
       });
     });

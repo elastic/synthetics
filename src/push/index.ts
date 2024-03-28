@@ -64,7 +64,9 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
   }
-  progress(`Pushing monitors for project: ${options.id}`);
+  progress(
+    `Pushing monitors for '${options.id}' project in kibana '${options.space}' space`
+  );
 
   /**
    * Legacy API for kibana which does not support bulk operations
@@ -160,9 +162,12 @@ export function formatDuplicateError(monitors: Set<Monitor>) {
 
 const INSTALLATION_HELP = `Run 'npx @elastic/synthetics init' to create project with default settings.`;
 
-export async function loadSettings(ignoreMissing = false) {
+export async function loadSettings(configPath, ignoreMissing = false) {
   try {
-    const config = await readConfig(process.env['NODE_ENV'] || 'development');
+    const config = await readConfig(
+      process.env['NODE_ENV'] || 'development',
+      configPath
+    );
     // Missing config file, fake throw to capture as missing file
     if (Object.keys(config).length === 0) {
       throw '';
@@ -216,9 +221,13 @@ ${reason}
 ${INSTALLATION_HELP}`);
 }
 
-async function overrideSettings(oldValue: string, newValue: string) {
+async function overrideSettings(
+  configPath,
+  oldValue: string,
+  newValue: string
+) {
   const cwd = process.cwd();
-  const configPath = await findSyntheticsConfig(cwd, cwd);
+  configPath = configPath ?? (await findSyntheticsConfig(cwd, cwd));
   if (!configPath) {
     throw warn(`Unable to find synthetics config file: ${configPath}`);
   }
@@ -256,7 +265,7 @@ export async function catchIncorrectSettings(
     }
   }
   if (override) {
-    await overrideSettings(settings.id, options.id);
+    await overrideSettings(options.config, settings.id, options.id);
   }
 }
 
