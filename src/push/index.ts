@@ -58,6 +58,7 @@ import {
   isLightweightMonitorSupported,
   logDiff,
 } from './utils';
+import { log } from '../core/logger';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   const duplicates = trackDuplicates(monitors);
@@ -99,8 +100,17 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
 
   if (removedIDs.size > 0) {
+    log(`deleting monitor ids: ${Array.from(removedIDs.keys()).join(', ')}`);
     if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
-      await promptConfirmDeleteAll(options);
+      await confirmDelete(
+        `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+        options.yes
+      );
+    } else {
+      await confirmDelete(
+        `Deleting ${removedIDs.size} monitors. Do you want to continue?`,
+        options.yes
+      );
     }
     const chunks = getChunks(Array.from(removedIDs), CHUNK_SIZE);
     for (const chunk of chunks) {
@@ -114,22 +124,22 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
 }
 
-async function promptConfirmDeleteAll(options: PushOptions) {
-  write('');
-  const { deleteAll } = await prompt<{ deleteAll: boolean }>({
+async function confirmDelete(message: string, skip: boolean) {
+  const { deleteMonitors } = await prompt<{ deleteMonitors: boolean }>({
     type: 'confirm',
     skip() {
-      if (options.yes) {
+      write('');
+      if (skip || !process.stdout.isTTY) {
         this.initial = process.env.TEST_OVERRIDE ?? true;
         return true;
       }
       return false;
     },
-    name: 'deleteAll',
-    message: `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+    name: 'deleteMonitors',
+    message,
     initial: false,
   });
-  if (!deleteAll) {
+  if (!deleteMonitors) {
     throw warn('Push command Aborted');
   }
 }
@@ -288,7 +298,10 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
       );
     }
   } else {
-    await promptConfirmDeleteAll(options);
+    await confirmDelete(
+      `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
+      options.yes
+    );
   }
   await liveProgress(
     createMonitorsLegacy({ schemas, keepStale: false, options }),
