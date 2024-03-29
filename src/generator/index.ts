@@ -287,12 +287,10 @@ All set, you can run below commands inside: ${this.projectDir}:
 
   Run synthetic tests: ${cyan(runCommand(this.pkgManager, 'test'))}
 
-  Push monitors to Kibana: ${cyan(
-    'SYNTHETICS_API_KEY=<value> ' + runCommand(this.pkgManager, 'push')
-  )}
+  Push monitors to Kibana: ${cyan(runCommand(this.pkgManager, 'push'))}
 
   ${yellow(
-    'Make sure to configure the SYNTHETICS_API_KEY before pushing monitors to Kibana.'
+    'Modify the API Key via `SYNTHETICS_API_KEY` env variable or --auth CLI flag.'
   )}
 
 Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.html to learn more.
