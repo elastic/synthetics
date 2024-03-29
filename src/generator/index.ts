@@ -45,7 +45,6 @@ import type { ProjectSettings } from '../common_types';
 const templateDir = join(__dirname, '..', '..', 'templates');
 
 type PromptOptions = ProjectSettings & {
-  auth: string;
   locations: Array<string>;
   privateLocations: Array<string>;
   schedule: number;
@@ -239,7 +238,7 @@ export class Generator {
     }
   }
 
-  async patchPkgJSON(answers: PromptOptions) {
+  async patchPkgJSON() {
     const filename = 'package.json';
     const pkgJSON = JSON.parse(
       await readFile(join(this.projectDir, filename), 'utf-8')
@@ -254,7 +253,7 @@ export class Generator {
     }
     // Add push command
     if (!pkgJSON.scripts.push) {
-      pkgJSON.scripts.push = `npx @elastic/synthetics push --auth ${answers.auth}`;
+      pkgJSON.scripts.push = `npx @elastic/synthetics push`;
     }
 
     await this.createFile(
@@ -287,10 +286,12 @@ All set, you can run below commands inside: ${this.projectDir}:
 
   Run synthetic tests: ${cyan(runCommand(this.pkgManager, 'test'))}
 
-  Push monitors to Kibana: ${cyan(runCommand(this.pkgManager, 'push'))}
+  Push monitors to Kibana: ${cyan(
+    'SYNTHETICS_API_KEY=<value> ' + runCommand(this.pkgManager, 'push')
+  )}
 
   ${yellow(
-    'Modify the API Key via `SYNTHETICS_API_KEY` env variable or --auth CLI flag.'
+    'Configure API Key via `SYNTHETICS_API_KEY` env variable or --auth CLI flag.'
   )}
 
 Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.html to learn more.
@@ -303,7 +304,7 @@ Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.
     const answers = await this.questions();
     await this.package();
     await this.files(answers);
-    await this.patchPkgJSON(answers);
+    await this.patchPkgJSON();
     await this.patchGitIgnore();
     this.banner();
   }

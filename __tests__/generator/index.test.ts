@@ -51,7 +51,6 @@ describe('Generator', () => {
         ...process.env,
         TEST_QUESTIONS: JSON.stringify({
           locations: ['us_east'],
-          auth: 'api_key',
           privateLocations: ['custom'],
           schedule: 30,
           id: 'test',
@@ -71,11 +70,6 @@ describe('Generator', () => {
     expect(existsSync(join(scaffoldDir, 'package.json'))).toBeTruthy();
     expect(existsSync(join(scaffoldDir, 'package-lock.json'))).toBeTruthy();
     expect(existsSync(join(scaffoldDir, '.gitignore'))).toBeTruthy();
-
-    // Verify push command
-    expect(
-      await readFile(join(scaffoldDir, 'package.json'), 'utf-8')
-    ).toContain('"push": "npx @elastic/synthetics push --auth api_key"');
 
     // Verify gitignore contents
     expect(await readFile(join(scaffoldDir, '.gitignore'), 'utf-8'))
