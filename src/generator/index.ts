@@ -22,13 +22,14 @@
  * THE SOFTWARE.
  *
  */
+import { URL } from 'url';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
 // @ts-ignore-next-line: has no exported member 'Input'
-import { prompt, Input } from 'enquirer';
+import { prompt, Input, Password } from 'enquirer';
 import { getProjectApiKeyURL, progress, write as stdWrite } from '../helpers';
 import {
   getPackageManager,
@@ -44,6 +45,7 @@ import type { ProjectSettings } from '../common_types';
 const templateDir = join(__dirname, '..', '..', 'templates');
 
 type PromptOptions = ProjectSettings & {
+  auth: string;
   locations: Array<string>;
   privateLocations: Array<string>;
   schedule: number;
@@ -59,6 +61,8 @@ export const REGULAR_FILES_PATH = [
   'README.md',
 ];
 export const CONFIG_PATH = 'synthetics.config.ts';
+
+const IS_URL = new RegExp('^(https?:\\/\\/)?');
 
 export class Generator {
   pkgManager = 'npm';
@@ -80,29 +84,30 @@ export class Generator {
       return JSON.parse(process.env.TEST_QUESTIONS);
     }
 
-    const { onCloud } = await prompt<{ onCloud: string }>({
-      type: 'confirm',
-      name: 'onCloud',
-      initial: 'y',
-      message: 'Do you use Elastic Cloud',
-    });
     const url = await new Input({
-      header: onCloud
-        ? yellow(
-            'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
-          )
-        : '',
-      message: onCloud
-        ? 'What is your cloud.id'
-        : 'What is the url of your Kibana instance',
       name: 'url',
+      message: 'Enter Elastic Kibana URL or Cloud ID',
       required: true,
-      result(value) {
-        return onCloud ? cloudIDToKibanaURL(value) : value;
+      validate(value) {
+        if (!IS_URL.test(value)) {
+          value = cloudIDToKibanaURL(value);
+        }
+        try {
+          new URL(value);
+          return true;
+        } catch (e) {
+          return 'Invalid URL or Cloud ID';
+        }
+      },
+      result(value: string) {
+        if (!IS_URL.test(value)) {
+          value = cloudIDToKibanaURL(value);
+        }
+        return value;
       },
     }).run();
 
-    const auth = await new Input({
+    const auth = await new Password({
       name: 'auth',
       header: yellow(
         `Generate API key from Kibana ${getProjectApiKeyURL(url)}`
@@ -234,7 +239,7 @@ export class Generator {
     }
   }
 
-  async patchPkgJSON() {
+  async patchPkgJSON(answers: PromptOptions) {
     const filename = 'package.json';
     const pkgJSON = JSON.parse(
       await readFile(join(this.projectDir, filename), 'utf-8')
@@ -249,7 +254,7 @@ export class Generator {
     }
     // Add push command
     if (!pkgJSON.scripts.push) {
-      pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+      pkgJSON.scripts.push = `npx @elastic/synthetics push --auth ${answers.auth}`;
     }
 
     await this.createFile(
@@ -300,7 +305,7 @@ Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.
     const answers = await this.questions();
     await this.package();
     await this.files(answers);
-    await this.patchPkgJSON();
+    await this.patchPkgJSON(answers);
     await this.patchGitIgnore();
     this.banner();
   }
