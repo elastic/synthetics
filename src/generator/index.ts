@@ -88,10 +88,10 @@ export class Generator {
       message: 'Enter Elastic Kibana URL or Cloud ID',
       required: true,
       validate(value) {
-        if (!IS_URL.test(value)) {
-          value = cloudIDToKibanaURL(value);
-        }
         try {
+          if (!IS_URL.test(value)) {
+            value = cloudIDToKibanaURL(value);
+          }
           new URL(value);
           return true;
         } catch (e) {
