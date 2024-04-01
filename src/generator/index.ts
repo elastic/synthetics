@@ -61,7 +61,7 @@ export const REGULAR_FILES_PATH = [
 ];
 export const CONFIG_PATH = 'synthetics.config.ts';
 
-const IS_URL = new RegExp('^(https?:\\/\\/)?');
+const IS_URL = new RegExp('^(https?:\\/\\/)');
 
 export class Generator {
   pkgManager = 'npm';
