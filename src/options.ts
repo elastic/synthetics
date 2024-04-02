@@ -184,14 +184,12 @@ export function getCommonCommandOpts() {
   const params = createOption(
     '-p, --params <jsonstring>',
     'JSON object that gets injected to all journeys'
-  );
-  params.argParser(JSON.parse);
+  ).argParser(JSON.parse);
 
   const playwrightOpts = createOption(
     '--playwright-options <jsonstring>',
     'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file.'
-  );
-  playwrightOpts.argParser(JSON.parse);
+  ).argParser(JSON.parse);
 
   const pattern = createOption(
     '--pattern <pattern>',

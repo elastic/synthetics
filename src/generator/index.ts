@@ -22,13 +22,14 @@
  * THE SOFTWARE.
  *
  */
+import { URL } from 'url';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir, readFile, writeFile } from 'fs/promises';
 import { bold, cyan, yellow } from 'kleur/colors';
 import { join, relative, dirname, basename } from 'path';
 // @ts-ignore-next-line: has no exported member 'Input'
-import { prompt, Input } from 'enquirer';
+import { prompt, Input, Password } from 'enquirer';
 import { getProjectApiKeyURL, progress, write as stdWrite } from '../helpers';
 import {
   getPackageManager,
@@ -60,6 +61,8 @@ export const REGULAR_FILES_PATH = [
 ];
 export const CONFIG_PATH = 'synthetics.config.ts';
 
+const IS_URL = new RegExp('^(https?:\\/\\/)');
+
 export class Generator {
   pkgManager = 'npm';
   constructor(public projectDir: string) {}
@@ -80,29 +83,30 @@ export class Generator {
       return JSON.parse(process.env.TEST_QUESTIONS);
     }
 
-    const { onCloud } = await prompt<{ onCloud: string }>({
-      type: 'confirm',
-      name: 'onCloud',
-      initial: 'y',
-      message: 'Do you use Elastic Cloud',
-    });
     const url = await new Input({
-      header: onCloud
-        ? yellow(
-            'Get cloud.id from your deployment https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html'
-          )
-        : '',
-      message: onCloud
-        ? 'What is your cloud.id'
-        : 'What is the url of your Kibana instance',
       name: 'url',
+      message: 'Enter Elastic Kibana URL or Cloud ID',
       required: true,
-      result(value) {
-        return onCloud ? cloudIDToKibanaURL(value) : value;
+      validate(value) {
+        try {
+          if (!IS_URL.test(value)) {
+            value = cloudIDToKibanaURL(value);
+          }
+          new URL(value);
+          return true;
+        } catch (e) {
+          return 'Invalid URL or Cloud ID';
+        }
+      },
+      result(value: string) {
+        if (!IS_URL.test(value)) {
+          value = cloudIDToKibanaURL(value);
+        }
+        return value;
       },
     }).run();
 
-    const auth = await new Input({
+    const auth = await new Password({
       name: 'auth',
       header: yellow(
         `Generate API key from Kibana ${getProjectApiKeyURL(url)}`
@@ -249,7 +253,7 @@ export class Generator {
     }
     // Add push command
     if (!pkgJSON.scripts.push) {
-      pkgJSON.scripts.push = 'npx @elastic/synthetics push';
+      pkgJSON.scripts.push = `npx @elastic/synthetics push`;
     }
 
     await this.createFile(
@@ -287,7 +291,7 @@ All set, you can run below commands inside: ${this.projectDir}:
   )}
 
   ${yellow(
-    'Make sure to configure the SYNTHETICS_API_KEY before pushing monitors to Kibana.'
+    'Configure API Key via `SYNTHETICS_API_KEY` env variable or --auth CLI flag.'
   )}
 
 Visit https://www.elastic.co/guide/en/observability/current/synthetic-run-tests.html to learn more.
