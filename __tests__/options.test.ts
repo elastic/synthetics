@@ -51,7 +51,7 @@ describe('options', () => {
     expect(await normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
       environment: 'test',
-      match: 'check*',
+      filter: { match: 'check*' },
       params: {
         foo: 'bar',
         url: 'non-dev',
@@ -108,6 +108,7 @@ describe('options', () => {
       screenshots: 'only-on-failure',
       schedule: 3,
       privateLocations: ['test'],
+      tags: ['foo', 'bar'],
       locations: ['australia_east'],
       alert: {
         status: {
