@@ -200,14 +200,18 @@ export type ThrottlingOptions = {
   latency?: number;
 };
 
+type CmdFilter = {
+  pattern?: string;
+  tags?: Array<string>;
+  match?: string;
+};
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
   config?: string;
-  pattern?: string;
-  match?: string;
-  tags?: Array<string>;
+  auth?: string;
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
@@ -217,9 +221,13 @@ type BaseArgs = {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  filter?: CmdFilter;
 };
 
 export type CliArgs = BaseArgs & {
+  pattern?: string;
+  match?: string;
+  tags?: Array<string>;
   reporter?: BuiltInReporterName;
   inline?: boolean;
   require?: Array<string>;
@@ -246,6 +254,7 @@ export type PushOptions = Partial<ProjectSettings> &
     auth: string;
     kibanaVersion?: string;
     yes?: boolean;
+    tags?: Array<string>;
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;

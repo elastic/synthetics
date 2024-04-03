@@ -167,8 +167,8 @@ export async function createLightweightMonitors(
 ) {
   const lwFiles = new Set<string>();
   // Filter monitor files based on the provided pattern
-  const pattern = options.pattern
-    ? new RegExp(options.pattern, 'i')
+  const pattern = options.filter?.pattern
+    ? new RegExp(options.filter?.pattern, 'i')
     : /.(yml|yaml)$/;
   const ignore = /(node_modules|.github)/;
   await totalist(workDir, (rel, abs) => {
@@ -211,7 +211,9 @@ export async function createLightweightMonitors(
       offsets.push(monNode.srcToken.offset);
     }
 
-    const mergedConfig = parsedDoc.toJS()['heartbeat.monitors'];
+    const mergedConfig = parsedDoc.toJS()[
+      'heartbeat.monitors'
+    ] as Array<MonitorConfig>;
     for (let i = 0; i < mergedConfig.length; i++) {
       const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
@@ -220,7 +222,14 @@ export async function createLightweightMonitors(
       }
       const { line, col } = lineCounter.linePos(offsets[i]);
       try {
+        /**
+         * Build the monitor object from the yaml config along with global configuration
+         * and perform the match based on the provided filters
+         */
         const mon = buildMonitorFromYaml(monitor, options);
+        if (!mon.isMatch(options.filter?.match, options.filter?.tags)) {
+          continue;
+        }
         mon.setSource({ file, line, column: col });
         monitors.push(mon);
       } catch (e) {

@@ -404,8 +404,7 @@ export default class Runner {
 
   buildMonitors(options: PushOptions) {
     /**
-     * Update the global monitor configuration required for
-     * setting defaults
+     * Update the global monitor configuration required for setting defaults
      */
     this.updateMonitor({
       throttling: options.throttling,
@@ -430,11 +429,20 @@ export default class Runner {
         );
       }
       /**
-       * Execute dummy callback to get all monitor specific
-       * configurations for the current journey
+       * Before pushing a browser monitor, three things need to be done:
+       *
+       * - execute callback `monitor.use` in particular to get monitor configurations
+       * - update the monitor config with global configuration
+       * - filter out monitors based on matched tags and name after applying both
+       *  global and local monitor configurations
        */
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
+      if (
+        !journey.monitor.isMatch(options.filter?.match, options.filter?.tags)
+      ) {
+        continue;
+      }
       journey.monitor.validate();
       monitors.push(journey.monitor);
     }
@@ -454,7 +462,7 @@ export default class Runner {
       params: options.params,
     }).catch(e => (this.hookError = e));
 
-    const { dryRun, match, tags } = options;
+    const { dryRun, filter } = options;
     /**
      * Skip other journeys when using `.only`
      */
@@ -471,7 +479,7 @@ export default class Runner {
         this.#reporter.onJourneyRegister?.(journey);
         continue;
       }
-      if (!journey.isMatch(match, tags) || journey.skip) {
+      if (!journey.isMatch(filter?.match, filter?.tags) || journey.skip) {
         continue;
       }
       const journeyResult: JourneyResult = this.hookError

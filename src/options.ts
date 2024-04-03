@@ -26,74 +26,49 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import type { CliArgs, PushOptions, RunOptions } from './common_types';
-import { THROTTLING_WARNING_MSG, error, warn } from './helpers';
+import type { CliArgs, RunOptions } from './common_types';
+import { THROTTLING_WARNING_MSG, warn } from './helpers';
 
 type Mode = 'run' | 'push';
 
+/**
+ * Normalize the options passed via CLI and Synthetics config file
+ *
+ * Order of preference for options:
+ * 1. Local options configured via Runner API
+ * 2. CLI flags
+ * 3. Configuration file
+ */
 export async function normalizeOptions(
   cliArgs: CliArgs,
   mode: Mode = 'run'
 ): Promise<RunOptions> {
+  /**
+   * Move filtering flags from the top level to filter object
+   * and delete the old keys
+   */
+  const filter = {
+    pattern: cliArgs.pattern,
+    tags: cliArgs.tags,
+    match: cliArgs.match,
+  };
+  delete cliArgs.pattern;
+  delete cliArgs.tags;
+  delete cliArgs.match;
+
   const options: RunOptions = {
     ...cliArgs,
+    filter,
     environment: process.env['NODE_ENV'] || 'development',
   };
   /**
-   * Group all events that can be consumed by heartbeat and
-   * eventually by the Synthetics UI.
-   */
-  if (cliArgs.richEvents) {
-    options.reporter = cliArgs.reporter ?? 'json';
-    options.ssblocks = true;
-    options.network = true;
-    options.trace = true;
-    options.quietExitCode = true;
-  }
-
-  if (cliArgs.capability) {
-    const supportedCapabilities = [
-      'trace',
-      'network',
-      'filmstrips',
-      'metrics',
-      'ssblocks',
-    ];
-    /**
-     * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
-     * network - capture network information for all journeys
-     * filmstrips - record detailed filmstrips for all journeys
-     * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
-     * ssblocks - Dedupes the screenshots in to blocks to save storage space
-     */
-    for (const flag of cliArgs.capability) {
-      if (supportedCapabilities.includes(flag)) {
-        options[flag] = true;
-      } else {
-        console.warn(
-          `Missing capability "${flag}", current supported capabilities are ${supportedCapabilities.join(
-            ', '
-          )}`
-        );
-      }
-    }
-  }
-
-  /**
-   * Validate and read synthetics config file
-   * based on the environment
+   * Validate and read synthetics config file based on the environment
    */
   const config =
     cliArgs.config || !cliArgs.inline
       ? await readConfig(options.environment, cliArgs.config)
       : {};
 
-  /**
-   * Order of preference for options that are used while running are
-   * 1. Local options configured via Runner API
-   * 2. CLI flags
-   * 3. Configuration file
-   */
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
 
   /**
@@ -118,10 +93,49 @@ export async function normalizeOptions(
    */
   switch (mode) {
     case 'run':
+      if (cliArgs.capability) {
+        const supportedCapabilities = [
+          'trace',
+          'network',
+          'filmstrips',
+          'metrics',
+          'ssblocks',
+        ];
+        /**
+         * trace - record chrome trace events(LCP, FCP, CLS, etc.) for all journeys
+         * network - capture network information for all journeys
+         * filmstrips - record detailed filmstrips for all journeys
+         * metrics - capture performance metrics (DOM Nodes, Heap size, etc.) for each step
+         * ssblocks - Dedupes the screenshots in to blocks to save storage space
+         */
+        for (const flag of cliArgs.capability) {
+          if (supportedCapabilities.includes(flag)) {
+            options[flag] = true;
+          } else {
+            console.warn(
+              `Missing capability "${flag}", current supported capabilities are ${supportedCapabilities.join(
+                ', '
+              )}`
+            );
+          }
+        }
+      }
+
+      /**
+       * Group all events that can be consumed by heartbeat and
+       * eventually by the Synthetics UI.
+       */
+      if (cliArgs.richEvents) {
+        options.reporter = cliArgs.reporter ?? 'json';
+        options.ssblocks = true;
+        options.network = true;
+        options.trace = true;
+        options.quietExitCode = true;
+      }
+
       options.screenshots = cliArgs.screenshots ?? 'on';
       break;
     case 'push':
-      validatePushOptions(options as PushOptions);
       /**
        * Merge the default monitor config from synthetics.config.ts file
        * with the CLI options passed via push command
@@ -150,14 +164,6 @@ export function getHeadlessFlag(
   }
   // default is headless
   return configHeadless ?? true;
-}
-
-export function validatePushOptions(opts: PushOptions) {
-  if (opts.tags || opts.match) {
-    throw error(`Aborted. Invalid CLI flags.
-
-Tags and Match are not supported in push command.`);
-  }
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -211,6 +217,15 @@ export function getCommonCommandOpts() {
     'configuration path (default: synthetics.config.js)'
   );
 
+  const tags = createOption(
+    '--tags <name...>',
+    'run/push tests with a tag that matches the glob'
+  );
+  const match = createOption(
+    '--match <name>',
+    'run/push tests with a name or tags that matches the glob'
+  );
+
   return {
     auth,
     authMandatory,
@@ -218,5 +233,7 @@ export function getCommonCommandOpts() {
     playwrightOpts,
     pattern,
     configOpt,
+    tags,
+    match,
   };
 }

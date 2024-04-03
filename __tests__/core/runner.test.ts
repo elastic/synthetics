@@ -338,7 +338,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        match: 'j2',
+        filter: { match: 'j2' },
       })
     ).toMatchObject({
       j2: { status: 'succeeded' },
@@ -351,7 +351,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        match: 'j*',
+        filter: { match: 'j*' },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -368,8 +368,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        tags: ['foo*'],
-        match: 'j*',
+        filter: { tags: ['foo*'], match: 'j*' },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -385,7 +384,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        tags: ['hello:b*'],
+        filter: { tags: ['hello:b*'] },
       })
     ).toMatchObject({
       j2: { status: 'succeeded' },
@@ -400,7 +399,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        tags: ['!hello:b*'],
+        filter: { tags: ['!hello:b*'] },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -809,6 +808,38 @@ describe('runner', () => {
         throttling: { latency: 1000 },
         alert: { tls: { enabled: true } },
       });
+    });
+
+    it('runner - build monitors filtered through "match"', async () => {
+      const j1 = new Journey({ name: 'j1' }, noop);
+      const j2 = new Journey({ name: 'j2' }, noop);
+      runner.addJourney(j1);
+      runner.addJourney(j2);
+
+      const monitors = runner.buildMonitors({
+        ...options,
+        filter: { match: 'j1' },
+        schedule: 1,
+      });
+      expect(monitors.length).toBe(1);
+      expect(monitors[0].config.name).toBe('j1');
+    });
+
+    it('runner - build monitors filtered through "tags"', async () => {
+      const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
+      const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
+      const j3 = new Journey({ name: 'j3' }, noop);
+      runner.addJourney(j1);
+      runner.addJourney(j2);
+      runner.addJourney(j3);
+
+      const monitors = runner.buildMonitors({
+        ...options,
+        filter: { tags: ['first'] },
+        schedule: 1,
+      });
+      expect(monitors.length).toBe(1);
+      expect(monitors[0].config.name).toBe('j1');
     });
   });
 

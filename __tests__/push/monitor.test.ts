@@ -207,7 +207,7 @@ heartbeat.monitors:
       `);
       const monitors = await createLightweightMonitors(PROJECT_DIR, {
         ...opts,
-        pattern: '.yaml$',
+        filter: { pattern: '.yaml$' },
       });
       expect(monitors.length).toBe(0);
     });
@@ -234,6 +234,50 @@ heartbeat.monitors:
       `);
       const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
       expect(monitors.length).toBe(1);
+    });
+
+    it('push - match filering', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  name: "m1"
+  id: "mon1"
+  tags: "tag1"
+- type: http
+  name: "m2"
+  id: "mon2"
+  tags: "tag2"
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, {
+        ...opts,
+        filter: { match: 'm1' },
+      });
+      expect(monitors.length).toBe(1);
+      expect(monitors[0].config.name).toEqual('m1');
+    });
+
+    it('push - tags filering', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  name: "m1"
+  id: "mon1"
+  tags: ["foo", "bar"]
+- type: http
+  name: "m2"
+  id: "mon2"
+  tags: ["bar", "baz"]
+- type: http
+  name: "m3"
+  id: "mon3"
+  tags: ["baz", "boom"]
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, {
+        ...opts,
+        filter: { tags: ['bar'] },
+      });
+      expect(monitors.length).toBe(2);
+      expect(monitors.map(m => m.config.name)).toEqual(['m1', 'm2']);
     });
 
     it('prefer local monitor config', async () => {
