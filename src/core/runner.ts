@@ -439,7 +439,10 @@ export default class Runner {
       journey.callback({ params: options.params } as any);
       journey.monitor.update(this.monitor?.config);
       if (
-        !journey.monitor.isMatch(options.filter?.match, options.filter?.tags)
+        !journey.monitor.isMatch(
+          options.grepOpts?.match,
+          options.grepOpts?.tags
+        )
       ) {
         continue;
       }
@@ -462,7 +465,7 @@ export default class Runner {
       params: options.params,
     }).catch(e => (this.hookError = e));
 
-    const { dryRun, filter } = options;
+    const { dryRun, grepOpts } = options;
     /**
      * Skip other journeys when using `.only`
      */
@@ -479,7 +482,7 @@ export default class Runner {
         this.#reporter.onJourneyRegister?.(journey);
         continue;
       }
-      if (!journey.isMatch(filter?.match, filter?.tags) || journey.skip) {
+      if (!journey.isMatch(grepOpts?.match, grepOpts?.tags) || journey.skip) {
         continue;
       }
       const journeyResult: JourneyResult = this.hookError

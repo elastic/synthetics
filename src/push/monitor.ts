@@ -167,8 +167,8 @@ export async function createLightweightMonitors(
 ) {
   const lwFiles = new Set<string>();
   // Filter monitor files based on the provided pattern
-  const pattern = options.filter?.pattern
-    ? new RegExp(options.filter?.pattern, 'i')
+  const pattern = options.grepOpts?.pattern
+    ? new RegExp(options.grepOpts?.pattern, 'i')
     : /.(yml|yaml)$/;
   const ignore = /(node_modules|.github)/;
   await totalist(workDir, (rel, abs) => {
@@ -227,7 +227,7 @@ export async function createLightweightMonitors(
          * and perform the match based on the provided filters
          */
         const mon = buildMonitorFromYaml(monitor, options);
-        if (!mon.isMatch(options.filter?.match, options.filter?.tags)) {
+        if (!mon.isMatch(options.grepOpts?.match, options.grepOpts?.tags)) {
           continue;
         }
         mon.setSource({ file, line, column: col });

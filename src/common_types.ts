@@ -200,7 +200,7 @@ export type ThrottlingOptions = {
   latency?: number;
 };
 
-type CmdFilter = {
+type GrepOptions = {
   pattern?: string;
   tags?: Array<string>;
   match?: string;
@@ -221,7 +221,6 @@ type BaseArgs = {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
-  filter?: CmdFilter;
 };
 
 export type CliArgs = BaseArgs & {
@@ -247,6 +246,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  grepOpts?: GrepOptions;
 };
 
 export type PushOptions = Partial<ProjectSettings> &
@@ -258,6 +258,7 @@ export type PushOptions = Partial<ProjectSettings> &
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
+    grepOpts?: GrepOptions;
   };
 
 export type ProjectSettings = {

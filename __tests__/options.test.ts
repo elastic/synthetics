@@ -51,7 +51,7 @@ describe('options', () => {
     expect(await normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
       environment: 'test',
-      filter: { match: 'check*' },
+      grepOpts: { match: 'check*' },
       params: {
         foo: 'bar',
         url: 'non-dev',

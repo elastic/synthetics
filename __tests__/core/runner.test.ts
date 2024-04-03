@@ -338,7 +338,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        filter: { match: 'j2' },
+        grepOpts: { match: 'j2' },
       })
     ).toMatchObject({
       j2: { status: 'succeeded' },
@@ -351,7 +351,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        filter: { match: 'j*' },
+        grepOpts: { match: 'j*' },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -368,7 +368,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        filter: { tags: ['foo*'], match: 'j*' },
+        grepOpts: { tags: ['foo*'], match: 'j*' },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -384,7 +384,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        filter: { tags: ['hello:b*'] },
+        grepOpts: { tags: ['hello:b*'] },
       })
     ).toMatchObject({
       j2: { status: 'succeeded' },
@@ -399,7 +399,7 @@ describe('runner', () => {
     expect(
       await runner.run({
         ...defaultRunOptions,
-        filter: { tags: ['!hello:b*'] },
+        grepOpts: { tags: ['!hello:b*'] },
       })
     ).toMatchObject({
       j1: { status: 'succeeded' },
@@ -749,6 +749,7 @@ describe('runner', () => {
         throttling: { latency: 1000 },
         schedule: 1,
         alert: { status: { enabled: false } },
+        tags: [],
       });
     });
 
@@ -810,7 +811,7 @@ describe('runner', () => {
       });
     });
 
-    it('runner - build monitors filtered through "match"', async () => {
+    it('runner - build monitors filtered via "match"', async () => {
       const j1 = new Journey({ name: 'j1' }, noop);
       const j2 = new Journey({ name: 'j2' }, noop);
       runner.addJourney(j1);
@@ -818,14 +819,14 @@ describe('runner', () => {
 
       const monitors = runner.buildMonitors({
         ...options,
-        filter: { match: 'j1' },
+        grepOpts: { match: 'j1' },
         schedule: 1,
       });
       expect(monitors.length).toBe(1);
       expect(monitors[0].config.name).toBe('j1');
     });
 
-    it('runner - build monitors filtered through "tags"', async () => {
+    it('runner - build monitors with  via "tags"', async () => {
       const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
       const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
       const j3 = new Journey({ name: 'j3' }, noop);
@@ -835,11 +836,31 @@ describe('runner', () => {
 
       const monitors = runner.buildMonitors({
         ...options,
-        filter: { tags: ['first'] },
+        grepOpts: { tags: ['first'] },
         schedule: 1,
       });
       expect(monitors.length).toBe(1);
       expect(monitors[0].config.name).toBe('j1');
+    });
+
+    it('runner - build monitors with config and filter  via "tags"', async () => {
+      const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
+      const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
+      const j3 = new Journey({ name: 'j3' }, noop);
+      runner.addJourney(j1);
+      runner.addJourney(j2);
+      runner.addJourney(j3);
+      // using monitor.use
+      j2.updateMonitor({ tags: ['newtag'] });
+
+      const monitors = runner.buildMonitors({
+        ...options,
+        tags: ['newtag'],
+        grepOpts: { tags: ['newtag'] },
+        schedule: 1,
+      });
+      expect(monitors.length).toBe(2);
+      expect(monitors.map(m => m.config.name)).toEqual(['j2', 'j3']);
     });
   });
 

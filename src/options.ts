@@ -47,7 +47,7 @@ export async function normalizeOptions(
    * Move filtering flags from the top level to filter object
    * and delete the old keys
    */
-  const filter = {
+  const grepOpts = {
     pattern: cliArgs.pattern,
     tags: cliArgs.tags,
     match: cliArgs.match,
@@ -58,7 +58,7 @@ export async function normalizeOptions(
 
   const options: RunOptions = {
     ...cliArgs,
-    filter,
+    grepOpts,
     environment: process.env['NODE_ENV'] || 'development',
   };
   /**
