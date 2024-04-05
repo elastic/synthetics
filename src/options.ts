@@ -189,7 +189,7 @@ export function parseThrottling() {
 export function getCommonCommandOpts() {
   const params = createOption(
     '-p, --params <jsonstring>',
-    'JSON object that gets injected to all journeys'
+    'JSON object that defines any variables your tests require.'
   ).argParser(JSON.parse);
 
   const playwrightOpts = createOption(
@@ -199,7 +199,7 @@ export function getCommonCommandOpts() {
 
   const pattern = createOption(
     '--pattern <pattern>',
-    'RegExp pattern to match journey/monitor files that are different from the default (ex: /*.journey.(ts|js)$/)'
+    'RegExp pattern to match journey files in the current working directory (default: /*.journey.(ts|js)$/)'
   );
 
   const apiDocsLink =
@@ -214,16 +214,16 @@ export function getCommonCommandOpts() {
 
   const configOpt = createOption(
     '-c, --config <path>',
-    'configuration path (default: synthetics.config.js)'
+    'path to the configuration file (default: synthetics.config.(js|ts))'
   );
 
   const tags = createOption(
     '--tags <name...>',
-    'run/push tests with a tag that matches the glob'
+    'run/push tests with the tag(s) that matches a pattern'
   );
   const match = createOption(
     '--match <name>',
-    'run/push tests with a name or tags that matches the glob'
+    'run/push tests with a name or tags that matches a pattern'
   );
 
   return {

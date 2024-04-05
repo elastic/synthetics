@@ -80,11 +80,14 @@ program
       Object.keys(reporters)
     )
   )
-  .option('--inline', 'Run inline journeys from heartbeat')
+  .option('--inline', 'read journeys from stdin instead of reading from files')
   .option('-r, --require <modules...>', 'module(s) to preload')
   .option('--sandbox', 'enable chromium sand-boxing')
-  .option('--rich-events', 'Mimics a heartbeat run')
-  .option('--no-headless', 'run browser in head-full mode')
+  .option(
+    '--rich-events',
+    'preset flag used when running monitors directly via Heartbeat'
+  )
+  .option('--no-headless', 'run with the browser in head-full mode')
   .option(
     '--capability <features...>',
     'Enable capabilities through feature flags'
@@ -92,7 +95,7 @@ program
   .addOption(
     new Option(
       '--screenshots [flag]',
-      'take screenshots at end of each step'
+      'Control whether or not to capture screenshots at the end of each step'
     ).choices(['on', 'off', 'only-on-failure'])
   )
   .option(
