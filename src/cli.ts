@@ -56,20 +56,25 @@ import { installTransform } from './core/transform';
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
 
-const { params, pattern, playwrightOpts, auth, authMandatory, configOpt } =
-  getCommonCommandOpts();
+const {
+  params,
+  pattern,
+  playwrightOpts,
+  auth,
+  authMandatory,
+  configOpt,
+  tags,
+  match,
+} = getCommonCommandOpts();
 
 program
   .name(`npx ${name}`)
   .usage('[options] [dir] [files] file')
   .addOption(configOpt)
   .addOption(pattern)
+  .addOption(tags)
+  .addOption(match)
   .addOption(params)
-  .option('--tags <name...>', 'run tests with a tag that matches the glob')
-  .option(
-    '--match <name>',
-    'run tests with a name or tags that matches the glob'
-  )
   .addOption(
     new Option('--reporter <value>', `output reporter format`).choices(
       Object.keys(reporters)
@@ -157,6 +162,7 @@ program
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
+  .addOption(authMandatory)
   .option(
     '--schedule <time-in-minutes>',
     "schedule in minutes for the pushed monitors. Setting `10`, for example, configures monitors which don't have an interval defined to run every 10 minutes.",
@@ -172,7 +178,7 @@ program
     '--private-locations <locations...>',
     'default list of private locations from which your monitors will run.'
   )
-  .option('--url <url>', 'Kibana URL to upload the monitors')
+  .option('--url <url>', 'Kibana URL to upload the project monitors')
   .option(
     '--id <id>',
     'project id that will be used for logically grouping monitors'
@@ -182,8 +188,10 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
-  .addOption(authMandatory)
+
   .addOption(pattern)
+  .addOption(tags)
+  .addOption(match)
   .addOption(params)
   .addOption(playwrightOpts)
   .addOption(configOpt)

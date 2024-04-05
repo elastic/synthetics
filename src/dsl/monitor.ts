@@ -33,7 +33,7 @@ import {
   Params,
   PlaywrightOptions,
 } from '../common_types';
-import { indent } from '../helpers';
+import { indent, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 
 export type SyntheticsLocationsType = keyof typeof LocationsMap;
@@ -127,6 +127,18 @@ export class Monitor {
    */
   setFilter(filter: MonitorFilter) {
     this.filter = filter;
+  }
+
+  /**
+   * Matches monitors based on the provided args. Proitize tags over match
+   */
+  isMatch(matchPattern: string, tagsPattern: Array<string>) {
+    return isMatch(
+      this.config.tags,
+      this.config.name,
+      tagsPattern,
+      matchPattern
+    );
   }
 
   /**

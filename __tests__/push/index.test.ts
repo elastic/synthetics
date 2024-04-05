@@ -123,12 +123,6 @@ describe('Push', () => {
     expect(output).toContain('Push command Aborted');
   });
 
-  it('abort on tags and match', async () => {
-    await fakeProjectSetup({}, {});
-    const output = await runPush([...DEFAULT_ARGS, '--tags', 'foo:*']);
-    expect(output).toMatchSnapshot();
-  });
-
   it('error on invalid schedule in monitor DSL', async () => {
     await fakeProjectSetup(
       { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },

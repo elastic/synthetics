@@ -38,6 +38,7 @@ module.exports = env => {
       screenshot: 'off',
       schedule: 10,
       locations: ['us_east'],
+      tags: ['foo', 'bar'],
       privateLocations: ['test-location'],
       alert: {
         status: {

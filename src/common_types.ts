@@ -200,14 +200,18 @@ export type ThrottlingOptions = {
   latency?: number;
 };
 
+type GrepOptions = {
+  pattern?: string;
+  tags?: Array<string>;
+  match?: string;
+};
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
   config?: string;
-  pattern?: string;
-  match?: string;
-  tags?: Array<string>;
+  auth?: string;
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
@@ -220,6 +224,9 @@ type BaseArgs = {
 };
 
 export type CliArgs = BaseArgs & {
+  pattern?: string;
+  match?: string;
+  tags?: Array<string>;
   reporter?: BuiltInReporterName;
   inline?: boolean;
   require?: Array<string>;
@@ -239,6 +246,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  grepOpts?: GrepOptions;
 };
 
 export type PushOptions = Partial<ProjectSettings> &
@@ -246,9 +254,11 @@ export type PushOptions = Partial<ProjectSettings> &
     auth: string;
     kibanaVersion?: string;
     yes?: boolean;
+    tags?: Array<string>;
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
+    grepOpts?: GrepOptions;
   };
 
 export type ProjectSettings = {
