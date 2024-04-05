@@ -87,7 +87,7 @@ program
     '--rich-events',
     'preset flag used when running monitors directly via Heartbeat'
   )
-  .option('--no-headless', 'run with the browser in head-full mode')
+  .option('--no-headless', 'run with the browser in headful mode')
   .option(
     '--capability <features...>',
     'Enable capabilities through feature flags'
@@ -95,7 +95,7 @@ program
   .addOption(
     new Option(
       '--screenshots [flag]',
-      'Control whether or not to capture screenshots at the end of each step'
+      'Control whether to capture screenshots at the end of each step'
     ).choices(['on', 'off', 'only-on-failure'])
   )
   .option(

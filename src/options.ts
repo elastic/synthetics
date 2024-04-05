@@ -219,7 +219,7 @@ export function getCommonCommandOpts() {
 
   const tags = createOption(
     '--tags <name...>',
-    'run/push tests with the tag(s) that matches a pattern'
+    'run/push tests with the tag(s) matching a pattern'
   );
   const match = createOption(
     '--match <name>',
