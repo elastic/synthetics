@@ -16,10 +16,13 @@ on:
 
 permissions:
   contents: write # needed to push the tag and create the release
+  id-token: write # to enable use of OIDC for npm provenance
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_PROVENANCE: true
     steps:
       - uses: actions/checkout@v4
         with:
