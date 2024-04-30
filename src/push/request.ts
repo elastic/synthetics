@@ -80,11 +80,11 @@ export async function handleError(
     throw formatNotFoundError(url, await body.text());
   } else if (!ok(statusCode)) {
     let parsed: APIError;
-    const resp = await body.text();
     try {
+      const resp = await body.text();
       parsed = JSON.parse(resp) as APIError;
     } catch (e) {
-      throw formatAPIError(statusCode, 'unexpected non-JSON error', resp);
+      throw formatAPIError(statusCode, 'unexpected error', e.message);
     }
     throw formatAPIError(statusCode, parsed.error, parsed.message);
   }
