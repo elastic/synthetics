@@ -25,10 +25,8 @@
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { spawnSync } = require('child_process');
-const { join } = require('path');
 const { cyan } = require('kleur/colors');
 
-const ROOT_DIR = join(__dirname, '..');
 /**
  * @typedef {{
  *   cmd: string,
@@ -40,21 +38,6 @@ const ROOT_DIR = join(__dirname, '..');
 
 /** @type {Script[]} */
 const scripts = [];
-
-// bundles
-const BUNDLES_DIR = join(ROOT_DIR, 'bundles');
-
-scripts.push({
-  cmd: 'npm',
-  args: ['ci', '--no-fund', '--no-audit', '--no-save'],
-  cwd: BUNDLES_DIR,
-});
-
-scripts.push({
-  cmd: 'npm',
-  args: ['run', 'build'],
-  cwd: BUNDLES_DIR,
-});
 
 // test-runner
 scripts.push({
