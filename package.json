@@ -60,7 +60,7 @@
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
     "stack-utils": "^2.0.6",
-    "undici": "^5.26.3",
+    "undici": "^5.28.3",
     "yaml": "^2.2.2"
   },
   "devDependencies": {
@@ -89,7 +89,7 @@
     "unzipper": "^0.10.11"
   },
   "overrides": {
-    "follow-redirects": "^1.15.4"
+    "follow-redirects": "^1.15.6"
   },
   "engines": {
     "node": ">=18.12.0"
