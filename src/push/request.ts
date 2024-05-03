@@ -81,13 +81,10 @@ export async function handleError(
   } else if (!ok(statusCode)) {
     let parsed: APIError;
     try {
-      parsed = (await body.json()) as APIError;
+      const resp = await body.text();
+      parsed = JSON.parse(resp) as APIError;
     } catch (e) {
-      throw formatAPIError(
-        statusCode,
-        'unexpected non-JSON error',
-        await body.text()
-      );
+      throw formatAPIError(statusCode, 'unexpected error', e.message);
     }
     throw formatAPIError(statusCode, parsed.error, parsed.message);
   }
