@@ -23,8 +23,19 @@
  *
  */
 
+import { join } from 'path';
+
+/**
+ * This file is a workaround to extend the expect functionality from Playwright package
+ * with few extensions that we don't support in Synthetics.
+ *
+ * We are requiring the package using absolute path to workaround the Module
+ * resolution export issues.
+ */
+
 /* eslint-disable @typescript-eslint/no-var-requires */
-const expectLib = require('../../dist/bundles/lib/index').expect;
+const PW_PATH = require.resolve('playwright').replace('index.js', '');
+const expectLib = require(join(PW_PATH, 'lib/matchers/expect')).expect;
 
 function notSupported(name: string) {
   throw new Error(`expect.${name} is not supported in @elastic/synthetics.`);
@@ -39,5 +50,4 @@ expectLib.extend({
   toMatchSnapshot: () => notSupported('toMatchSnapshot'),
 });
 
-export const expect: typeof import('../../bundles/node_modules/playwright/types/test').expect =
-  expectLib;
+export const expect: typeof import('playwright/types/test').expect = expectLib;
