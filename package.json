@@ -38,6 +38,11 @@
       "pre-commit": "lint-staged"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/synthetics.git"
+  },
+  "keywords": ["elastic", "synthetics", "monitoring", "testing"],
   "author": "",
   "license": "MIT",
   "dependencies": {
