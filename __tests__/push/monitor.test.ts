@@ -112,13 +112,14 @@ describe('Monitors', () => {
     expect(() => parseSchedule('* * * *')).toThrowError(
       `Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
     );
-    expect(parseSchedule('@every 4s')).toBe(1);
+    expect(parseSchedule('@every 4s')).toBe('10s');
+    expect(parseSchedule('@every 40s')).toBe('30s');
     expect(parseSchedule('@every 70s')).toBe(1);
-    expect(parseSchedule('@every 121s')).toBe(3);
+    expect(parseSchedule('@every 121s')).toBe(2);
     expect(parseSchedule('@every 1m')).toBe(1);
-    expect(parseSchedule('@every 2m30s')).toBe(3);
+    expect(parseSchedule('@every 2m30s')).toBe(2);
     expect(parseSchedule('@every 181s')).toBe(3);
-    expect(parseSchedule('@every 2m10s')).toBe(3);
+    expect(parseSchedule('@every 2m10s')).toBe(2);
     expect(parseSchedule('@every 4m25s')).toBe(5);
     expect(parseSchedule('@every 16m')).toBe(15);
     expect(parseSchedule('@every 24m')).toBe(20);

@@ -41,7 +41,7 @@ export const SyntheticsLocations = Object.keys(
   LocationsMap
 ) as SyntheticsLocationsType[];
 export const ALLOWED_SCHEDULES = [
-  1, 3, 5, 10, 15, 20, 30, 60, 120, 240,
+  1, 2, 3, 5, 10, 15, 20, 30, 60, 120, 240,
 ] as const;
 
 export interface AlertConfig {
