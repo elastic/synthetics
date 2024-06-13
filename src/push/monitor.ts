@@ -271,7 +271,8 @@ export function buildMonitorFromYaml(
     ...normalizeConfig(config),
     retestOnFailure,
     privateLocations,
-    schedule: schedule || options.schedule,
+    schedule:
+      (schedule as typeof ALLOWED_SCHEDULES[number]) || options.schedule,
     alert: alertConfig,
   });
 
@@ -285,7 +286,7 @@ export function buildMonitorFromYaml(
   return mon;
 }
 
-// Deletes unncessary fields from the lightweight monitor config
+// Deletes unnecessary fields from the lightweight monitor config
 //  that is not supported by the Kibana API
 function normalizeConfig(config: MonitorConfig) {
   delete config['private_locations'];
@@ -354,6 +355,7 @@ export function parseSchedule(schedule: string) {
   // split between non-digit (\D) and a digit (\d)
   const durations = duration.split(/(?<=\D)(?=\d)/g);
   let minutes = 0;
+  let seconds = 0;
   for (const dur of durations) {
     // split between a digit and non-digit
     const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
@@ -361,7 +363,11 @@ export function parseSchedule(schedule: string) {
     const scheduleValue = parseInt(value, 10);
     switch (format) {
       case 's':
-        minutes += Math.round(scheduleValue / 60);
+        if (scheduleValue < 60) {
+          seconds += scheduleValue;
+        } else {
+          minutes += Math.round(scheduleValue / 60);
+        }
         break;
       case 'm':
         minutes += scheduleValue;
@@ -374,12 +380,16 @@ export function parseSchedule(schedule: string) {
         break;
     }
   }
-  return nearestSchedule(minutes);
+  return nearestSchedule(minutes, seconds);
 }
 
 // Find the nearest schedule that is supported by the platform
 // from the parsed schedule value
-function nearestSchedule(minutes) {
+function nearestSchedule(minutes: number, seconds: number) {
+  if (seconds > 0 && minutes === 0) {
+    // we allow only 10 and 30 seconds, return the nearest one
+    return seconds < 20 ? '10s' : '30s';
+  }
   let nearest: typeof ALLOWED_SCHEDULES[number] = ALLOWED_SCHEDULES[0];
   let prev = Math.abs(nearest - minutes);
   for (let i = 1; i < ALLOWED_SCHEDULES.length; i++) {
