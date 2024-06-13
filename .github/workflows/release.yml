@@ -55,9 +55,7 @@ jobs:
         run: npm dist-tag --otp=${TOTP_CODE} add "${NPM_PACKAGE}@${VERSION}" stack_release
 
       - if: ${{ always() && github.event.inputs.dry-run == 'false' }}
-        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        uses: elastic/oblt-actions/slack/notify-result@v1
         with:
-          vaultUrl: ${{ secrets.VAULT_ADDR }}
-          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
-          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
-          slackChannel: "#synthetics-user_experience-uptime"
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: "#synthetics-user_experience-uptime"
