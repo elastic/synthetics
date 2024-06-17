@@ -38,9 +38,7 @@ jobs:
           path: "**/junit_*.xml"
           if-no-files-found: error
       - if: always()
-        uses: elastic/apm-pipeline-library/.github/actions/notify-build-status@current
+        uses: elastic/oblt-actions/slack/notify-result@v1
         with:
-          vaultUrl: ${{ secrets.VAULT_ADDR }}
-          vaultRoleId: ${{ secrets.VAULT_ROLE_ID }}
-          vaultSecretId: ${{ secrets.VAULT_SECRET_ID }}
-          slackChannel: "#synthetics-notify"
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: "#synthetics-notify"
