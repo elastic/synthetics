@@ -267,7 +267,7 @@ heartbeat.monitors:
         expect(output).toContain(
           "Pushing monitors for 'test-project' project in kibana 'dummy' space"
         );
-        expect(output).toContain('bundling 2 monitors');
+        expect(output).toContain('preparing 2 monitors');
         expect(output).toContain('creating or updating 2 monitors');
         expect(output).toContain(deleteProgress);
         expect(output).toContain('✓ Pushed:');

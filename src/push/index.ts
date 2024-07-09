@@ -78,7 +78,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
   const { monitors: remote } = await bulkGetMonitors(options);
 
-  progress(`bundling ${monitors.length} monitors`);
+  progress(`preparing ${monitors.length} monitors`);
   const schemas = await buildMonitorSchema(monitors, true);
   const local = getLocalMonitors(schemas);
 
@@ -90,7 +90,8 @@ export async function push(monitors: Monitor[], options: PushOptions) {
 
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
-    const chunks = getChunks(schemas, CHUNK_SIZE);
+    const updatedMonSchemas = schemas.filter(s => updatedMonitors.has(s.id));
+    const chunks = getChunks(updatedMonSchemas, CHUNK_SIZE);
     for (const chunk of chunks) {
       await liveProgress(
         bulkPutMonitors(options, chunk),
@@ -217,9 +218,8 @@ export function validateSettings(opts: PushOptions) {
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
   } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
-    reason = `Set default schedule(${
-      opts.schedule
-    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+    reason = `Set default schedule(${opts.schedule
+      }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;
@@ -288,7 +288,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
 
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
-    progress(`bundling ${monitors.length} monitors`);
+    progress(`preparing ${monitors.length} monitors`);
     schemas = await buildMonitorSchema(monitors, false);
     const chunks = getChunks(schemas, 10);
     for (const chunk of chunks) {

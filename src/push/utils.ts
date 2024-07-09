@@ -37,14 +37,14 @@ export function logDiff<T extends Set<string>>(
 ) {
   progress(
     'Monitor Diff: ' +
-      green(`Added(${newIDs.size}) `) +
-      yellow(`Updated(${changedIDs.size}) `) +
-      red(`Removed(${removedIDs.size}) `) +
-      grey(`Unchanged(${unchangedIDs.size})`)
+    green(`Added(${newIDs.size}) `) +
+    yellow(`Updated(${changedIDs.size}) `) +
+    red(`Removed(${removedIDs.size}) `) +
+    grey(`Unchanged(${unchangedIDs.size})`)
   );
 }
 
-export function getChunks(arr: any[], size: number) {
+export function getChunks<T>(arr: Array<T>, size: number): Array<T[]> {
   const chunks = [];
   for (let i = 0; i < arr.length; i += size) {
     chunks.push(arr.slice(i, i + size));
