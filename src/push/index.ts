@@ -288,7 +288,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
 
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
-    progress(`bundling ${monitors.length} monitors`);
+    progress(`preparing ${monitors.length} monitors`);
     schemas = await buildMonitorSchema(monitors, false);
     const chunks = getChunks(schemas, 10);
     for (const chunk of chunks) {
