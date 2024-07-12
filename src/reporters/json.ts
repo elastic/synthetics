@@ -74,9 +74,9 @@ type OutputType =
 
 type Payload = {
   source?: string;
-  start?: number;
-  end?: number;
   url?: string;
+  browser_delay_us?: number;
+  process_startup_epoch_us?: number;
   status?: StatusValue;
   pagemetrics?: PageMetrics;
   type?: OutputType;
@@ -373,8 +373,8 @@ export default class JSONReporter extends BaseReporter {
       },
       payload: event.networkConditions
         ? {
-            network_conditions: event.networkConditions,
-          }
+          network_conditions: event.networkConditions,
+        }
         : undefined,
     });
   }
@@ -529,15 +529,13 @@ export default class JSONReporter extends BaseReporter {
         },
       },
       timestamp,
-      root_fields: {
-        // convert from monotonic seconds time to microseconds
-        browser_delay_us: getDurationInUs(browserDelay),
-        // timestamp in microseconds at which the current node process began, measured in Unix time.
-        process_startup_epoch_us: processStart * 1000,
-      },
       error,
       payload: {
         status,
+        // convert from monotonic seconds time to microseconds
+        browser_delay_us: getDurationInUs(browserDelay),
+        // timestamp in microseconds at which the current node process began, measured in Unix time.
+        process_startup_epoch_us: Math.trunc(processStart * 1000),
       },
     });
   }
