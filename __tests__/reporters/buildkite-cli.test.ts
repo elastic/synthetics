@@ -39,7 +39,7 @@ describe('buildkite cli reporter', () => {
   let stream: SonicBoom;
   let reporter: BuildKiteCLIReporter;
   const timestamp = 1600300800000000;
-  const j1 = journey('j1', () => {});
+  const j1 = journey('j1', () => { });
 
   const readAndCloseStream = async () => {
     /**
@@ -90,6 +90,7 @@ describe('buildkite cli reporter', () => {
       },
       start: 0,
       end: 1,
+      browserDelay: 0,
       options: {},
     });
     reporter.onEnd();
@@ -111,6 +112,7 @@ describe('buildkite cli reporter', () => {
       error,
       start: 0,
       end: 1,
+      browserDelay: 0,
       options: {},
     });
     reporter.onEnd();
@@ -138,6 +140,7 @@ describe('buildkite cli reporter', () => {
       status: 'succeeded',
       start: 4,
       end: 6,
+      browserDelay: 0,
       options: {},
     });
     reporter.onEnd();
