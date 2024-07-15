@@ -70,6 +70,7 @@ describe('junit reporter', () => {
       timestamp,
       start: 0,
       end: 2,
+      browserDelay: 0,
       status: 'failed',
       options: {},
     });
@@ -98,6 +99,7 @@ describe('junit reporter', () => {
       timestamp,
       start: 0,
       end: 2,
+      browserDelay: 0,
       status: 'failed',
       options: {},
     });
