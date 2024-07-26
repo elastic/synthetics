@@ -140,7 +140,7 @@ export class TraceProcessor extends LighthouseTraceProcessor {
         metrics: perfMetrics,
       };
     } catch (e) {
-      log(e);
+      log(`Plugins: error processing trace events: ${e}`);
       return {};
     }
   }

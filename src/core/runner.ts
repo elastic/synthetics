@@ -102,19 +102,17 @@ export default class Runner {
   }
 
   async captureScreenshot(page: Driver['page'], step: Step) {
-    const buffer = await page
-      .screenshot({
+    try {
+      const buffer = await page.screenshot({
         type: 'jpeg',
         quality: 80,
         timeout: 5000,
       })
-      .catch(() => {});
-    /**
-     * Write the screenshot image buffer with additional details (step
-     * information) which could be extracted at the end of
-     * each journey without impacting the step timing information
-     */
-    if (buffer) {
+      /**
+       * Write the screenshot image buffer with additional details (step
+       * information) which could be extracted at the end of
+       * each journey without impacting the step timing information
+       */
       const fileName = `${generateUniqueId()}.json`;
       const screenshot: Screenshot = {
         step,
@@ -126,6 +124,9 @@ export default class Runner {
         JSON.stringify(screenshot)
       );
       log(`Runner: captured screenshot for (${step.name})`);
+    } catch (_) {
+      // Screenshot may fail sometimes, log and continue.
+      log(`Runner: failed to capture screenshot for (${step.name})`);
     }
   }
 
