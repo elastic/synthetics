@@ -223,9 +223,8 @@ export function validateSettings(opts: PushOptions) {
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
   } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
-    reason = `Set default schedule(${
-      opts.schedule
-    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+    reason = `Set default schedule(${opts.schedule
+      }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   }
 
   if (!reason) return;
