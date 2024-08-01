@@ -24,7 +24,7 @@
  */
 
 import { PushOptions } from '../common_types';
-import { safeNDJSONParse } from '../helpers';
+import { safeNDJSONParse, error } from '../helpers';
 import { MonitorHashID, MonitorSchema } from './monitor';
 import {
   formatFailedMonitors,
@@ -39,7 +39,7 @@ import { generateURL } from './utils';
 // Default chunk size for bulk put / delete
 export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 100;
 if (CHUNK_SIZE > 250) {
-  throw new Error(
+  throw error(
     'Invalid CHUNK_SIZE. CHUNK_SIZE must be less than or equal to 250'
   );
 }
