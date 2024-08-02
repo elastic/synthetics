@@ -37,7 +37,7 @@ import {
 import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
-export const CHUNK_SIZE = 100;
+export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 100;
 
 export type PutResponse = {
   createdMonitors: string[];

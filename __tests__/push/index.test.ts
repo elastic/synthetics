@@ -200,8 +200,8 @@ heartbeat.monitors:
     `
     );
     const output = await runPush();
-    expect(output).toContain(`Aborted: Duplicate monitors found`);
     await rm(heartbeatYml, { force: true });
+    expect(output).toContain(`Aborted: Duplicate monitors found`);
   });
 
   it('format duplicate monitors', () => {
@@ -216,6 +216,38 @@ heartbeat.monitors:
       },
     ]);
     expect(formatDuplicateError(duplicates as Set<Monitor>)).toMatchSnapshot();
+  });
+
+  it('error on invalid CHUNK SIZE', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const output = await runPush(undefined, { CHUNK_SIZE: '251' });
+    expect(output).toContain(
+      'Invalid CHUNK_SIZE. CHUNK_SIZE must be less than or equal to 250'
+    );
+  });
+
+  it('respects valid CHUNK SIZE', async () => {
+    await fakeProjectSetup(
+      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+    );
+    const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+      CHUNK_SIZE: '1',
+    });
+    await rm(testJourney, { force: true });
+    expect(output).toContain('Added(2)');
+    expect(output).toContain('creating or updating 1 monitors');
+    expect(output).toContain('✓ Pushed:');
   });
 
   ['8.5.0', '8.6.0'].forEach(version => {

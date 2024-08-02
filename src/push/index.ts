@@ -61,6 +61,11 @@ import {
 import { log } from '../core/logger';
 
 export async function push(monitors: Monitor[], options: PushOptions) {
+  if (parseInt(process.env.CHUNK_SIZE) > 250) {
+    throw error(
+      'Invalid CHUNK_SIZE. CHUNK_SIZE must be less than or equal to 250'
+    );
+  }
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
