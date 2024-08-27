@@ -15,7 +15,6 @@ on:
         default: false
 
 permissions:
-  contents: write # needed to push the tag and create the release
   id-token: write # to enable use of OIDC for npm provenance
 
 jobs:
@@ -40,7 +39,7 @@ jobs:
       - run: npx semantic-release --dry-run="${DRY_RUN}"
         env:
           DRY_RUN: ${{ github.event.inputs.dry-run }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
 
       - name: Get version and package name
         run: |
