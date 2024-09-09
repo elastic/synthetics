@@ -59,6 +59,7 @@ export async function readConfig(
       options = await optionsPromise;
     }
   }
+
   return options;
 }
 

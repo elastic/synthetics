@@ -24,7 +24,7 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions } from '../src/options';
+import { normalizeOptions, parsePlaywrightOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
@@ -147,5 +147,22 @@ describe('options', () => {
         headless: false,
       },
     });
+  });
+
+  it('cli parses playwrightOptions.clientCertificates correctly', async () => {
+    const test = {
+      clientCertificates: [
+        {
+          key: Buffer.from('This should be revived'),
+          cert: Buffer.from('This should be revived'),
+          pass: Buffer.from('This should not be revived'),
+        },
+      ],
+    };
+    const result = parsePlaywrightOptions(JSON.stringify(test));
+
+    expect(Buffer.isBuffer(result?.clientCertificates[0].cert)).toBeTruthy();
+    expect(Buffer.isBuffer(result?.clientCertificates[0].key)).toBeTruthy();
+    expect(Buffer.isBuffer(result?.clientCertificates[0].pass)).toBeFalsy();
   });
 });
