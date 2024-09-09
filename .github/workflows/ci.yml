@@ -32,7 +32,7 @@ jobs:
           node-version-file: .nvmrc
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist
@@ -48,9 +48,9 @@ jobs:
           node-version-file: .nvmrc
       - run: npm ci
       - run: npm run test:unit -- --ci --reporters=default --reporters=jest-junit
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-test
           path: "**/junit.xml"
           if-no-files-found: error
 
@@ -65,7 +65,7 @@ jobs:
           cache: npm
           node-version-file: .nvmrc
       - run: npm ci
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
@@ -74,8 +74,20 @@ jobs:
         working-directory: __tests__/e2e
         env:
           TERM: xterm # this is needed for tput
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-e2e-test
           path: "**/junit.xml"
           if-no-files-found: error
+
+  merge-test-results:
+    runs-on: ubuntu-latest
+    needs:
+      - e2e-test
+      - test
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: test-results
+          pattern: test-results-*
