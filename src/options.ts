@@ -261,6 +261,9 @@ export function parsePlaywrightOptions(playwrightOpts: string) {
       if (item.key && !Buffer.isBuffer(item.key)) {
         revived.key = parseAsBuffer(item.key);
       }
+      if (item.pfx && !Buffer.isBuffer(item.pfx)) {
+        revived.pfx = parseAsBuffer(item.pfx);
+      }
 
       return revived;
     });
