@@ -156,13 +156,15 @@ describe('options', () => {
           key: Buffer.from('This should be revived'),
           cert: Buffer.from('This should be revived'),
           pfx: Buffer.from('This should be revived'),
-          ignore: Buffer.from('This should not be revived'),
+          origin: Buffer.from('This should not be revived'),
+          passphrase: Buffer.from('This should not be revived'),
         },
         {
           key: 'This should be revived',
           cert: 'This should be revived',
           pfx: 'This should be revived',
-          ignore: 'This should not be revived',
+          origin: 'This should not be revived',
+          passphrase: 'This should not be revived',
         },
       ],
     };
@@ -172,7 +174,8 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.cert)).toBeTruthy();
       expect(Buffer.isBuffer(t.key)).toBeTruthy();
       expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
-      expect(Buffer.isBuffer(t.ignore)).toBeFalsy();
+      expect(Buffer.isBuffer(t.origin)).toBeFalsy();
+      expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
     });
   });
 });
