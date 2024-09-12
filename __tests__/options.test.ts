@@ -149,20 +149,27 @@ describe('options', () => {
     });
   });
 
-  it('cli parses playwrightOptions.clientCertificates correctly', async () => {
+  it('parses cli playwrightOptions.clientCertificates', async () => {
     const test = {
       clientCertificates: [
         {
           key: Buffer.from('This should be revived'),
           cert: Buffer.from('This should be revived'),
-          pass: Buffer.from('This should not be revived'),
+          ignore: Buffer.from('This should not be revived'),
+        },
+        {
+          key: 'This should be revived',
+          cert: 'This should be revived',
+          ignore: 'This should not be revived',
         },
       ],
     };
     const result = parsePlaywrightOptions(JSON.stringify(test));
 
-    expect(Buffer.isBuffer(result?.clientCertificates[0].cert)).toBeTruthy();
-    expect(Buffer.isBuffer(result?.clientCertificates[0].key)).toBeTruthy();
-    expect(Buffer.isBuffer(result?.clientCertificates[0].pass)).toBeFalsy();
+    result.clientCertificates.forEach(t => {
+      expect(Buffer.isBuffer(t.cert)).toBeTruthy();
+      expect(Buffer.isBuffer(t.key)).toBeTruthy();
+      expect(Buffer.isBuffer(t.ignore)).toBeFalsy();
+    });
   });
 });
