@@ -24,7 +24,7 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions } from '../src/options';
+import { normalizeOptions, parsePlaywrightOptions } from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
@@ -66,7 +66,7 @@ describe('options', () => {
         ignoreHTTPSErrors: undefined,
         isMobile: true,
         userAgent:
-          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.17 Mobile Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.29 Mobile Safari/537.36',
         viewport: {
           height: 658,
           width: 320,
@@ -146,6 +146,36 @@ describe('options', () => {
       playwrightOptions: {
         headless: false,
       },
+    });
+  });
+
+  it('parses cli playwrightOptions.clientCertificates', async () => {
+    const test = {
+      clientCertificates: [
+        {
+          key: Buffer.from('This should be revived'),
+          cert: Buffer.from('This should be revived'),
+          pfx: Buffer.from('This should be revived'),
+          origin: Buffer.from('This should not be revived'),
+          passphrase: Buffer.from('This should not be revived'),
+        },
+        {
+          key: 'This should be revived',
+          cert: 'This should be revived',
+          pfx: 'This should be revived',
+          origin: 'This should not be revived',
+          passphrase: 'This should not be revived',
+        },
+      ],
+    };
+    const result = parsePlaywrightOptions(JSON.stringify(test));
+
+    result.clientCertificates.forEach(t => {
+      expect(Buffer.isBuffer(t.cert)).toBeTruthy();
+      expect(Buffer.isBuffer(t.key)).toBeTruthy();
+      expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
+      expect(Buffer.isBuffer(t.origin)).toBeFalsy();
+      expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
     });
   });
 });

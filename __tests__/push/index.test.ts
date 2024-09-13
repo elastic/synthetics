@@ -53,9 +53,7 @@ describe('Push', () => {
   ) {
     await writeFile(
       join(PROJECT_DIR, filename),
-      `export default { monitor: ${JSON.stringify(
-        monitor
-      )}, project: ${JSON.stringify(settings)} }`
+      `export default ${JSON.stringify({ ...settings, monitor })}`
     );
   }
 
@@ -89,20 +87,23 @@ describe('Push', () => {
   });
 
   it('error on invalid location', async () => {
-    await fakeProjectSetup({ id: 'test-project' }, {});
+    await fakeProjectSetup({ project: { id: 'test-project' } }, {});
     const output = await runPush();
     expect(output).toMatchSnapshot();
   });
 
   it('error when schedule is not present', async () => {
-    await fakeProjectSetup({ id: 'test-project' }, { locations: ['test-loc'] });
+    await fakeProjectSetup(
+      { project: { id: 'test-project' } },
+      { locations: ['test-loc'] }
+    );
     const output = await runPush();
     expect(output).toMatchSnapshot();
   });
 
   it('error on invalid schedule', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { project: { id: 'test-project' } },
       { locations: ['test-loc'], schedule: 12 }
     );
     const output = await runPush();
@@ -111,7 +112,7 @@ describe('Push', () => {
 
   it('abort on push with different project id', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { project: { id: 'test-project' } },
       { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush(
@@ -125,7 +126,13 @@ describe('Push', () => {
 
   it('error on invalid schedule in monitor DSL', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: 'http://localhost:8080' },
+      {
+        project: {
+          id: 'test-project',
+          space: 'dummy',
+          url: 'http://localhost:8080',
+        },
+      },
       { locations: ['test-loc'], schedule: 3 }
     );
     const testJourney = join(PROJECT_DIR, 'test.journey.ts');
@@ -141,7 +148,7 @@ journey('journey 1', () => monitor.use({ id: 'j1', schedule: 8 }));`
 
   it('errors on duplicate browser monitors', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
       { locations: ['test-loc'], schedule: 3 }
     );
 
@@ -164,7 +171,7 @@ journey('duplicate name', () => monitor.use({ schedule: 15 }));`
 
   it('warn if throttling config is set', async () => {
     await fakeProjectSetup(
-      { id: 'test-project' },
+      { project: { id: 'test-project' } },
       { locations: ['test-loc'], schedule: 3 }
     );
     const testJourney = join(PROJECT_DIR, 'test.journey.ts');
@@ -180,7 +187,7 @@ journey('duplicate name', () => monitor.use({ schedule: 15 }));`
 
   it('errors on duplicate lightweight monitors', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
       { locations: ['test-loc'], schedule: 3 }
     );
 
@@ -220,7 +227,7 @@ heartbeat.monitors:
 
   it('error on invalid CHUNK SIZE', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
       { locations: ['test-loc'], schedule: 3 }
     );
     const output = await runPush(undefined, { CHUNK_SIZE: '251' });
@@ -231,7 +238,7 @@ heartbeat.monitors:
 
   it('respects valid CHUNK SIZE', async () => {
     await fakeProjectSetup(
-      { id: 'test-project', space: 'dummy', url: server.PREFIX },
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
       { locations: ['test-loc'], schedule: 3 }
     );
     const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
@@ -260,7 +267,9 @@ heartbeat.monitors:
       beforeAll(async () => {
         server = await createKibanaTestServer(version);
         await fakeProjectSetup(
-          { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          {
+            project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          },
           { locations: ['test-loc'], schedule: 3 }
         );
       });
@@ -314,7 +323,7 @@ heartbeat.monitors:
         journey('journey 1', () => monitor.use({ id: 'j1' }));`
         );
         await fakeProjectSetup(
-          { id: 'bar', space: 'dummy', url: server.PREFIX },
+          { project: { id: 'bar', space: 'dummy', url: server.PREFIX } },
           { locations: ['test-loc'], schedule: 3 },
           'synthetics.config.test.ts'
         );
@@ -328,6 +337,20 @@ heartbeat.monitors:
         );
         await rm(testJourney, { force: true });
       });
+    });
+  });
+
+  ['certPath', 'keyPath', 'pfxPath'].forEach(key => {
+    it(`abort on push with clientCertificate.${key} used in cloud`, async () => {
+      await fakeProjectSetup(
+        {
+          project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          playwrightOptions: { clientCertificates: [{ [key]: 'test.file' }] },
+        },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const output = await runPush();
+      expect(output).toMatchSnapshot();
     });
   });
 });

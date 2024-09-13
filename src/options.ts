@@ -77,7 +77,15 @@ export async function normalizeOptions(
    */
   const playwrightOpts = merge(
     config.playwrightOptions,
-    cliArgs.playwrightOptions || {}
+    cliArgs.playwrightOptions || {},
+    {
+      arrayMerge(target, source) {
+        if (source && source.length > 0) {
+          return [...new Set(source)];
+        }
+        return target;
+      },
+    }
   );
   options.playwrightOptions = {
     ...playwrightOpts,
@@ -195,7 +203,7 @@ export function getCommonCommandOpts() {
   const playwrightOpts = createOption(
     '--playwright-options <jsonstring>',
     'JSON object to pass in custom Playwright options for the agent. Options passed will be merged with Playwright options defined in your synthetics.config.js file.'
-  ).argParser(JSON.parse);
+  ).argParser(parsePlaywrightOptions);
 
   const pattern = createOption(
     '--pattern <pattern>',
@@ -236,4 +244,36 @@ export function getCommonCommandOpts() {
     tags,
     match,
   };
+}
+
+export function parsePlaywrightOptions(playwrightOpts: string) {
+  return JSON.parse(playwrightOpts, (key, value) => {
+    if (key !== 'clientCertificates') {
+      return value;
+    }
+
+    // Revive serialized clientCertificates buffer objects
+    return (value ?? []).map(item => {
+      const revived = { ...item };
+      if (item.cert && !Buffer.isBuffer(item.cert)) {
+        revived.cert = parseAsBuffer(item.cert);
+      }
+      if (item.key && !Buffer.isBuffer(item.key)) {
+        revived.key = parseAsBuffer(item.key);
+      }
+      if (item.pfx && !Buffer.isBuffer(item.pfx)) {
+        revived.pfx = parseAsBuffer(item.pfx);
+      }
+
+      return revived;
+    });
+  });
+}
+
+function parseAsBuffer(value: any): Buffer {
+  try {
+    return Buffer.from(value);
+  } catch (e) {
+    return value;
+  }
 }

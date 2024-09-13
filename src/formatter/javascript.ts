@@ -26,7 +26,7 @@
 import {
   JavaScriptLanguageGenerator,
   JavaScriptFormatter,
-} from 'playwright-core/lib/server/recorder/javascript';
+} from 'playwright-core/lib/server/codegen/javascript';
 
 export type Step = {
   actions: ActionInContext[];
@@ -272,7 +272,7 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     if (isAssert && action.command) {
       formatter.add(toAssertCall(pageAlias, action));
     } else {
-      formatter.add(super._generateActionCall(subject, action));
+      formatter.add(super._generateActionCall(subject, actionInContext));
     }
 
     if (signals.popup)
