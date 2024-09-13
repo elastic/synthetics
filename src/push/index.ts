@@ -227,12 +227,12 @@ export function validateSettings(opts: PushOptions) {
       opts.schedule
     }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
   } else if (
-    opts.locations &&
+    opts.locations.length > 0 &&
     (opts?.playwrightOptions?.clientCertificates ?? []).filter(cert => {
       return cert.certPath || cert.keyPath || cert.pfxPath;
     }).length > 0
   ) {
-    reason = `Certificate path options (certPath, keyPath, pfxPath) are not supported on cloud locations, use in-memory alternatives (cert, key, pfx) when running on cloud.`;
+    reason = `Certificate path options (certPath, keyPath, pfxPath) are not supported on globally managed locations, use in-memory alternatives (cert, key, pfx) when running on cloud.`;
   }
 
   if (!reason) return;
