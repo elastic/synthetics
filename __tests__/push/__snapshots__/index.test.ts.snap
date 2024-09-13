@@ -1,5 +1,32 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Push abort on push with clientCertificate.certPath used in cloud 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Certificate path options (certPath, keyPath, pfxPath) are not supported on cloud locations, use in-memory alternatives (cert, key, pfx) when running on cloud.
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push abort on push with clientCertificate.keyPath used in cloud 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Certificate path options (certPath, keyPath, pfxPath) are not supported on cloud locations, use in-memory alternatives (cert, key, pfx) when running on cloud.
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
+exports[`Push abort on push with clientCertificate.pfxPath used in cloud 1`] = `
+"Aborted. Invalid synthetics project settings.
+
+Certificate path options (certPath, keyPath, pfxPath) are not supported on cloud locations, use in-memory alternatives (cert, key, pfx) when running on cloud.
+
+Run 'npx @elastic/synthetics init' to create project with default settings.
+"
+`;
+
 exports[`Push error on empty project id 1`] = `
 "Aborted. Invalid synthetics project settings.
 

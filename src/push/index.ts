@@ -223,8 +223,16 @@ export function validateSettings(opts: PushOptions) {
   - CLI '--schedule <mins>'
   - Config file 'monitors.schedule' field`;
   } else if (opts.schedule && !ALLOWED_SCHEDULES.includes(opts.schedule)) {
-    reason = `Set default schedule(${opts.schedule
-      }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+    reason = `Set default schedule(${
+      opts.schedule
+    }) to one of the allowed values - ${ALLOWED_SCHEDULES.join(',')}`;
+  } else if (
+    opts.locations &&
+    (opts?.playwrightOptions?.clientCertificates ?? []).filter(cert => {
+      return cert.certPath || cert.keyPath || cert.pfxPath;
+    }).length > 0
+  ) {
+    reason = `Certificate path options (certPath, keyPath, pfxPath) are not supported on cloud locations, use in-memory alternatives (cert, key, pfx) when running on cloud.`;
   }
 
   if (!reason) return;
