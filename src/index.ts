@@ -43,7 +43,7 @@ export {
   after,
 } from './core';
 export { expect } from './core/expect';
-export { createTOTP } from './core/totp';
+export * as mfa from './core/mfa';
 
 /**
  * Export all the driver related types to be consumed

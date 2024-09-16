@@ -23,43 +23,14 @@
  *
  */
 
-import { TOTP } from "otpauth";
+import { totp } from '../../src/core/mfa';
 
-type TOTPOptions = {
-  /**
-   * Provider or Service the secret is associated with
-   */
-  issuer?: string
-  /**
-   * Account Identifier.
-   * @default 'SyntheticsTOTP'
-   */
-  label?: string
-  /**
-  * Include issuer prefix in label.
-  */
-  issuerInLabel?: boolean
-  /**
-   * The encoded secret key used to generate the TOTP.
-   */
-  secret?: string
-  /**
-   * The algorithm used to generate the TOTP.
-   * @default 'SHA1'
-   */
-  algorithm?: string
-  /**
-   * Number of digits in the generated token.
-   * @default 6
-   */
-  digits?: number
-  /**
-   * Validity period in seconds for the token.
-   * @default 30
-   */
-  period?: number
-};
+describe('MFA', () => {
+  it('generate TOTP', () => {
+    const token = totp("FLIIOLP3IR3W");
+    expect(token.length).toBe(6);
+  });
+});
 
-export function createTOTP(options: TOTPOptions) {
-  return new TOTP({ label: "SyntheticsTOTP", ...options });
-}
+
+
