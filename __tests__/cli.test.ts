@@ -92,6 +92,19 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('generate mfa totp token', async () => {
+      const cli = new CLIMock(true)
+        .stdin(
+          `step('gen mfa totp', async () => {
+          const token = mfa.totp('FLIIOLP3IR3W');
+          expect(token.length).toBe(6);
+        })`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('exit with 1 on syntax errors', async () => {
       const cli = new CLIMock()
         .stdin(`step('syntax error', async () => {}})`)
