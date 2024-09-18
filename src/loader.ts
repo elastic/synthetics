@@ -29,6 +29,7 @@ import { CliArgs } from './common_types';
 import { step, journey } from './core';
 import { log } from './core/logger';
 import { expect } from './core/expect';
+import * as mfa from "./core/mfa";
 import {
   isDepInstalled,
   isDirectory,
@@ -91,6 +92,7 @@ const loadInlineScript = source => {
     'params',
     'expect',
     'request',
+    'mfa',
     source
   );
   journey('inline', ({ page, context, browser, params, request }) => {
@@ -102,6 +104,7 @@ const loadInlineScript = source => {
       params,
       expect,
       request,
+      mfa,
     ]);
   });
 };

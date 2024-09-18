@@ -43,6 +43,7 @@ export {
   after,
 } from './core';
 export { expect } from './core/expect';
+export * as mfa from './core/mfa';
 
 /**
  * Export all the driver related types to be consumed
