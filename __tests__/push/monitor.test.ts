@@ -472,6 +472,50 @@ heartbeat.monitors:
         hosts: ['elastic.co:443'],
       });
     });
+
+    it('supports labels in config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+  privateLocations:
+    - baz
+  tags:
+    - ltag1
+    - ltag2
+  labels.foo: bar
+  labels.baz: qux
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        params: { foo: 'bar' },
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        tags: ['gtag1', 'gtag2'],
+        privateLocations: ['gbaz'],
+        schedule: 10,
+        retestOnFailure: false,
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        privateLocations: ['baz'],
+        type: 'icmp',
+        params: { foo: 'bar' },
+        schedule: 5,
+        tags: ['ltag1', 'ltag2'],
+        retestOnFailure: false,
+        labels: {
+          baz: 'qux',
+          foo: 'bar',
+        },
+      });
+    });
   });
 
   describe('parseAlertConfig', () => {
