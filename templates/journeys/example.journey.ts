@@ -6,6 +6,7 @@ journey('My Example Journey', ({ page, params }) => {
   monitor.use({
     id: 'example-monitor',
     schedule: 10,
+    labels: { foo: 'bar', team: 'frontend' },
   });
   step('launch application', async () => {
     await page.goto(params.url);

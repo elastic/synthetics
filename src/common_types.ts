@@ -255,6 +255,7 @@ export type PushOptions = Partial<ProjectSettings> &
     kibanaVersion?: string;
     yes?: boolean;
     tags?: Array<string>;
+    labels?: Record<string, string>;
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;

@@ -7,3 +7,4 @@ heartbeat.monitors:
   schedule: '@every 3m'
   timeout: 16s
   alert.status.enabled: true
+  labels.environment: "production"
