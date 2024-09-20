@@ -58,7 +58,7 @@ export type MonitorConfig = {
   name?: string;
   type?: string;
   tags?: string[];
-  labels?: Record<string, string>;
+  fields?: Record<string, string>;
   schedule?: typeof ALLOWED_SCHEDULES[number];
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];

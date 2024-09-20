@@ -83,6 +83,7 @@ describe('Monitors', () => {
       hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
+      fields: { area: 'website' },
     });
   });
 
@@ -102,6 +103,7 @@ describe('Monitors', () => {
       filter: {
         match: 'test',
       },
+      fields: { area: 'website' },
     });
     monitor.update({ locations: ['brazil'] });
     const schema1 = await buildMonitorSchema([monitor], true);
@@ -485,8 +487,8 @@ heartbeat.monitors:
   tags:
     - ltag1
     - ltag2
-  labels.foo: bar
-  labels.baz: qux
+  fields.foo: bar
+  fields.baz: qux
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
@@ -510,7 +512,7 @@ heartbeat.monitors:
         schedule: 5,
         tags: ['ltag1', 'ltag2'],
         retestOnFailure: false,
-        labels: {
+        fields: {
           baz: 'qux',
           foo: 'bar',
         },

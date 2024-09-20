@@ -268,7 +268,7 @@ export function buildMonitorFromYaml(
     enabled: config.enabled ?? options.enabled,
     locations: options.locations,
     tags: options.tags,
-    labels: parseLabels(config, options.labels),
+    fields: parseFields(config, options.fields),
     ...normalizeConfig(config),
     retestOnFailure,
     privateLocations,
@@ -312,23 +312,23 @@ export const parseAlertConfig = (
   return Object.keys(result).length > 0 ? result : undefined;
 };
 
-export const parseLabels = (
+export const parseFields = (
   config: MonitorConfig,
-  gLabels?: Record<string, string>
+  gFields?: Record<string, string>
 ) => {
   // get all keys starting with `label.`
-  const keys = Object.keys(config).filter(key => key.startsWith('labels.'));
-  const labels = {};
+  const keys = Object.keys(config).filter(key => key.startsWith('fields.'));
+  const fields = {};
   for (const key of keys) {
-    labels[key.replace('labels.', '')] = config[key];
+    fields[key.replace('fields.', '')] = config[key];
     delete config[key];
   }
-  if (gLabels) {
-    for (const key of Object.keys(gLabels)) {
-      labels[key] = gLabels[key];
+  if (gFields) {
+    for (const key of Object.keys(gFields)) {
+      fields[key] = gFields[key];
     }
   }
-  return Object.keys(labels).length > 0 ? labels : undefined;
+  return Object.keys(fields).length > 0 ? fields : undefined;
 };
 
 export function getAlertKeyValue(
