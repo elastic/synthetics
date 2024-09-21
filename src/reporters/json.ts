@@ -91,13 +91,16 @@ type Duration = {
   };
 };
 
+type JourneyInfo = Omit<Partial<Journey>, 'duration'> & Duration;
+type StepInfo = Omit<Partial<Step>, 'duration'> & Duration;
+
 type OutputFields = {
   type: OutputType;
   _id?: string;
-  journey?: Partial<Journey> & Duration;
+  journey?: Partial<Journey>;
   timestamp?: number;
   url?: string;
-  step?: Partial<Step> & Duration;
+  step?: Partial<Step>;
   error?: Error;
   root_fields?: Record<string, unknown>;
   payload?: Payload;
@@ -251,36 +254,35 @@ function formatJSONError(error: Error | any) {
 }
 
 function journeyInfo(
-  journey: OutputFields['journey'],
+  journey: Partial<Journey>,
   type: OutputFields['type'],
-  status: Payload['status']
 ) {
   if (!journey) {
     return;
   }
-  return {
-    name: journey.name,
-    id: journey.id,
-    tags: journey.tags,
-    status: type === 'journey/end' ? status : undefined,
-    duration: journey.duration,
-  };
+  const info: JourneyInfo = { name: journey.name, id: journey.id, tags: journey.tags };
+  const isEnd = type === 'journey/end';
+  if (isEnd) {
+    info.status = journey.status;
+    info.duration = { us: getDurationInUs(journey.duration) };
+  }
+  return info;
 }
 
 function stepInfo(
-  step: OutputFields['step'],
+  step: Partial<Step>,
   type: OutputFields['type'],
-  status: Payload['status']
-) {
+): Omit<Partial<Step>, 'duration'> & Duration {
   if (!step) {
     return;
   }
-  return {
-    name: step.name,
-    index: step.index,
-    status: type === 'step/end' ? status : undefined,
-    duration: step.duration,
-  };
+  const info: StepInfo = { name: step.name, index: step.index };
+  const isEnd = type === 'step/end';
+  if (isEnd) {
+    info.status = step.status;
+    info.duration = { us: getDurationInUs(step.duration) };
+  }
+  return info;
 }
 
 export async function getScreenshotBlocks(screenshot: Buffer) {
@@ -399,11 +401,6 @@ export default class JSONReporter extends BaseReporter {
     journey: Journey,
     step: Step,
     {
-      start,
-      end,
-      error,
-      url,
-      status,
       pagemetrics,
       traces,
       metrics,
@@ -432,18 +429,13 @@ export default class JSONReporter extends BaseReporter {
     this.writeJSON({
       type: 'step/end',
       journey,
-      step: {
-        ...step,
-        duration: {
-          us: getDurationInUs(end - start),
-        },
-      },
-      url,
-      error,
+      step,
+      url: step.url,
+      error: step.error,
       payload: {
         source: step.callback.toString(),
-        url,
-        status,
+        url: step.url,
+        status: step.status,
         pagemetrics,
       },
     });
@@ -453,20 +445,16 @@ export default class JSONReporter extends BaseReporter {
     journey: Journey,
     {
       timestamp,
-      start,
-      end,
       browserDelay,
       networkinfo,
       browserconsole,
-      status,
-      error,
       options,
     }: JourneyEndResult
   ) {
     const { ssblocks, screenshots } = options;
     const writeScreenshots =
       screenshots === 'on' ||
-      (screenshots === 'only-on-failure' && status === 'failed');
+      (screenshots === 'only-on-failure' && journey.status === 'failed');
     if (writeScreenshots) {
       await gatherScreenshots(
         join(CACHE_PATH, 'screenshots'),
@@ -522,16 +510,11 @@ export default class JSONReporter extends BaseReporter {
 
     this.writeJSON({
       type: 'journey/end',
-      journey: {
-        ...journey,
-        duration: {
-          us: getDurationInUs(end - start),
-        },
-      },
+      journey,
       timestamp,
-      error,
+      error: journey.error,
       payload: {
-        status,
+        status: journey.status,
         // convert from monotonic seconds time to microseconds
         browser_delay_us: getDurationInUs(browserDelay),
         // timestamp in microseconds at which the current node process began, measured in Unix time.
@@ -613,8 +596,8 @@ export default class JSONReporter extends BaseReporter {
       type,
       _id,
       '@timestamp': timestamp || getTimestamp(),
-      journey: journeyInfo(journey, type, payload?.status),
-      step: stepInfo(step, type, payload?.status),
+      journey: journeyInfo(journey, type),
+      step: stepInfo(step, type),
       root_fields: { ...(root_fields || {}), ...getMetadata() },
       payload,
       blob,

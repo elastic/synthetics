@@ -28,12 +28,8 @@ import { green, red, cyan, gray } from 'kleur/colors';
 import { renderError, serializeError } from './reporter-util';
 import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
-import {
-  JourneyEndResult,
-  JourneyStartResult,
-  StepEndResult,
-} from '../common_types';
 import { Journey, Step } from '../dsl';
+import { JourneyEndResult, JourneyStartResult, StepResult } from '../common_types';
 
 export function renderDuration(durationMs) {
   return parseInt(durationMs);
@@ -66,14 +62,14 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
-  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+  onJourneyStart(journey: Journey, { }: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(_: Journey, step: Step, result: StepEndResult) {
-    const { status, end, start, error } = result;
+  onStepEnd(_: Journey, step: Step, { }: StepResult) {
+    const { status, error } = step;
     const message = `${symbols[status]}  Step: '${step.name}' ${status} ${gray(
-      '(' + renderDuration((end - start) * 1000) + ' ms)'
+      '(' + renderDuration(step.duration * 1000) + ' ms)'
     )}`;
     this.write(indent(message));
     if (error) {
@@ -84,15 +80,15 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(_: Journey, { error }: JourneyEndResult) {
+  onJourneyEnd(journey: Journey, { }: JourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**
      * Render the error on the terminal only when no steps could
      * be executed which means the error happened in one of the hooks
      */
-    if (total === 0 && error) {
-      const message = renderError(serializeError(error));
+    if (total === 0 && journey.error) {
+      const message = renderError(serializeError(journey.error));
       this.write(indent(message) + '\n');
     }
   }

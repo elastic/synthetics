@@ -23,16 +23,21 @@
  *
  */
 
-import { Location, VoidCallback } from '../common_types';
+import { Location, StatusValue, VoidCallback } from '../common_types';
 
 export class Step {
-  name: string;
-  index: number;
-  callback: VoidCallback;
-  location?: Location;
+  readonly name: string;
+  readonly index: number;
+  readonly callback: VoidCallback;
+  readonly location?: Location;
   skip = false;
   soft = false;
   only = false;
+  _startTime = 0;
+  duration = -1;
+  status: StatusValue = 'succeeded';
+  error?: Error;
+  url?: string;
 
   constructor(
     name: string,

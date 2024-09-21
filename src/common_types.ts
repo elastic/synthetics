@@ -32,7 +32,7 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
-import { Step } from './dsl';
+import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
 
@@ -282,12 +282,10 @@ export type SyntheticsConfig = {
 };
 
 /** Runner Payload types */
-export type JourneyResult = {
-  status: StatusValue;
-  error?: Error;
+export type JourneyResult = Partial<Journey> & {
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
-  steps?: Array<StepResult>;
+  stepsresults?: Array<StepResult>;
 };
 
 export type TestError = {
@@ -299,9 +297,6 @@ export type TestError = {
 };
 
 export type StepResult = {
-  status: StatusValue;
-  url?: string;
-  error?: Error;
   pagemetrics?: PageMetrics;
   filmstrips?: PluginOutput['filmstrips'];
   metrics?: PluginOutput['metrics'];
@@ -321,14 +316,8 @@ export type JourneyStartResult = {
 
 export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
-    start: number;
-    end: number;
     browserDelay: number;
     options: RunOptions;
-    timestamp: number;
   };
 
-export type StepEndResult = StepResult & {
-  start: number;
-  end: number;
-};
+export type StepEndResult = StepResult

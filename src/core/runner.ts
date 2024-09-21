@@ -37,7 +37,6 @@ import {
 } from '../helpers';
 import {
   HooksCallback,
-  Params,
   HooksArgs,
   Driver,
   Screenshot,
@@ -58,14 +57,6 @@ import { Monitor, MonitorConfig } from '../dsl/monitor';
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
-type JourneyContext = {
-  params?: Params;
-  browserDelay: number;
-  start: number;
-  driver: Driver;
-  pluginManager: PluginManager;
-};
-
 type RunResult = Record<string, JourneyResult>;
 
 export default class Runner {
@@ -77,28 +68,25 @@ export default class Runner {
   hookError: Error | undefined;
   monitor?: Monitor;
   static screenshotPath = join(CACHE_PATH, 'screenshots');
+  static driver?: Driver;
+  static pluginManager: PluginManager
+  static browserStart = -1;
 
-  static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const browserStart = monotonicTimeInSeconds();
-    const driver = await Gatherer.setupDriver(options);
+
+  static async createContext(journey: Journey, options: RunOptions) {
+    this.browserStart = monotonicTimeInSeconds();
+    this.driver = await Gatherer.setupDriver(options);
     /**
      * Do not include browser launch/context creation duration
      * as part of journey duration
      */
-    const start = monotonicTimeInSeconds();
-    const pluginManager = await Gatherer.beginRecording(driver, options);
+    journey._startTime = monotonicTimeInSeconds();
+    this.pluginManager = await Gatherer.beginRecording(this.driver, options);
     /**
      * For each journey we create the screenshots folder for
      * caching all screenshots and clear them at end of each journey
      */
     await mkdir(this.screenshotPath, { recursive: true });
-    return {
-      start,
-      browserDelay: start - browserStart,
-      params: options.params,
-      driver,
-      pluginManager,
-    };
   }
 
   async captureScreenshot(page: Driver['page'], step: Step) {
@@ -128,6 +116,10 @@ export default class Runner {
       // Screenshot may fail sometimes, log and continue.
       log(`Runner: failed to capture screenshot for (${step.name})`);
     }
+  }
+
+  getBrowserDelay(journeyStart: number) {
+    return Runner.browserStart == -1 ? 0 : journeyStart - Runner.browserStart;
   }
 
   get currentJourney() {
@@ -186,53 +178,49 @@ export default class Runner {
 
   async runStep(
     step: Step,
-    context: JourneyContext,
     options: RunOptions
   ): Promise<StepResult> {
-    const data: StepResult = {
-      status: 'succeeded',
-    };
     log(`Runner: start step (${step.name})`);
     const { metrics, screenshots, filmstrips, trace } = options;
-    const { driver, pluginManager } = context;
     /**
      * URL needs to be the first navigation request of any step
      * Listening for request solves the case where `about:blank` would be
      * reported for failed navigations
      */
     const captureUrl = req => {
-      if (!data.url && req.isNavigationRequest()) {
-        data.url = req.url();
+      if (!step.url && req.isNavigationRequest()) {
+        step.url = req.url();
       }
-      driver.context.off('request', captureUrl);
+      Runner.driver.context.off('request', captureUrl);
     };
-    driver.context.on('request', captureUrl);
+    Runner.driver.context.on('request', captureUrl);
 
+    const data: StepResult = {};
     const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
-      pluginManager.onStep(step);
-      traceEnabled && (await pluginManager.start('trace'));
+      Runner.pluginManager.onStep(step);
+      traceEnabled && (await Runner.pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.callback;
       await cb();
     } catch (error) {
-      data.status = 'failed';
-      data.error = error;
+      step.status = 'failed';
+      step.error = error;
     } finally {
       /**
        * Collect all step level metrics and trace events
        */
       if (metrics) {
         data.pagemetrics = await (
-          pluginManager.get('performance') as PerformanceManager
+          Runner.pluginManager.get('performance') as PerformanceManager
         ).getMetrics();
       }
       if (traceEnabled) {
-        const traceOutput = await pluginManager.stop('trace');
+        const traceOutput = await Runner.pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
       /**
@@ -241,31 +229,30 @@ export default class Runner {
        *
        * Last open page will get us the correct screenshot
        */
-      const pages = driver.context.pages();
+      const pages = Runner.driver.context.pages();
       const page = pages[pages.length - 1];
       if (page) {
-        data.url ??= page.url();
+        step.url ??= page.url();
         if (screenshots && screenshots !== 'off') {
           await this.captureScreenshot(page, step);
         }
       }
     }
     log(`Runner: end step (${step.name})`);
-    return data;
+    return data
   }
 
   async runSteps(
     journey: Journey,
-    context: JourneyContext,
     options: RunOptions
   ) {
     const results: Array<StepResult> = [];
     const isOnlyExists = journey.steps.filter(s => s.only).length > 0;
     let skipStep = false;
     for (const step of journey.steps) {
-      const start = monotonicTimeInSeconds();
+      step._startTime = monotonicTimeInSeconds();
       this.#reporter?.onStepStart?.(journey, step);
-      let data: StepResult = { status: 'succeeded' };
+      let data: StepResult = {};
       /**
        * Skip the step
        * - if the step is marked as skip
@@ -277,20 +264,17 @@ export default class Runner {
         (skipStep && !step.only) ||
         (isOnlyExists && !step.only)
       ) {
-        data.status = 'skipped';
+        step.status = 'skipped';
       } else {
-        data = await this.runStep(step, context, options);
+        data = await this.runStep(step, options);
         /**
          * skip next steps if the previous step returns error
          */
-        if (data.error && !step.soft) skipStep = true;
+        if (step.error && !step.soft) skipStep = true;
       }
-      this.#reporter?.onStepEnd?.(journey, step, {
-        start,
-        end: monotonicTimeInSeconds(),
-        ...data,
-      });
-      if (options.pauseOnError && data.error) {
+      step.duration = monotonicTimeInSeconds() - step._startTime;
+      this.#reporter?.onStepEnd?.(journey, step, data);
+      if (options.pauseOnError && step.error) {
         await new Promise(r => process.stdin.on('data', r));
       }
       results.push(data);
@@ -298,10 +282,9 @@ export default class Runner {
     return results;
   }
 
-  registerJourney(journey: Journey, context: JourneyContext) {
-    this.#currentJourney = journey;
+  registerJourney(journey: Journey, options: RunOptions) {
     const timestamp = getTimestamp();
-    const { params } = context;
+    const params = options.params
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp,
       params,
@@ -309,33 +292,38 @@ export default class Runner {
     /**
      * Exeucute the journey callback which registers the steps for current journey
      */
-    journey.callback({ ...context.driver, params });
+    journey.callback({ ...Runner.driver, params });
   }
 
   async endJourney(
-    journey,
-    result: JourneyContext & JourneyResult,
+    journey: Journey,
+    result: JourneyResult,
     options: RunOptions
   ) {
-    const end = monotonicTimeInSeconds();
-    const { pluginManager, start, status, error, browserDelay } = result;
-    const pluginOutput = await pluginManager.output();
+    // Enhance the journey results
+    journey.duration = monotonicTimeInSeconds() - journey._startTime;
+    const pOutput = await Runner.pluginManager.output();
+    const bConsole = filterBrowserMessages(pOutput.browserconsole, journey.status);
+    Object.assign(result, {
+      networkinfo: pOutput.networkinfo,
+      browserconsole: bConsole,
+      ...journey,
+    });
     await this.#reporter?.onJourneyEnd?.(journey, {
-      status,
-      error,
-      start,
-      end,
-      browserDelay,
+      browserDelay: this.getBrowserDelay(journey._startTime),
       timestamp: getTimestamp(),
       options,
-      ...pluginOutput,
-      browserconsole: filterBrowserMessages(
-        pluginOutput.browserconsole,
-        status
-      ),
+      networkinfo: pOutput.networkinfo,
+      browserconsole: bConsole,
     });
     // clear screenshots cache after each journey
     await rm(Runner.screenshotPath, { recursive: true, force: true });
+
+    return Object.assign(result, {
+      networkinfo: pOutput.networkinfo,
+      browserconsole: bConsole,
+      ...journey,
+    });
   }
 
   /**
@@ -347,50 +335,49 @@ export default class Runner {
       timestamp: getTimestamp(),
       params: options.params,
     });
-    const result: JourneyResult = {
-      status: 'failed',
-      error: this.hookError,
-    };
+
+    // Mark the journey as failed and report the hook error as journey error
+    journey.status = 'failed';
+    journey.error = this.hookError;
+    journey.duration = monotonicTimeInSeconds() - start;
+
     await this.#reporter.onJourneyEnd?.(journey, {
       timestamp: getTimestamp(),
-      start,
       options,
-      browserDelay: 0,
-      end: monotonicTimeInSeconds(),
-      ...result,
+      browserDelay: this.getBrowserDelay(start),
     });
-    return result;
+    return journey;
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
-    const result: JourneyResult = { status: 'succeeded' };
-    const context = await Runner.createContext(options);
+    this.#currentJourney = journey;
+    await Runner.createContext(journey, options);
     log(`Runner: start journey (${journey.name})`);
+    let result: JourneyResult = {};
+    const hookArgs = { env: options.environment, params: options.params, };
     try {
-      this.registerJourney(journey, context);
-      const hookArgs = {
-        env: options.environment,
-        params: options.params,
-      };
+      this.registerJourney(journey, options);
       await this.runBeforeHook(journey, hookArgs);
-      const stepResults = await this.runSteps(journey, context, options);
-      /**
-       * Mark journey as failed if any intermediate step fails
-       */
-      for (const stepResult of stepResults) {
-        if (stepResult.status === 'failed') {
-          result.status = stepResult.status;
-          result.error = stepResult.error;
+      const stepResults = await this.runSteps(journey, options);
+      // Mark journey as failed if any one of the step fails
+      for (const step of journey.steps) {
+        if (step.status === 'failed') {
+          journey.status = step.status;
+          journey.error = step.error;
         }
       }
-      result.steps = stepResults;
-      await this.runAfterHook(journey, hookArgs);
+      result.stepsresults = stepResults;
     } catch (e) {
-      result.status = 'failed';
-      result.error = e;
+      journey.status = 'failed';
+      journey.error = e;
     } finally {
-      await this.endJourney(journey, { ...context, ...result }, options);
-      await Gatherer.dispose(context.driver);
+      // Run after hook on journey failure and capture the uncaught error as journey error
+      await this.runAfterHook(journey, hookArgs).catch(e => {
+        journey.status = 'failed';
+        journey.error = e;
+      })
+      result = await this.endJourney(journey, result, options);
+      await Gatherer.dispose(Runner.driver);
     }
     log(`Runner: end journey (${journey.name})`);
     return result;
@@ -466,10 +453,8 @@ export default class Runner {
     this.#active = true;
     log(`Runner: run ${this.journeys.length} journeys`);
     this.init(options);
-    await this.runBeforeAllHook({
-      env: options.environment,
-      params: options.params,
-    }).catch(e => (this.hookError = e));
+    const hookArgs = { env: options.environment, params: options.params };
+    await this.runBeforeAllHook(hookArgs).catch(e => (this.hookError = e));
 
     const { dryRun, grepOpts } = options;
     /**
@@ -497,10 +482,7 @@ export default class Runner {
       result[journey.name] = journeyResult;
     }
     await Gatherer.stop();
-    await this.runAfterAllHook({
-      env: options.environment,
-      params: options.params,
-    });
+    await this.runAfterAllHook(hookArgs);
     await this.reset();
     return result;
   }

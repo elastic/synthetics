@@ -31,7 +31,7 @@ import {
   APIRequestContext,
 } from 'playwright-core';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location, StatusValue } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
 
@@ -53,16 +53,20 @@ export type JourneyCallback = (options: {
 }) => void;
 
 export class Journey {
-  name: string;
-  id?: string;
-  tags?: string[];
-  callback: JourneyCallback;
-  location?: Location;
-  steps: Step[] = [];
-  hooks: Hooks = { before: [], after: [] };
+  readonly name: string;
+  readonly id?: string;
+  readonly tags?: string[];
+  readonly callback: JourneyCallback;
+  readonly location?: Location;
+  readonly steps: Step[] = [];
+  readonly hooks: Hooks = { before: [], after: [] };
   monitor: Monitor;
   skip = false;
   only = false;
+  _startTime = 0;
+  duration = -1;
+  status: StatusValue = 'succeeded';
+  error?: Error;
 
   constructor(
     options: JourneyOptions,

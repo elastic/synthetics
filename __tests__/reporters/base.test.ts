@@ -30,17 +30,15 @@ process.env.NO_COLOR = '1';
 
 import fs from 'fs';
 import SonicBoom from 'sonic-boom';
-import { step, journey } from '../../src/core';
 import BaseReporter from '../../src/reporters/base';
 import * as helpers from '../../src/helpers';
-import { Step } from '../../src/dsl';
+import { tJourney, tStep } from "../utils/test-config"
 
 describe('base reporter', () => {
   let dest: string;
   let stream: SonicBoom;
   let reporter: BaseReporter;
   const timestamp = 1600300800000000;
-  const j1 = journey('j1', () => {});
 
   const readAndCloseStream = async () => {
     /**
@@ -67,31 +65,19 @@ describe('base reporter', () => {
   });
 
   it('writes each step to the FD', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    reporter.onStepEnd(j1, step('s1', helpers.noop) as Step, {
-      status: 'failed',
-      error: new Error('step failed'),
-      url: 'dummy',
-      start: 0,
-      end: 1,
-    });
+    const j1 = tJourney();
+    const s1 = tStep("failed", 1, new Error('step failed'), 'dummy');
+    reporter.onJourneyStart(tJourney(), { timestamp });
+    reporter.onStepEnd(j1, s1, {});
     reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
 
   it('render hook errors without steps', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    const error = new Error('before hook failed');
+    const j1 = tJourney('failed', 1, new Error('before hook failed'));
+    reporter.onJourneyStart(j1, { timestamp });
     reporter.onJourneyEnd(j1, {
       timestamp,
-      status: 'failed',
-      error,
-      start: 0,
-      end: 1,
       browserDelay: 0,
       options: {},
     });

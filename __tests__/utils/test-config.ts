@@ -26,6 +26,9 @@
 import { ChildProcess, spawn } from 'child_process';
 import { join } from 'path';
 import { Monitor } from '../../src/dsl/monitor';
+import { journey, step } from '../../src/core';
+import { StatusValue } from '../../src/common_types';
+import { noop } from '../../src/helpers';
 
 export const wsEndpoint = process.env.WSENDPOINT || '';
 
@@ -49,6 +52,23 @@ export function createTestMonitor(filename: string, type = 'browser') {
   return monitor;
 }
 
+export function tJourney(status: StatusValue = "succeeded", duration = 0, error?: Error) {
+  const jj = journey('j1', () => { });
+  jj.status = status;
+  jj.duration = duration;
+  jj.error = error;
+  return jj
+}
+
+export function tStep(status: StatusValue = "succeeded", duration = 0, error?: Error, url?: string, name?: string) {
+  const ss = step(name ?? 's1', noop);
+  ss.status = status;
+  ss.duration = duration;
+  ss.error = error;
+  ss.url = url;
+  return ss
+}
+
 export class CLIMock {
   private process: ChildProcess;
   private data = '';
@@ -60,7 +80,7 @@ export class CLIMock {
   private stderrStr = '';
   exitCode: Promise<number>;
 
-  constructor(public debug: boolean = false) {}
+  constructor(public debug: boolean = false) { }
 
   args(a: string[]): CLIMock {
     this.cliArgs.push(...a);
