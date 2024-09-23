@@ -205,7 +205,7 @@ export default class Runner {
       Runner.pluginManager.onStep(step);
       traceEnabled && (await Runner.pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
-      const cb = step.callback;
+      const cb = step.cb;
       await cb();
     } catch (error) {
       step.status = 'failed';
@@ -292,7 +292,7 @@ export default class Runner {
     /**
      * Exeucute the journey callback which registers the steps for current journey
      */
-    journey.callback({ ...Runner.driver, params });
+    journey.cb({ ...Runner.driver, params });
   }
 
   async endJourney(
@@ -429,18 +429,19 @@ export default class Runner {
        * - filter out monitors based on matched tags and name after applying both
        *  global and local monitor configurations
        */
-      journey.callback({ params: options.params } as any);
-      journey.monitor.update(this.monitor?.config);
+      journey.cb({ params: options.params } as any);
+      const monitor = journey.getMonitor();
+      monitor.update(this.monitor?.config);
       if (
-        !journey.monitor.isMatch(
+        !monitor.isMatch(
           options.grepOpts?.match,
           options.grepOpts?.tags
         )
       ) {
         continue;
       }
-      journey.monitor.validate();
-      monitors.push(journey.monitor);
+      monitor.validate();
+      monitors.push(monitor);
     }
     return monitors;
   }

@@ -28,7 +28,7 @@ import { Location, StatusValue, VoidCallback } from '../common_types';
 export class Step {
   readonly name: string;
   readonly index: number;
-  readonly callback: VoidCallback;
+  readonly cb: Function;
   readonly location?: Location;
   skip = false;
   soft = false;
@@ -42,12 +42,12 @@ export class Step {
   constructor(
     name: string,
     index: number,
-    callback: VoidCallback,
+    cb: VoidCallback,
     location: Location
   ) {
     this.name = name;
     this.index = index;
-    this.callback = callback;
+    this.cb = cb;
     this.location = location;
   }
 }

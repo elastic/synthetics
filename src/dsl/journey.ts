@@ -56,11 +56,11 @@ export class Journey {
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
-  readonly callback: JourneyCallback;
+  readonly cb: JourneyCallback;
   readonly location?: Location;
   readonly steps: Step[] = [];
   readonly hooks: Hooks = { before: [], after: [] };
-  monitor: Monitor;
+  private _monitor: Monitor;
   skip = false;
   only = false;
   _startTime = 0;
@@ -70,40 +70,44 @@ export class Journey {
 
   constructor(
     options: JourneyOptions,
-    callback: JourneyCallback,
+    cb: JourneyCallback,
     location?: Location
   ) {
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
-    this.callback = callback;
+    this.cb = cb;
     this.location = location;
     this.updateMonitor({});
   }
 
-  addStep(name: string, callback: VoidCallback, location?: Location) {
-    const step = new Step(name, this.steps.length + 1, callback, location);
+  addStep(name: string, cb: VoidCallback, location?: Location) {
+    const step = new Step(name, this.steps.length + 1, cb, location);
     this.steps.push(step);
     return step;
   }
 
-  addHook(type: HookType, callback: HooksCallback) {
-    this.hooks[type].push(callback);
+  addHook(type: HookType, cb: HooksCallback) {
+    this.hooks[type].push(cb);
+  }
+
+  getMonitor() {
+    return this._monitor;
   }
 
   updateMonitor(config: MonitorConfig) {
     /**
      * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this.monitor = new Monitor({
+    this._monitor = new Monitor({
       name: this.name,
       id: this.id,
       type: 'browser',
       tags: this.tags ?? [],
       ...config,
     });
-    this.monitor.setSource(this.location);
-    this.monitor.setFilter({ match: this.name });
+    this._monitor.setSource(this.location);
+    this._monitor.setFilter({ match: this.name });
   }
 
   /**
