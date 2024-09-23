@@ -105,9 +105,13 @@ describe('Monitors', () => {
       },
       fields: { area: 'website' },
     });
-    monitor.update({ locations: ['brazil'] });
+    monitor.update({ locations: ['brazil'], fields: { env: 'dev' } });
     const schema1 = await buildMonitorSchema([monitor], true);
     expect(schema1[0].hash).not.toEqual(schema[0].hash);
+    expect(schema1[0].fields).toEqual({
+      area: 'website',
+      env: 'dev',
+    });
   });
 
   it('parse @every schedule format', async () => {
@@ -475,7 +479,7 @@ heartbeat.monitors:
       });
     });
 
-    it('supports labels in config', async () => {
+    it('supports fields in config', async () => {
       await writeHBFile(`
 heartbeat.monitors:
 - type: icmp
