@@ -83,6 +83,7 @@ describe('Monitors', () => {
       hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
+      fields: { area: 'website' },
     });
   });
 
@@ -102,10 +103,15 @@ describe('Monitors', () => {
       filter: {
         match: 'test',
       },
+      fields: { area: 'website' },
     });
-    monitor.update({ locations: ['brazil'] });
+    monitor.update({ locations: ['brazil'], fields: { env: 'dev' } });
     const schema1 = await buildMonitorSchema([monitor], true);
     expect(schema1[0].hash).not.toEqual(schema[0].hash);
+    expect(schema1[0].fields).toEqual({
+      area: 'website',
+      env: 'dev',
+    });
   });
 
   it('parse @every schedule format', async () => {
@@ -470,6 +476,50 @@ heartbeat.monitors:
         schedule: 5,
         type: 'tcp',
         hosts: ['elastic.co:443'],
+      });
+    });
+
+    it('supports fields in config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+  privateLocations:
+    - baz
+  tags:
+    - ltag1
+    - ltag2
+  fields.foo: bar
+  fields.baz: qux
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        params: { foo: 'bar' },
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        tags: ['gtag1', 'gtag2'],
+        privateLocations: ['gbaz'],
+        schedule: 10,
+        retestOnFailure: false,
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        privateLocations: ['baz'],
+        type: 'icmp',
+        params: { foo: 'bar' },
+        schedule: 5,
+        tags: ['ltag1', 'ltag2'],
+        retestOnFailure: false,
+        fields: {
+          baz: 'qux',
+          foo: 'bar',
+        },
       });
     });
   });

@@ -268,6 +268,7 @@ export function buildMonitorFromYaml(
     enabled: config.enabled ?? options.enabled,
     locations: options.locations,
     tags: options.tags,
+    fields: parseFields(config, options.fields),
     ...normalizeConfig(config),
     retestOnFailure,
     privateLocations,
@@ -309,6 +310,25 @@ export const parseAlertConfig = (
     result['tls'] = tls;
   }
   return Object.keys(result).length > 0 ? result : undefined;
+};
+
+export const parseFields = (
+  config: MonitorConfig,
+  gFields?: Record<string, string>
+) => {
+  // get all keys starting with `label.`
+  const keys = Object.keys(config).filter(key => key.startsWith('fields.'));
+  const fields = {};
+  for (const key of keys) {
+    fields[key.replace('fields.', '')] = config[key];
+    delete config[key];
+  }
+  if (gFields) {
+    for (const key of Object.keys(gFields)) {
+      fields[key] = gFields[key];
+    }
+  }
+  return Object.keys(fields).length > 0 ? fields : undefined;
 };
 
 export function getAlertKeyValue(

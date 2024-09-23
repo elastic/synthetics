@@ -39,6 +39,7 @@ export function createTestMonitor(filename: string, type = 'browser') {
     enabled: true,
     locations: ['united_kingdom', 'australia_east'],
     privateLocations: ['germany'],
+    fields: { area: 'website' },
   });
   monitor.setSource({
     file: join(FIXTURES_DIR, filename),
