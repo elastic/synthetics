@@ -59,7 +59,7 @@ export class Journey {
   readonly cb: JourneyCallback;
   readonly location?: Location;
   readonly steps: Step[] = [];
-  readonly hooks: Hooks = { before: [], after: [] };
+  readonly #hooks: Hooks = { before: [], after: [] };
   private _monitor: Monitor;
   skip = false;
   only = false;
@@ -88,7 +88,11 @@ export class Journey {
   }
 
   addHook(type: HookType, cb: HooksCallback) {
-    this.hooks[type].push(cb);
+    this.#hooks[type].push(cb);
+  }
+
+  getHook(type: HookType) {
+    return this.#hooks[type];
   }
 
   getMonitor() {

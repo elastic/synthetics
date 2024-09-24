@@ -23,48 +23,15 @@
  *
  */
 
-import { Location, StatusValue, VoidCallback } from '../common_types';
+import Runner from './runner';
 
-export class Step {
-  readonly name: string;
-  readonly index: number;
-  readonly cb: VoidCallback;
-  readonly location?: Location;
-  skip = false;
-  soft = false;
-  only = false;
-  _startTime = 0;
-  duration = -1;
-  status: StatusValue = 'succeeded';
-  error?: Error;
-  url?: string;
-
-  constructor(
-    name: string,
-    index: number,
-    cb: VoidCallback,
-    location: Location
-  ) {
-    this.name = name;
-    this.index = index;
-    this.cb = cb;
-    this.location = location;
-  }
+/**
+ * Use a gloabl Runner which would be accessed by the runtime and
+ * required to handle the local vs global invocation through CLI
+ */
+const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
+if (!global[SYNTHETICS_RUNNER]) {
+  global[SYNTHETICS_RUNNER] = new Runner();
 }
 
-type StepType = (name: string, callback: VoidCallback) => Step;
-
-export type StepWithAnnotations = StepType & {
-  /**
-   * Skip this step on the journey
-   */
-  skip: StepType;
-  /**
-   * Failure of soft step will not skip rest of the steps in the journey
-   */
-  soft: StepType;
-  /**
-   * Run only this step and skip rest of the steps in the journey
-   */
-  only: StepType;
-};
+export const runner: Runner = global[SYNTHETICS_RUNNER];

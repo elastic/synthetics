@@ -63,30 +63,22 @@ export default class Runner {
   #active = false;
   #reporter: Reporter;
   #currentJourney?: Journey = null;
-  journeys: Journey[] = [];
-  hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
+  #journeys: Journey[] = [];
+  #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
+  #screenshotPath = join(CACHE_PATH, 'screenshots');
+  #driver?: Driver;
+  #pluginManager: PluginManager
+  #browserDelay = -1;
   hookError: Error | undefined;
   monitor?: Monitor;
-  static screenshotPath = join(CACHE_PATH, 'screenshots');
-  static driver?: Driver;
-  static pluginManager: PluginManager
-  static browserStart = -1;
 
-
-  static async createContext(journey: Journey, options: RunOptions) {
-    this.browserStart = monotonicTimeInSeconds();
-    this.driver = await Gatherer.setupDriver(options);
-    /**
-     * Do not include browser launch/context creation duration
-     * as part of journey duration
-     */
-    journey._startTime = monotonicTimeInSeconds();
-    this.pluginManager = await Gatherer.beginRecording(this.driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.screenshotPath, { recursive: true });
+  async launchBrowser(options: RunOptions) {
+    if (options.dryRun || this.#driver) {
+      return;
+    }
+    const browserStart = monotonicTimeInSeconds();
+    this.#driver = await Gatherer.setupDriver(options);
+    this.#browserDelay = monotonicTimeInSeconds() - browserStart;
   }
 
   async captureScreenshot(page: Driver['page'], step: Step) {
@@ -108,7 +100,7 @@ export default class Runner {
         data: buffer.toString('base64'),
       };
       await writeFile(
-        join(Runner.screenshotPath, fileName),
+        join(this.#screenshotPath, fileName),
         JSON.stringify(screenshot)
       );
       log(`Runner: captured screenshot for (${step.name})`);
@@ -118,16 +110,12 @@ export default class Runner {
     }
   }
 
-  getBrowserDelay(journeyStart: number) {
-    return Runner.browserStart == -1 ? 0 : journeyStart - Runner.browserStart;
-  }
-
   get currentJourney() {
     return this.#currentJourney;
   }
 
   addHook(type: HookType, callback: HooksCallback) {
-    this.hooks[type].push(callback);
+    this.#hooks[type].push(callback);
   }
 
   updateMonitor(config: MonitorConfig) {
@@ -139,7 +127,7 @@ export default class Runner {
   }
 
   addJourney(journey: Journey) {
-    this.journeys.push(journey);
+    this.#journeys.push(journey);
     this.#currentJourney = journey;
   }
 
@@ -158,22 +146,22 @@ export default class Runner {
 
   async runBeforeAllHook(args: HooksArgs) {
     log(`Runner: beforeAll hooks`);
-    await runParallel(this.hooks.beforeAll, args);
+    await runParallel(this.#hooks.beforeAll, args);
   }
 
   async runAfterAllHook(args: HooksArgs) {
     log(`Runner: afterAll hooks`);
-    await runParallel(this.hooks.afterAll, args);
+    await runParallel(this.#hooks.afterAll, args);
   }
 
   async runBeforeHook(journey: Journey, args: HooksArgs) {
     log(`Runner: before hooks for (${journey.name})`);
-    await runParallel(journey.hooks.before, args);
+    await runParallel(journey.getHook('before'), args);
   }
 
   async runAfterHook(journey: Journey, args: HooksArgs) {
     log(`Runner: after hooks for (${journey.name})`);
-    await runParallel(journey.hooks.after, args);
+    await runParallel(journey.getHook('after'), args);
   }
 
   async runStep(
@@ -191,9 +179,9 @@ export default class Runner {
       if (!step.url && req.isNavigationRequest()) {
         step.url = req.url();
       }
-      Runner.driver.context.off('request', captureUrl);
+      this.#driver.context.off('request', captureUrl);
     };
-    Runner.driver.context.on('request', captureUrl);
+    this.#driver.context.on('request', captureUrl);
 
     const data: StepResult = {};
     const traceEnabled = trace || filmstrips;
@@ -202,8 +190,8 @@ export default class Runner {
        * Set up plugin manager context and also register
        * step level plugins
        */
-      Runner.pluginManager.onStep(step);
-      traceEnabled && (await Runner.pluginManager.start('trace'));
+      this.#pluginManager.onStep(step);
+      traceEnabled && (await this.#pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
       await cb();
@@ -216,11 +204,11 @@ export default class Runner {
        */
       if (metrics) {
         data.pagemetrics = await (
-          Runner.pluginManager.get('performance') as PerformanceManager
+          this.#pluginManager.get('performance') as PerformanceManager
         ).getMetrics();
       }
       if (traceEnabled) {
-        const traceOutput = await Runner.pluginManager.stop('trace');
+        const traceOutput = await this.#pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
       /**
@@ -229,7 +217,7 @@ export default class Runner {
        *
        * Last open page will get us the correct screenshot
        */
-      const pages = Runner.driver.context.pages();
+      const pages = this.#driver.context.pages();
       const page = pages[pages.length - 1];
       if (page) {
         step.url ??= page.url();
@@ -282,17 +270,24 @@ export default class Runner {
     return results;
   }
 
-  registerJourney(journey: Journey, options: RunOptions) {
-    const timestamp = getTimestamp();
+  async startJourney(journey: Journey, options: RunOptions) {
+    journey._startTime = monotonicTimeInSeconds();
+    this.#pluginManager = await Gatherer.beginRecording(this.#driver, options);
+    /**
+     * For each journey we create the screenshots folder for
+     * caching all screenshots and clear them at end of each journey
+     */
+    await mkdir(this.#screenshotPath, { recursive: true });
+
     const params = options.params
     this.#reporter?.onJourneyStart?.(journey, {
-      timestamp,
+      timestamp: getTimestamp(),
       params,
     });
     /**
      * Exeucute the journey callback which registers the steps for current journey
      */
-    journey.cb({ ...Runner.driver, params });
+    journey.cb({ ...this.#driver, params });
   }
 
   async endJourney(
@@ -302,7 +297,7 @@ export default class Runner {
   ) {
     // Enhance the journey results
     journey.duration = monotonicTimeInSeconds() - journey._startTime;
-    const pOutput = await Runner.pluginManager.output();
+    const pOutput = await this.#pluginManager.output();
     const bConsole = filterBrowserMessages(pOutput.browserconsole, journey.status);
     Object.assign(result, {
       networkinfo: pOutput.networkinfo,
@@ -310,14 +305,14 @@ export default class Runner {
       ...journey,
     });
     await this.#reporter?.onJourneyEnd?.(journey, {
-      browserDelay: this.getBrowserDelay(journey._startTime),
+      browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
       options,
       networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
     });
     // clear screenshots cache after each journey
-    await rm(Runner.screenshotPath, { recursive: true, force: true });
+    await rm(this.#screenshotPath, { recursive: true, force: true });
 
     return Object.assign(result, {
       networkinfo: pOutput.networkinfo,
@@ -344,19 +339,18 @@ export default class Runner {
     await this.#reporter.onJourneyEnd?.(journey, {
       timestamp: getTimestamp(),
       options,
-      browserDelay: this.getBrowserDelay(start),
+      browserDelay: this.#browserDelay,
     });
     return journey;
   }
 
   async runJourney(journey: Journey, options: RunOptions) {
     this.#currentJourney = journey;
-    await Runner.createContext(journey, options);
     log(`Runner: start journey (${journey.name})`);
     let result: JourneyResult = {};
     const hookArgs = { env: options.environment, params: options.params, };
     try {
-      this.registerJourney(journey, options);
+      await this.startJourney(journey, options);
       await this.runBeforeHook(journey, hookArgs);
       const stepResults = await this.runSteps(journey, options);
       // Mark journey as failed if any one of the step fails
@@ -377,7 +371,7 @@ export default class Runner {
         journey.error = e;
       })
       result = await this.endJourney(journey, result, options);
-      await Gatherer.dispose(Runner.driver);
+      await Gatherer.dispose(this.#driver);
     }
     log(`Runner: end journey (${journey.name})`);
     return result;
@@ -386,7 +380,7 @@ export default class Runner {
   async init(options: RunOptions) {
     this.setReporter(options);
     this.#reporter.onStart?.({
-      numJourneys: this.journeys.length,
+      numJourneys: this.#journeys.length,
       networkConditions: options.networkConditions,
     });
     /**
@@ -414,7 +408,7 @@ export default class Runner {
     });
 
     const monitors: Monitor[] = [];
-    for (const journey of this.journeys) {
+    for (const journey of this.#journeys) {
       this.#currentJourney = journey;
       if (journey.skip) {
         throw new Error(
@@ -452,21 +446,21 @@ export default class Runner {
       return result;
     }
     this.#active = true;
-    log(`Runner: run ${this.journeys.length} journeys`);
+    log(`Runner: run ${this.#journeys.length} journeys`);
     this.init(options);
     const hookArgs = { env: options.environment, params: options.params };
     await this.runBeforeAllHook(hookArgs).catch(e => (this.hookError = e));
-
+    await this.launchBrowser(options);
     const { dryRun, grepOpts } = options;
     /**
      * Skip other journeys when using `.only`
      */
-    const onlyJournerys = this.journeys.filter(j => j.only);
+    const onlyJournerys = this.#journeys.filter(j => j.only);
     if (onlyJournerys.length > 0) {
-      this.journeys = onlyJournerys;
+      this.#journeys = onlyJournerys;
     }
 
-    for (const journey of this.journeys) {
+    for (const journey of this.#journeys) {
       /**
        * Used by heartbeat to gather all registered journeys
        */
@@ -490,7 +484,7 @@ export default class Runner {
 
   async reset() {
     this.#currentJourney = null;
-    this.journeys = [];
+    this.#journeys = [];
     this.#active = false;
     /**
      * Clear all cache data stored for post processing by

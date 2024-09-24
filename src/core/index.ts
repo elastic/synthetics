@@ -30,22 +30,11 @@ import {
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import Runner from './runner';
+import { runner } from "./globals"
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
 import { MonitorConfig } from '../dsl/monitor';
-
-/**
- * Use a gloabl Runner which would be accessed by the runtime and
- * required to handle the local vs global invocation through CLI
- */
-const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
-if (!global[SYNTHETICS_RUNNER]) {
-  global[SYNTHETICS_RUNNER] = new Runner();
-}
-
-export const runner: Runner = global[SYNTHETICS_RUNNER];
 
 const createJourney = (type?: 'skip' | 'only') =>
   wrapFnWithLocation(
@@ -59,11 +48,9 @@ const createJourney = (type?: 'skip' | 'only') =>
         options = { name: options, id: options };
       }
       const j = new Journey(options, callback, location);
-
       if (type) {
         j[type] = true;
       }
-
       runner.addJourney(j);
       return j;
     }

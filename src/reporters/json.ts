@@ -393,7 +393,7 @@ export default class JSONReporter extends BaseReporter {
       type: 'journey/start',
       journey,
       timestamp,
-      payload: { source: journey.callback.toString() },
+      payload: { source: journey.cb.toString() },
     });
   }
 
@@ -433,7 +433,7 @@ export default class JSONReporter extends BaseReporter {
       url: step.url,
       error: step.error,
       payload: {
-        source: step.callback.toString(),
+        source: step.cb.toString(),
         url: step.url,
         status: step.status,
         pagemetrics,
