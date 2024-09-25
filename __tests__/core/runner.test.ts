@@ -26,7 +26,7 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { step, journey } from '../../src/core';
+import { step, journey, before, after } from '../../src/core';
 import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
 import {
@@ -174,6 +174,27 @@ describe('runner', () => {
     expect(result).toMatchObject({
       j1: { status: 'failed', error },
       j2: { status: 'failed', error },
+    });
+  });
+
+  it('run journey - expose info in hooks', async () => {
+    const error = new Error('Broken step');
+    const j1 = journey('fail-journey-with-hooks', () => {
+      before(({ info }) => {
+        expect(info.journey?.status).toBe('succeeded');
+      });
+      after(({ info }) => {
+        expect(info.journey?.status).toBe('failed');
+        expect(info.journey?.error).toBe(error);
+        expect(info.journey?.duration).toBeGreaterThan(0);
+      });
+      step('step1', () => { throw error });
+    });
+    const result = await runner._runJourney(j1, defaultRunOptions);
+    await Gatherer.stop();
+    expect(result).toMatchObject({
+      status: 'failed',
+      error,
     });
   });
 
