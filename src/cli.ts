@@ -214,7 +214,7 @@ program
         'push'
       )) as PushOptions;
       await validatePush(options, settings);
-      const monitors = runner.buildMonitors(options);
+      const monitors = runner._buildMonitors(options);
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);
       }

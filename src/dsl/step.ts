@@ -28,8 +28,8 @@ import { Location, StatusValue, VoidCallback } from '../common_types';
 export class Step {
   readonly name: string;
   readonly index: number;
-  readonly cb: VoidCallback;
   readonly location?: Location;
+  #cb: VoidCallback;
   skip = false;
   soft = false;
   only = false;
@@ -47,8 +47,12 @@ export class Step {
   ) {
     this.name = name;
     this.index = index;
-    this.cb = cb;
+    this.#cb = cb;
     this.location = location;
+  }
+
+  get cb() {
+    return this.#cb;
   }
 }
 

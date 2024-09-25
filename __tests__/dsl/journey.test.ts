@@ -25,7 +25,7 @@
 
 import { Journey, Step } from '../../src/dsl';
 
-const noop = () => {};
+const noop = () => { };
 describe('Journey', () => {
   it('add journey details', () => {
     const name = 'j1';
@@ -38,9 +38,9 @@ describe('Journey', () => {
 
   it('add step to the journey', () => {
     const journey = new Journey({ name: 'j1' }, noop);
-    journey.addStep('s1', noop);
+    journey._addStep('s1', noop);
     expect(journey.steps.length).toBe(1);
-    const s2 = journey.addStep('s2', noop);
+    const s2 = journey._addStep('s2', noop);
     expect(s2).toBeInstanceOf(Step);
     expect(journey.steps.length).toBe(2);
   });

@@ -43,24 +43,25 @@ export type JourneyOptions = {
 
 type HookType = 'before' | 'after';
 export type Hooks = Record<HookType, Array<HooksCallback>>;
-export type JourneyCallback = (options: {
+type JourneyCallbackOpts = {
   page: Page;
   context: BrowserContext;
   browser: Browser;
   client: CDPSession;
   params: Params;
   request: APIRequestContext;
-}) => void;
+};
+export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
 export class Journey {
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
-  readonly cb: JourneyCallback;
   readonly location?: Location;
   readonly steps: Step[] = [];
-  readonly #hooks: Hooks = { before: [], after: [] };
-  private _monitor: Monitor;
+  #cb: JourneyCallback;
+  #hooks: Hooks = { before: [], after: [] };
+  #monitor: Monitor;
   skip = false;
   only = false;
   _startTime = 0;
@@ -76,48 +77,52 @@ export class Journey {
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
-    this.cb = cb;
+    this.#cb = cb;
     this.location = location;
-    this.updateMonitor({});
+    this._updateMonitor({});
   }
 
-  addStep(name: string, cb: VoidCallback, location?: Location) {
+  _addStep(name: string, cb: VoidCallback, location?: Location) {
     const step = new Step(name, this.steps.length + 1, cb, location);
     this.steps.push(step);
     return step;
   }
 
-  addHook(type: HookType, cb: HooksCallback) {
+  _addHook(type: HookType, cb: HooksCallback) {
     this.#hooks[type].push(cb);
   }
 
-  getHook(type: HookType) {
+  _getHook(type: HookType) {
     return this.#hooks[type];
   }
 
-  getMonitor() {
-    return this._monitor;
+  _getMonitor() {
+    return this.#monitor;
   }
 
-  updateMonitor(config: MonitorConfig) {
+  _updateMonitor(config: MonitorConfig) {
     /**
      * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this._monitor = new Monitor({
+    this.#monitor = new Monitor({
       name: this.name,
       id: this.id,
       type: 'browser',
       tags: this.tags ?? [],
       ...config,
     });
-    this._monitor.setSource(this.location);
-    this._monitor.setFilter({ match: this.name });
+    this.#monitor.setSource(this.location);
+    this.#monitor.setFilter({ match: this.name });
+  }
+
+  get cb() {
+    return this.#cb;
   }
 
   /**
    * Matches journeys based on the provided args. Proitize tags over match
    */
-  isMatch(matchPattern: string, tagsPattern: Array<string>) {
+  _isMatch(matchPattern: string, tagsPattern: Array<string>) {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
 }

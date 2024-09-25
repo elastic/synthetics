@@ -35,6 +35,7 @@ import {
 import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
+import { RunnerInfo } from './core/runner';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -51,6 +52,7 @@ export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
   params: Params;
+  info: RunnerInfo;
 };
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'succeeded' | 'failed' | 'skipped';
