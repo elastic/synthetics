@@ -54,6 +54,7 @@ export function indent(lines: string, tab = '   ') {
 const NO_UTF8_SUPPORT = process.platform === 'win32';
 export const symbols = {
   warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
+  pending: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
   progress: cyan('>'),
   succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),

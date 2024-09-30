@@ -67,7 +67,7 @@ describe('base reporter', () => {
   it('writes each step to the FD', async () => {
     const j1 = tJourney();
     const s1 = tStep("failed", 1, new Error('step failed'), 'dummy');
-    reporter.onJourneyStart(tJourney(), { timestamp });
+    reporter.onJourneyStart(j1, { timestamp });
     reporter.onStepEnd(j1, s1, {});
     reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();

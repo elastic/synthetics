@@ -212,6 +212,7 @@ export default class Runner implements RunnerInfo {
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
       await cb();
+      step.status = "succeeded"
     } catch (error) {
       step.status = 'failed';
       step.error = error;
@@ -365,6 +366,7 @@ export default class Runner implements RunnerInfo {
       await this.#startJourney(journey, options);
       await this.#runBeforeHook(journey, hookArgs);
       const stepResults = await this.#runSteps(journey, options);
+      journey.status = "succeeded";
       // Mark journey as failed if any one of the step fails
       for (const step of journey.steps) {
         if (step.status === 'failed') {

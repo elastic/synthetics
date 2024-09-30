@@ -55,7 +55,7 @@ export type HooksArgs = {
   info: RunnerInfo;
 };
 export type HooksCallback = (args: HooksArgs) => void;
-export type StatusValue = 'succeeded' | 'failed' | 'skipped';
+export type StatusValue = 'pending' | 'succeeded' | 'failed' | 'skipped';
 
 export type NetworkConditions = {
   offline: boolean;

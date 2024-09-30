@@ -35,7 +35,7 @@ export class Step {
   only = false;
   _startTime = 0;
   duration = -1;
-  status: StatusValue = 'succeeded';
+  status: StatusValue = 'pending';
   error?: Error;
   url?: string;
 

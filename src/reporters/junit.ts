@@ -28,7 +28,6 @@ import { dirname } from 'path';
 import {
   JourneyEndResult,
   JourneyStartResult,
-  StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 import { indent, now } from '../helpers';
@@ -80,7 +79,6 @@ export default class JUnitReporter extends BaseReporter {
   override onStepEnd(
     journey: Journey,
     step: Step,
-    { }: StepEndResult
   ) {
     if (!this.#journeyMap.has(journey.name)) {
       return;

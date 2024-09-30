@@ -181,7 +181,7 @@ describe('runner', () => {
     const error = new Error('Broken step');
     const j1 = journey('fail-journey-with-hooks', () => {
       before(({ info }) => {
-        expect(info.journey?.status).toBe('succeeded');
+        expect(info.journey?.status).toBe('pending');
       });
       after(({ info }) => {
         expect(info.journey?.status).toBe('failed');

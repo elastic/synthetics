@@ -52,8 +52,8 @@ describe('junit reporter', () => {
     const s2 = tStep('skipped', 1, undefined, '', 's2');
     reporter.onJourneyStart(j1, { timestamp });
 
-    reporter.onStepEnd(j1, s1, {});
-    reporter.onStepEnd(j1, s2, {});
+    reporter.onStepEnd(j1, s1);
+    reporter.onStepEnd(j1, s2);
     reporter.onJourneyEnd(j1, {
       timestamp,
       browserDelay: 0,
@@ -75,7 +75,7 @@ describe('junit reporter', () => {
     const j1 = tJourney('failed', 2);
     const s1 = tStep('skipped', 1);
     reporter.onJourneyStart(j1, { timestamp });
-    reporter.onStepEnd(j1, s1, {});
+    reporter.onStepEnd(j1, s1);
     reporter.onJourneyEnd(j1, {
       timestamp,
       browserDelay: 0,
