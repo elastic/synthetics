@@ -305,7 +305,7 @@ export default class Runner implements RunnerInfo {
     /**
      * Exeucute the journey callback which registers the steps for current journey
      */
-    journey.cb({ ...this.#driver, params });
+    journey.cb({ ...this.#driver, params, info: this });
   }
 
   async #endJourney(

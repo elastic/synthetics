@@ -198,6 +198,23 @@ describe('runner', () => {
     });
   });
 
+  it('run journey - expose info in journey', async () => {
+    const j1 = journey('with info', ({ info }) => {
+      step('step1', () => {
+        expect(info.journey?.status).toBe('pending');
+      });
+      after(({ info }) => {
+        expect(info.journey?.status).toBe('succeeded');
+        expect(info.journey?.duration).toBeGreaterThan(0);
+      })
+    });
+    const result = await runner._runJourney(j1, defaultRunOptions);
+    await Gatherer.stop();
+    expect(result).toMatchObject({
+      status: 'succeeded',
+    });
+  });
+
   it('run step', async () => {
     const j1 = journey('j1', async ({ page }) => {
       step('step1', async () => {

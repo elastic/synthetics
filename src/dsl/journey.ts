@@ -34,6 +34,7 @@ import { Step } from './step';
 import { VoidCallback, HooksCallback, Params, Location, StatusValue } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
+import { RunnerInfo } from '../core/runner';
 
 export type JourneyOptions = {
   name: string;
@@ -50,6 +51,7 @@ type JourneyCallbackOpts = {
   client: CDPSession;
   params: Params;
   request: APIRequestContext;
+  info: RunnerInfo;
 };
 export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
