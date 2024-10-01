@@ -23,14 +23,29 @@ jobs:
     env:
       NPM_CONFIG_PROVENANCE: true
     steps:
+      - name: Get token
+        id: get_token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        with:
+          app_id: ${{ secrets.OBS_AUTOMATION_APP_ID }}
+          private_key: ${{ secrets.OBS_AUTOMATION_APP_PEM }}
+          permissions: >-
+            {
+              "contents": "write",
+              "pull_requests": "read"
+            }
+          repositories: >-
+            ["synthetics"]
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          token: ${{ steps.get_token.outputs.token }}
 
       - uses: elastic/oblt-actions/git/setup@v1
         with:
-          github-token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          github-token: ${{ steps.get_token.outputs.token }}
+
       - run: npm ci # runs npm prepublish
 
       - name: configure NPMJS token
@@ -39,7 +54,7 @@ jobs:
       - run: npx semantic-release --dry-run="${DRY_RUN}"
         env:
           DRY_RUN: ${{ github.event.inputs.dry-run }}
-          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
 
       - name: Get version and package name
         run: |
