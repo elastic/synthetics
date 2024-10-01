@@ -221,6 +221,7 @@ type BaseArgs = {
   schedule?: MonitorConfig['schedule'];
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
+  fields?: MonitorConfig['fields'];
 };
 
 export type CliArgs = BaseArgs & {
