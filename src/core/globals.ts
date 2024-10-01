@@ -23,25 +23,15 @@
  *
  */
 
-import { Journey, Step } from '../../src/dsl';
+import Runner from './runner';
 
-const noop = () => { };
-describe('Journey', () => {
-  it('add journey details', () => {
-    const name = 'j1';
-    const tags = ['foo', 'bar'];
-    const journey = new Journey({ name, tags }, noop);
-    expect(journey.name).toEqual(name);
-    expect(journey.id).toBe(name);
-    expect(journey.tags).toEqual(tags);
-  });
+/**
+ * Use a gloabl Runner which would be accessed by the runtime and
+ * required to handle the local vs global invocation through CLI
+ */
+const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
+if (!global[SYNTHETICS_RUNNER]) {
+  global[SYNTHETICS_RUNNER] = new Runner();
+}
 
-  it('add step to the journey', () => {
-    const journey = new Journey({ name: 'j1' }, noop);
-    journey._addStep('s1', noop);
-    expect(journey.steps.length).toBe(1);
-    const s2 = journey._addStep('s2', noop);
-    expect(s2).toBeInstanceOf(Step);
-    expect(journey.steps.length).toBe(2);
-  });
-});
+export const runner: Runner = global[SYNTHETICS_RUNNER];

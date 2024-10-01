@@ -30,22 +30,11 @@ import {
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import Runner from './runner';
+import { runner } from "./globals"
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
 import { MonitorConfig } from '../dsl/monitor';
-
-/**
- * Use a gloabl Runner which would be accessed by the runtime and
- * required to handle the local vs global invocation through CLI
- */
-const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
-if (!global[SYNTHETICS_RUNNER]) {
-  global[SYNTHETICS_RUNNER] = new Runner();
-}
-
-export const runner: Runner = global[SYNTHETICS_RUNNER];
 
 const createJourney = (type?: 'skip' | 'only') =>
   wrapFnWithLocation(
@@ -59,12 +48,10 @@ const createJourney = (type?: 'skip' | 'only') =>
         options = { name: options, id: options };
       }
       const j = new Journey(options, callback, location);
-
       if (type) {
         j[type] = true;
       }
-
-      runner.addJourney(j);
+      runner._addJourney(j);
       return j;
     }
   );
@@ -77,7 +64,7 @@ const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(
     (location: Location, name: string, callback: VoidCallback) => {
       log(`Step register: ${name}`);
-      const step = runner.currentJourney?.addStep(name, callback, location);
+      const step = runner.journey?._addStep(name, callback, location);
       if (type) {
         step[type] = true;
       }
@@ -96,32 +83,32 @@ export const monitor = {
      * If the context is inside journey, then set it to journey context
      * otherwise set to the global monitor which will be used for all journeys
      */
-    if (runner.currentJourney) {
-      runner.currentJourney.updateMonitor(config);
+    if (runner.journey) {
+      runner.journey._updateMonitor(config);
     } else {
-      runner.updateMonitor(config);
+      runner._updateMonitor(config);
     }
   }),
 };
 
 export const beforeAll = (callback: HooksCallback) => {
-  runner.addHook('beforeAll', callback);
+  runner._addHook('beforeAll', callback);
 };
 
 export const afterAll = (callback: HooksCallback) => {
-  runner.addHook('afterAll', callback);
+  runner._addHook('afterAll', callback);
 };
 
 export const before = (callback: HooksCallback) => {
-  if (!runner.currentJourney) {
+  if (!runner.journey) {
     throw new Error('before is called outside of the journey context');
   }
-  return runner.currentJourney.addHook('before', callback);
+  return runner.journey._addHook('before', callback);
 };
 
 export const after = (callback: HooksCallback) => {
-  if (!runner.currentJourney) {
+  if (!runner.journey) {
     throw new Error('after is called outside of the journey context');
   }
-  return runner.currentJourney.addHook('after', callback);
+  return runner.journey._addHook('after', callback);
 };

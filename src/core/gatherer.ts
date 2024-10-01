@@ -43,25 +43,37 @@ const DEFAULT_TIMEOUT = 50000;
  */
 export class Gatherer {
   static browser: ChromiumBrowser;
+  static pluginManager: PluginManager;
+
+  static async launchBrowser(options: RunOptions) {
+    if (Gatherer.browser != null) {
+      return;
+    }
+
+    log('Gatherer: setup browser');
+    const { wsEndpoint, playwrightOptions } = options;
+    if (wsEndpoint) {
+      log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
+      Gatherer.browser = await chromium.connect(wsEndpoint);
+    } else {
+      Gatherer.browser = await chromium.launch({
+        ...playwrightOptions,
+        args: [
+          ...(playwrightOptions?.headless ? ['--disable-gpu'] : []),
+          ...(playwrightOptions?.args ?? []),
+        ],
+      });
+    }
+    // Register sig int handler to close the browser
+    process.on('SIGINT', async () => {
+      await Gatherer.stop();
+      process.exit(130);
+    });
+  }
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
-    log('Gatherer: setup driver');
-    const { wsEndpoint, playwrightOptions } = options;
-
-    if (Gatherer.browser == null) {
-      if (wsEndpoint) {
-        log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
-        Gatherer.browser = await chromium.connect(wsEndpoint);
-      } else {
-        Gatherer.browser = await chromium.launch({
-          ...playwrightOptions,
-          args: [
-            ...(playwrightOptions?.headless ? ['--disable-gpu'] : []),
-            ...(playwrightOptions?.args ?? []),
-          ],
-        });
-      }
-    }
+    await Gatherer.launchBrowser(options);
+    const { playwrightOptions } = options;
     const context = await Gatherer.browser.newContext({
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
@@ -84,12 +96,6 @@ export class Gatherer {
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     const request = await apiRequest.newContext({ ...playwrightOptions });
-
-    // Register sig int handler to close the browser
-    process.on('SIGINT', async () => {
-      await Gatherer.closeBrowser();
-      process.exit(130);
-    });
     return { browser: Gatherer.browser, context, page, client, request };
   }
 
@@ -126,14 +132,6 @@ export class Gatherer {
     }
   }
 
-  static async closeBrowser() {
-    log(`Gatherer: closing browser`);
-    if (Gatherer.browser) {
-      await Gatherer.browser.close();
-      Gatherer.browser = null;
-    }
-  }
-
   /**
    * Starts recording all events related to the v8 devtools protocol
    * https://chromedevtools.github.io/devtools-protocol/v8/
@@ -141,13 +139,18 @@ export class Gatherer {
   static async beginRecording(driver: Driver, options: RunOptions) {
     log('Gatherer: started recording');
     const { network, metrics } = options;
-    const pluginManager = new PluginManager(driver);
-    pluginManager.registerAll(options);
-    const plugins = [await pluginManager.start('browserconsole')];
-    network && plugins.push(await pluginManager.start('network'));
-    metrics && plugins.push(await pluginManager.start('performance'));
+    Gatherer.pluginManager = new PluginManager(driver);
+    Gatherer.pluginManager.registerAll(options);
+    const plugins = [await Gatherer.pluginManager.start('browserconsole')];
+    network && plugins.push(await Gatherer.pluginManager.start('network'));
+    metrics && plugins.push(await Gatherer.pluginManager.start('performance'));
     await Promise.all(plugins);
-    return pluginManager;
+    return Gatherer.pluginManager;
+  }
+
+  static async endRecording() {
+    log('Gatherer: ended recording');
+    await Gatherer.pluginManager.unregisterAll();
   }
 
   static async dispose(driver: Driver) {
@@ -157,6 +160,10 @@ export class Gatherer {
   }
 
   static async stop() {
-    await Gatherer.closeBrowser();
+    log(`Gatherer: closing browser`);
+    if (Gatherer.browser) {
+      await Gatherer.browser.close();
+      Gatherer.browser = null;
+    }
   }
 }

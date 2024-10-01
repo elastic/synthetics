@@ -31,9 +31,10 @@ import {
   APIRequestContext,
 } from 'playwright-core';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location } from '../common_types';
+import { VoidCallback, HooksCallback, Params, Location, StatusValue } from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
+import { RunnerInfo } from '../core/runner';
 
 export type JourneyOptions = {
   name: string;
@@ -43,69 +44,87 @@ export type JourneyOptions = {
 
 type HookType = 'before' | 'after';
 export type Hooks = Record<HookType, Array<HooksCallback>>;
-export type JourneyCallback = (options: {
+type JourneyCallbackOpts = {
   page: Page;
   context: BrowserContext;
   browser: Browser;
   client: CDPSession;
   params: Params;
   request: APIRequestContext;
-}) => void;
+  info: RunnerInfo;
+};
+export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
 export class Journey {
-  name: string;
-  id?: string;
-  tags?: string[];
-  callback: JourneyCallback;
-  location?: Location;
-  steps: Step[] = [];
-  hooks: Hooks = { before: [], after: [] };
-  monitor: Monitor;
+  readonly name: string;
+  readonly id?: string;
+  readonly tags?: string[];
+  readonly location?: Location;
+  readonly steps: Step[] = [];
+  #cb: JourneyCallback;
+  #hooks: Hooks = { before: [], after: [] };
+  #monitor: Monitor;
   skip = false;
   only = false;
+  _startTime = 0;
+  duration = -1;
+  status: StatusValue = 'pending';
+  error?: Error;
 
   constructor(
     options: JourneyOptions,
-    callback: JourneyCallback,
+    cb: JourneyCallback,
     location?: Location
   ) {
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
-    this.callback = callback;
+    this.#cb = cb;
     this.location = location;
-    this.updateMonitor({});
+    this._updateMonitor({});
   }
 
-  addStep(name: string, callback: VoidCallback, location?: Location) {
-    const step = new Step(name, this.steps.length + 1, callback, location);
+  _addStep(name: string, cb: VoidCallback, location?: Location) {
+    const step = new Step(name, this.steps.length + 1, cb, location);
     this.steps.push(step);
     return step;
   }
 
-  addHook(type: HookType, callback: HooksCallback) {
-    this.hooks[type].push(callback);
+  _addHook(type: HookType, cb: HooksCallback) {
+    this.#hooks[type].push(cb);
   }
 
-  updateMonitor(config: MonitorConfig) {
+  _getHook(type: HookType) {
+    return this.#hooks[type];
+  }
+
+  _getMonitor() {
+    return this.#monitor;
+  }
+
+  _updateMonitor(config: MonitorConfig) {
     /**
      * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this.monitor = new Monitor({
+    this.#monitor = new Monitor({
       name: this.name,
       id: this.id,
       type: 'browser',
       tags: this.tags ?? [],
       ...config,
     });
-    this.monitor.setSource(this.location);
-    this.monitor.setFilter({ match: this.name });
+    this.#monitor.setSource(this.location);
+    this.#monitor.setFilter({ match: this.name });
+  }
+
+  get cb() {
+    return this.#cb;
   }
 
   /**
    * Matches journeys based on the provided args. Proitize tags over match
    */
-  isMatch(matchPattern: string, tagsPattern: Array<string>) {
+  _isMatch(matchPattern: string, tagsPattern: Array<string>) {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
   }
 }

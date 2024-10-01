@@ -37,7 +37,6 @@ import {
 } from '../helpers';
 import {
   HooksCallback,
-  Params,
   HooksArgs,
   Driver,
   Screenshot,
@@ -47,7 +46,6 @@ import {
   PushOptions,
 } from '../common_types';
 import {
-  PluginManager,
   PerformanceManager,
   filterBrowserMessages,
 } from '../plugins';
@@ -58,50 +56,49 @@ import { Monitor, MonitorConfig } from '../dsl/monitor';
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
 
-type JourneyContext = {
-  params?: Params;
-  browserDelay: number;
-  start: number;
-  driver: Driver;
-  pluginManager: PluginManager;
-};
-
 type RunResult = Record<string, JourneyResult>;
 
-export default class Runner {
+export interface RunnerInfo {
+  /**
+   * Processed configuration from the CLI args and the config file
+   */
+  readonly config: RunOptions;
+  /**
+   * Currently active journey
+   */
+  readonly journey: Journey | undefined;
+  /**
+   * All registerd journeys
+   */
+  readonly journeys: Journey[];
+}
+
+export default class Runner implements RunnerInfo {
   #active = false;
   #reporter: Reporter;
   #currentJourney?: Journey = null;
-  journeys: Journey[] = [];
-  hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
-  hookError: Error | undefined;
-  monitor?: Monitor;
-  static screenshotPath = join(CACHE_PATH, 'screenshots');
+  #journeys: Journey[] = [];
+  #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
+  #screenshotPath = join(CACHE_PATH, 'screenshots');
+  #driver?: Driver;
+  #browserDelay = -1;
+  #hookError: Error | undefined;
+  #monitor?: Monitor;
+  config: RunOptions;
 
-  static async createContext(options: RunOptions): Promise<JourneyContext> {
-    const browserStart = monotonicTimeInSeconds();
-    const driver = await Gatherer.setupDriver(options);
-    /**
-     * Do not include browser launch/context creation duration
-     * as part of journey duration
-     */
-    const start = monotonicTimeInSeconds();
-    const pluginManager = await Gatherer.beginRecording(driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.screenshotPath, { recursive: true });
-    return {
-      start,
-      browserDelay: start - browserStart,
-      params: options.params,
-      driver,
-      pluginManager,
-    };
+  get journey() {
+    return this.#currentJourney;
   }
 
-  async captureScreenshot(page: Driver['page'], step: Step) {
+  get journeys() {
+    return this.#journeys;
+  }
+
+  get hooks() {
+    return this.#hooks;
+  }
+
+  private async captureScreenshot(page: Driver['page'], step: Step) {
     try {
       const buffer = await page.screenshot({
         type: 'jpeg',
@@ -120,7 +117,7 @@ export default class Runner {
         data: buffer.toString('base64'),
       };
       await writeFile(
-        join(Runner.screenshotPath, fileName),
+        join(this.#screenshotPath, fileName),
         JSON.stringify(screenshot)
       );
       log(`Runner: captured screenshot for (${step.name})`);
@@ -130,28 +127,28 @@ export default class Runner {
     }
   }
 
-  get currentJourney() {
-    return this.#currentJourney;
+  _addHook(type: HookType, callback: HooksCallback) {
+    this.#hooks[type].push(callback);
   }
 
-  addHook(type: HookType, callback: HooksCallback) {
-    this.hooks[type].push(callback);
+  private buildHookArgs() {
+    return { env: this.config.environment, params: this.config.params, info: this as RunnerInfo };
   }
 
-  updateMonitor(config: MonitorConfig) {
-    if (!this.monitor) {
-      this.monitor = new Monitor(config);
+  _updateMonitor(config: MonitorConfig) {
+    if (!this.#monitor) {
+      this.#monitor = new Monitor(config);
       return;
     }
-    this.monitor.update(config);
+    this.#monitor.update(config);
   }
 
-  addJourney(journey: Journey) {
-    this.journeys.push(journey);
+  _addJourney(journey: Journey) {
+    this.#journeys.push(journey);
     this.#currentJourney = journey;
   }
 
-  setReporter(options: RunOptions) {
+  private setReporter(options: RunOptions) {
     /**
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
@@ -164,75 +161,72 @@ export default class Runner {
     this.#reporter = new Reporter({ fd: outfd, dryRun });
   }
 
-  async runBeforeAllHook(args: HooksArgs) {
+  async #runBeforeAllHook(args: HooksArgs) {
     log(`Runner: beforeAll hooks`);
-    await runParallel(this.hooks.beforeAll, args);
+    await runParallel(this.#hooks.beforeAll, args);
   }
 
-  async runAfterAllHook(args: HooksArgs) {
+  async #runAfterAllHook(args: HooksArgs) {
     log(`Runner: afterAll hooks`);
-    await runParallel(this.hooks.afterAll, args);
+    await runParallel(this.#hooks.afterAll, args);
   }
 
-  async runBeforeHook(journey: Journey, args: HooksArgs) {
+  async #runBeforeHook(journey: Journey, args: HooksArgs) {
     log(`Runner: before hooks for (${journey.name})`);
-    await runParallel(journey.hooks.before, args);
+    await runParallel(journey._getHook('before'), args);
   }
 
-  async runAfterHook(journey: Journey, args: HooksArgs) {
+  async #runAfterHook(journey: Journey, args: HooksArgs) {
     log(`Runner: after hooks for (${journey.name})`);
-    await runParallel(journey.hooks.after, args);
+    await runParallel(journey._getHook('after'), args);
   }
 
-  async runStep(
+  async #runStep(
     step: Step,
-    context: JourneyContext,
     options: RunOptions
   ): Promise<StepResult> {
-    const data: StepResult = {
-      status: 'succeeded',
-    };
     log(`Runner: start step (${step.name})`);
     const { metrics, screenshots, filmstrips, trace } = options;
-    const { driver, pluginManager } = context;
     /**
      * URL needs to be the first navigation request of any step
      * Listening for request solves the case where `about:blank` would be
      * reported for failed navigations
      */
     const captureUrl = req => {
-      if (!data.url && req.isNavigationRequest()) {
-        data.url = req.url();
+      if (!step.url && req.isNavigationRequest()) {
+        step.url = req.url();
       }
-      driver.context.off('request', captureUrl);
+      this.#driver.context.off('request', captureUrl);
     };
-    driver.context.on('request', captureUrl);
+    this.#driver.context.on('request', captureUrl);
 
+    const data: StepResult = {};
     const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
-      pluginManager.onStep(step);
-      traceEnabled && (await pluginManager.start('trace'));
+      Gatherer.pluginManager.onStep(step);
+      traceEnabled && (await Gatherer.pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
-      const cb = step.callback;
+      const cb = step.cb;
       await cb();
+      step.status = "succeeded"
     } catch (error) {
-      data.status = 'failed';
-      data.error = error;
+      step.status = 'failed';
+      step.error = error;
     } finally {
       /**
        * Collect all step level metrics and trace events
        */
       if (metrics) {
         data.pagemetrics = await (
-          pluginManager.get('performance') as PerformanceManager
+          Gatherer.pluginManager.get('performance') as PerformanceManager
         ).getMetrics();
       }
       if (traceEnabled) {
-        const traceOutput = await pluginManager.stop('trace');
+        const traceOutput = await Gatherer.pluginManager.stop('trace');
         Object.assign(data, traceOutput);
       }
       /**
@@ -241,31 +235,30 @@ export default class Runner {
        *
        * Last open page will get us the correct screenshot
        */
-      const pages = driver.context.pages();
+      const pages = this.#driver.context.pages();
       const page = pages[pages.length - 1];
       if (page) {
-        data.url ??= page.url();
+        step.url ??= page.url();
         if (screenshots && screenshots !== 'off') {
           await this.captureScreenshot(page, step);
         }
       }
     }
     log(`Runner: end step (${step.name})`);
-    return data;
+    return data
   }
 
-  async runSteps(
+  async #runSteps(
     journey: Journey,
-    context: JourneyContext,
     options: RunOptions
   ) {
     const results: Array<StepResult> = [];
     const isOnlyExists = journey.steps.filter(s => s.only).length > 0;
     let skipStep = false;
     for (const step of journey.steps) {
-      const start = monotonicTimeInSeconds();
+      step._startTime = monotonicTimeInSeconds();
       this.#reporter?.onStepStart?.(journey, step);
-      let data: StepResult = { status: 'succeeded' };
+      let data: StepResult = {};
       /**
        * Skip the step
        * - if the step is marked as skip
@@ -277,20 +270,17 @@ export default class Runner {
         (skipStep && !step.only) ||
         (isOnlyExists && !step.only)
       ) {
-        data.status = 'skipped';
+        step.status = 'skipped';
       } else {
-        data = await this.runStep(step, context, options);
+        data = await this.#runStep(step, options);
         /**
          * skip next steps if the previous step returns error
          */
-        if (data.error && !step.soft) skipStep = true;
+        if (step.error && !step.soft) skipStep = true;
       }
-      this.#reporter?.onStepEnd?.(journey, step, {
-        start,
-        end: monotonicTimeInSeconds(),
-        ...data,
-      });
-      if (options.pauseOnError && data.error) {
+      step.duration = monotonicTimeInSeconds() - step._startTime;
+      this.#reporter?.onStepEnd?.(journey, step, data);
+      if (options.pauseOnError && step.error) {
         await new Promise(r => process.stdin.on('data', r));
       }
       results.push(data);
@@ -298,121 +288,115 @@ export default class Runner {
     return results;
   }
 
-  registerJourney(journey: Journey, context: JourneyContext) {
-    this.#currentJourney = journey;
-    const timestamp = getTimestamp();
-    const { params } = context;
+  async #startJourney(journey: Journey, options: RunOptions) {
+    journey._startTime = monotonicTimeInSeconds();
+    this.#driver = await Gatherer.setupDriver(options);
+    await Gatherer.beginRecording(this.#driver, options);
+    /**
+     * For each journey we create the screenshots folder for
+     * caching all screenshots and clear them at end of each journey
+     */
+    await mkdir(this.#screenshotPath, { recursive: true });
+    const params = options.params
     this.#reporter?.onJourneyStart?.(journey, {
-      timestamp,
+      timestamp: getTimestamp(),
       params,
     });
     /**
      * Exeucute the journey callback which registers the steps for current journey
      */
-    journey.callback({ ...context.driver, params });
+    journey.cb({ ...this.#driver, params, info: this });
   }
 
-  async endJourney(
-    journey,
-    result: JourneyContext & JourneyResult,
+  async #endJourney(
+    journey: Journey,
+    result: JourneyResult,
     options: RunOptions
   ) {
-    const end = monotonicTimeInSeconds();
-    const { pluginManager, start, status, error, browserDelay } = result;
-    const pluginOutput = await pluginManager.output();
+    // Enhance the journey results
+    const pOutput = await Gatherer.pluginManager.output();
+    const bConsole = filterBrowserMessages(pOutput.browserconsole, journey.status);
     await this.#reporter?.onJourneyEnd?.(journey, {
-      status,
-      error,
-      start,
-      end,
-      browserDelay,
+      browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
       options,
-      ...pluginOutput,
-      browserconsole: filterBrowserMessages(
-        pluginOutput.browserconsole,
-        status
-      ),
+      networkinfo: pOutput.networkinfo,
+      browserconsole: bConsole,
     });
+    await Gatherer.endRecording();
+    await Gatherer.dispose(this.#driver)
     // clear screenshots cache after each journey
-    await rm(Runner.screenshotPath, { recursive: true, force: true });
+    await rm(this.#screenshotPath, { recursive: true, force: true });
+    return Object.assign(result, {
+      networkinfo: pOutput.networkinfo,
+      browserconsole: bConsole,
+      ...journey,
+    });
   }
 
   /**
    * Simulate a journey run to capture errors in the beforeAll hook
    */
-  async runFakeJourney(journey: Journey, options: RunOptions) {
+  async #runFakeJourney(journey: Journey, options: RunOptions) {
     const start = monotonicTimeInSeconds();
     this.#reporter.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
       params: options.params,
     });
-    const result: JourneyResult = {
-      status: 'failed',
-      error: this.hookError,
-    };
+
+    // Mark the journey as failed and report the hook error as journey error
+    journey.status = 'failed';
+    journey.error = this.#hookError;
+    journey.duration = monotonicTimeInSeconds() - start;
+
     await this.#reporter.onJourneyEnd?.(journey, {
       timestamp: getTimestamp(),
-      start,
       options,
-      browserDelay: 0,
-      end: monotonicTimeInSeconds(),
-      ...result,
+      browserDelay: this.#browserDelay,
     });
-    return result;
+    return journey;
   }
 
-  async runJourney(journey: Journey, options: RunOptions) {
-    const result: JourneyResult = { status: 'succeeded' };
-    const context = await Runner.createContext(options);
+  async _runJourney(journey: Journey, options: RunOptions) {
+    this.#currentJourney = journey;
     log(`Runner: start journey (${journey.name})`);
+    let result: JourneyResult = {};
+    const hookArgs = { env: options.environment, params: options.params, info: this };
     try {
-      this.registerJourney(journey, context);
-      const hookArgs = {
-        env: options.environment,
-        params: options.params,
-      };
-      await this.runBeforeHook(journey, hookArgs);
-      const stepResults = await this.runSteps(journey, context, options);
-      /**
-       * Mark journey as failed if any intermediate step fails
-       */
-      for (const stepResult of stepResults) {
-        if (stepResult.status === 'failed') {
-          result.status = stepResult.status;
-          result.error = stepResult.error;
+      await this.#startJourney(journey, options);
+      await this.#runBeforeHook(journey, hookArgs);
+      const stepResults = await this.#runSteps(journey, options);
+      journey.status = "succeeded";
+      // Mark journey as failed if any one of the step fails
+      for (const step of journey.steps) {
+        if (step.status === 'failed') {
+          journey.status = step.status;
+          journey.error = step.error;
         }
       }
-      result.steps = stepResults;
-      await this.runAfterHook(journey, hookArgs);
+      result.stepsresults = stepResults;
     } catch (e) {
-      result.status = 'failed';
-      result.error = e;
+      journey.status = 'failed';
+      journey.error = e;
     } finally {
-      await this.endJourney(journey, { ...context, ...result }, options);
-      await Gatherer.dispose(context.driver);
+      journey.duration = monotonicTimeInSeconds() - journey._startTime;
+      // Run after hook on journey failure and capture the uncaught error as
+      // journey error, hook is purposely run before to capture errors during reporting
+      await this.#runAfterHook(journey, hookArgs).catch(e => {
+        journey.status = 'failed';
+        journey.error = e;
+      })
+      result = await this.#endJourney(journey, result, options);
     }
     log(`Runner: end journey (${journey.name})`);
     return result;
   }
 
-  async init(options: RunOptions) {
-    this.setReporter(options);
-    this.#reporter.onStart?.({
-      numJourneys: this.journeys.length,
-      networkConditions: options.networkConditions,
-    });
-    /**
-     * Set up the directory for caching screenshots
-     */
-    await mkdir(CACHE_PATH, { recursive: true });
-  }
-
-  buildMonitors(options: PushOptions) {
+  _buildMonitors(options: PushOptions) {
     /**
      * Update the global monitor configuration required for setting defaults
      */
-    this.updateMonitor({
+    this._updateMonitor({
       throttling: options.throttling,
       schedule: options.schedule,
       locations: options.locations,
@@ -427,7 +411,7 @@ export default class Runner {
     });
 
     const monitors: Monitor[] = [];
-    for (const journey of this.journeys) {
+    for (const journey of this.#journeys) {
       this.#currentJourney = journey;
       if (journey.skip) {
         throw new Error(
@@ -442,72 +426,87 @@ export default class Runner {
        * - filter out monitors based on matched tags and name after applying both
        *  global and local monitor configurations
        */
-      journey.callback({ params: options.params } as any);
-      journey.monitor.update(this.monitor?.config);
+      journey.cb({ params: options.params } as any);
+      const monitor = journey._getMonitor();
+      monitor.update(this.#monitor?.config);
       if (
-        !journey.monitor.isMatch(
+        !monitor.isMatch(
           options.grepOpts?.match,
           options.grepOpts?.tags
         )
       ) {
         continue;
       }
-      journey.monitor.validate();
-      monitors.push(journey.monitor);
+      monitor.validate();
+      monitors.push(monitor);
     }
     return monitors;
   }
 
-  async run(options: RunOptions) {
-    const result: RunResult = {};
+  async #init(options: RunOptions) {
+    this.setReporter(options);
+    this.#reporter.onStart?.({
+      numJourneys: this.#journeys.length,
+      networkConditions: options.networkConditions,
+    });
+    /**
+     * Set up the directory for caching screenshots
+     */
+    await mkdir(CACHE_PATH, { recursive: true });
+  }
+
+  async _run(options: RunOptions): Promise<RunResult> {
+    this.config = options;
+    let result: RunResult = {};
     if (this.#active) {
       return result;
     }
     this.#active = true;
-    log(`Runner: run ${this.journeys.length} journeys`);
-    this.init(options);
-    await this.runBeforeAllHook({
-      env: options.environment,
-      params: options.params,
-    }).catch(e => (this.hookError = e));
-
+    log(`Runner: run ${this.#journeys.length} journeys`);
+    this.#init(options);
+    const hookArgs = this.buildHookArgs();
+    await this.#runBeforeAllHook(hookArgs).catch(e => (this.#hookError = e));
     const { dryRun, grepOpts } = options;
-    /**
-     * Skip other journeys when using `.only`
-     */
-    const onlyJournerys = this.journeys.filter(j => j.only);
+
+    // collect all journeys with `.only` annotation and skip the rest
+    const onlyJournerys = this.#journeys.filter(j => j.only);
     if (onlyJournerys.length > 0) {
-      this.journeys = onlyJournerys;
+      this.#journeys = onlyJournerys;
+    } else {
+      // filter journeys based on tags and skip annotations
+      this.#journeys = this.#journeys.filter(j => j._isMatch(grepOpts?.match, grepOpts?.tags) && !j.skip);
     }
 
-    for (const journey of this.journeys) {
-      /**
-       * Used by heartbeat to gather all registered journeys
-       */
-      if (dryRun) {
-        this.#reporter.onJourneyRegister?.(journey);
-        continue;
-      }
-      if (!journey.isMatch(grepOpts?.match, grepOpts?.tags) || journey.skip) {
-        continue;
-      }
-      const journeyResult: JourneyResult = this.hookError
-        ? await this.runFakeJourney(journey, options)
-        : await this.runJourney(journey, options);
-      result[journey.name] = journeyResult;
+    // Used by heartbeat to gather all registered journeys
+    if (dryRun) {
+      this.#journeys.forEach(journey => this.#reporter.onJourneyRegister?.(journey))
+    } else if (this.#journeys.length > 0) {
+      result = await this._runJourneys(options);
     }
-    await Gatherer.stop();
-    await this.runAfterAllHook({
-      env: options.environment,
-      params: options.params,
-    });
-    await this.reset();
+    await this.#runAfterAllHook(hookArgs).catch(async () => await this._reset());
+    await this._reset();
     return result;
   }
 
-  async reset() {
+  async _runJourneys(options: RunOptions) {
+    const result: RunResult = {};
+    const browserStart = monotonicTimeInSeconds();
+    await Gatherer.launchBrowser(options);
+    this.#browserDelay = monotonicTimeInSeconds() - browserStart;
+
+    for (const journey of this.#journeys) {
+      const journeyResult: JourneyResult = this.#hookError
+        ? await this.#runFakeJourney(journey, options)
+        : await this._runJourney(journey, options);
+      result[journey.name] = journeyResult;
+    }
+    await Gatherer.stop();
+    return result;
+  }
+
+  async _reset() {
     this.#currentJourney = null;
-    this.journeys = [];
+    this.#journeys = [];
     this.#active = false;
     /**
      * Clear all cache data stored for post processing by

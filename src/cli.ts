@@ -36,7 +36,7 @@ import {
 } from './options';
 import { globalSetup } from './loader';
 import { run } from './';
-import { runner } from './core';
+import { runner } from './core/globals';
 import { SyntheticsLocations } from './dsl/monitor';
 import { push, loadSettings, validatePush, warnIfThrottled } from './push';
 import {
@@ -214,7 +214,7 @@ program
         'push'
       )) as PushOptions;
       await validatePush(options, settings);
-      const monitors = runner.buildMonitors(options);
+      const monitors = runner._buildMonitors(options);
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);
       }

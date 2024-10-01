@@ -28,7 +28,6 @@ import { dirname } from 'path';
 import {
   JourneyEndResult,
   JourneyStartResult,
-  StepEndResult,
 } from '../common_types';
 import { Journey, Step } from '../dsl';
 import { indent, now } from '../helpers';
@@ -60,7 +59,7 @@ export default class JUnitReporter extends BaseReporter {
   private totalSkipped = 0;
   #journeyMap = new Map<string, XMLEntry>();
 
-  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+  override onJourneyStart(journey: Journey, { }: JourneyStartResult) {
     if (!this.#journeyMap.has(journey.name)) {
       const entry = {
         name: 'testsuite',
@@ -80,7 +79,6 @@ export default class JUnitReporter extends BaseReporter {
   override onStepEnd(
     journey: Journey,
     step: Step,
-    { status, error, start, end }: StepEndResult
   ) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
@@ -91,23 +89,23 @@ export default class JUnitReporter extends BaseReporter {
       attributes: {
         name: step.name,
         classname: journey.name + ' ' + step.name,
-        time: end - start,
+        time: step.duration,
       },
       children: [],
     };
 
     entry.attributes.tests++;
-    if (status === 'failed') {
+    if (step.status === 'failed') {
       caseEntry.children.push({
         name: 'failure',
         attributes: {
-          message: error.message,
-          type: error.name,
+          message: step.error?.message,
+          type: step.error?.name,
         },
-        text: stripAnsiCodes(serializeError(error).stack),
+        text: stripAnsiCodes(serializeError(step.error).stack),
       });
       entry.attributes.failures++;
-    } else if (status === 'skipped') {
+    } else if (step.status === 'skipped') {
       caseEntry.children.push({
         name: 'skipped',
         attributes: {
@@ -119,7 +117,7 @@ export default class JUnitReporter extends BaseReporter {
     entry.children.push(caseEntry);
   }
 
-  override onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  override onJourneyEnd(journey: Journey, { }: JourneyEndResult) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
     }
