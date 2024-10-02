@@ -71,7 +71,7 @@ export async function normalizeOptions(
 
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
   options.fields = Object.freeze(
-    merge(config.monitor?.fields ?? {}, cliArgs.fields || {})
+    merge(config.monitor?.fields ?? {}, cliArgs?.fields || {})
   );
 
   /**
@@ -238,7 +238,7 @@ export function getCommonCommandOpts() {
   );
   const fields = createOption(
     '--fields <jsonstring>',
-    'add fields to the monitor(s) in the format key=value'
+    'add fields to the monitor(s) in the format { "key": "value"}'
   ).argParser((fieldsStr: string) => {
     const fields = JSON.parse(fieldsStr);
     if (typeof fields !== 'object') {
