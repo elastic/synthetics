@@ -70,6 +70,9 @@ export async function normalizeOptions(
       : {};
 
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
+  options.fields = Object.freeze(
+    merge(config.monitor?.fields ?? {}, cliArgs?.fields || {})
+  );
 
   /**
    * Merge playwright options from CLI and Synthetics config
@@ -233,6 +236,24 @@ export function getCommonCommandOpts() {
     '--match <name>',
     'run/push tests with a name or tags that matches a pattern'
   );
+  const fields = createOption(
+    '--fields <jsonstring>',
+    'add fields to the monitor(s) in the format { "key": "value"}'
+  ).argParser((fieldsStr: string) => {
+    const fields = JSON.parse(fieldsStr);
+    if (typeof fields !== 'object') {
+      throw new Error('Invalid fields format');
+    }
+    // make sure all values are strings
+    return Object.entries(fields).reduce((acc, [key, value]) => {
+      if (typeof value !== 'string') {
+        acc[key] = JSON.stringify(value);
+      } else {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+  });
 
   return {
     auth,
@@ -243,6 +264,7 @@ export function getCommonCommandOpts() {
     configOpt,
     tags,
     match,
+    fields,
   };
 }
 

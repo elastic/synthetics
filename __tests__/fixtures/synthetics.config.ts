@@ -48,6 +48,9 @@ module.exports = env => {
           enabled: false,
         },
       },
+      fields: {
+        area: 'website',
+      },
     },
   };
   if (env !== 'development' && config.params) {
