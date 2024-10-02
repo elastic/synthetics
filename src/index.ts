@@ -23,11 +23,11 @@
  *
  */
 
-import { runner } from './core';
+import { runner } from './core/globals';
 import { RunOptions } from './common_types';
 
 export async function run(options: RunOptions) {
-  return runner.run(options);
+  return runner._run(options);
 }
 
 /**

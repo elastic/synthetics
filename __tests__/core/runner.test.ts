@@ -26,7 +26,7 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { step, journey } from '../../src/core';
+import { step, journey, before, after } from '../../src/core';
 import { Journey, Step } from '../../src/dsl';
 import { Server } from '../utils/server';
 import {
@@ -41,7 +41,6 @@ import {
   JourneyStartResult,
   RunOptions,
   StartEvent,
-  StepEndResult,
 } from '../../src/common_types';
 
 describe('runner', () => {
@@ -63,29 +62,29 @@ describe('runner', () => {
     try {
       fs.accessSync(dest);
       fs.unlinkSync(dest);
-    } catch (_) {}
+    } catch (_) { }
   });
   afterAll(async () => await server.close());
 
   it('add journeys', () => {
     const j1 = new Journey({ name: 'j1' }, noop);
     const j2 = new Journey({ name: 'j2' }, noop);
-    runner.addJourney(j1);
-    runner.addJourney(j2);
+    runner._addJourney(j1);
+    runner._addJourney(j2);
     expect(runner.journeys.length).toBe(2);
   });
 
   it('add hooks', async () => {
-    runner.addHook('beforeAll', noop);
-    runner.addHook('afterAll', noop);
+    runner._addHook('beforeAll', noop);
+    runner._addHook('afterAll', noop);
     expect(runner.hooks.beforeAll).toEqual([noop]);
     expect(runner.hooks.afterAll).toEqual([noop]);
   });
 
   it('run journey - report results payload', async () => {
     const j1 = new Journey({ name: 'j1' }, noop);
-    const s1 = j1.addStep('step1', noop);
-    runner.addJourney(j1);
+    const s1 = j1._addStep('step1', noop);
+    runner._addJourney(j1);
     class ResultReporter implements Reporter {
       onJourneyStart(journey: Journey, result: JourneyStartResult) {
         expect(j1).toEqual(journey);
@@ -97,39 +96,33 @@ describe('runner', () => {
         expect(j1).toEqual(journey);
         expect(s1).toEqual(step);
       }
-      onStepEnd(journey: Journey, step: Step, result: StepEndResult) {
+      onStepEnd(journey: Journey, step: Step) {
         expect(j1).toEqual(journey);
         expect(s1).toEqual(step);
-        expect(result).toMatchObject({
-          status: 'succeeded',
-          url: 'about:blank',
-          start: expect.any(Number),
-          end: expect.any(Number),
-        });
       }
       onJourneyEnd(journey: Journey, result: JourneyEndResult) {
-        expect(j1).toEqual(journey);
+        expect(journey.status).toEqual('succeeded');
         expect(result).toMatchObject({
-          status: 'succeeded',
-          start: expect.any(Number),
-          end: expect.any(Number),
+          timestamp: expect.any(Number),
+          browserDelay: expect.any(Number),
         });
       }
     }
     const opts = { ...defaultRunOptions, reporter: ResultReporter };
 
-    const result = await runner.run(opts);
+    const result = await runner._run(opts);
     expect(result[j1.name].status).toBe('succeeded');
   });
 
   it('run journey - failed when any step fails', async () => {
     const journey = new Journey({ name: 'failed-journey' }, noop);
-    journey.addStep('step1', noop);
+    journey._addStep('step1', noop);
     const error = new Error('Broken step 2');
-    journey.addStep('step2', () => {
+    journey._addStep('step2', () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, defaultRunOptions);
+    const result = await runner._runJourney(journey, defaultRunOptions);
+    await Gatherer.stop();
     expect(result).toMatchObject({
       error: error,
       status: 'failed',
@@ -147,9 +140,11 @@ describe('runner', () => {
 
   it('run journey - with hooks', async () => {
     const journey = new Journey({ name: 'with hooks' }, noop);
-    journey.addHook('before', noop);
-    journey.addHook('after', noop);
-    const result = await runner.runJourney(journey, defaultRunOptions);
+    journey._addHook('before', noop);
+    journey._addHook('after', noop);
+
+    const result = await runner._runJourney(journey, defaultRunOptions);
+    await Gatherer.stop();
     expect(result).toMatchObject({
       status: 'succeeded',
     });
@@ -157,12 +152,13 @@ describe('runner', () => {
 
   it('run journey - failed when hooks errors', async () => {
     const journey = new Journey({ name: 'failed-journey' }, noop);
-    journey.addHook('before', noop);
+    journey._addHook('before', noop);
     const error = new Error('Broken after hook');
-    journey.addHook('after', () => {
+    journey._addHook('after', () => {
       throw error;
     });
-    const result = await runner.runJourney(journey, defaultRunOptions);
+    const result = await runner._runJourney(journey, defaultRunOptions);
+    await Gatherer.stop();
     expect(result).toMatchObject({
       status: 'failed',
       error,
@@ -171,15 +167,51 @@ describe('runner', () => {
 
   it('run journey - failed on beforeAll', async () => {
     const error = new Error('Broken beforeAll hook');
-    runner.addHook('beforeAll', () => {
-      throw error;
-    });
-    runner.addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
-    runner.addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
-    const result = await runner.run(defaultRunOptions);
-    expect(result).toEqual({
+    runner._addHook('beforeAll', () => { throw error });
+    runner._addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
+    runner._addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
+    const result = await runner._run(defaultRunOptions);
+    expect(result).toMatchObject({
       j1: { status: 'failed', error },
       j2: { status: 'failed', error },
+    });
+  });
+
+  it('run journey - expose info in hooks', async () => {
+    const error = new Error('Broken step');
+    const j1 = journey('fail-journey-with-hooks', () => {
+      before(({ info }) => {
+        expect(info.journey?.status).toBe('pending');
+      });
+      after(({ info }) => {
+        expect(info.journey?.status).toBe('failed');
+        expect(info.journey?.error).toBe(error);
+        expect(info.journey?.duration).toBeGreaterThan(0);
+      });
+      step('step1', () => { throw error });
+    });
+    const result = await runner._runJourney(j1, defaultRunOptions);
+    await Gatherer.stop();
+    expect(result).toMatchObject({
+      status: 'failed',
+      error,
+    });
+  });
+
+  it('run journey - expose info in journey', async () => {
+    const j1 = journey('with info', ({ info }) => {
+      step('step1', () => {
+        expect(info.journey?.status).toBe('pending');
+      });
+      after(({ info }) => {
+        expect(info.journey?.status).toBe('succeeded');
+        expect(info.journey?.duration).toBeGreaterThan(0);
+      })
+    });
+    const result = await runner._runJourney(j1, defaultRunOptions);
+    await Gatherer.stop();
+    expect(result).toMatchObject({
+      status: 'succeeded',
     });
   });
 
@@ -190,14 +222,13 @@ describe('runner', () => {
       });
     });
     const runOptions = { ...defaultRunOptions, metrics: true };
-    const context = await Runner.createContext(runOptions);
-    await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, runOptions);
-    await Gatherer.stop();
-    expect(result).toEqual([
+    const result = await runner._runJourney(j1, runOptions);
+    await Gatherer.stop()
+    expect(result.stepsresults?.[0].pagemetrics).toBeDefined();
+    expect(result.steps).toMatchObject([
       {
+        duration: expect.any(Number),
         status: 'succeeded',
-        pagemetrics: expect.any(Object),
         url: server.TEST_PAGE,
       },
     ]);
@@ -209,11 +240,9 @@ describe('runner', () => {
         await (page as any).clickkkkkk();
       });
     });
-    const context = await Runner.createContext(defaultRunOptions);
-    await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, defaultRunOptions);
+    const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
-    expect(result).toEqual([
+    expect(result.steps).toMatchObject([
       {
         status: 'failed',
         url: 'about:blank',
@@ -229,11 +258,9 @@ describe('runner', () => {
         await page.goto(url);
       });
     });
-    const context = await Runner.createContext(defaultRunOptions);
-    await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, defaultRunOptions);
+    const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
-    expect(result).toEqual([
+    expect(result.steps).toMatchObject([
       {
         status: 'failed',
         url,
@@ -248,11 +275,9 @@ describe('runner', () => {
         await page.goto('blah');
       });
     });
-    const context = await Runner.createContext(defaultRunOptions);
-    await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, defaultRunOptions);
+    const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
-    expect(result).toEqual([
+    expect(result.steps).toMatchObject([
       {
         status: 'failed',
         url: 'about:blank',
@@ -277,11 +302,9 @@ describe('runner', () => {
         await page1.waitForLoadState();
       });
     });
-    const context = await Runner.createContext(defaultRunOptions);
-    await runner.registerJourney(j1, context);
-    const result = await runner.runSteps(j1, context, defaultRunOptions);
+    const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
-    expect(result).toEqual([
+    expect(result.steps).toMatchObject([
       {
         status: 'succeeded',
         url: server.TEST_PAGE,
@@ -303,40 +326,36 @@ describe('runner', () => {
         throw error;
       });
     });
-    const context = await Runner.createContext(defaultRunOptions);
-    await runner.registerJourney(j1, context);
-    const [step1, step2] = await runner.runSteps(
-      j1,
-      context,
-      defaultRunOptions
-    );
+    const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
-    expect(step1).toEqual({
-      status: 'succeeded',
-      url: server.TEST_PAGE,
-    });
-    expect(step2).toEqual({
-      status: 'failed',
-      url: server.TEST_PAGE,
-      error,
-    });
+    expect(result.steps).toMatchObject([
+      {
+        status: 'succeeded',
+        url: server.TEST_PAGE,
+      },
+      {
+        status: 'failed',
+        url: server.TEST_PAGE,
+        error,
+      },
+    ]);
   });
 
   it('run api', async () => {
     const name = 'test-journey';
     const journey = new Journey({ name }, noop);
-    runner.addJourney(journey);
-    const result = await runner.run(defaultRunOptions);
+    runner._addJourney(journey);
+    const result = await runner._run(defaultRunOptions);
     expect(result).toMatchObject({
       [name]: { status: 'succeeded' },
     });
   });
 
   it('run api - match journey name explicit', async () => {
-    runner.addJourney(new Journey({ name: 'j1' }, noop));
-    runner.addJourney(new Journey({ name: 'j2' }, noop));
+    runner._addJourney(new Journey({ name: 'j1' }, noop));
+    runner._addJourney(new Journey({ name: 'j2' }, noop));
     expect(
-      await runner.run({
+      await runner._run({
         ...defaultRunOptions,
         grepOpts: { match: 'j2' },
       })
@@ -346,10 +365,10 @@ describe('runner', () => {
   });
 
   it('run api - match journey name and tag globs', async () => {
-    runner.addJourney(new Journey({ name: 'j1' }, noop));
-    runner.addJourney(new Journey({ name: 'tagj2', tags: ['j2'] }, noop));
+    runner._addJourney(new Journey({ name: 'j1' }, noop));
+    runner._addJourney(new Journey({ name: 'tagj2', tags: ['j2'] }, noop));
     expect(
-      await runner.run({
+      await runner._run({
         ...defaultRunOptions,
         grepOpts: { match: 'j*' },
       })
@@ -360,13 +379,13 @@ describe('runner', () => {
   });
 
   it('run api - prefer tags glob matching', async () => {
-    runner.addJourney(new Journey({ name: 'j1', tags: ['foo'] }, noop));
-    runner.addJourney(new Journey({ name: 'j2', tags: ['bar'] }, noop));
-    runner.addJourney(new Journey({ name: 'j3', tags: ['foo:test'] }, noop));
-    runner.addJourney(new Journey({ name: 'j4', tags: ['baz'] }, noop));
-    runner.addJourney(new Journey({ name: 'j5', tags: ['foo'] }, noop));
+    runner._addJourney(new Journey({ name: 'j1', tags: ['foo'] }, noop));
+    runner._addJourney(new Journey({ name: 'j2', tags: ['bar'] }, noop));
+    runner._addJourney(new Journey({ name: 'j3', tags: ['foo:test'] }, noop));
+    runner._addJourney(new Journey({ name: 'j4', tags: ['baz'] }, noop));
+    runner._addJourney(new Journey({ name: 'j5', tags: ['foo'] }, noop));
     expect(
-      await runner.run({
+      await runner._run({
         ...defaultRunOptions,
         grepOpts: { tags: ['foo*'], match: 'j*' },
       })
@@ -378,11 +397,11 @@ describe('runner', () => {
   });
 
   it('run api - support multiple tags', async () => {
-    runner.addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
-    runner.addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
-    runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
+    runner._addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
+    runner._addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
+    runner._addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
     expect(
-      await runner.run({
+      await runner._run({
         ...defaultRunOptions,
         grepOpts: { tags: ['hello:b*'] },
       })
@@ -393,11 +412,11 @@ describe('runner', () => {
   });
 
   it('run api - support negation tags', async () => {
-    runner.addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
-    runner.addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
-    runner.addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
+    runner._addJourney(new Journey({ name: 'j1', tags: ['hello:foo'] }, noop));
+    runner._addJourney(new Journey({ name: 'j2', tags: ['hello:bar'] }, noop));
+    runner._addJourney(new Journey({ name: 'j3', tags: ['hello:baz'] }, noop));
     expect(
-      await runner.run({
+      await runner._run({
         ...defaultRunOptions,
         grepOpts: { tags: ['!hello:b*'] },
       })
@@ -407,14 +426,14 @@ describe('runner', () => {
   });
 
   it('run api - accumulate failed journeys', async () => {
-    runner.addJourney(new Journey({ name: 'j1' }, noop));
+    runner._addJourney(new Journey({ name: 'j1' }, noop));
     const j2 = new Journey({ name: 'j2' }, noop);
     const error = new Error('broken journey');
-    j2.addStep('step1', async () => {
+    j2._addStep('step1', async () => {
       throw error;
     });
-    runner.addJourney(j2);
-    const result = await runner.run(defaultRunOptions);
+    runner._addJourney(j2);
+    const result = await runner._run(defaultRunOptions);
     expect(result).toMatchObject({
       j1: { status: 'succeeded' },
       j2: { status: 'failed', error },
@@ -422,15 +441,15 @@ describe('runner', () => {
   });
 
   it('run api - dry run', async () => {
-    runner.addJourney(new Journey({ name: 'j1' }, noop));
-    runner.addJourney(new Journey({ name: 'j2' }, noop));
+    runner._addJourney(new Journey({ name: 'j1' }, noop));
+    runner._addJourney(new Journey({ name: 'j2' }, noop));
     let count = 0;
     class DryRunReporter implements Reporter {
       onJourneyRegister() {
         count++;
       }
     }
-    const result = await runner.run({
+    const result = await runner._run({
       ...defaultRunOptions,
       reporter: DryRunReporter,
       dryRun: true,
@@ -441,22 +460,22 @@ describe('runner', () => {
 
   it('run - should preserve order hooks/journeys/steps', async () => {
     const result: Array<string> = [];
-    runner.addHook('beforeAll', async () => result.push('beforeAll1'));
-    runner.addHook('afterAll', async () => result.push('afterAll1'));
+    runner._addHook('beforeAll', async () => result.push('beforeAll1'));
+    runner._addHook('afterAll', async () => result.push('afterAll1'));
     const j1 = new Journey({ name: 'j1' }, noop);
-    j1.addHook('before', () => result.push('before1'));
-    j1.addHook('after', () => result.push('after1'));
-    j1.addStep('s1', () => result.push('step1'));
+    j1._addHook('before', () => result.push('before1'));
+    j1._addHook('after', () => result.push('after1'));
+    j1._addStep('s1', () => result.push('step1'));
     const j2 = new Journey({ name: 'j1' }, noop);
-    runner.addHook('beforeAll', () => result.push('beforeAll2'));
-    runner.addHook('afterAll', () => result.push('afterAll2'));
-    j2.addHook('before', () => result.push('before2'));
-    j2.addHook('after', () => result.push('after2'));
-    j2.addStep('s2', () => result.push('step2'));
-    runner.addJourney(j1);
-    runner.addJourney(j2);
+    runner._addHook('beforeAll', () => result.push('beforeAll2'));
+    runner._addHook('afterAll', () => result.push('afterAll2'));
+    j2._addHook('before', () => result.push('before2'));
+    j2._addHook('after', () => result.push('after2'));
+    j2._addStep('s2', () => result.push('step2'));
+    runner._addJourney(j1);
+    runner._addJourney(j2);
 
-    await runner.run(defaultRunOptions);
+    await runner._run(defaultRunOptions);
     expect(result).toEqual([
       'beforeAll1',
       'beforeAll2',
@@ -473,26 +492,26 @@ describe('runner', () => {
 
   it('run - expose params in all hooks', async () => {
     const result: Array<Record<string, any>> = [];
-    runner.addHook('beforeAll', ({ params, env }) =>
+    runner._addHook('beforeAll', ({ params, env }) =>
       result.push({ name: 'beforeAll', params, env })
     );
-    runner.addHook('afterAll', ({ params }) =>
+    runner._addHook('afterAll', ({ params }) =>
       result.push({ name: 'afterAll', params })
     );
     const j1 = new Journey({ name: 'j1' }, noop);
-    j1.addHook('before', ({ params }) => {
+    j1._addHook('before', ({ params }) => {
       result.push({ name: 'before', params });
     });
-    j1.addHook('after', ({ params, env }) => {
+    j1._addHook('after', ({ params, env }) => {
       result.push({ name: 'after', params, env });
     });
-    j1.addStep('s1', () => result.push({ name: 'step1' }));
-    runner.addJourney(j1);
+    j1._addStep('s1', () => result.push({ name: 'step1' }));
+    runner._addJourney(j1);
 
     const params = {
       url: 'http://local.dev',
     };
-    await runner.run({
+    await runner._run({
       ...defaultRunOptions,
       params,
       environment: 'testing',
@@ -529,8 +548,8 @@ describe('runner', () => {
       }
     }
 
-    runner.addJourney(new Journey({ name: 'foo' }, noop));
-    const result = await runner.run({
+    runner._addJourney(new Journey({ name: 'foo' }, noop));
+    const result = await runner._run({
       ...defaultRunOptions,
       reporter: CustomReporter,
     });
@@ -563,13 +582,13 @@ describe('runner', () => {
 
   it('run api - verify screenshots', async () => {
     const j1 = new Journey({ name: 'j1' }, noop);
-    const s1 = j1.addStep('j1s1', noop);
+    const s1 = j1._addStep('j1s1', noop);
     const j2 = new Journey({ name: 'j2' }, noop);
-    const s2 = j2.addStep('j2s2', noop);
-    runner.addJourney(j1);
-    runner.addJourney(j2);
+    const s2 = j2._addStep('j2s2', noop);
+    runner._addJourney(j1);
+    runner._addJourney(j2);
 
-    await runner.run({
+    await runner._run({
       ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
@@ -607,9 +626,9 @@ describe('runner', () => {
         await page1.waitForLoadState();
       });
     });
-    runner.addJourney(j1);
+    runner._addJourney(j1);
 
-    await runner.run({
+    await runner._run({
       ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
@@ -638,15 +657,15 @@ describe('runner', () => {
         throw 'step error';
       });
     });
+    runner._addJourney(j1);
     const runOptions = { ...defaultRunOptions, trace: true };
-    const context = await Runner.createContext(runOptions);
-    await runner.registerJourney(j1, context);
-    const [step1, step2] = await runner.runSteps(j1, context, runOptions);
-    await Gatherer.stop();
-    expect(step1.metrics).toBeUndefined();
-    expect(step1.traces).toBeUndefined();
-    expect(step2.traces?.length).toBeGreaterThan(0);
-    expect(step2.metrics).toMatchObject({
+    const results = await runner._run(runOptions)
+    const steps = results[j1.name].stepsresults;
+    expect(steps?.length).toBe(2);
+    expect(steps?.[0].metrics).toBeUndefined();
+    expect(steps?.[0].traces).toBeUndefined();
+    expect(steps?.[1].traces?.length).toBeGreaterThan(0);
+    expect(steps?.[1].metrics).toMatchObject({
       cls: 0,
       fcp: { us: expect.any(Number) },
       load: { us: expect.any(Number) },
@@ -665,17 +684,17 @@ describe('runner', () => {
         await page.goto(server.PREFIX + '/delay500', { timeout: 200 });
       });
     });
-    await runner.addJourney(j1);
+    await runner._addJourney(j1);
 
     class StepCheckReporter implements Reporter {
-      onStepEnd(j, s, result: StepEndResult) {
-        const durationMs = (result.end - result.start) * 1000;
+      onStepEnd(j, s: Step) {
+        const durationMs = s.duration * 1000;
         // Should not wait till the page is loaded which is after 500ms delay
         // ideally should be in the ~200ms range
         expect(durationMs).not.toBeGreaterThan(500);
       }
     }
-    const result = await runner.run({
+    const result = await runner._run({
       ...defaultRunOptions,
       screenshots: 'off',
       reporter: StepCheckReporter,
@@ -689,8 +708,8 @@ describe('runner', () => {
         await page.goto(server.TEST_PAGE);
       });
     });
-    runner.addJourney(j1);
-    await runner.run({
+    runner._addJourney(j1);
+    await runner._run({
       ...defaultRunOptions,
       reporter: 'json',
       screenshots: 'on',
@@ -720,21 +739,21 @@ describe('runner', () => {
     it('runner - build monitors with local config', async () => {
       const j1 = new Journey({ name: 'j1', tags: ['j1', 'j2'] }, noop);
       const j2 = new Journey({ name: 'j2' }, noop);
-      j1.updateMonitor({
+      j1._updateMonitor({
         id: 'test-j1',
         schedule: 3,
         tags: ['l1', 'l2'],
         locations: ['united_kingdom'],
       });
-      j2.updateMonitor({
+      j2._updateMonitor({
         throttling: { latency: 1000 },
         schedule: 1,
         alert: { status: { enabled: false } },
       });
-      runner.addJourney(j1);
-      runner.addJourney(j2);
+      runner._addJourney(j1);
+      runner._addJourney(j2);
 
-      const monitors = runner.buildMonitors(options);
+      const monitors = runner._buildMonitors(options);
       expect(monitors.length).toBe(2);
       expect(monitors[0].config).toEqual({
         id: 'test-j1',
@@ -755,7 +774,7 @@ describe('runner', () => {
 
     it('runner - build monitors with global config', async () => {
       // Faking monitor.use across file level
-      runner.updateMonitor({
+      runner._updateMonitor({
         schedule: 5,
         locations: ['us_east'],
         privateLocations: ['germany'],
@@ -768,18 +787,18 @@ describe('runner', () => {
 
       const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
       const j2 = new Journey({ name: 'j2' }, noop);
-      j1.updateMonitor({
+      j1._updateMonitor({
         id: 'test-j1',
         schedule: 3,
         locations: ['united_kingdom'],
         privateLocations: ['spain'],
         retestOnFailure: true,
       });
-      j2.updateMonitor({ throttling: { latency: 1000 }, enabled: true });
-      runner.addJourney(j1);
-      runner.addJourney(j2);
+      j2._updateMonitor({ throttling: { latency: 1000 }, enabled: true });
+      runner._addJourney(j1);
+      runner._addJourney(j2);
 
-      const monitors = runner.buildMonitors({
+      const monitors = runner._buildMonitors({
         ...options,
         enabled: false,
         retestOnFailure: false,
@@ -814,10 +833,10 @@ describe('runner', () => {
     it('runner - build monitors filtered via "match"', async () => {
       const j1 = new Journey({ name: 'j1' }, noop);
       const j2 = new Journey({ name: 'j2' }, noop);
-      runner.addJourney(j1);
-      runner.addJourney(j2);
+      runner._addJourney(j1);
+      runner._addJourney(j2);
 
-      const monitors = runner.buildMonitors({
+      const monitors = runner._buildMonitors({
         ...options,
         grepOpts: { match: 'j1' },
         schedule: 1,
@@ -830,11 +849,11 @@ describe('runner', () => {
       const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
       const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
       const j3 = new Journey({ name: 'j3' }, noop);
-      runner.addJourney(j1);
-      runner.addJourney(j2);
-      runner.addJourney(j3);
+      runner._addJourney(j1);
+      runner._addJourney(j2);
+      runner._addJourney(j3);
 
-      const monitors = runner.buildMonitors({
+      const monitors = runner._buildMonitors({
         ...options,
         grepOpts: { tags: ['first'] },
         schedule: 1,
@@ -847,13 +866,13 @@ describe('runner', () => {
       const j1 = new Journey({ name: 'j1', tags: ['first'] }, noop);
       const j2 = new Journey({ name: 'j2', tags: ['second'] }, noop);
       const j3 = new Journey({ name: 'j3' }, noop);
-      runner.addJourney(j1);
-      runner.addJourney(j2);
-      runner.addJourney(j3);
+      runner._addJourney(j1);
+      runner._addJourney(j2);
+      runner._addJourney(j3);
       // using monitor.use
-      j2.updateMonitor({ tags: ['newtag'] });
+      j2._updateMonitor({ tags: ['newtag'] });
 
-      const monitors = runner.buildMonitors({
+      const monitors = runner._buildMonitors({
         ...options,
         tags: ['newtag'],
         grepOpts: { tags: ['newtag'] },
@@ -866,10 +885,10 @@ describe('runner', () => {
 
   describe('journey and step annotations', () => {
     it('skip journey', async () => {
-      runner.addJourney(journey.skip('j1', noop));
-      runner.addJourney(journey('j2', noop));
-      const result = await runner.run(defaultRunOptions);
-      expect(result).toEqual({
+      runner._addJourney(journey.skip('j1', noop));
+      runner._addJourney(journey('j2', noop));
+      const result = await runner._run(defaultRunOptions);
+      expect(result).toMatchObject({
         j2: {
           status: 'succeeded',
           steps: [],
@@ -878,10 +897,10 @@ describe('runner', () => {
     });
 
     it('only journey', async () => {
-      runner.addJourney(journey.only('j1', noop));
-      runner.addJourney(journey('j2', noop));
-      const result = await runner.run(defaultRunOptions);
-      expect(result).toEqual({
+      runner._addJourney(journey.only('j1', noop));
+      runner._addJourney(journey('j2', noop));
+      const result = await runner._run(defaultRunOptions);
+      expect(result).toMatchObject({
         j1: {
           status: 'succeeded',
           steps: [],
@@ -890,13 +909,13 @@ describe('runner', () => {
     });
 
     it('skip step', async () => {
-      runner.addJourney(
+      runner._addJourney(
         journey('j1', async () => {
           step('step1', noop);
           step.skip('step2', noop);
         })
       );
-      const result = await runner.run(defaultRunOptions);
+      const result = await runner._run(defaultRunOptions);
       expect(result).toMatchObject({
         j1: {
           status: 'succeeded',
@@ -912,7 +931,7 @@ describe('runner', () => {
       });
     });
     it('soft step failure', async () => {
-      runner.addJourney(
+      runner._addJourney(
         journey('j1', async () => {
           step('step1', noop);
           step.soft('step2', async () => {
@@ -921,7 +940,7 @@ describe('runner', () => {
           step.soft('step3', noop);
         })
       );
-      const result = await runner.run(defaultRunOptions);
+      const result = await runner._run(defaultRunOptions);
 
       expect(result).toMatchObject({
         j1: {
@@ -944,7 +963,7 @@ describe('runner', () => {
     });
 
     it('only step', async () => {
-      runner.addJourney(
+      runner._addJourney(
         journey('j1', async () => {
           step('step1', noop);
           step.only('step2', async () => {
@@ -956,7 +975,7 @@ describe('runner', () => {
           step('step3', noop);
         })
       );
-      const result = await runner.run(defaultRunOptions);
+      const result = await runner._run(defaultRunOptions);
 
       expect(result).toMatchObject({
         j1: {

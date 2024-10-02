@@ -272,7 +272,7 @@ describe('Gatherer', () => {
         wsEndpoint,
         playwrightOptions: { navigationTimeout: 1, actionTimeout: 2 },
       });
-      server.route('/hang.html', () => {});
+      server.route('/hang.html', () => { });
       let error: any = null;
       await driver.page
         .goto(server.PREFIX + '/hang.html')
@@ -287,7 +287,7 @@ describe('Gatherer', () => {
         wsEndpoint,
         playwrightOptions: { navigationTimeout: 3 },
       });
-      server.route('/hang.html', () => {});
+      server.route('/hang.html', () => { });
       let error: any = null;
       await driver.page
         .goto(server.PREFIX + '/hang.html', { timeout: 1 })

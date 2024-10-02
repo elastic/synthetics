@@ -34,8 +34,8 @@ describe('Run', () => {
   });
 
   it('multiple run invokes runner only once', async () => {
-    journey('j1', () => {});
-    journey('j2', () => {});
+    journey('j1', () => { });
+    journey('j2', () => { });
     /**
      * call multiple runs in parallel simulating
      * CLI and programmatic API runs
@@ -47,7 +47,7 @@ describe('Run', () => {
     );
     const results = await Promise.all(promises);
 
-    expect(results).toEqual([
+    expect(results).toMatchObject([
       {
         j1: { status: 'succeeded', steps: [] },
         j2: { status: 'succeeded', steps: [] },

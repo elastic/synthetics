@@ -41,7 +41,7 @@ import micromatch from 'micromatch';
 
 const SEPARATOR = '\n';
 
-export function noop() {}
+export function noop() { }
 
 export function indent(lines: string, tab = '   ') {
   return lines.replace(/^/gm, tab);
@@ -54,6 +54,7 @@ export function indent(lines: string, tab = '   ') {
 const NO_UTF8_SUPPORT = process.platform === 'win32';
 export const symbols = {
   warning: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
+  pending: yellow(NO_UTF8_SUPPORT ? '!' : '⚠'),
   skipped: cyan('-'),
   progress: cyan('>'),
   succeeded: green(NO_UTF8_SUPPORT ? 'ok' : '✓'),
@@ -151,8 +152,8 @@ export function findPkgJsonByTraversing(resolvePath, cwd) {
   if (resolvePath === parentDirectory) {
     throw red(
       `Could not find package.json file in: "${cwd}"\n` +
-        `It is recommended to run the agent in an NPM project.\n` +
-        `You can create one by running "npm init -y" in the project folder.`
+      `It is recommended to run the agent in an NPM project.\n` +
+      `You can create one by running "npm init -y" in the project folder.`
     );
   }
   return findPkgJsonByTraversing(parentDirectory, cwd);

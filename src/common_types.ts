@@ -32,9 +32,10 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
-import { Step } from './dsl';
+import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
+import { RunnerInfo } from './core/runner';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -51,9 +52,10 @@ export type Params = Record<string, any>;
 export type HooksArgs = {
   env: string;
   params: Params;
+  info: RunnerInfo;
 };
 export type HooksCallback = (args: HooksArgs) => void;
-export type StatusValue = 'succeeded' | 'failed' | 'skipped';
+export type StatusValue = 'pending' | 'succeeded' | 'failed' | 'skipped';
 
 export type NetworkConditions = {
   offline: boolean;
@@ -284,12 +286,10 @@ export type SyntheticsConfig = {
 };
 
 /** Runner Payload types */
-export type JourneyResult = {
-  status: StatusValue;
-  error?: Error;
+export type JourneyResult = Partial<Journey> & {
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
-  steps?: Array<StepResult>;
+  stepsresults?: Array<StepResult>;
 };
 
 export type TestError = {
@@ -301,9 +301,6 @@ export type TestError = {
 };
 
 export type StepResult = {
-  status: StatusValue;
-  url?: string;
-  error?: Error;
   pagemetrics?: PageMetrics;
   filmstrips?: PluginOutput['filmstrips'];
   metrics?: PluginOutput['metrics'];
@@ -323,14 +320,8 @@ export type JourneyStartResult = {
 
 export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
-    start: number;
-    end: number;
     browserDelay: number;
     options: RunOptions;
-    timestamp: number;
   };
 
-export type StepEndResult = StepResult & {
-  start: number;
-  end: number;
-};
+export type StepEndResult = StepResult

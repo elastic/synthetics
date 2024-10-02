@@ -30,16 +30,15 @@ process.env.NO_COLOR = '1';
 
 import * as fs from 'fs';
 import SonicBoom from 'sonic-boom';
-import { step, journey } from '../../src/core';
 import BuildKiteCLIReporter from '../../src/reporters/build_kite_cli';
 import * as helpers from '../../src/helpers';
+import { tJourney, tStep } from "../utils/test-config"
 
 describe('buildkite cli reporter', () => {
   let dest: string;
   let stream: SonicBoom;
   let reporter: BuildKiteCLIReporter;
   const timestamp = 1600300800000000;
-  const j1 = journey('j1', () => { });
 
   const readAndCloseStream = async () => {
     /**
@@ -66,30 +65,17 @@ describe('buildkite cli reporter', () => {
   });
 
   it('writes each step to the FD', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
-      status: 'failed',
-      error: {
-        name: 'Error',
-        message: 'step failed',
-        stack: 'Error: step failed',
-      },
-      url: 'dummy',
-      start: 0,
-      end: 1,
-    });
+    const error = {
+      name: 'Error',
+      message: 'step failed',
+      stack: 'Error: step failed',
+    };
+    const j1 = tJourney('failed', 1, error);
+    const s1 = tStep('failed', 1, error, 'dummy');
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onStepEnd(j1, s1, {});
     reporter.onJourneyEnd(j1, {
       timestamp,
-      status: 'failed',
-      error: {
-        name: 'Error',
-        message: 'step failed',
-        stack: 'Error: step failed',
-      },
-      start: 0,
-      end: 1,
       browserDelay: 0,
       options: {},
     });
@@ -98,20 +84,18 @@ describe('buildkite cli reporter', () => {
   });
 
   it('render hook errors without steps', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
     const error = {
       name: 'Error',
       message: 'before hook failed',
       stack: 'Error: before hook failed',
     };
+    const j1 = tJourney('failed', 1, error);
+    reporter.onJourneyStart(j1, {
+      timestamp,
+    });
+
     reporter.onJourneyEnd(j1, {
       timestamp,
-      status: 'failed',
-      error,
-      start: 0,
-      end: 1,
       browserDelay: 0,
       options: {},
     });
@@ -120,26 +104,14 @@ describe('buildkite cli reporter', () => {
   });
 
   it('writes multiple steps to the FD', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
-      status: 'succeeded',
-      url: 'dummy',
-      start: 0,
-      end: 1,
-    });
-    reporter.onStepEnd(j1, step('s1', helpers.noop), {
-      status: 'succeeded',
-      url: 'http://localhost:8080',
-      start: 2,
-      end: 6,
-    });
+    const j1 = tJourney('succeeded', 2);
+    const s1 = tStep('succeeded', 1, undefined, 'dummy');
+    const s2 = tStep('succeeded', 4, undefined, 'http://localhost:8080',);
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onStepEnd(j1, s1, {});
+    reporter.onStepEnd(j1, s2, {});
     reporter.onJourneyEnd(j1, {
       timestamp,
-      status: 'succeeded',
-      start: 4,
-      end: 6,
       browserDelay: 0,
       options: {},
     });

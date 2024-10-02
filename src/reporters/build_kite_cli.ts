@@ -37,13 +37,13 @@ import { Journey, Step } from '../dsl';
 import { renderError, serializeError } from './reporter-util';
 
 export default class BuildKiteCLIReporter extends BaseReporter {
-  journeys: Map<string, Array<StepEndResult & { name: string }>> = new Map();
+  journeys: Map<string, Array<Step>> = new Map();
 
   constructor(options: ReporterOptions = {}) {
     super(options);
   }
 
-  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
+  override onJourneyStart(journey: Journey, { }: JourneyStartResult) {
     this.write(`\n--- Journey: ${journey.name}`);
   }
 
@@ -52,15 +52,12 @@ export default class BuildKiteCLIReporter extends BaseReporter {
     if (!this.journeys.has(journey.name)) {
       this.journeys.set(journey.name, []);
     }
-    this.journeys.get(journey.name)?.push({ name: step.name, ...result });
+    this.journeys.get(journey.name)?.push(step);
   }
 
-  override async onJourneyEnd(journey: Journey, endResult: JourneyEndResult) {
-    const { start, end, status } = endResult;
-    super.onJourneyEnd(journey, endResult);
-    const message = `${symbols[status]} Took (${renderDuration(
-      end - start
-    )} seconds)`;
+  override async onJourneyEnd(journey: Journey, result: JourneyEndResult) {
+    super.onJourneyEnd(journey, result);
+    const message = `${symbols[journey.status]} Took (${renderDuration(journey.duration)} seconds)`;
     this.write(message);
   }
 
@@ -78,16 +75,14 @@ export default class BuildKiteCLIReporter extends BaseReporter {
         failedJourneys.forEach(([journeyName, steps]) => {
           const name = red(`Journey: ${journeyName} :slightly_frowning_face:`);
           this.write(`\n+++ ${name}`);
-          steps.forEach(stepResult => {
-            const { status, end, start, error, name: stepName } = stepResult;
-            const message = `${
-              symbols[status]
-            }  Step: '${stepName}' ${status} (${renderDuration(
-              (end - start) * 1000
-            )} ms)`;
+          steps.forEach(step => {
+            const message = `${symbols[step.status]
+              }  Step: '${step.name}' ${step.status} (${renderDuration(
+                step.duration * 1000
+              )} ms)`;
             this.write(indent(message));
-            if (error) {
-              this.write(renderError(serializeError(error)));
+            if (step.error) {
+              this.write(renderError(serializeError(step.error)));
             }
           });
         });

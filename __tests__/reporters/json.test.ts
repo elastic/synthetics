@@ -27,7 +27,7 @@ import fs, { mkdirSync } from 'fs';
 import { join } from 'path';
 import snakeCaseKeys from 'snakecase-keys';
 import SonicBoom from 'sonic-boom';
-import { step, journey } from '../../src/core';
+import { journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
   gatherScreenshots,
@@ -37,7 +37,7 @@ import JSONReporter, {
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
-import { Step } from '../../src/dsl';
+import { tJourney, tStep } from "../utils/test-config"
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -59,7 +59,6 @@ jest.mock('perf_hooks', () => ({
 
 describe('json reporter', () => {
   let dest: string;
-  const j1 = journey('j1', () => { });
   let stream: SonicBoom;
   let reporter: JSONReporter;
   const timestamp = 1600300800000000;
@@ -112,17 +111,11 @@ describe('json reporter', () => {
   };
 
   it('writes each step as NDJSON to the FD', async () => {
-    const error = new Error('boom');
-    error.stack = 'at /foo/bar.js:1:1';
+    const j1 = tJourney('succeeded', 11);
+    const s1 = tStep('succeeded', 10, undefined, 'dummy');
     reporter.onJourneyRegister(j1);
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    reporter.onStepEnd(j1, step('s1', helpers.noop) as Step, {
-      status: 'succeeded',
-      url: 'dummy',
-      start: 0,
-      end: 10,
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onStepEnd(j1, s1, {
       filmstrips: [
         {
           blob: 'dummy',
@@ -166,9 +159,6 @@ describe('json reporter', () => {
     });
     reporter.onJourneyEnd(j1, {
       timestamp,
-      status: 'succeeded',
-      start: 0,
-      end: 11,
       browserDelay: 2,
       options: {},
       networkinfo: [
@@ -225,15 +215,9 @@ describe('json reporter', () => {
   });
 
   it('writes step errors to the top level', async () => {
-    const myErr = new Error('myError');
-
-    reporter.onStepEnd(j1, step('s2', helpers.noop) as Step, {
-      status: 'failed',
-      url: 'dummy2',
-      start: 11,
-      end: 20,
-      error: myErr,
-    });
+    const j1 = tJourney();
+    const s2 = tStep('failed', 9, new Error('myError'), 'dummy2');
+    reporter.onStepEnd(j1, s2, {});
 
     const stepEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'step/end'
@@ -242,15 +226,10 @@ describe('json reporter', () => {
   });
 
   it('writes journey errors to the top level', async () => {
-    const myErr = new Error('myError');
-
+    const j1 = tJourney('failed', 1, new Error('myError'));
     reporter.onJourneyEnd(j1, {
       timestamp,
-      start: 0,
-      end: 1,
       browserDelay: 0,
-      status: 'failed',
-      error: myErr,
       options: {},
     });
 
@@ -261,13 +240,10 @@ describe('json reporter', () => {
   });
 
   it('captures non-error types', async () => {
+    const j1 = tJourney('failed', 1, 'boom' as any);
     reporter.onJourneyEnd(j1, {
       timestamp,
-      start: 0,
-      end: 1,
       browserDelay: 0,
-      status: 'failed',
-      error: 'boom' as any,
       options: {},
     });
 
@@ -279,17 +255,16 @@ describe('json reporter', () => {
 
   it('writes full journey info if present', async () => {
     const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
+    const jj = journey(journeyOpts, () => { });
+    jj.status = 'skipped';
+    jj.duration = 1;
 
-    reporter.onJourneyEnd(
-      journey(journeyOpts, () => { }),
-      {
-        timestamp,
-        start: 0,
-        end: 1,
-        browserDelay: 0,
-        status: 'skipped',
-        options: {},
-      }
+    reporter.onJourneyEnd(jj, {
+      timestamp,
+      browserDelay: 0,
+      status: 'skipped',
+      options: {},
+    }
     );
 
     const journeyEnd = (await readAndCloseStreamJson()).find(
@@ -344,15 +319,13 @@ describe('json reporter', () => {
       fs.rmSync(destDir, { recursive: true, force: true });
     });
 
-    const emitEnd = (options, status = 'failed' as StatusValue) =>
-      reporter.onJourneyEnd(j1, {
+    const emitEnd = (options, status = 'failed' as StatusValue) => {
+      reporter.onJourneyEnd(tJourney(status, 2), {
         timestamp,
-        start: 0,
         browserDelay: 0,
-        end: 2,
-        status,
         options,
       });
+    };
 
     it('write whole blobs data ', async () => {
       emitEnd({

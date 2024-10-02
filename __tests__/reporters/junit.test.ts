@@ -26,19 +26,16 @@
 import fs from 'fs';
 import { join } from 'path';
 import SonicBoom from 'sonic-boom';
-import { step, journey } from '../../src/core';
 import JUnitReporter from '../../src/reporters/junit';
 import * as helpers from '../../src/helpers';
-import { Step } from '../../src/dsl';
+import { tJourney, tStep } from "../utils/test-config"
 
 describe('junit reporter', () => {
-  beforeEach(() => {});
+  beforeEach(() => { });
   let dest: string;
   let stream: SonicBoom;
   let reporter: JUnitReporter;
   const timestamp = 1600300800000000;
-  const j1 = journey('j1', () => {});
-  const s1 = step('s1', () => {}) as Step;
 
   beforeEach(() => {
     dest = helpers.generateTempPath();
@@ -50,28 +47,16 @@ describe('junit reporter', () => {
   afterAll(() => fs.unlinkSync(dest));
 
   it('writes the output to fd', async () => {
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    const error = new Error('Boom');
+    const j1 = tJourney('failed', 2);
+    const s1 = tStep('failed', 1, new Error('Boom'));
+    const s2 = tStep('skipped', 1, undefined, '', 's2');
+    reporter.onJourneyStart(j1, { timestamp });
 
-    reporter.onStepEnd(j1, s1, {
-      status: 'failed',
-      error,
-      start: 0,
-      end: 1,
-    });
-    reporter.onStepEnd(j1, step('s2', helpers.noop) as Step, {
-      status: 'skipped',
-      start: 0,
-      end: 1,
-    });
+    reporter.onStepEnd(j1, s1);
+    reporter.onStepEnd(j1, s2);
     reporter.onJourneyEnd(j1, {
       timestamp,
-      start: 0,
-      end: 2,
       browserDelay: 0,
-      status: 'failed',
       options: {},
     });
     reporter.onEnd();
@@ -87,20 +72,13 @@ describe('junit reporter', () => {
   it('writes the output to a file', async () => {
     const filepath = join(__dirname, '../../tmp', 'junit.xml');
     process.env.SYNTHETICS_JUNIT_FILE = filepath;
-    reporter.onJourneyStart(j1, {
-      timestamp,
-    });
-    reporter.onStepEnd(j1, s1, {
-      status: 'skipped',
-      start: 0,
-      end: 1,
-    });
+    const j1 = tJourney('failed', 2);
+    const s1 = tStep('skipped', 1);
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onStepEnd(j1, s1);
     reporter.onJourneyEnd(j1, {
       timestamp,
-      start: 0,
-      end: 2,
       browserDelay: 0,
-      status: 'failed',
       options: {},
     });
     await reporter.onEnd();
