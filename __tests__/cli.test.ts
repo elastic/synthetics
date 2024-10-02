@@ -332,7 +332,7 @@ describe('CLI', () => {
     }
   });
 
-  it('run expect assetions with type check', async () => {
+  it('run expect assertions with type check', async () => {
     // flag turns on type checking
     process.env['TS_NODE_TYPE_CHECK'] = 'true';
     const cli = new CLIMock()
@@ -489,6 +489,26 @@ describe('CLI', () => {
       expect(JSON.parse(output).step).toMatchObject({
         status: 'failed',
       });
+    });
+  });
+
+  describe.only('Fields option', () => {
+    it('fields wins over config params', async () => {
+      const cli = new CLIMock()
+        .args([
+          join(FIXTURES_DIR, 'example.journey.ts'),
+          '--reporter',
+          'json',
+          '--config',
+          join(FIXTURES_DIR, 'synthetics.config.ts'),
+          '-fields',
+          '{"env": "dev"}',
+        ])
+        .run();
+      await cli.waitFor('step/end');
+      expect(await cli.exitCode).toBe(1);
+      const [output] = safeNDJSONParse(cli.output());
+      expect(output.error.stack).toContain('suite-url');
     });
   });
 });

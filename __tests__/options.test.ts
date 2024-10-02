@@ -91,6 +91,9 @@ describe('options', () => {
           enabled: false,
         },
       },
+      fields: {
+        area: 'website',
+      },
     });
 
     expect(

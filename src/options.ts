@@ -71,7 +71,7 @@ export async function normalizeOptions(
 
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
   options.fields = Object.freeze(
-    merge(config.monitor.fields, cliArgs.fields || {})
+    merge(config.monitor?.fields ?? {}, cliArgs.fields || {})
   );
 
   /**
