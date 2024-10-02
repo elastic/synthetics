@@ -104,6 +104,9 @@ describe('options', () => {
           screenshots: 'only-on-failure',
           locations: ['australia_east'],
           privateLocations: ['test'],
+          fields: {
+            env: 'dev',
+          },
         },
         'push'
       )
@@ -120,6 +123,10 @@ describe('options', () => {
         tls: {
           enabled: false,
         },
+      },
+      fields: {
+        env: 'dev',
+        area: 'website',
       },
     });
   });

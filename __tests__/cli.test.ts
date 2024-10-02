@@ -491,24 +491,4 @@ describe('CLI', () => {
       });
     });
   });
-
-  describe.only('Fields option', () => {
-    it('fields wins over config params', async () => {
-      const cli = new CLIMock()
-        .args([
-          join(FIXTURES_DIR, 'example.journey.ts'),
-          '--reporter',
-          'json',
-          '--config',
-          join(FIXTURES_DIR, 'synthetics.config.ts'),
-          '-fields',
-          '{"env": "dev"}',
-        ])
-        .run();
-      await cli.waitFor('step/end');
-      expect(await cli.exitCode).toBe(1);
-      const [output] = safeNDJSONParse(cli.output());
-      expect(output.error.stack).toContain('suite-url');
-    });
-  });
 });
