@@ -56,7 +56,7 @@
     "commander": "^10.0.1",
     "deepmerge": "^4.3.1",
     "enquirer": "^2.3.6",
-    "esbuild": "^0.19.11",
+    "esbuild": "^0.23.1",
     "http-proxy": "^1.18.1",
     "kleur": "^4.1.5",
     "micromatch": "^4.0.8",
