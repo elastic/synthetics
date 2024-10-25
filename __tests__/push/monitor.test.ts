@@ -82,6 +82,7 @@ describe('Monitors', () => {
       enabled: true,
       hash: expect.any(String),
       locations: ['europe-west2-a', 'australia-southeast1-a'],
+      'service.name': 'test-service',
       privateLocations: ['germany'],
       fields: { area: 'website' },
     });
@@ -99,6 +100,7 @@ describe('Monitors', () => {
       hash: expect.any(String), // hash is dynamic based on the file path
       locations: ['europe-west2-a', 'australia-southeast1-a'],
       privateLocations: ['germany'],
+      'service.name': 'test-service',
       content: expect.any(String),
       filter: {
         match: 'test',

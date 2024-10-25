@@ -42,11 +42,12 @@ import { isParamOptionSupported, normalizeMonitorName } from './utils';
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
 
-export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
+export type MonitorSchema = Omit<MonitorConfig, 'locations' | 'serviceName'> & {
   locations: string[];
   content?: string;
   filter?: Monitor['filter'];
   hash?: string;
+  'service.name'?: string;
 };
 
 // Abbreviated monitor info, as often returned by the API,
@@ -121,6 +122,10 @@ export function getLocalMonitors(schemas: MonitorSchema[]) {
   return data;
 }
 
+type MonitorAPISchema = Omit<MonitorSchema, 'serviceName'> & {
+  'service.name'?: string;
+};
+
 export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   /**
    * Set up the bundle artifacts path which can be used to
@@ -133,10 +138,15 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
-    const schema: MonitorSchema = {
-      ...config,
+    const configNoServiceName = Object.assign({}, config);
+    delete configNoServiceName.serviceName;
+    const schema: MonitorAPISchema = {
+      ...configNoServiceName,
       locations: translateLocation(config.locations),
     };
+    if (config.serviceName) {
+      schema['service.name'] = config.serviceName;
+    }
 
     if (type === 'browser') {
       const outPath = join(
