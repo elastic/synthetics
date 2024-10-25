@@ -27,6 +27,8 @@
 
 import { program, Option } from 'commander';
 import { cwd } from 'process';
+import { bold } from 'kleur/colors';
+import { resolve } from 'path';
 import { CliArgs, PushOptions } from './common_types';
 import { reporters } from './reporters';
 import {
@@ -45,13 +47,13 @@ import {
   renderLocations,
   LocationCmdOptions,
 } from './locations';
-import { resolve } from 'path';
 import { Generator } from './generator';
-import { error } from './helpers';
+import { error, write } from './helpers';
 import { LocationsMap } from './locations/public-locations';
 import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
+import { totp, TOTPCmdOptions } from './core/mfa';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -192,7 +194,6 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
-
   .addOption(pattern)
   .addOption(tags)
   .addOption(fields)
@@ -271,6 +272,22 @@ program
       process.exit(1);
     } finally {
       revert();
+    }
+  });
+
+// TOTP command
+program
+  .command('totp <secret>')
+  .description('Generate a Time-based One-Time token using the secret key')
+  .option('--issuer <issuer>', 'Provider or Service the secret is associated with.')
+  .option('--label <label>', 'Account Identifier (default: SyntheticsTOTP)')
+  .action((secret, cmdOpts: TOTPCmdOptions) => {
+    try {
+      const token = totp(secret, cmdOpts)
+      write(bold(`OTP Token: ${token}`));
+    } catch (e) {
+      e && error(e);
+      process.exit(1);
     }
   });
 

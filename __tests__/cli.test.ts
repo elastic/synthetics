@@ -491,4 +491,24 @@ describe('CLI', () => {
       });
     });
   });
+
+  describe('TOTP token', () => {
+    async function runTotp(args) {
+      const cli = new CLIMock()
+        .args(['totp', ...args])
+        .run({});
+      await cli.exitCode;
+      return cli.stderr();
+    }
+
+    it('error when secret is not provided', async () => {
+      const output = await runTotp('');
+      expect(output).toContain(`error: missing required argument 'secret'`);
+    });
+
+    it('generates otp token', async () => {
+      const output = await runTotp('FLIIOLP3IR3W');
+      expect(output).toContain('OTP Token: ');
+    });
+  });
 });
