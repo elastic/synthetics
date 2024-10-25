@@ -134,7 +134,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   const bundlePath = join(SYNTHETICS_PATH, 'bundles');
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
-  const schemas: MonitorSchema[] = [];
+  const schemas: MonitorAPISchema[] = [];
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
