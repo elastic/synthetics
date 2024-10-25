@@ -278,7 +278,7 @@ program
 // TOTP command
 program
   .command('totp <secret>')
-  .description('Generate a Time-based One-Time token using the secret key')
+  .description('Generate a Time-based One-Time token using the provided secret.')
   .option('--issuer <issuer>', 'Provider or Service the secret is associated with.')
   .option('--label <label>', 'Account Identifier (default: SyntheticsTOTP)')
   .action((secret, cmdOpts: TOTPCmdOptions) => {

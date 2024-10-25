@@ -93,7 +93,7 @@ describe('CLI', () => {
     });
 
     it('generate mfa totp token', async () => {
-      const cli = new CLIMock(true)
+      const cli = new CLIMock()
         .stdin(
           `step('gen mfa totp', async () => {
           const token = mfa.totp('FLIIOLP3IR3W');
