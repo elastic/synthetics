@@ -60,6 +60,11 @@ type TOTPOptions = {
   period?: number
 };
 
+export type TOTPCmdOptions = {
+  issuer?: string
+  label?: string
+};
+
 export function totp(secret?: string, options: TOTPOptions = {}) {
   return new TOTP({ label: "SyntheticsTOTP", secret, ...options }).generate();
 }
