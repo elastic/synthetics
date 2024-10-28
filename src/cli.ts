@@ -286,7 +286,7 @@ program
       const token = totp(secret, cmdOpts)
       write(bold(`OTP Token: ${token}`));
     } catch (e) {
-      e && error(e);
+      error(e);
       process.exit(1);
     }
   });
