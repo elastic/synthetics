@@ -190,7 +190,7 @@ export async function createLightweightMonitors(
     const isUtf8 = utf8Validate(bufferContent);
     if (!isUtf8) {
       warn(
-        `file ${file} is not encoded in utf-8.  utf-8 encoding is expected.  Monitor configurations in this file may be ignored.`
+        `${file} is not UTF-8 encoded. Monitor configurations in this file might be ignored.`
       );
     }
     const content = bufferContent.toString('utf-8');
