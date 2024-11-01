@@ -28,7 +28,7 @@ import { extname, join } from 'path';
 import { LineCounter, parseDocument, Document, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
-import utf8Validate from 'utf-8-validate';
+import NodeBuffer from 'node:buffer';
 import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
@@ -187,10 +187,10 @@ export async function createLightweightMonitors(
   for (const file of lwFiles.values()) {
     // First check encoding and warn if any files are not the correct encoding.
     const bufferContent = await readFile(file);
-    const isUtf8 = utf8Validate(bufferContent);
+    const isUtf8 = NodeBuffer.isUtf8(bufferContent);
     if (!isUtf8) {
       warn(
-        `${file} is not UTF-8 encoded. Monitor configurations in this file might be ignored.`
+        `file ${file} is not encoded in utf-8.  utf-8 encoding is expected.  Monitor configurations in this file may be ignored.`
       );
     }
     const content = bufferContent.toString('utf-8');
