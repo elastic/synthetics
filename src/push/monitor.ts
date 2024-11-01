@@ -228,7 +228,7 @@ export async function createLightweightMonitors(
       // Skip browser monitors from the YML files
       if (monitor['type'] === 'browser') {
         warn(
-          `a monitor with type 'browser' was detected in file ${file}.  'browser type monitors are not supported.  Monitor will be skipped.`
+          `Browser monitors from ${file} are skipped.`
         );
         continue;
       }
