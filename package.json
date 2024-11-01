@@ -81,7 +81,7 @@
     "@types/babel__code-frame": "^7.0.3",
     "@types/jest": "^28.1.8",
     "@types/micromatch": "^4.0.9",
-    "@types/node": "~18.19.63",
+    "@types/node": "^18.19.63",
     "@types/semver": "^7",
     "@types/stack-utils": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^5.38.0",

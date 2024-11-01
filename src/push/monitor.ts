@@ -189,9 +189,7 @@ export async function createLightweightMonitors(
     const bufferContent = await readFile(file);
     const isUtf8 = NodeBuffer.isUtf8(bufferContent);
     if (!isUtf8) {
-      warn(
-        `file ${file} is not encoded in utf-8.  utf-8 encoding is expected.  Monitor configurations in this file may be ignored.`
-      );
+      warn(`${file} is not UTF-8 encoded. Monitors might be skipped.`);
     }
     const content = bufferContent.toString('utf-8');
     const lineCounter = new LineCounter();
