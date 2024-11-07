@@ -93,7 +93,7 @@ describe('CLI', () => {
     });
 
     it('generate mfa totp token', async () => {
-      const cli = new CLIMock(true)
+      const cli = new CLIMock()
         .stdin(
           `step('gen mfa totp', async () => {
           const token = mfa.totp('FLIIOLP3IR3W');
@@ -489,6 +489,26 @@ describe('CLI', () => {
       expect(JSON.parse(output).step).toMatchObject({
         status: 'failed',
       });
+    });
+  });
+
+  describe('TOTP token', () => {
+    async function runTotp(args) {
+      const cli = new CLIMock()
+        .args(['totp', ...args])
+        .run({});
+      await cli.exitCode;
+      return cli.stderr();
+    }
+
+    it('error when secret is not provided', async () => {
+      const output = await runTotp('');
+      expect(output).toContain(`error: missing required argument 'secret'`);
+    });
+
+    it('generates otp token', async () => {
+      const output = await runTotp('FLIIOLP3IR3W');
+      expect(output).toContain('OTP Token: ');
     });
   });
 });

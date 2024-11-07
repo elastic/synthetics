@@ -28,6 +28,7 @@ import { extname, join } from 'path';
 import { LineCounter, parseDocument, Document, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
+import NodeBuffer from 'node:buffer';
 import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
@@ -184,7 +185,13 @@ export async function createLightweightMonitors(
   let warnOnce = false;
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
-    const content = await readFile(file, 'utf-8');
+    // First check encoding and warn if any files are not the correct encoding.
+    const bufferContent = await readFile(file);
+    const isUtf8 = NodeBuffer.isUtf8(bufferContent);
+    if (!isUtf8) {
+      warn(`${file} is not UTF-8 encoded. Monitors might be skipped.`);
+    }
+    const content = bufferContent.toString('utf-8');
     const lineCounter = new LineCounter();
     const parsedDoc = parseDocument(content, {
       lineCounter,
@@ -218,6 +225,9 @@ export async function createLightweightMonitors(
       const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
       if (monitor['type'] === 'browser') {
+        warn(
+          `Browser monitors from ${file} are skipped.`
+        );
         continue;
       }
       const { line, col } = lineCounter.linePos(offsets[i]);
