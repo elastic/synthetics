@@ -40,6 +40,7 @@ export function createTestMonitor(filename: string, type = 'browser') {
     type,
     schedule: 10,
     enabled: true,
+    serviceName: 'test-service',
     locations: ['united_kingdom', 'australia_east'],
     privateLocations: ['germany'],
     fields: { area: 'website' },
@@ -53,21 +54,31 @@ export function createTestMonitor(filename: string, type = 'browser') {
   return monitor;
 }
 
-export function tJourney(status: StatusValue = "succeeded", duration = 0, error?: Error) {
-  const jj = journey('j1', () => { });
+export function tJourney(
+  status: StatusValue = 'succeeded',
+  duration = 0,
+  error?: Error
+) {
+  const jj = journey('j1', () => {});
   jj.status = status;
   jj.duration = duration;
   jj.error = error;
-  return jj
+  return jj;
 }
 
-export function tStep(status: StatusValue = "succeeded", duration = 0, error?: Error, url?: string, name?: string) {
+export function tStep(
+  status: StatusValue = 'succeeded',
+  duration = 0,
+  error?: Error,
+  url?: string,
+  name?: string
+) {
   const ss = step(name ?? 's1', noop);
   ss.status = status;
   ss.duration = duration;
   ss.error = error;
   ss.url = url;
-  return ss
+  return ss;
 }
 
 export class CLIMock {
@@ -81,7 +92,7 @@ export class CLIMock {
   private stderrStr = '';
   exitCode: Promise<number>;
 
-  constructor(public debug: boolean = false) { }
+  constructor(public debug: boolean = false) {}
 
   args(a: string[]): CLIMock {
     this.cliArgs.push(...a);

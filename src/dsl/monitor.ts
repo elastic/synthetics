@@ -63,6 +63,7 @@ export type MonitorConfig = {
   enabled?: boolean;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
+  serviceName?: string;
   /**
    * @deprecated This option is ignored.
    * Network throttling via chrome devtools is ignored at the moment.
