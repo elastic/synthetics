@@ -80,6 +80,7 @@ function prepareStackFrame(line: string): StackFrame {
 }
 
 function filterLibInternals(file: string) {
+  console.log(file, "SYNTHETICS_PATH", SYNTHETICS_PATH, "PW_CORE_PATH", PW_CORE_PATH);
   // To ignore filtering the stack trace on tests
   if (process.env.TEST_OVERRIDE) {
     return true;
@@ -97,8 +98,7 @@ function constructStackFromFrames(frames: StackFrame[]) {
   const stackLines: string[] = [];
   for (const frame of frames) {
     stackLines.push(
-      `    at ${frame.function ? frame.function + ' ' : ''}(${frame.file}:${
-        frame.line
+      `    at ${frame.function ? frame.function + ' ' : ''}(${frame.file}:${frame.line
       }:${frame.column})`
     );
   }
