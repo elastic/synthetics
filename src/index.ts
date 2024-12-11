@@ -79,6 +79,7 @@ export type {
   JourneyResult,
   StepResult,
   StartEvent,
+  Params,
 } from './common_types';
 
 export type {
@@ -98,3 +99,5 @@ export type {
   Steps,
   actionTitle,
 } from './formatter/javascript';
+
+export { log } from './core/logger';
