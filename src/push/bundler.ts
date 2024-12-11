@@ -51,7 +51,7 @@ export class Bundler {
         write: false,
         minifyWhitespace: true,
         sourcemap: 'inline',
-        external: ['@elastic/synthetics'],
+        external: ['@elastic/synthetics', 'playwright-core'],
         plugins: [SyntheticsBundlePlugin()],
       },
     };
