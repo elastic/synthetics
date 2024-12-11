@@ -61,7 +61,7 @@ export type {
   BrowserContext,
 } from 'playwright-core';
 
-export type { devices, request } from 'playwright-core';
+export { devices, request } from 'playwright-core';
 
 export type { Serializable } from 'playwright-core/types/structs';
 
