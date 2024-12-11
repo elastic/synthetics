@@ -55,8 +55,15 @@ export type {
   ChromiumBrowserContext,
   CDPSession,
   APIRequestContext,
-  devices,
+  APIResponse,
+  APIRequest,
+  Browser,
+  BrowserContext,
 } from 'playwright-core';
+
+export type { devices, request } from 'playwright-core';
+
+export type { Serializable } from 'playwright-core/types/structs';
 
 /**
  * Export the types necessary to write custom reporters
