@@ -55,8 +55,10 @@ export type {
   ChromiumBrowserContext,
   CDPSession,
   APIRequestContext,
-  devices,
+  APIResponse,
+  APIRequest,
 } from 'playwright-core';
+export { devices, request } from 'playwright-core';
 
 /**
  * Export the types necessary to write custom reporters
