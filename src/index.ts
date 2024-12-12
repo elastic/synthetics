@@ -57,13 +57,8 @@ export type {
   APIRequestContext,
   APIResponse,
   APIRequest,
-  Browser,
-  BrowserContext,
 } from 'playwright-core';
-
 export { devices, request } from 'playwright-core';
-
-export type { Serializable } from 'playwright-core/types/structs';
 
 /**
  * Export the types necessary to write custom reporters
@@ -79,7 +74,6 @@ export type {
   JourneyResult,
   StepResult,
   StartEvent,
-  Params,
 } from './common_types';
 
 export type {
@@ -99,5 +93,3 @@ export type {
   Steps,
   actionTitle,
 } from './formatter/javascript';
-
-export { log } from './core/logger';
