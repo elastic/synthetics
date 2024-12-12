@@ -66,7 +66,7 @@ export interface RunnerInfo {
   /**
    * Currently active journey
    */
-  readonly journey: Journey | undefined;
+  readonly currentJourney: Journey | undefined;
   /**
    * All registerd journeys
    */
@@ -86,7 +86,7 @@ export default class Runner implements RunnerInfo {
   #monitor?: Monitor;
   config: RunOptions;
 
-  get journey() {
+  get currentJourney() {
     return this.#currentJourney;
   }
 
