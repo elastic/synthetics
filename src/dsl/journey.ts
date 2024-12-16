@@ -31,7 +31,13 @@ import {
   APIRequestContext,
 } from 'playwright-core';
 import { Step } from './step';
-import { VoidCallback, HooksCallback, Params, Location, StatusValue } from '../common_types';
+import {
+  VoidCallback,
+  HooksCallback,
+  Params,
+  Location,
+  StatusValue,
+} from '../common_types';
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
 import { RunnerInfo } from '../core/runner';
@@ -90,16 +96,48 @@ export class Journey {
     return step;
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _addStep instead.
+   * Alias _addStep for backwards compatibility
+   */
+  addStep(name: string, cb: VoidCallback, location?: Location) {
+    this._addStep(name, cb, location);
+  }
+
   _addHook(type: HookType, cb: HooksCallback) {
     this.#hooks[type].push(cb);
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _addHook instead.
+   * Alias _addHook for backwards compatibility
+   */
+  addHook(type: HookType, cb: HooksCallback) {
+    this._addHook(type, cb);
   }
 
   _getHook(type: HookType) {
     return this.#hooks[type];
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _getHook instead.
+   * Alias _getHook for backwards compatibility
+   */
+  getHook(type: HookType) {
+    this._getHook(type);
+  }
+
   _getMonitor() {
     return this.#monitor;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _getHook instead.
+   * Alias _getHook for backwards compatibility
+   */
+  get monitor() {
+    return this._getMonitor();
   }
 
   _updateMonitor(config: MonitorConfig) {
@@ -117,7 +155,23 @@ export class Journey {
     this.#monitor.setFilter({ match: this.name });
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * Alias _updateMonitor for backwards compatibility
+   */
+  updateMonitor(config: MonitorConfig) {
+    this._updateMonitor(config);
+  }
+
   get cb() {
+    return this.#cb;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use cb instead.
+   * Alias cb for backwards compatibility
+   */
+  get callback() {
     return this.#cb;
   }
 
@@ -126,6 +180,14 @@ export class Journey {
    */
   _isMatch(matchPattern: string, tagsPattern: Array<string>) {
     return isMatch(this.tags, this.name, tagsPattern, matchPattern);
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _isMatch instead.
+   * Alias _isMatch for backwards compatibility
+   */
+  get isMatch() {
+    return this.#cb;
   }
 }
 

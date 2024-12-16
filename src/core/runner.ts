@@ -45,10 +45,7 @@ import {
   StepResult,
   PushOptions,
 } from '../common_types';
-import {
-  PerformanceManager,
-  filterBrowserMessages,
-} from '../plugins';
+import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -104,7 +101,7 @@ export default class Runner implements RunnerInfo {
         type: 'jpeg',
         quality: 80,
         timeout: 5000,
-      })
+      });
       /**
        * Write the screenshot image buffer with additional details (step
        * information) which could be extracted at the end of
@@ -131,8 +128,20 @@ export default class Runner implements RunnerInfo {
     this.#hooks[type].push(callback);
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * Alias _addHook for backwards compatibility
+   */
+  addHook(type: HookType, callback: HooksCallback) {
+    this._addHook(type, callback);
+  }
+
   private buildHookArgs() {
-    return { env: this.config.environment, params: this.config.params, info: this as RunnerInfo };
+    return {
+      env: this.config.environment,
+      params: this.config.params,
+      info: this as RunnerInfo,
+    };
   }
 
   _updateMonitor(config: MonitorConfig) {
@@ -143,9 +152,25 @@ export default class Runner implements RunnerInfo {
     this.#monitor.update(config);
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * Alias _addJourney for backwards compatibility
+   */
+  updateMonitor(config: MonitorConfig) {
+    this._updateMonitor(config);
+  }
+
   _addJourney(journey: Journey) {
     this.#journeys.push(journey);
     this.#currentJourney = journey;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _addJourney instead.
+   * Alias _addJourney for backwards compatibility
+   */
+  addJourney(journey: Journey) {
+    this._addJourney(journey);
   }
 
   private setReporter(options: RunOptions) {
@@ -181,10 +206,7 @@ export default class Runner implements RunnerInfo {
     await runParallel(journey._getHook('after'), args);
   }
 
-  async #runStep(
-    step: Step,
-    options: RunOptions
-  ): Promise<StepResult> {
+  async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
     const { metrics, screenshots, filmstrips, trace } = options;
     /**
@@ -212,7 +234,7 @@ export default class Runner implements RunnerInfo {
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
       await cb();
-      step.status = "succeeded"
+      step.status = 'succeeded';
     } catch (error) {
       step.status = 'failed';
       step.error = error;
@@ -245,13 +267,10 @@ export default class Runner implements RunnerInfo {
       }
     }
     log(`Runner: end step (${step.name})`);
-    return data
+    return data;
   }
 
-  async #runSteps(
-    journey: Journey,
-    options: RunOptions
-  ) {
+  async #runSteps(journey: Journey, options: RunOptions) {
     const results: Array<StepResult> = [];
     const isOnlyExists = journey.steps.filter(s => s.only).length > 0;
     let skipStep = false;
@@ -297,7 +316,7 @@ export default class Runner implements RunnerInfo {
      * caching all screenshots and clear them at end of each journey
      */
     await mkdir(this.#screenshotPath, { recursive: true });
-    const params = options.params
+    const params = options.params;
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
       params,
@@ -315,7 +334,10 @@ export default class Runner implements RunnerInfo {
   ) {
     // Enhance the journey results
     const pOutput = await Gatherer.pluginManager.output();
-    const bConsole = filterBrowserMessages(pOutput.browserconsole, journey.status);
+    const bConsole = filterBrowserMessages(
+      pOutput.browserconsole,
+      journey.status
+    );
     await this.#reporter?.onJourneyEnd?.(journey, {
       browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
@@ -324,7 +346,7 @@ export default class Runner implements RunnerInfo {
       browserconsole: bConsole,
     });
     await Gatherer.endRecording();
-    await Gatherer.dispose(this.#driver)
+    await Gatherer.dispose(this.#driver);
     // clear screenshots cache after each journey
     await rm(this.#screenshotPath, { recursive: true, force: true });
     return Object.assign(result, {
@@ -361,12 +383,16 @@ export default class Runner implements RunnerInfo {
     this.#currentJourney = journey;
     log(`Runner: start journey (${journey.name})`);
     let result: JourneyResult = {};
-    const hookArgs = { env: options.environment, params: options.params, info: this };
+    const hookArgs = {
+      env: options.environment,
+      params: options.params,
+      info: this,
+    };
     try {
       await this.#startJourney(journey, options);
       await this.#runBeforeHook(journey, hookArgs);
       const stepResults = await this.#runSteps(journey, options);
-      journey.status = "succeeded";
+      journey.status = 'succeeded';
       // Mark journey as failed if any one of the step fails
       for (const step of journey.steps) {
         if (step.status === 'failed') {
@@ -385,11 +411,19 @@ export default class Runner implements RunnerInfo {
       await this.#runAfterHook(journey, hookArgs).catch(e => {
         journey.status = 'failed';
         journey.error = e;
-      })
+      });
       result = await this.#endJourney(journey, result, options);
     }
     log(`Runner: end journey (${journey.name})`);
     return result;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _runJourney instead.
+   * Alias _runJourney for backwards compatibility
+   */
+  runJourney(journey: Journey, options: RunOptions) {
+    this._runJourney(journey, options);
   }
 
   _buildMonitors(options: PushOptions) {
@@ -426,21 +460,26 @@ export default class Runner implements RunnerInfo {
        * - filter out monitors based on matched tags and name after applying both
        *  global and local monitor configurations
        */
-      journey.cb({ params: options.params } as any);
-      const monitor = journey._getMonitor();
+
+      // TODO: Fix backwards compatibility with 1.14 and prior
+      (journey.cb ?? journey.callback)({ params: options.params } as any);
+      const monitor = journey.monitor ?? journey?._getMonitor();
       monitor.update(this.#monitor?.config);
-      if (
-        !monitor.isMatch(
-          options.grepOpts?.match,
-          options.grepOpts?.tags
-        )
-      ) {
+      if (!monitor.isMatch(options.grepOpts?.match, options.grepOpts?.tags)) {
         continue;
       }
       monitor.validate();
       monitors.push(monitor);
     }
     return monitors;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _buildMonitors instead.
+   * Alias _buildMonitors for backwards compatibility
+   */
+  buildMonitors(options: PushOptions) {
+    this._buildMonitors(options);
   }
 
   async #init(options: RunOptions) {
@@ -474,18 +513,32 @@ export default class Runner implements RunnerInfo {
       this.#journeys = onlyJournerys;
     } else {
       // filter journeys based on tags and skip annotations
-      this.#journeys = this.#journeys.filter(j => j._isMatch(grepOpts?.match, grepOpts?.tags) && !j.skip);
+      this.#journeys = this.#journeys.filter(
+        j => j._isMatch(grepOpts?.match, grepOpts?.tags) && !j.skip
+      );
     }
 
     // Used by heartbeat to gather all registered journeys
     if (dryRun) {
-      this.#journeys.forEach(journey => this.#reporter.onJourneyRegister?.(journey))
+      this.#journeys.forEach(journey =>
+        this.#reporter.onJourneyRegister?.(journey)
+      );
     } else if (this.#journeys.length > 0) {
       result = await this._runJourneys(options);
     }
-    await this.#runAfterAllHook(hookArgs).catch(async () => await this._reset());
+    await this.#runAfterAllHook(hookArgs).catch(
+      async () => await this._reset()
+    );
     await this._reset();
     return result;
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _run instead.
+   * Alias _run for backwards compatibility
+   */
+  run(options: RunOptions): Promise<RunResult> {
+    return this._run(options);
   }
 
   async _runJourneys(options: RunOptions) {
@@ -504,6 +557,14 @@ export default class Runner implements RunnerInfo {
     return result;
   }
 
+  /**
+   * @deprecated Since version 1.17.0. Use _runJourneys instead.
+   * Alias _runJourneys for backwards compatibility
+   */
+  runJourneys(options: RunOptions): Promise<RunResult> {
+    return this._runJourneys(options);
+  }
+
   async _reset() {
     this.#currentJourney = null;
     this.#journeys = [];
@@ -514,5 +575,13 @@ export default class Runner implements RunnerInfo {
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
     await this.#reporter?.onEnd?.();
+  }
+
+  /**
+   * @deprecated Since version 1.17.0. Use _reset instead.
+   * Alias _reset for backwards compatibility
+   */
+  reset() {
+    return this._reset();
   }
 }

@@ -30,7 +30,7 @@ import {
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import { runner } from "./globals"
+import { runner as runnerGlobal } from './globals';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
@@ -112,3 +112,5 @@ export const after = (callback: HooksCallback) => {
   }
   return runner.currentJourney._addHook('after', callback);
 };
+
+export const runner = runnerGlobal;
