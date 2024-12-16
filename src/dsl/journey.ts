@@ -186,8 +186,8 @@ export class Journey {
    * @deprecated Since version 1.17.0. Use _isMatch instead.
    * Alias _isMatch for backwards compatibility
    */
-  get isMatch() {
-    return this.#cb;
+  isMatch(matchPattern: string, tagsPattern: Array<string>) {
+    return this._isMatch(matchPattern, tagsPattern);
   }
 }
 
