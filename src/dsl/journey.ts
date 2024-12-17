@@ -97,7 +97,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _addStep instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _addStep for backwards compatibility
    */
   addStep(name: string, cb: VoidCallback, location?: Location) {
@@ -109,7 +109,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _addHook instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _addHook for backwards compatibility
    */
   addHook(type: HookType, cb: HooksCallback) {
@@ -121,7 +121,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _getHook instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _getHook for backwards compatibility
    */
   getHook(type: HookType) {
@@ -133,7 +133,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _getHook instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _getHook for backwards compatibility
    */
   get monitor() {
@@ -156,7 +156,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _updateMonitor for backwards compatibility
    */
   updateMonitor(config: MonitorConfig) {
@@ -168,7 +168,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use cb instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias cb for backwards compatibility
    */
   get callback() {
@@ -183,7 +183,7 @@ export class Journey {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _isMatch instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _isMatch for backwards compatibility
    */
   isMatch(matchPattern: string, tagsPattern: Array<string>) {

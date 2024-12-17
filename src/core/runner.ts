@@ -129,7 +129,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * @deprecated Since version Please do not rely on the internal methods.
    * Alias _addHook for backwards compatibility
    */
   addHook(type: HookType, callback: HooksCallback) {
@@ -153,7 +153,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _updateMonitor instead.
+   * @deprecated Since version Please do not rely on the internal methods.
    * Alias _addJourney for backwards compatibility
    */
   updateMonitor(config: MonitorConfig) {
@@ -166,7 +166,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _addJourney instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _addJourney for backwards compatibility
    */
   addJourney(journey: Journey) {
@@ -419,7 +419,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _runJourney instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _runJourney for backwards compatibility
    */
   runJourney(journey: Journey, options: RunOptions) {
@@ -475,7 +475,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _buildMonitors instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _buildMonitors for backwards compatibility
    */
   buildMonitors(options: PushOptions) {
@@ -534,7 +534,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _run instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _run for backwards compatibility
    */
   run(options: RunOptions): Promise<RunResult> {
@@ -558,7 +558,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _runJourneys instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _runJourneys for backwards compatibility
    */
   runJourneys(options: RunOptions): Promise<RunResult> {
@@ -578,7 +578,7 @@ export default class Runner implements RunnerInfo {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use _reset instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias _reset for backwards compatibility
    */
   reset() {

@@ -56,7 +56,7 @@ export class Step {
   }
 
   /**
-   * @deprecated Since version 1.17.0. Use cb instead.
+   * @deprecated Since version 1.17.0. Please do not rely on the internal methods.
    * Alias cb for backwards compatibility
    */
   get callback() {
