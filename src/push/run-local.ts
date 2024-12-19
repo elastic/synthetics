@@ -78,14 +78,7 @@ async function runTest(directory, schema: MonitorSchema) {
       cwd: directory, stdio: 'inherit'
     });
 
-    runTest.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      }
-      else {
-        reject(new Error(`Exited with code ${code}`));
-      }
-    });
+    runTest.on('close', resolve);
 
     runTest.on('error', (err) => {
       reject(new Error(`Failed to execute @elastic/synthetics : ${err.message}`));
@@ -93,23 +86,19 @@ async function runTest(directory, schema: MonitorSchema) {
   })
 }
 
-async function writePkgJSON(dir: string) {
-  // lookup installed bin path of a node module
-  const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
-  const installedPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
-
+async function writePkgJSON(dir: string, synthPath: string) {
   const packageJsonContent = {
     name: "project-journey",
     private: "true",
     dependencies: {
-      "@elastic/synthetics": `file:${installedPath}`,
+      "@elastic/synthetics": `file:${synthPath}`,
     },
   };
   await writeFile(`${dir}/package.json`, JSON.stringify(packageJsonContent, null, 2), "utf-8");
 }
 
 
-async function extractAndRun(schema: MonitorSchema) {
+async function extractAndRun(schema: MonitorSchema, synthPath: string) {
   if (schema.type !== "browser") {
     return;
   }
@@ -120,11 +109,11 @@ async function extractAndRun(schema: MonitorSchema) {
   try {
     await writeFile(zipPath, content, "base64");
     await unzipFile(zipPath, unzipPath);
-    await writePkgJSON(unzipPath);
+    await writePkgJSON(unzipPath, synthPath);
     await runNpmInstall(unzipPath);
     await runTest(unzipPath, schema);
   } catch (err) {
-    // console.error(err);
+    console.error(err);
   } finally {
     await rm(zipPath, { recursive: true, force: true });
     await rm(unzipPath, { recursive: true, force: true });
@@ -132,8 +121,12 @@ async function extractAndRun(schema: MonitorSchema) {
 }
 
 export async function run(schemas: MonitorSchema[]) {
+  // lookup installed bin path of a node module
+  const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
+  const installedPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
+
   for (const schema of schemas) {
-    await extractAndRun(schema);
+    await extractAndRun(schema, installedPath);
   }
 }
 
