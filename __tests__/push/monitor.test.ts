@@ -70,11 +70,11 @@ describe('Monitors', () => {
   });
 
   it('build lightweight monitor schema', async () => {
-    const schema = await buildMonitorSchema(
+    const { schemas } = await buildMonitorSchema(
       [createTestMonitor('heartbeat.yml', 'http')],
       true
     );
-    expect(schema[0]).toEqual({
+    expect(schemas[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
@@ -89,8 +89,8 @@ describe('Monitors', () => {
 
   it('build browser monitor schema', async () => {
     const monitor = createTestMonitor('example.journey.ts');
-    const schema = await buildMonitorSchema([monitor], true);
-    expect(schema[0]).toEqual({
+    const { schemas } = await buildMonitorSchema([monitor], true);
+    expect(schemas[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
@@ -106,9 +106,9 @@ describe('Monitors', () => {
       fields: { area: 'website' },
     });
     monitor.update({ locations: ['brazil'], fields: { env: 'dev' } });
-    const schema1 = await buildMonitorSchema([monitor], true);
-    expect(schema1[0].hash).not.toEqual(schema[0].hash);
-    expect(schema1[0].fields).toEqual({
+    const { schemas: schemas1 } = await buildMonitorSchema([monitor], true);
+    expect(schemas1[0].hash).not.toEqual(schemas[0].hash);
+    expect(schemas1[0].fields).toEqual({
       area: 'website',
       env: 'dev',
     });

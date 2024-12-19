@@ -188,7 +188,7 @@ export function formatDuplicateError(monitors: Set<Monitor>) {
   let inner = '';
   for (const monitor of monitors) {
     const { config, source } = monitor;
-    inner += `* ${config.id} - ${source.file}:${source.line}:${source.column} \n`;
+    inner += `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
   }
   outer += indent(inner);
   return outer;
