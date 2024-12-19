@@ -25,7 +25,7 @@
 
 import semver from 'semver';
 import { progress, removeTrailingSlash } from '../helpers';
-import { green, red, grey, yellow } from 'kleur/colors';
+import { green, red, grey, yellow, Colorize, bold } from 'kleur/colors';
 import { PushOptions } from '../common_types';
 import { Monitor } from '../dsl/monitor';
 
@@ -42,6 +42,50 @@ export function logDiff<T extends Set<string>>(
     red(`Removed(${removedIDs.size}) `) +
     grey(`Unchanged(${unchangedIDs.size})`)
   );
+}
+
+export function logGroups<T extends Set<string>>(
+  sizes: Map<string, number>,
+  newIDs: T,
+  changedIDs: T,
+  removedIDs: T,
+  unchangedIDs: T
+) {
+  console.groupCollapsed();
+  logGroup(sizes, 'Added', newIDs, green);
+  logGroup(sizes, 'Updated', changedIDs, yellow);
+  logGroup(sizes, 'Removed', removedIDs, red);
+  logGroup(sizes, 'Unchanged', unchangedIDs, grey);
+  console.groupEnd()
+}
+
+function logGroup(sizes: Map<string, number>, name: string, ids: Set<string>, color: Colorize) {
+  if (ids.size === 0) return;
+  printLine(process.stdout.columns - 2);
+  console.groupCollapsed(color(bold(name)));
+  [...ids].forEach(id => {
+    console.log(grey(`- ${id} (${printBytes(sizes.get(id))})`));
+  });
+  console.groupEnd();
+}
+
+function printLine(length: number = process.stdout.columns) {
+  console.log(grey("-").repeat(length));
+}
+
+const BYTE_UNITS = [
+  'B',
+  'kB',
+  'MB',
+  'GB',
+  'TB',
+  'PB',
+];
+export function printBytes(bytes: number) {
+  if (bytes <= 0) return '0 B';
+  const exponent = Math.min(Math.floor(Math.log10(bytes) / 3), BYTE_UNITS.length - 1);
+  bytes /= 1000 ** exponent;
+  return `${(bytes.toFixed(1))} ${BYTE_UNITS[exponent]}`;
 }
 
 export function getChunks<T>(arr: Array<T>, size: number): Array<T[]> {

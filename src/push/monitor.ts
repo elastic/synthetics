@@ -42,6 +42,8 @@ import { isParamOptionSupported, normalizeMonitorName } from './utils';
 
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
+// 1500kB Max Gzipped limit for bundled monitor code to be pushed as Kibana project monitors.
+const SIZE_LIMIT_KB = 1500;
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   locations: string[];
@@ -131,6 +133,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
   const schemas: MonitorSchema[] = [];
+  const sizes: Map<string, number> = new Map();
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
@@ -148,6 +151,15 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
       monitor.setContent(content);
       Object.assign(schema, { content, filter });
     }
+    const size = monitor.size();
+    const sizeKB = Math.round(size / 1000);
+    if (sizeKB > SIZE_LIMIT_KB) {
+      let outer = bold(`Aborted: Bundled code ${sizeKB}kB exceeds the recommended ${SIZE_LIMIT_KB}kB limit. Please check the dependencies imported.\n`);
+      const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+      outer += indent(inner);
+      throw red(outer);
+    }
+    sizes.set(config.id, size);
     /**
      * Generate hash only after the bundled content is created
      * to capture code changes in imported files
@@ -159,7 +171,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   }
 
   await rm(bundlePath, { recursive: true });
-  return schemas;
+  return { schemas, sizes };
 }
 
 export async function createLightweightMonitors(

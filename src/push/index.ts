@@ -24,7 +24,7 @@
  */
 import { readFile, writeFile } from 'fs/promises';
 import { prompt } from 'enquirer';
-import { bold, grey } from 'kleur/colors';
+import { bold, underline } from 'kleur/colors';
 import {
   getLocalMonitors,
   buildMonitorSchema,
@@ -57,8 +57,11 @@ import {
   isBulkAPISupported,
   isLightweightMonitorSupported,
   logDiff,
+  logGroups,
+  printBytes,
 } from './utils';
-import { log } from '../core/logger';
+import { run } from "./run-local"
+
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   if (parseInt(process.env.CHUNK_SIZE) > 250) {
@@ -84,7 +87,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const { monitors: remote } = await bulkGetMonitors(options);
 
   progress(`preparing ${monitors.length} monitors`);
-  const schemas = await buildMonitorSchema(monitors, true);
+  const { schemas, sizes } = await buildMonitorSchema(monitors, true);
   const local = getLocalMonitors(schemas);
 
   const { newIDs, changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
@@ -92,6 +95,18 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     remote
   );
   logDiff(newIDs, changedIDs, removedIDs, unchangedIDs);
+  if (options.dryRun) {
+    logGroups(sizes, newIDs, changedIDs, removedIDs, unchangedIDs);
+    // show bundle size for the whole project
+    let totalSize = 0;
+    for (const value of sizes.values()) {
+      totalSize += value;
+    }
+    progress("total size of the monitors payload is " + printBytes(totalSize));
+    await run(schemas);
+    progress('Dry run completed');
+    return;
+  }
 
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
@@ -106,7 +121,6 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   }
 
   if (removedIDs.size > 0) {
-    log(`deleting monitor ids: ${Array.from(removedIDs.keys()).join(', ')}`);
     if (updatedMonitors.size === 0 && unchangedIDs.size === 0) {
       await confirmDelete(
         `Pushing without any monitors will delete all monitors associated with the project.\n Do you want to continue?`,
@@ -126,8 +140,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       );
     }
   }
-
-  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+  done(`Pushed: ${underline(getMonitorManagementURL(options.url))} `);
 }
 
 async function confirmDelete(message: string, skip: boolean) {
@@ -170,7 +183,7 @@ export function formatDuplicateError(monitors: Set<Monitor>) {
   let inner = '';
   for (const monitor of monitors) {
     const { config, source } = monitor;
-    inner += `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+    inner += `* ${config.id} - ${source.file}:${source.line}:${source.column} \n`;
   }
   outer += indent(inner);
   return outer;
@@ -301,7 +314,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   let schemas: MonitorSchema[] = [];
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
-    schemas = await buildMonitorSchema(monitors, false);
+    ({ schemas } = await buildMonitorSchema(monitors, false));
     const chunks = getChunks(schemas, 10);
     for (const chunk of chunks) {
       await liveProgress(
@@ -320,7 +333,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
     `deleting all stale monitors`
   );
 
-  done(`Pushed: ${grey(getMonitorManagementURL(options.url))}`);
+  done(`Pushed: ${underline(getMonitorManagementURL(options.url))}`);
 }
 
 // prints warning if any of the monitors has throttling settings enabled during push
