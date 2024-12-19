@@ -43,7 +43,7 @@ export default class BuildKiteCLIReporter extends BaseReporter {
     super(options);
   }
 
-  override onJourneyStart(journey: Journey, { }: JourneyStartResult) {
+  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\n--- Journey: ${journey.name}`);
   }
 
@@ -57,7 +57,9 @@ export default class BuildKiteCLIReporter extends BaseReporter {
 
   override async onJourneyEnd(journey: Journey, result: JourneyEndResult) {
     super.onJourneyEnd(journey, result);
-    const message = `${symbols[journey.status]} Took (${renderDuration(journey.duration)} seconds)`;
+    const message = `${symbols[journey.status]} Took (${renderDuration(
+      journey.duration
+    )} seconds)`;
     this.write(message);
   }
 
@@ -76,10 +78,9 @@ export default class BuildKiteCLIReporter extends BaseReporter {
           const name = red(`Journey: ${journeyName} :slightly_frowning_face:`);
           this.write(`\n+++ ${name}`);
           steps.forEach(step => {
-            const message = `${symbols[step.status]
-              }  Step: '${step.name}' ${step.status} (${renderDuration(
-                step.duration * 1000
-              )} ms)`;
+            const message = `${symbols[step.status]}  Step: '${step.name}' ${
+              step.status
+            } (${renderDuration(step.duration * 1000)} ms)`;
             this.write(indent(message));
             if (step.error) {
               this.write(renderError(serializeError(step.error)));

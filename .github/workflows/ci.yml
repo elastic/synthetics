@@ -21,6 +21,7 @@ jobs:
           node-version-file: .nvmrc
       - run: npm ci
       - run: npm run-script lint
+      - run: npm run-script format:check
 
   build:
     runs-on: ubuntu-latest

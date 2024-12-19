@@ -1,0 +1,4 @@
+dist
+examples
+templates
+__tests__/e2e/tmp/

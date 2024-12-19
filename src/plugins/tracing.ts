@@ -38,7 +38,7 @@ export type TraceOptions = {
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  */
 export class Tracing {
-  constructor(private driver: Driver, private options: TraceOptions) { }
+  constructor(private driver: Driver, private options: TraceOptions) {}
 
   async start() {
     log(`Plugins: started collecting trace events`);

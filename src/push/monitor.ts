@@ -225,9 +225,7 @@ export async function createLightweightMonitors(
       const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
       if (monitor['type'] === 'browser') {
-        warn(
-          `Browser monitors from ${file} are skipped.`
-        );
+        warn(`Browser monitors from ${file} are skipped.`);
         continue;
       }
       const { line, col } = lineCounter.linePos(offsets[i]);

@@ -253,14 +253,15 @@ function formatJSONError(error: Error | any) {
   };
 }
 
-function journeyInfo(
-  journey: Partial<Journey>,
-  type: OutputFields['type'],
-) {
+function journeyInfo(journey: Partial<Journey>, type: OutputFields['type']) {
   if (!journey) {
     return;
   }
-  const info: JourneyInfo = { name: journey.name, id: journey.id, tags: journey.tags };
+  const info: JourneyInfo = {
+    name: journey.name,
+    id: journey.id,
+    tags: journey.tags,
+  };
   const isEnd = type === 'journey/end';
   if (isEnd) {
     info.status = journey.status;
@@ -271,7 +272,7 @@ function journeyInfo(
 
 function stepInfo(
   step: Partial<Step>,
-  type: OutputFields['type'],
+  type: OutputFields['type']
 ): Omit<Partial<Step>, 'duration'> & Duration {
   if (!step) {
     return;
@@ -375,8 +376,8 @@ export default class JSONReporter extends BaseReporter {
       },
       payload: event.networkConditions
         ? {
-          network_conditions: event.networkConditions,
-        }
+            network_conditions: event.networkConditions,
+          }
         : undefined,
     });
   }
@@ -400,12 +401,7 @@ export default class JSONReporter extends BaseReporter {
   override onStepEnd(
     journey: Journey,
     step: Step,
-    {
-      pagemetrics,
-      traces,
-      metrics,
-      filmstrips,
-    }: StepEndResult
+    { pagemetrics, traces, metrics, filmstrips }: StepEndResult
   ) {
     this.writeMetrics(journey, step, 'relative_trace', traces);
     this.writeMetrics(journey, step, 'experience', metrics);

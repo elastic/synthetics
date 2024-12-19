@@ -26,7 +26,7 @@
 export default () => {
   return {
     playwrightOptions: {
-      ignoreHTTPSErrors: true
-    }
-  }
+      ignoreHTTPSErrors: true,
+    },
+  };
 };

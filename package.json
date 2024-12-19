@@ -13,6 +13,8 @@
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
+    "format:check": "prettier --check '**/*.ts'",
+    "format:fix": "prettier --write '**/*.ts'",
     "test": "npm run test:unit && npm run test:browser-service",
     "test:unit": "jest",
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
@@ -30,7 +32,8 @@
   "lint-staged": {
     "*.{js,ts}": [
       "npm run lint:fix",
-      "prettier --write"
+      "npm run format:fix",
+      "git add"
     ]
   },
   "husky": {
