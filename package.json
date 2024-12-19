@@ -13,7 +13,7 @@
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
-    "format": "prettier --check '**/*.ts'",
+    "format:check": "prettier --check '**/*.ts'",
     "format:fix": "prettier --write '**/*.ts'",
     "test": "npm run test:unit && npm run test:browser-service",
     "test:unit": "jest",
