@@ -324,4 +324,4 @@ export type JourneyEndResult = JourneyStartResult &
     options: RunOptions;
   };
 
-export type StepEndResult = StepResult
+export type StepEndResult = StepResult;

@@ -32,7 +32,7 @@ import * as fs from 'fs';
 import SonicBoom from 'sonic-boom';
 import BuildKiteCLIReporter from '../../src/reporters/build_kite_cli';
 import * as helpers from '../../src/helpers';
-import { tJourney, tStep } from "../utils/test-config"
+import { tJourney, tStep } from '../utils/test-config';
 
 describe('buildkite cli reporter', () => {
   let dest: string;
@@ -106,7 +106,7 @@ describe('buildkite cli reporter', () => {
   it('writes multiple steps to the FD', async () => {
     const j1 = tJourney('succeeded', 2);
     const s1 = tStep('succeeded', 1, undefined, 'dummy');
-    const s2 = tStep('succeeded', 4, undefined, 'http://localhost:8080',);
+    const s2 = tStep('succeeded', 4, undefined, 'http://localhost:8080');
     reporter.onJourneyStart(j1, { timestamp });
     reporter.onStepEnd(j1, s1, {});
     reporter.onStepEnd(j1, s2, {});

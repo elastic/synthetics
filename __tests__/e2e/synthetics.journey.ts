@@ -35,23 +35,31 @@ async function logIn(page) {
 }
 
 async function goToSyntheticsIntegrationPage(page) {
-  console.info('Navigating to Elastic Synthetics Integration page')
-  await page.goto('https://localhost:5601/app/integrations/detail/synthetics/overview');
-  await page.waitForSelector('[data-test-subj="loginUsername"]', { timeout: 30000 });
-  const isUnauthenticated = await page.isVisible('[data-test-subj="loginUsername"]');
+  console.info('Navigating to Elastic Synthetics Integration page');
+  await page.goto(
+    'https://localhost:5601/app/integrations/detail/synthetics/overview'
+  );
+  await page.waitForSelector('[data-test-subj="loginUsername"]', {
+    timeout: 30000,
+  });
+  const isUnauthenticated = await page.isVisible(
+    '[data-test-subj="loginUsername"]'
+  );
   if (isUnauthenticated) {
     await logIn(page);
   }
-  await page.click('[data-test-subj="addIntegrationPolicyButton"]', { timeout: 10 * 1500 });
+  await page.click('[data-test-subj="addIntegrationPolicyButton"]', {
+    timeout: 10 * 1500,
+  });
   /* We need to ensure that Elastic Synthetics integration page is fully loaded, including the UI logic.
-   * Our UI logic clears out the name input when the page is first loaded. If we don't wait, we run the risk 
+   * Our UI logic clears out the name input when the page is first loaded. If we don't wait, we run the risk
    * of playwright input being overwritten by Kibana logic clearing out the field. Playwright doesn't have
    * a mechanism to wait for the value of input to be empty, so for now, we are using a simple timeout */
   await page.waitForTimeout(10 * 1000);
 }
 
 async function goToUptime(page) {
-  console.info('Navigating to Uptime overview page')
+  console.info('Navigating to Uptime overview page');
   await page.goto('https://localhost:5601/app/uptime');
 }
 
@@ -63,7 +71,9 @@ async function selectAgentPolicy({ page }) {
       await page.click('[data-test-subj="agentPolicySelect"]');
       await page.click('text="Elastic-Agent (elastic-package)"');
     } else {
-      await page.selectOption('[data-test-subj="agentPolicySelect"]', { label: 'Elastic-Agent (elastic-package)' });
+      await page.selectOption('[data-test-subj="agentPolicySelect"]', {
+        label: 'Elastic-Agent (elastic-package)',
+      });
     }
     await page.waitForSelector('text="Elastic-Agent (elastic-package)"');
   }
@@ -71,32 +81,37 @@ async function selectAgentPolicy({ page }) {
 }
 
 async function createIntegrationPolicyName({ page, policyName }) {
-  await page.waitForSelector('[data-test-subj="packagePolicyNameInput"]', { timeout: 10000 });
+  await page.waitForSelector('[data-test-subj="packagePolicyNameInput"]', {
+    timeout: 10000,
+  });
   await page.fill('[data-test-subj="packagePolicyNameInput"]', policyName);
 }
 
 async function confirmAndSavePolicy(page) {
   await page.click('[data-test-subj="createPackagePolicySaveButton"]');
-  await Promise.all([page.waitForNavigation(), page.click('[data-test-subj="confirmModalConfirmButton"]')]);
+  await Promise.all([
+    page.waitForNavigation(),
+    page.click('[data-test-subj="confirmModalConfirmButton"]'),
+  ]);
 }
 
 async function checkForSyntheticsData({ page, journeyName }) {
-  const checkForTable =  async () => {
+  const checkForTable = async () => {
     try {
       return await page.waitForSelector('.euiTableRow', { timeout: 5000 });
     } catch (e) {
       console.error(e);
     }
-  }
+  };
   let isTableVisible = await checkForTable();
   while (!isTableVisible) {
-    console.info('Reloading Uptime...')
+    console.info('Reloading Uptime...');
     await page.reload();
     isTableVisible = await checkForTable();
   }
   await page.fill('[data-test-subj="queryInput"]', journeyName);
   await page.click(`a:has-text("${journeyName}")`, { timeout: 300 * 1000 });
-  console.info(`Data for ${journeyName} indexed successfully`)
+  console.info(`Data for ${journeyName} indexed successfully`);
 }
 
 journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
@@ -108,11 +123,14 @@ journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
 
   step('create an http monitor', async () => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.fill('[data-test-subj="syntheticsUrlField"]', 'https://elastic.co');
+    await page.fill(
+      '[data-test-subj="syntheticsUrlField"]',
+      'https://elastic.co'
+    );
     await selectAgentPolicy({ page });
     await page.click('[data-test-subj="syntheticsUrlField"]');
     await confirmAndSavePolicy(page);
-    console.info(`Monitor for ${journeyName} created successfully`)
+    console.info(`Monitor for ${journeyName} created successfully`);
   });
 
   step('go to uptime', async () => {
@@ -133,11 +151,17 @@ journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
 
   step('create an tcp monitor', async () => {
     await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'tcp');
-    await page.fill('[data-test-subj="syntheticsTCPHostField"]', 'smtp.gmail.com:587');
+    await page.selectOption(
+      '[data-test-subj="syntheticsMonitorTypeField"]',
+      'tcp'
+    );
+    await page.fill(
+      '[data-test-subj="syntheticsTCPHostField"]',
+      'smtp.gmail.com:587'
+    );
     await selectAgentPolicy({ page });
     await confirmAndSavePolicy(page);
-    console.info(`Monitor for ${journeyName} created successfully`)
+    console.info(`Monitor for ${journeyName} created successfully`);
   });
 
   step('go to uptime', async () => {
@@ -173,32 +197,41 @@ journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
 // });
 
 if (semver.satisfies(stackVersion, '>=8.0.1')) {
-  journey(`${stackVersion} e2e test synthetics - browser - inline`, async ({ page }) => {
-    const journeyName = 'Sample browser inline integration policy';
+  journey(
+    `${stackVersion} e2e test synthetics - browser - inline`,
+    async ({ page }) => {
+      const journeyName = 'Sample browser inline integration policy';
 
-    step('Go to synthetics integration page', async () => {
-      await goToSyntheticsIntegrationPage(page);
-    });
+      step('Go to synthetics integration page', async () => {
+        await goToSyntheticsIntegrationPage(page);
+      });
 
-    step('create an browser monitor', async () => {
-      await createIntegrationPolicyName({ page, policyName: journeyName });
-      await page.selectOption('[data-test-subj="syntheticsMonitorTypeField"]', 'browser');
-      await page.click('[data-test-subj="syntheticsSourceTab__inline"]');
-      await page.fill('[data-test-subj=codeEditorContainer] textarea', `
+      step('create an browser monitor', async () => {
+        await createIntegrationPolicyName({ page, policyName: journeyName });
+        await page.selectOption(
+          '[data-test-subj="syntheticsMonitorTypeField"]',
+          'browser'
+        );
+        await page.click('[data-test-subj="syntheticsSourceTab__inline"]');
+        await page.fill(
+          '[data-test-subj=codeEditorContainer] textarea',
+          `
         step('load homepage', async () => {
           await page.goto('https://www.elastic.co');
         });
-      `);
-      await selectAgentPolicy({ page });
-      await confirmAndSavePolicy(page);
-    });
+      `
+        );
+        await selectAgentPolicy({ page });
+        await confirmAndSavePolicy(page);
+      });
 
-    step('go to uptime', async () => {
-      await goToUptime(page);
-    });
+      step('go to uptime', async () => {
+        await goToUptime(page);
+      });
 
-    step('wait for synthetics data', async () => {
-      await checkForSyntheticsData({ page, journeyName });
-    });
-  });
+      step('wait for synthetics data', async () => {
+        await checkForSyntheticsData({ page, journeyName });
+      });
+    }
+  );
 }
