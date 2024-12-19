@@ -29,7 +29,7 @@ import { CliArgs } from './common_types';
 import { step, journey } from './core';
 import { log } from './core/logger';
 import { expect } from './core/expect';
-import * as mfa from "./core/mfa";
+import * as mfa from './core/mfa';
 import {
   isDepInstalled,
   isDirectory,

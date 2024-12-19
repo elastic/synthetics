@@ -28,10 +28,10 @@ import { join } from 'path';
 import SonicBoom from 'sonic-boom';
 import JUnitReporter from '../../src/reporters/junit';
 import * as helpers from '../../src/helpers';
-import { tJourney, tStep } from "../utils/test-config"
+import { tJourney, tStep } from '../utils/test-config';
 
 describe('junit reporter', () => {
-  beforeEach(() => { });
+  beforeEach(() => {});
   let dest: string;
   let stream: SonicBoom;
   let reporter: JUnitReporter;
