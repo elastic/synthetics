@@ -28,15 +28,16 @@ import { MonitorSchema } from "./monitor";
 import { rm, writeFile } from "fs/promises";
 import { createReadStream } from "fs";
 import { Extract } from "unzip-stream"
+import { red } from "kleur/colors";
 
 async function unzipFile(zipPath, destination) {
   return new Promise<void>((resolve, reject) => {
     createReadStream(zipPath)
       .pipe(Extract({ path: destination }))
       .on('close', resolve)
-      .on('error', (err) => {
-        reject(new Error(`failed to extract zip ${zipPath} : ${err.message}`));
-      });
+      .on('error', (err) =>
+        reject(new Error(`failed to extract zip ${zipPath} : ${err.message}`))
+      );
   });
 }
 
@@ -59,9 +60,9 @@ async function runNpmInstall(directory) {
         reject(new Error(`npm install failed with exit code ${code}`));
       }
     });
-    npmInstall.on('error', (err) => {
-      reject(new Error(`Failed to start npm install: ${err.message}`));
-    });
+    npmInstall.on('error', (err) =>
+      reject(new Error(`failed to setup: ${err.message}`))
+    );
   });
 }
 
@@ -79,7 +80,6 @@ async function runTest(directory, schema: MonitorSchema) {
     });
 
     runTest.on('close', resolve);
-
     runTest.on('error', (err) => {
       reject(new Error(`Failed to execute @elastic/synthetics : ${err.message}`));
     });
@@ -98,35 +98,34 @@ async function writePkgJSON(dir: string, synthPath: string) {
 }
 
 
-async function extractAndRun(schema: MonitorSchema, synthPath: string) {
+async function extract(schema: MonitorSchema, zipPath: string, unzipPath: string) {
   if (schema.type !== "browser") {
     return;
   }
   const content = schema.content;
-  const fileName = Date.now();
-  const zipPath = `/tmp/synthetics-zip-${fileName}.zip`;
-  const unzipPath = `/tmp/synthetics-unzip-${fileName}`;
+  await writeFile(zipPath, content, "base64");
+  await unzipFile(zipPath, unzipPath);
+}
+
+export async function runLocal(schemas: MonitorSchema[]) {
+  // lookup installed bin path of a node module
+  const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
+  const synthPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
+  const filename = Date.now();
+  const zipPath = `/tmp/synthetics-zip-${filename}.zip`;
+  const unzipPath = `/tmp/synthetics-unzip-${filename}`;
   try {
-    await writeFile(zipPath, content, "base64");
-    await unzipFile(zipPath, unzipPath);
+    for (const schema of schemas) {
+      await extract(schema, zipPath, unzipPath);
+    }
     await writePkgJSON(unzipPath, synthPath);
     await runNpmInstall(unzipPath);
-    await runTest(unzipPath, schema);
-  } catch (err) {
-    console.error(err);
+    await runTest(unzipPath, schemas[0]);
+  } catch (e) {
+    throw red(`Aborted: ${e.message}`);
   } finally {
     await rm(zipPath, { recursive: true, force: true });
     await rm(unzipPath, { recursive: true, force: true });
-  }
-}
-
-export async function run(schemas: MonitorSchema[]) {
-  // lookup installed bin path of a node module
-  const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
-  const installedPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
-
-  for (const schema of schemas) {
-    await extractAndRun(schema, installedPath);
   }
 }
 

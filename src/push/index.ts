@@ -60,7 +60,8 @@ import {
   logGroups,
   printBytes,
 } from './utils';
-import { run } from "./run-local"
+import { runLocal } from "./run-local"
+import { inDebugMode } from '../core/globals';
 
 
 export async function push(monitors: Monitor[], options: PushOptions) {
@@ -95,7 +96,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     remote
   );
   logDiff(newIDs, changedIDs, removedIDs, unchangedIDs);
-  if (options.dryRun) {
+  if (inDebugMode()) {
     logGroups(sizes, newIDs, changedIDs, removedIDs, unchangedIDs);
     // show bundle size for the whole project
     let totalSize = 0;
@@ -103,7 +104,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
       totalSize += value;
     }
     progress("total size of the monitors payload is " + printBytes(totalSize));
-    await run(schemas);
+  }
+
+  if (options.dryRun) {
+    progress('Running browser monitors in dry run mode');
+    await runLocal(schemas);
     progress('Dry run completed');
     return;
   }

@@ -61,6 +61,7 @@ export function logGroups<T extends Set<string>>(
 
 function logGroup(sizes: Map<string, number>, name: string, ids: Set<string>, color: Colorize) {
   if (ids.size === 0) return;
+  // under collapsed group, so giving 2 space for padding
   printLine(process.stdout.columns - 2);
   console.groupCollapsed(color(bold(name)));
   [...ids].forEach(id => {
