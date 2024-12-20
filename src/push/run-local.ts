@@ -111,15 +111,16 @@ export async function runLocal(schemas: MonitorSchema[]) {
   // lookup installed bin path of a node module
   const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
   const synthPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
-  const filename = Date.now();
-  const zipPath = `/tmp/synthetics-zip-${filename}.zip`;
-  const unzipPath = `/tmp/synthetics-unzip-${filename}`;
+  const rand = Date.now();
+  const zipPath = `/tmp/synthetics-zip-${rand}.zip`;
+  const unzipPath = `/tmp/synthetics-unzip-${rand}`;
   try {
     for (const schema of schemas) {
       await extract(schema, zipPath, unzipPath);
     }
     await writePkgJSON(unzipPath, synthPath);
     await runNpmInstall(unzipPath);
+    // TODO: figure out a way to collect all params and Playwright options
     await runTest(unzipPath, schemas[0]);
   } catch (e) {
     throw red(`Aborted: ${e.message}`);
