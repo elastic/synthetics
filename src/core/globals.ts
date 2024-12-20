@@ -34,4 +34,16 @@ if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
 }
 
+/**
+ * Set debug based on DEBUG ENV and namespace - synthetics
+ */
+if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
+  process.env['__SYNTHETICS__DEBUG__'] = '1';
+}
+
 export const runner: Runner = global[SYNTHETICS_RUNNER];
+
+// is Debug mode enabled
+export function inDebugMode() {
+  return !!process.env['__SYNTHETICS__DEBUG__'];
+}

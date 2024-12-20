@@ -25,7 +25,7 @@
 
 import { createReadStream } from 'fs';
 import { writeFile, unlink, mkdir, rm } from 'fs/promises';
-import unzipper from 'unzipper';
+import unzip from 'unzip-stream';
 import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
@@ -74,11 +74,10 @@ async function validateZip(content) {
   await writeFile(pathToZip, decoded);
 
   const files: Array<string> = [];
-
   let contents = '';
   await new Promise(r => {
     createReadStream(pathToZip)
-      .pipe(unzipper.Parse())
+      .pipe(unzip.Parse())
       .on('entry', function (entry) {
         files.push(entry.path);
         contents += '\n' + entry.path + '\n';
