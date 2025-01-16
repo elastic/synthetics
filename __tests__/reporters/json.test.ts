@@ -37,7 +37,7 @@ import JSONReporter, {
 import * as helpers from '../../src/helpers';
 import { NETWORK_INFO } from '../fixtures/networkinfo';
 import { StatusValue } from '../../src/common_types';
-import { tJourney, tStep } from "../utils/test-config"
+import { tJourney, tStep } from '../utils/test-config';
 
 /**
  * Mock package version to avoid breaking JSON payload
@@ -255,7 +255,7 @@ describe('json reporter', () => {
 
   it('writes full journey info if present', async () => {
     const journeyOpts = { name: 'name', id: 'id', tags: ['tag1', 'tag2'] };
-    const jj = journey(journeyOpts, () => { });
+    const jj = journey(journeyOpts, () => {});
     jj.status = 'skipped';
     jj.duration = 1;
 
@@ -264,8 +264,7 @@ describe('json reporter', () => {
       browserDelay: 0,
       status: 'skipped',
       options: {},
-    }
-    );
+    });
 
     const journeyEnd = (await readAndCloseStreamJson()).find(
       json => json.type == 'journey/end'
