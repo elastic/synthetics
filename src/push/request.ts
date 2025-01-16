@@ -58,6 +58,9 @@ export async function sendReqAndHandleError<T>(
   options: APIRequestOptions
 ): Promise<T> {
   const { statusCode, body } = await sendRequest(options);
+  if (statusCode === 414) {
+    throw new RequestPayloadTooLargeError('Request payload too large');
+  }
   return (
     await handleError(statusCode, options.url, body)
   ).json() as Promise<T>;
@@ -144,4 +147,11 @@ export function formatFailedMonitors(errors: APIMonitorError[]) {
 export function formatStaleMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['warning']} Warnings\n`);
   return yellow(heading + formatMonitorError(errors));
+}
+
+export class RequestPayloadTooLargeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RequestPayloadTooLargeError';
+  }
 }
