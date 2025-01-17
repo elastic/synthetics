@@ -27,10 +27,7 @@ import { totp } from '../../src/core/mfa';
 
 describe('MFA', () => {
   it('generate TOTP', () => {
-    const token = totp("FLIIOLP3IR3W");
+    const token = totp('FLIIOLP3IR3W');
     expect(token.length).toBe(6);
   });
 });
-
-
-

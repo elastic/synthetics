@@ -34,8 +34,8 @@ describe('Run', () => {
   });
 
   it('multiple run invokes runner only once', async () => {
-    journey('j1', () => { });
-    journey('j2', () => { });
+    journey('j1', () => {});
+    journey('j2', () => {});
     /**
      * call multiple runs in parallel simulating
      * CLI and programmatic API runs

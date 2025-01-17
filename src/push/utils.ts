@@ -37,10 +37,10 @@ export function logDiff<T extends Set<string>>(
 ) {
   progress(
     'Monitor Diff: ' +
-    green(`Added(${newIDs.size}) `) +
-    yellow(`Updated(${changedIDs.size}) `) +
-    red(`Removed(${removedIDs.size}) `) +
-    grey(`Unchanged(${unchangedIDs.size})`)
+      green(`Added(${newIDs.size}) `) +
+      yellow(`Updated(${changedIDs.size}) `) +
+      red(`Removed(${removedIDs.size}) `) +
+      grey(`Unchanged(${unchangedIDs.size})`)
   );
 }
 

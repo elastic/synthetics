@@ -23,48 +23,48 @@
  *
  */
 
-import { TOTP } from "otpauth";
+import { TOTP } from 'otpauth';
 
 type TOTPOptions = {
   /**
    * Provider or Service the secret is associated with
    */
-  issuer?: string
+  issuer?: string;
   /**
    * Account Identifier.
    * @default 'SyntheticsTOTP'
    */
-  label?: string
+  label?: string;
   /**
    * Include issuer prefix in label.
    */
-  issuerInLabel?: boolean
+  issuerInLabel?: boolean;
   /**
    * The encoded secret key used to generate the TOTP.
    */
-  secret?: string
+  secret?: string;
   /**
    * The algorithm used to generate the TOTP.
    * @default 'SHA1'
    */
-  algorithm?: string
+  algorithm?: string;
   /**
    * Number of digits in the generated token.
    * @default 6
    */
-  digits?: number
+  digits?: number;
   /**
    * Validity period in seconds for the token.
    * @default 30
    */
-  period?: number
+  period?: number;
 };
 
 export type TOTPCmdOptions = {
-  issuer?: string
-  label?: string
+  issuer?: string;
+  label?: string;
 };
 
 export function totp(secret?: string, options: TOTPOptions = {}) {
-  return new TOTP({ label: "SyntheticsTOTP", secret, ...options }).generate();
+  return new TOTP({ label: 'SyntheticsTOTP', secret, ...options }).generate();
 }

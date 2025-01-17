@@ -31,7 +31,7 @@ import {
 const recorderStep: Step = {
   actions: [
     {
-      frame: { pageAlias: 'page', "framePath": [] },
+      frame: { pageAlias: 'page', framePath: [] },
       committed: true,
       action: {
         name: 'openPage',
@@ -42,7 +42,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        "framePath": [],
+        framePath: [],
       },
       committed: true,
       action: {
