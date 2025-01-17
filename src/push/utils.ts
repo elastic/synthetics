@@ -56,10 +56,15 @@ export function logGroups<T extends Set<string>>(
   logGroup(sizes, 'Updated', changedIDs, yellow);
   logGroup(sizes, 'Removed', removedIDs, red);
   logGroup(sizes, 'Unchanged', unchangedIDs, grey);
-  console.groupEnd()
+  console.groupEnd();
 }
 
-function logGroup(sizes: Map<string, number>, name: string, ids: Set<string>, color: Colorize) {
+function logGroup(
+  sizes: Map<string, number>,
+  name: string,
+  ids: Set<string>,
+  color: Colorize
+) {
   if (ids.size === 0) return;
   // under collapsed group, so giving 2 space for padding
   printLine(process.stdout.columns - 2);
@@ -71,22 +76,18 @@ function logGroup(sizes: Map<string, number>, name: string, ids: Set<string>, co
 }
 
 function printLine(length: number = process.stdout.columns) {
-  console.log(grey("-").repeat(length));
+  console.log(grey('-').repeat(length));
 }
 
-const BYTE_UNITS = [
-  'B',
-  'kB',
-  'MB',
-  'GB',
-  'TB',
-  'PB',
-];
+const BYTE_UNITS = ['B', 'kB', 'MB', 'GB', 'TB', 'PB'];
 export function printBytes(bytes: number) {
   if (bytes <= 0) return '0 B';
-  const exponent = Math.min(Math.floor(Math.log10(bytes) / 3), BYTE_UNITS.length - 1);
+  const exponent = Math.min(
+    Math.floor(Math.log10(bytes) / 3),
+    BYTE_UNITS.length - 1
+  );
   bytes /= 1000 ** exponent;
-  return `${(bytes.toFixed(1))} ${BYTE_UNITS[exponent]}`;
+  return `${bytes.toFixed(1)} ${BYTE_UNITS[exponent]}`;
 }
 
 export function getChunks<T>(arr: Array<T>, size: number): Array<T[]> {

@@ -88,7 +88,7 @@ export class Monitor {
   content?: string;
   source?: Location;
   filter: MonitorFilter;
-  constructor(public config: MonitorConfig = {}) { }
+  constructor(public config: MonitorConfig = {}) {}
   /**
    * Treat the creation time config with `monitor.use` as source of truth by
    * merging the values coming from CLI and Synthetics config file
@@ -162,7 +162,7 @@ export class Monitor {
    * Returns the size of the monitor in bytes which is sent as payload to Kibana
    */
   size() {
-    return JSON.stringify(this).length
+    return JSON.stringify(this).length;
   }
 
   validate() {

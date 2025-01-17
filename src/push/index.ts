@@ -60,9 +60,8 @@ import {
   logGroups,
   printBytes,
 } from './utils';
-import { runLocal } from "./run-local"
+import { runLocal } from './run-local';
 import { inDebugMode } from '../core/globals';
-
 
 export async function push(monitors: Monitor[], options: PushOptions) {
   if (parseInt(process.env.CHUNK_SIZE) > 250) {
@@ -103,7 +102,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     for (const value of sizes.values()) {
       totalSize += value;
     }
-    progress("total size of the monitors payload is " + printBytes(totalSize));
+    progress('total size of the monitors payload is ' + printBytes(totalSize));
   }
 
   if (options.dryRun) {

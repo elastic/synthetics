@@ -154,7 +154,9 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
     const size = monitor.size();
     const sizeKB = Math.round(size / 1000);
     if (sizeKB > SIZE_LIMIT_KB) {
-      let outer = bold(`Aborted: Bundled code ${sizeKB}kB exceeds the recommended ${SIZE_LIMIT_KB}kB limit. Please check the dependencies imported.\n`);
+      let outer = bold(
+        `Aborted: Bundled code ${sizeKB}kB exceeds the recommended ${SIZE_LIMIT_KB}kB limit. Please check the dependencies imported.\n`
+      );
       const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
       outer += indent(inner);
       throw red(outer);

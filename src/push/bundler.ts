@@ -53,7 +53,7 @@ export class Bundler {
     if (result.errors.length > 0) {
       throw result.errors;
     }
-    return result.outputFiles[0].text
+    return result.outputFiles[0].text;
   }
 
   async zip(source: string, code: string, dest: string) {
