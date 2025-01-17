@@ -24,11 +24,14 @@
  */
 
 import { execFileSync, spawn } from "child_process";
-import { MonitorSchema } from "./monitor";
 import { rm, writeFile } from "fs/promises";
 import { createReadStream } from "fs";
+import { tmpdir } from "os"
 import { Extract } from "unzip-stream"
 import { red } from "kleur/colors";
+import { join } from "path";
+import { pathToFileURL } from "url";
+import { MonitorSchema } from "./monitor";
 
 async function unzipFile(zipPath, destination) {
   return new Promise<void>((resolve, reject) => {
@@ -91,10 +94,10 @@ async function writePkgJSON(dir: string, synthPath: string) {
     name: "project-journey",
     private: "true",
     dependencies: {
-      "@elastic/synthetics": `file:${synthPath}`,
+      "@elastic/synthetics": pathToFileURL(synthPath),
     },
   };
-  await writeFile(`${dir}/package.json`, JSON.stringify(packageJsonContent, null, 2), "utf-8");
+  await writeFile(join(dir, 'package.json'), JSON.stringify(packageJsonContent, null, 2), "utf-8");
 }
 
 
@@ -110,10 +113,12 @@ async function extract(schema: MonitorSchema, zipPath: string, unzipPath: string
 export async function runLocal(schemas: MonitorSchema[]) {
   // lookup installed bin path of a node module
   const resolvedPath = execFileSync('which', ['elastic-synthetics'], { encoding: 'utf8' }).trim();
-  const synthPath = resolvedPath.replace("bin/elastic-synthetics", "lib/node_modules/@elastic/synthetics")
+  const synthPath = resolvedPath.replace(
+    join('bin', 'elastic-synthetics'),
+    join('lib', 'node_modules', '@elastic/synthetics'));
   const rand = Date.now();
-  const zipPath = `/tmp/synthetics-zip-${rand}.zip`;
-  const unzipPath = `/tmp/synthetics-unzip-${rand}`;
+  const zipPath = join(tmpdir(), `synthetics-zip-${rand}.zip`);
+  const unzipPath = join(tmpdir(), `synthetics-unzip-${rand}`);
   try {
     for (const schema of schemas) {
       await extract(schema, zipPath, unzipPath);
