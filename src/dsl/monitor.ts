@@ -86,6 +86,7 @@ type MonitorFilter = {
 
 export class Monitor {
   content?: string;
+  size?: number;
   source?: Location;
   filter: MonitorFilter;
   constructor(public config: MonitorConfig = {}) {}
@@ -118,6 +119,10 @@ export class Monitor {
    */
   setContent(content = '') {
     this.content = content;
+  }
+
+  setSize(size: number) {
+    this.size = size;
   }
 
   /**

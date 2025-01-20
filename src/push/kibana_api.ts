@@ -33,12 +33,12 @@ import {
   sendReqAndHandleError,
   sendRequest,
   APIMonitorError,
-  RequestPayloadTooLargeError,
 } from './request';
 import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
-export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 100;
+export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 250;
+export const MAX_PAYLOAD_SIZE_KIB = (1048576 * 100) / 1024;
 
 export type PutResponse = {
   createdMonitors: string[];
@@ -52,56 +52,18 @@ export async function bulkPutMonitors(
 ) {
   const url = generateURL(options, 'bulk_update') + '/_bulk_update';
 
-  async function sendRequest(payload: MonitorSchema[]): Promise<PutResponse> {
-    try {
-      const resp = await sendReqAndHandleError<PutResponse>({
-        url,
-        method: 'PUT',
-        auth: options.auth,
-        body: JSON.stringify({ monitors: payload }),
-      });
+  const resp = await sendReqAndHandleError<PutResponse>({
+    url,
+    method: 'PUT',
+    auth: options.auth,
+    body: JSON.stringify({ monitors: schemas }),
+  });
 
-      const { failedMonitors } = resp;
-      if (failedMonitors && failedMonitors.length > 0) {
-        throw formatFailedMonitors(failedMonitors);
-      }
-      return resp;
-    } catch (error) {
-      if (error instanceof RequestPayloadTooLargeError) {
-        // Split the payload into two halves
-        const mid = Math.ceil(payload.length / 2);
-        const firstHalf = payload.slice(0, mid);
-        const secondHalf = payload.slice(mid);
-
-        // Recursively send each half and combine the results
-        const [firstResult, secondResult] = await Promise.all([
-          sendRequest(firstHalf),
-          sendRequest(secondHalf),
-        ]);
-
-        // Combine the results (if necessary, based on your API's behavior)
-        return {
-          createdMonitors: [
-            ...(firstResult.createdMonitors ?? []),
-            ...(secondResult.createdMonitors ?? []),
-          ],
-          updatedMonitors: [
-            ...(firstResult.updatedMonitors ?? []),
-            ...(secondResult.updatedMonitors ?? []),
-          ],
-          failedMonitors: [
-            ...(firstResult.failedMonitors ?? []),
-            ...(secondResult.failedMonitors ?? []),
-          ],
-        } as PutResponse;
-      }
-
-      // Re-throw other errors
-      throw error;
-    }
+  const { failedMonitors } = resp;
+  if (failedMonitors && failedMonitors.length > 0) {
+    throw formatFailedMonitors(failedMonitors);
   }
-
-  return sendRequest(schemas);
+  return resp;
 }
 
 export type GetResponse = {

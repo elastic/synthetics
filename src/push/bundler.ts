@@ -87,10 +87,10 @@ export class Bundler {
   async build(entry: string, output: string) {
     await this.prepare(entry);
     await this.zip(output);
-    const data = await this.encode(output);
-    await this.checkSize(output);
+    const content = await this.encode(output);
+    const sizeKb = await this.checkSize(output);
     await this.cleanup(output);
-    return data;
+    return { content, sizeKb };
   }
 
   async encode(outputPath: string) {
@@ -105,6 +105,7 @@ export class Bundler {
         `Bundled monitor code exceeds the recommended ${SIZE_LIMIT_KB}KB limit. Please check your dependencies and try again.`
       );
     }
+    return sizeKb;
   }
 
   async cleanup(outputPath: string) {

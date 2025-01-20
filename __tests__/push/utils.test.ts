@@ -23,7 +23,7 @@
  *
  */
 
-import { normalizeMonitorName } from '../../src/push/utils';
+import { getSizedChunks, normalizeMonitorName } from '../../src/push/utils';
 
 describe('Push Utils', () => {
   it("normalize monitor's name", () => {
@@ -37,5 +37,34 @@ describe('Push Utils', () => {
     expect(normalizeMonitorName('/x/y/z')).toBe('_x_y_z');
     expect(normalizeMonitorName('x.y.z')).toBe('x_y_z');
     expect(normalizeMonitorName('foo:bar:blah')).toBe('foo_bar_blah');
+  });
+
+  describe('getSizedChunks', () => {
+    it('should return empty array when input is empty', () => {
+      expect(getSizedChunks([], 100, 100)).toEqual([]);
+    });
+
+    it('should return chunks of input array based on maxChunkSizeKB', () => {
+      const input = [
+        { size: 10 },
+        { size: 20 },
+        { size: 30 },
+        { size: 40 },
+        { size: 50 },
+        { size: 60 },
+      ];
+      expect(getSizedChunks(input, 1000, 100)).toEqual([input]);
+      expect(getSizedChunks(input, 100, 3)).toEqual([
+        [input[0], input[1], input[2]],
+        [input[3], input[4]],
+        [input[5]],
+      ]);
+      expect(getSizedChunks(input, 100, 2)).toEqual([
+        [input[0], input[1]],
+        [input[2], input[3]],
+        [input[4]],
+        [input[5]],
+      ]);
+    });
   });
 });

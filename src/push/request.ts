@@ -148,10 +148,3 @@ export function formatStaleMonitors(errors: APIMonitorError[]) {
   const heading = bold(`${symbols['warning']} Warnings\n`);
   return yellow(heading + formatMonitorError(errors));
 }
-
-export class RequestPayloadTooLargeError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'RequestPayloadTooLargeError';
-  }
-}

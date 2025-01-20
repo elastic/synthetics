@@ -48,6 +48,7 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content?: string;
   filter?: Monitor['filter'];
   hash?: string;
+  size?: number;
 };
 
 // Abbreviated monitor info, as often returned by the API,
@@ -144,8 +145,9 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
         bundlePath,
         normalizeMonitorName(config.name) + '.zip'
       );
-      const content = await bundler.build(source.file, outPath);
+      const { content, sizeKb } = await bundler.build(source.file, outPath);
       monitor.setContent(content);
+      monitor.setSize(sizeKb);
       Object.assign(schema, { content, filter });
     }
     /**
@@ -225,9 +227,7 @@ export async function createLightweightMonitors(
       const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
       if (monitor['type'] === 'browser') {
-        warn(
-          `Browser monitors from ${file} are skipped.`
-        );
+        warn(`Browser monitors from ${file} are skipped.`);
         continue;
       }
       const { line, col } = lineCounter.linePos(offsets[i]);

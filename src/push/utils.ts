@@ -37,18 +37,50 @@ export function logDiff<T extends Set<string>>(
 ) {
   progress(
     'Monitor Diff: ' +
-    green(`Added(${newIDs.size}) `) +
-    yellow(`Updated(${changedIDs.size}) `) +
-    red(`Removed(${removedIDs.size}) `) +
-    grey(`Unchanged(${unchangedIDs.size})`)
+      green(`Added(${newIDs.size}) `) +
+      yellow(`Updated(${changedIDs.size}) `) +
+      red(`Removed(${removedIDs.size}) `) +
+      grey(`Unchanged(${unchangedIDs.size})`)
   );
 }
-
-export function getChunks<T>(arr: Array<T>, size: number): Array<T[]> {
+export function getChunks(arr: string[], size: number): string[][] {
   const chunks = [];
   for (let i = 0; i < arr.length; i += size) {
     chunks.push(arr.slice(i, i + size));
   }
+  return chunks;
+}
+
+export function getSizedChunks<T extends { size?: number }>(
+  arr: Array<T>,
+  maxChunkSizeKB: number,
+  maxChunkItems: number
+): Array<T[]> {
+  const chunks: Array<T[]> = [];
+  let currentChunk: T[] = [];
+  let currentSize = 0;
+
+  for (const item of arr) {
+    const size = item.size || 1;
+
+    // If adding the current item would exceed limits, create a new chunk
+    if (
+      currentChunk.length >= maxChunkItems ||
+      currentSize + size > maxChunkSizeKB
+    ) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+      currentSize = 0;
+    }
+    currentChunk.push(item);
+    currentSize += size;
+  }
+
+  // Push the last chunk if it contains any items
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+
   return chunks;
 }
 
