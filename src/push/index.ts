@@ -51,9 +51,11 @@ import {
   bulkPutMonitors,
   createMonitorsLegacy,
   CHUNK_SIZE,
+  MAX_PAYLOAD_SIZE_KIB,
 } from './kibana_api';
 import {
   getChunks,
+  getSizedChunks,
   isBulkAPISupported,
   isLightweightMonitorSupported,
   logDiff,
@@ -96,7 +98,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
     const updatedMonSchemas = schemas.filter(s => updatedMonitors.has(s.id));
-    const chunks = getChunks(updatedMonSchemas, CHUNK_SIZE);
+    const chunks = getSizedChunks(
+      updatedMonSchemas,
+      MAX_PAYLOAD_SIZE_KIB,
+      CHUNK_SIZE
+    );
     for (const chunk of chunks) {
       await liveProgress(
         bulkPutMonitors(options, chunk),
@@ -303,7 +309,7 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
     schemas = await buildMonitorSchema(monitors, false);
-    const chunks = getChunks(schemas, 10);
+    const chunks = getSizedChunks(schemas, MAX_PAYLOAD_SIZE_KIB, 10);
     for (const chunk of chunks) {
       await liveProgress(
         createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),

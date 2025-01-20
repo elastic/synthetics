@@ -37,7 +37,8 @@ import {
 import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
-export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 100;
+export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 250;
+export const MAX_PAYLOAD_SIZE_KIB = (1048576 * 100) / 1024;
 
 export type PutResponse = {
   createdMonitors: string[];
@@ -49,12 +50,15 @@ export async function bulkPutMonitors(
   options: PushOptions,
   schemas: MonitorSchema[]
 ) {
+  const url = generateURL(options, 'bulk_update') + '/_bulk_update';
+
   const resp = await sendReqAndHandleError<PutResponse>({
-    url: generateURL(options, 'bulk_update') + '/_bulk_update',
+    url,
     method: 'PUT',
     auth: options.auth,
     body: JSON.stringify({ monitors: schemas }),
   });
+
   const { failedMonitors } = resp;
   if (failedMonitors && failedMonitors.length > 0) {
     throw formatFailedMonitors(failedMonitors);
