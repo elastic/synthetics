@@ -58,9 +58,7 @@ export async function sendReqAndHandleError<T>(
   options: APIRequestOptions
 ): Promise<T> {
   const { statusCode, body } = await sendRequest(options);
-  if (statusCode === 414) {
-    throw new RequestPayloadTooLargeError('Request payload too large');
-  }
+
   return (
     await handleError(statusCode, options.url, body)
   ).json() as Promise<T>;
