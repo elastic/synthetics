@@ -158,6 +158,13 @@ export class Monitor {
       .digest('base64');
   }
 
+  /**
+   * Returns the size of the monitor in bytes which is sent as payload to Kibana
+   */
+  size() {
+    return JSON.stringify(this).length;
+  }
+
   validate() {
     const schedule = this.config.schedule;
     if (ALLOWED_SCHEDULES.includes(schedule)) {
