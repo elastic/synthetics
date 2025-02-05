@@ -95,9 +95,6 @@ export class APINetworkManager {
         request[method] = this._interceptRequest.bind(this, method);
       }
     );
-
-    request.fetch = this._interceptRequest.bind(this);
-    request.get = this._interceptRequest.bind(this);
   }
 
   async _interceptRequest(method, url, options: any) {
@@ -135,7 +132,7 @@ export class APINetworkManager {
     this.results.push(requestEntry as any);
 
     const start = Date.now();
-    const response = await this._originalFetch(url, options);
+    const response = await this._originalMethods[method](url, options);
     const end = Date.now();
 
     requestEntry.responseReceivedTime = epochTimeInSeconds();
