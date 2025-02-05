@@ -32,10 +32,11 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
-import { Journey, Step } from './dsl';
+import { APIJourney, Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
 import { RunnerInfo } from './core/runner';
+import { APIRunnerInfo } from './core/api-runner';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -57,11 +58,22 @@ export type HooksArgs = {
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'pending' | 'succeeded' | 'failed' | 'skipped';
 
+export type APIHooksArgs = {
+  env: string;
+  params: Params;
+  info: APIRunnerInfo;
+};
+export type APIHooksCallback = (args: APIHooksArgs) => void;
+
 export type NetworkConditions = {
   offline: boolean;
   downloadThroughput: number;
   uploadThroughput: number;
   latency: number;
+};
+
+export type APIDriver = {
+  request: APIRequestContext;
 };
 
 export type Driver = {
@@ -286,6 +298,13 @@ export type SyntheticsConfig = {
 };
 
 /** Runner Payload types */
+export type APIJourneyResult = Partial<APIJourney> & {
+  networkinfo?: PluginOutput['networkinfo'];
+  browserconsole?: PluginOutput['browserconsole'];
+  stepsresults?: Array<StepResult>;
+};
+
+/** Runner Payload types */
 export type JourneyResult = Partial<Journey> & {
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
@@ -320,6 +339,12 @@ export type JourneyStartResult = {
 
 export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
+    browserDelay: number;
+    options: RunOptions;
+  };
+
+export type APIJourneyEndResult = JourneyStartResult &
+  APIJourneyResult & {
     browserDelay: number;
     options: RunOptions;
   };

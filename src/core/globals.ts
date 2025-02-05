@@ -24,14 +24,20 @@
  */
 
 import Runner from './runner';
+import APIRunner from './api-runner';
 
 /**
- * Use a gloabl Runner which would be accessed by the runtime and
+ * Use a global Runner which would be accessed by the runtime and
  * required to handle the local vs global invocation through CLI
  */
 const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
 if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
+}
+
+const SYNTHETICS_API_RUNNER = Symbol.for('SYNTHETICS_API_RUNNER');
+if (!global[SYNTHETICS_API_RUNNER]) {
+  global[SYNTHETICS_API_RUNNER] = new APIRunner();
 }
 
 /**
@@ -42,6 +48,7 @@ if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
 }
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
+export const apiRunner: APIRunner = global[SYNTHETICS_API_RUNNER];
 
 // is Debug mode enabled
 export function inDebugMode() {

@@ -24,13 +24,17 @@
  */
 
 import {
+  APIJourney,
+  APIJourneyCallback,
+  APIJourneyOptions,
+  APIJourneyWithAnnotations,
   Journey,
   JourneyCallback,
   JourneyOptions,
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import { runner as runnerGlobal } from './globals';
+import { runner as runnerGlobal, apiRunner } from './globals';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
@@ -60,15 +64,50 @@ export const journey = createJourney() as JourneyWithAnnotations;
 journey.skip = createJourney('skip');
 journey.only = createJourney('only');
 
+const createAPIJourney = (type?: 'skip' | 'only') =>
+  wrapFnWithLocation(
+    (
+      location: Location,
+      options: APIJourneyOptions | string,
+      callback: APIJourneyCallback
+    ) => {
+      log(`API Journey register: ${JSON.stringify(options)}`);
+      if (typeof options === 'string') {
+        options = { name: options, id: options };
+      }
+      const j = new APIJourney(options, callback, location);
+      if (type) {
+        j[type] = true;
+      }
+      apiRunner._addJourney(j);
+      return j;
+    }
+  );
+
+export const apiJourney = createAPIJourney() as APIJourneyWithAnnotations;
+
 const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(
     (location: Location, name: string, callback: VoidCallback) => {
       log(`Step register: ${name}`);
-      const step = runner.currentJourney?._addStep(name, callback, location);
-      if (type) {
-        step[type] = true;
+      if (runner.currentJourney) {
+        const step = runner.currentJourney?._addStep(name, callback, location);
+        if (type) {
+          step[type] = true;
+        }
+        return step;
       }
-      return step;
+      if (apiRunner.currentJourney) {
+        const step = apiRunner.currentJourney?._addStep(
+          name,
+          callback,
+          location
+        );
+        if (type) {
+          step[type] = true;
+        }
+        return step;
+      }
     }
   );
 
