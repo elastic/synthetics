@@ -56,13 +56,11 @@ export class APIGatherer {
 
   static async beginRecording(driver: APIDriver, options: RunOptions) {
     log('Gatherer: started recording');
-    const { network, metrics } = options;
     APIGatherer.pluginManager = new APIPluginManager(driver);
     APIGatherer.pluginManager.registerAll(options);
-    const plugins = [await APIGatherer.pluginManager.start('browserconsole')];
-    network && plugins.push(await APIGatherer.pluginManager.start('network'));
-    metrics &&
-      plugins.push(await APIGatherer.pluginManager.start('performance'));
+    const plugins = [];
+    plugins.push(await APIGatherer.pluginManager.start('network'));
+
     await Promise.all(plugins);
     return APIGatherer.pluginManager;
   }

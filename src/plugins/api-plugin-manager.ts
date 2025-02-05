@@ -24,27 +24,17 @@
  */
 
 import { PluginOutput, APIDriver } from '../common_types';
-import {
-  BrowserConsole,
-  NetworkManager,
-  PerformanceManager,
-  Tracing,
-  TraceOptions,
-} from './';
+import { TraceOptions } from './';
 import { Step } from '../dsl';
+import { APINetworkManager } from './api-network';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type PluginType = 'network';
+type Plugin = APINetworkManager;
 type PluginOptions = TraceOptions;
 
 export class APIPluginManager {
   protected plugins = new Map<PluginType, Plugin>();
-  public PLUGIN_TYPES: Array<PluginType> = [
-    'network',
-    'trace',
-    'performance',
-    'browserconsole',
-  ];
+  public PLUGIN_TYPES: Array<PluginType> = ['network'];
   constructor(private driver: APIDriver) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -52,17 +42,8 @@ export class APIPluginManager {
     let instance: Plugin;
     switch (type) {
       case 'network':
-        // instance = new NetworkManager(this.driver);
+        instance = new APINetworkManager(this.driver);
         break;
-      //   case 'trace':
-      //     instance = new Tracing(this.driver, options);
-      //     break;
-      //   case 'performance':
-      //     instance = new PerformanceManager(this.driver);
-      //     break;
-      //   case 'browserconsole':
-      //     instance = new BrowserConsole(this.driver);
-      //     break;
     }
     instance && this.plugins.set(type, instance);
     return instance;
@@ -97,19 +78,15 @@ export class APIPluginManager {
   get(type: PluginType) {
     return this.plugins.get(type);
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onStep(step: Step) {
-    // (this.get('browserconsole') as BrowserConsole)._currentStep = step;
-    // (this.get('network') as NetworkManager)._currentStep = step;
+    (this.get('network') as APINetworkManager)._currentStep = step;
   }
 
   async output() {
     const data: PluginOutput = {};
     for (const [, plugin] of this.plugins) {
-      if (plugin instanceof NetworkManager) {
+      if (plugin instanceof APINetworkManager) {
         data.networkinfo = await plugin.stop();
-      } else if (plugin instanceof BrowserConsole) {
-        data.browserconsole = plugin.stop();
       }
     }
     return data;

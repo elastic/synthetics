@@ -43,7 +43,6 @@ import {
   Screenshot,
   StepResult,
 } from '../common_types';
-import { PerformanceManager } from '../plugins';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { APIJourney } from '../dsl';
@@ -187,19 +186,17 @@ export default class APIRunner implements APIRunnerInfo {
     await runAPIParallel(journey._getHook('after'), args);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
-    const { metrics, filmstrips, trace } = options;
 
     const data: StepResult = {};
-    const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
       APIGatherer.pluginManager.onStep(step);
-      traceEnabled && (await APIGatherer.pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
       await cb();
@@ -211,15 +208,6 @@ export default class APIRunner implements APIRunnerInfo {
       /**
        * Collect all step level metrics and trace events
        */
-      if (metrics) {
-        data.pagemetrics = await (
-          APIGatherer.pluginManager.get('performance') as PerformanceManager
-        ).getMetrics();
-      }
-      if (traceEnabled) {
-        const traceOutput = await APIGatherer.pluginManager.stop('trace');
-        Object.assign(data, traceOutput);
-      }
     }
     log(`Runner: end step (${step.name})`);
     return data;
@@ -303,7 +291,6 @@ export default class APIRunner implements APIRunnerInfo {
     await rm(this.#screenshotPath, { recursive: true, force: true });
     return Object.assign(result, {
       networkinfo: pOutput.networkinfo,
-      browserconsole: [],
       ...journey,
     });
   }
