@@ -264,6 +264,13 @@ export type RunOptions = BaseArgs & {
   grepOpts?: GrepOptions;
 };
 
+export type APIRunOptions = BaseArgs & {
+  network?: boolean;
+  environment?: string;
+  reporter?: BuiltInReporterName | ReporterInstance;
+  grepOpts?: GrepOptions;
+};
+
 export type PushOptions = Partial<ProjectSettings> &
   Partial<BaseArgs> & {
     auth: string;

@@ -24,12 +24,10 @@
  */
 
 import { join } from 'path';
-import { mkdir, rm, writeFile } from 'fs/promises';
 import { Step } from '../dsl/step';
 import { Reporter, reporters } from '../reporters';
 import {
   CACHE_PATH,
-  generateUniqueId,
   getTimestamp,
   monotonicTimeInSeconds,
   runAPIParallel,
@@ -38,13 +36,11 @@ import {
   APIHooksArgs,
   APIHooksCallback,
   APIJourneyResult,
-  Driver,
+  APIRunOptions,
   RunOptions,
-  Screenshot,
   StepResult,
 } from '../common_types';
 import { log } from './logger';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { APIJourney } from '../dsl';
 import { APIRequestContext } from 'playwright-core';
 import { APIGatherer } from './api-gatherer';
@@ -58,13 +54,13 @@ export interface APIRunnerInfo {
   /**
    * Processed configuration from the CLI args and the config file
    */
-  readonly config: RunOptions;
+  readonly config: APIRunOptions;
   /**
    * Currently active journey
    */
   readonly currentJourney: APIJourney | undefined;
   /**
-   * All registerd journeys
+   * All registered journeys
    */
   readonly journeys: APIJourney[];
 }
@@ -80,7 +76,6 @@ export default class APIRunner implements APIRunnerInfo {
   #driver?: { request: APIRequestContext };
   #browserDelay = -1;
   #hookError: Error | undefined;
-  #monitor?: Monitor;
   config: RunOptions;
 
   get currentJourney() {
@@ -91,61 +86,12 @@ export default class APIRunner implements APIRunnerInfo {
     return this.#journeys;
   }
 
-  get apiJourneys() {
-    return this.#apiJourneys;
-  }
-
-  get hooks() {
-    return this.#hooks;
-  }
-
-  private async captureScreenshot(page: Driver['page'], step: Step) {
-    try {
-      const buffer = await page.screenshot({
-        type: 'jpeg',
-        quality: 80,
-        timeout: 5000,
-      });
-      /**
-       * Write the screenshot image buffer with additional details (step
-       * information) which could be extracted at the end of
-       * each journey without impacting the step timing information
-       */
-      const fileName = `${generateUniqueId()}.json`;
-      const screenshot: Screenshot = {
-        step,
-        timestamp: getTimestamp(),
-        data: buffer.toString('base64'),
-      };
-      await writeFile(
-        join(this.#screenshotPath, fileName),
-        JSON.stringify(screenshot)
-      );
-      log(`Runner: captured screenshot for (${step.name})`);
-    } catch (_) {
-      // Screenshot may fail sometimes, log and continue.
-      log(`Runner: failed to capture screenshot for (${step.name})`);
-    }
-  }
-
-  _addHook(type: HookType, callback: APIHooksCallback) {
-    this.#hooks[type].push(callback);
-  }
-
   private buildHookArgs() {
     return {
       env: this.config.environment,
       params: this.config.params,
       info: this as APIRunnerInfo,
     };
-  }
-
-  _updateMonitor(config: MonitorConfig) {
-    if (!this.#monitor) {
-      this.#monitor = new Monitor(config);
-      return;
-    }
-    this.#monitor.update(config);
   }
 
   _addJourney(journey: APIJourney) {
@@ -187,7 +133,7 @@ export default class APIRunner implements APIRunnerInfo {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
+  async #runStep(step: Step, options: APIRunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
 
     const data: StepResult = {};
@@ -254,11 +200,7 @@ export default class APIRunner implements APIRunnerInfo {
     journey._startTime = monotonicTimeInSeconds();
     this.#driver = await APIGatherer.setupDriver(options);
     await APIGatherer.beginRecording(this.#driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.#screenshotPath, { recursive: true });
+
     const params = options.params;
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
@@ -287,8 +229,7 @@ export default class APIRunner implements APIRunnerInfo {
     });
     await APIGatherer.endRecording();
     await APIGatherer.dispose(this.#driver);
-    // clear screenshots cache after each journey
-    await rm(this.#screenshotPath, { recursive: true, force: true });
+
     return Object.assign(result, {
       networkinfo: pOutput.networkinfo,
       ...journey,
@@ -363,10 +304,6 @@ export default class APIRunner implements APIRunnerInfo {
       numJourneys: this.#journeys.length,
       networkConditions: options.networkConditions,
     });
-    /**
-     * Set up the directory for caching screenshots
-     */
-    await mkdir(CACHE_PATH, { recursive: true });
   }
 
   async _run(options: RunOptions): Promise<APIRunResult> {
@@ -427,11 +364,7 @@ export default class APIRunner implements APIRunnerInfo {
     this.#currentJourney = null;
     this.#journeys = [];
     this.#active = false;
-    /**
-     * Clear all cache data stored for post processing by
-     * the current synthetic agent run
-     */
-    await rm(CACHE_PATH, { recursive: true, force: true });
+
     await this.#reporter?.onEnd?.();
   }
 }
