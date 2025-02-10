@@ -32,11 +32,10 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
-import { APIJourney, Journey, Step } from './dsl';
+import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
 import { RunnerInfo } from './core/runner';
-import { APIRunnerInfo } from './core/api-runner';
 
 export type VoidCallback = () => void;
 export type Location = {
@@ -57,13 +56,6 @@ export type HooksArgs = {
 };
 export type HooksCallback = (args: HooksArgs) => void;
 export type StatusValue = 'pending' | 'succeeded' | 'failed' | 'skipped';
-
-export type APIHooksArgs = {
-  env: string;
-  params: Params;
-  info: APIRunnerInfo;
-};
-export type APIHooksCallback = (args: APIHooksArgs) => void;
 
 export type NetworkConditions = {
   offline: boolean;
@@ -305,9 +297,8 @@ export type SyntheticsConfig = {
 };
 
 /** Runner Payload types */
-export type APIJourneyResult = Partial<APIJourney> & {
+export type APIJourneyResult = Partial<Journey> & {
   networkinfo?: PluginOutput['networkinfo'];
-  browserconsole?: PluginOutput['browserconsole'];
   stepsresults?: Array<StepResult>;
 };
 

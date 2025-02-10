@@ -24,7 +24,6 @@
  */
 
 import {
-  APIJourney,
   APIJourneyCallback,
   APIJourneyOptions,
   APIJourneyWithAnnotations,
@@ -34,7 +33,7 @@ import {
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import { runner as runnerGlobal, apiRunner } from './globals';
+import { runner as runnerGlobal } from './globals';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
@@ -75,11 +74,11 @@ const createAPIJourney = (type?: 'skip' | 'only') =>
       if (typeof options === 'string') {
         options = { name: options, id: options };
       }
-      const j = new APIJourney(options, callback, location);
+      const j = new Journey({ ...options, type: 'api' }, callback, location);
       if (type) {
         j[type] = true;
       }
-      apiRunner._addJourney(j);
+      runner._addJourney(j);
       return j;
     }
   );
@@ -90,24 +89,11 @@ const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(
     (location: Location, name: string, callback: VoidCallback) => {
       log(`Step register: ${name}`);
-      if (runner.currentJourney) {
-        const step = runner.currentJourney?._addStep(name, callback, location);
-        if (type) {
-          step[type] = true;
-        }
-        return step;
+      const step = runner.currentJourney?._addStep(name, callback, location);
+      if (type) {
+        step[type] = true;
       }
-      if (apiRunner.currentJourney) {
-        const step = apiRunner.currentJourney?._addStep(
-          name,
-          callback,
-          location
-        );
-        if (type) {
-          step[type] = true;
-        }
-        return step;
-      }
+      return step;
     }
   );
 

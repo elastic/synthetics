@@ -28,7 +28,7 @@ import { green, red, cyan, gray } from 'kleur/colors';
 import { renderError, serializeError } from './reporter-util';
 import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
-import { APIJourney, Journey, Step } from '../dsl';
+import { Journey, Step } from '../dsl';
 import {
   APIJourneyEndResult,
   JourneyEndResult,
@@ -62,16 +62,16 @@ export default class BaseReporter implements Reporter {
     this.stream = new SonicBoom({ fd: this.fd, sync: true, minLength: 1 });
   }
 
-  onJourneyRegister(journey: Journey | APIJourney): void {
+  onJourneyRegister(journey: Journey): void {
     this.write(`\nJourney: ${journey.name}`);
     this.metrics.registered++;
   }
 
-  onJourneyStart(journey: Journey | APIJourney, {}: JourneyStartResult) {
+  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(_: Journey | APIJourney, step: Step, {}: StepResult) {
+  onStepEnd(_: Journey, step: Step, {}: StepResult) {
     const { status, error } = step;
     const message = `${symbols[status]}  Step: '${step.name}' ${status} ${gray(
       '(' + renderDuration(step.duration * 1000) + ' ms)'
@@ -85,10 +85,7 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(
-    journey: Journey | APIJourney,
-    {}: JourneyEndResult | APIJourneyEndResult
-  ) {
+  onJourneyEnd(journey: Journey, {}: JourneyEndResult | APIJourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**

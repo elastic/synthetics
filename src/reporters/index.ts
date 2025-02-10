@@ -26,7 +26,7 @@
 import BaseReporter from './base';
 import JSONReporter from './json';
 import JUnitReporter from './junit';
-import { APIJourney, Journey, Step } from '../dsl';
+import { Journey, Step } from '../dsl';
 import {
   StartEvent,
   JourneyEndResult,
@@ -35,7 +35,6 @@ import {
   APIJourneyEndResult,
 } from '../common_types';
 import BuildKiteCLIReporter from './build_kite_cli';
-import APIJSONReporter from './api-json';
 
 export type ReporterOptions = {
   fd?: number;
@@ -45,7 +44,6 @@ export type ReporterOptions = {
 export type BuiltInReporterName =
   | 'default'
   | 'json'
-  | 'apiJson'
   | 'junit'
   | 'buildkite-cli';
 export type ReporterInstance = new (opts: ReporterOptions) => Reporter;
@@ -54,7 +52,6 @@ export const reporters: {
 } = {
   default: BaseReporter,
   json: JSONReporter,
-  apiJson: APIJSONReporter,
   junit: JUnitReporter,
   // 'api-default': APIReporter,
   'buildkite-cli': BuildKiteCLIReporter,
@@ -62,19 +59,12 @@ export const reporters: {
 
 export interface Reporter {
   onStart?(params: StartEvent): void;
-  onJourneyRegister?(journey: Journey | APIJourney): void;
-  onJourneyStart?(
-    journey: Journey | APIJourney,
-    result: JourneyStartResult
-  ): void;
-  onStepStart?(journey: Journey | APIJourney, step: Step): void;
-  onStepEnd?(
-    journey: Journey | APIJourney,
-    step: Step,
-    result: StepEndResult
-  ): void;
+  onJourneyRegister?(journey: Journey): void;
+  onJourneyStart?(journey: Journey, result: JourneyStartResult): void;
+  onStepStart?(journey: Journey, step: Step): void;
+  onStepEnd?(journey: Journey, step: Step, result: StepEndResult): void;
   onJourneyEnd?(
-    journey: Journey | APIJourney,
+    journey: Journey,
     result: JourneyEndResult | APIJourneyEndResult
   ): void | Promise<void>;
   onEnd?(): void | Promise<void>;

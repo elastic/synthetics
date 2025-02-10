@@ -95,6 +95,7 @@ const loadInlineScript = source => {
     'mfa',
     source
   );
+  // @ts-expect-error
   journey('inline', ({ page, context, browser, params, request }) => {
     scriptFn.apply(null, [
       step,

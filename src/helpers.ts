@@ -36,8 +36,6 @@ import {
   NetworkConditions,
   Location,
   ThrottlingOptions,
-  APIHooksArgs,
-  APIHooksCallback,
 } from './common_types';
 import micromatch from 'micromatch';
 
@@ -116,17 +114,6 @@ export function now() {
 export async function runParallel(
   callbacks: Array<HooksCallback>,
   args: HooksArgs
-) {
-  const promises = callbacks.map(cb => cb(args));
-  return await Promise.all(promises);
-}
-
-/**
- * Execute all the hooks callbacks in parallel using Promise.all
- */
-export async function runAPIParallel(
-  callbacks: Array<APIHooksCallback>,
-  args: APIHooksArgs
 ) {
   const promises = callbacks.map(cb => cb(args));
   return await Promise.all(promises);

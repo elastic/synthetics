@@ -24,7 +24,6 @@
  */
 
 import Runner from './runner';
-import APIRunner from './api-runner';
 
 /**
  * Use a global Runner which would be accessed by the runtime and
@@ -35,11 +34,6 @@ if (!global[SYNTHETICS_RUNNER]) {
   global[SYNTHETICS_RUNNER] = new Runner();
 }
 
-const SYNTHETICS_API_RUNNER = Symbol.for('SYNTHETICS_API_RUNNER');
-if (!global[SYNTHETICS_API_RUNNER]) {
-  global[SYNTHETICS_API_RUNNER] = new APIRunner();
-}
-
 /**
  * Set debug based on DEBUG ENV and namespace - synthetics
  */
@@ -48,7 +42,6 @@ if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
 }
 
 export const runner: Runner = global[SYNTHETICS_RUNNER];
-export const apiRunner: APIRunner = global[SYNTHETICS_API_RUNNER];
 
 // is Debug mode enabled
 export function inDebugMode() {

@@ -41,6 +41,7 @@ import {
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
 import { RunnerInfo } from '../core/runner';
+import { APIJourneyCallback, APIJourneyCallbackOpts } from './api-journey';
 
 export type JourneyOptions = {
   name: string;
@@ -59,15 +60,18 @@ type JourneyCallbackOpts = {
   request: APIRequestContext;
   info: RunnerInfo;
 };
-export type JourneyCallback = (options: JourneyCallbackOpts) => void;
+export type JourneyCallback = (
+  options: JourneyCallbackOpts | APIJourneyCallbackOpts
+) => void;
 
 export class Journey {
+  readonly type: 'browser' | 'api' = 'browser';
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
   readonly location?: Location;
   readonly steps: Step[] = [];
-  #cb: JourneyCallback;
+  #cb: JourneyCallback | APIJourneyCallback;
   #hooks: Hooks = { before: [], after: [] };
   #monitor: Monitor;
   skip = false;
@@ -78,10 +82,11 @@ export class Journey {
   error?: Error;
 
   constructor(
-    options: JourneyOptions,
+    options: JourneyOptions & { type?: 'browser' | 'api' },
     cb: JourneyCallback,
     location?: Location
   ) {
+    this.type = options.type ?? 'browser';
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;

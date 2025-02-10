@@ -23,11 +23,10 @@
  *
  */
 
-import { runner, apiRunner } from './core/globals';
+import { runner } from './core/globals';
 import { RunOptions } from './common_types';
 
 export async function run(options: RunOptions) {
-  apiRunner._run(options);
   return runner._run(options);
 }
 

@@ -24,17 +24,10 @@
  */
 
 import { APIRequestContext } from 'playwright-core';
-import { Step } from './step';
-import {
-  VoidCallback,
-  Params,
-  Location,
-  StatusValue,
-  APIHooksCallback,
-} from '../common_types';
-import { Monitor, MonitorConfig } from './monitor';
-import { isMatch } from '../helpers';
-import { APIRunnerInfo } from '../core/api-runner';
+import { Params } from '../common_types';
+
+import { Journey } from './journey';
+import { RunnerInfo } from '../core/runner';
 
 export type APIJourneyOptions = {
   name: string;
@@ -42,93 +35,17 @@ export type APIJourneyOptions = {
   tags?: string[];
 };
 
-type HookType = 'before' | 'after';
-export type APIHooks = Record<HookType, Array<APIHooksCallback>>;
-type APIJourneyCallbackOpts = {
+export type APIJourneyCallbackOpts = {
   params: Params;
   request: APIRequestContext;
-  info: APIRunnerInfo;
+  info: RunnerInfo;
 };
 export type APIJourneyCallback = (options: APIJourneyCallbackOpts) => void;
-
-export class APIJourney {
-  readonly name: string;
-  readonly id?: string;
-  readonly tags?: string[];
-  readonly location?: Location;
-  readonly steps: Step[] = [];
-  #cb: APIJourneyCallback;
-  #hooks: APIHooks = { before: [], after: [] };
-  #monitor: Monitor;
-  skip = false;
-  only = false;
-  _startTime = 0;
-  duration = -1;
-  status: StatusValue = 'pending';
-  error?: Error;
-
-  constructor(
-    options: APIJourneyOptions,
-    cb: APIJourneyCallback,
-    location?: Location
-  ) {
-    this.name = options.name;
-    this.id = options.id || options.name;
-    this.tags = options.tags;
-    this.#cb = cb;
-    this.location = location;
-    this._updateMonitor({});
-  }
-
-  _addStep(name: string, cb: VoidCallback, location?: Location) {
-    const step = new Step(name, this.steps.length + 1, cb, location);
-    this.steps.push(step);
-    return step;
-  }
-
-  _addHook(type: HookType, cb: APIHooksCallback) {
-    this.#hooks[type].push(cb);
-  }
-
-  _getHook(type: HookType) {
-    return this.#hooks[type];
-  }
-
-  _getMonitor() {
-    return this.#monitor;
-  }
-
-  _updateMonitor(config: MonitorConfig) {
-    /**
-     * Use defaults values from journey for monitor object (id, name and tags)
-     */
-    this.#monitor = new Monitor({
-      name: this.name,
-      id: this.id,
-      type: 'browser',
-      tags: this.tags ?? [],
-      ...config,
-    });
-    this.#monitor.setSource(this.location);
-    this.#monitor.setFilter({ match: this.name });
-  }
-
-  get cb() {
-    return this.#cb;
-  }
-
-  /**
-   * Matches journeys based on the provided args. Proitize tags over match
-   */
-  _isMatch(matchPattern: string, tagsPattern: Array<string>) {
-    return isMatch(this.tags, this.name, tagsPattern, matchPattern);
-  }
-}
 
 type APIJourneyType = (
   options: string | APIJourneyOptions,
   callback: APIJourneyCallback
-) => APIJourney;
+) => Journey;
 
 export type APIJourneyWithAnnotations = APIJourneyType & {
   /**
