@@ -44,7 +44,6 @@ import {
   JourneyResult,
   StepResult,
   PushOptions,
-  APIDriver,
 } from '../common_types';
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
@@ -78,7 +77,7 @@ export default class Runner implements RunnerInfo {
   #journeys: Journey[] = [];
   #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   #screenshotPath = join(CACHE_PATH, 'screenshots');
-  #driver?: Driver | APIDriver;
+  #driver?: Driver;
   #browserDelay = -1;
   #hookError: Error | undefined;
   #monitor?: Monitor;
@@ -316,7 +315,7 @@ export default class Runner implements RunnerInfo {
 
   async #startJourney(journey: Journey, options: RunOptions) {
     journey._startTime = monotonicTimeInSeconds();
-    this.#driver = await Gatherer.setupDriver(options, journey);
+    this.#driver = (await Gatherer.setupDriver(options, journey)) as Driver;
     await Gatherer.beginRecording(this.#driver, options);
     /**
      * For each journey we create the screenshots folder for

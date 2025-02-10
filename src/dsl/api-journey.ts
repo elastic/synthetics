@@ -24,9 +24,9 @@
  */
 
 import { APIRequestContext } from 'playwright-core';
-import { Params } from '../common_types';
+import { APIDriver, Driver, Location, Params } from '../common_types';
 
-import { Journey } from './journey';
+import { Journey, JourneyCallback, JourneyOptions } from './journey';
 import { RunnerInfo } from '../core/runner';
 
 export type APIJourneyOptions = {
@@ -45,7 +45,20 @@ export type APIJourneyCallback = (options: APIJourneyCallbackOpts) => void;
 type APIJourneyType = (
   options: string | APIJourneyOptions,
   callback: APIJourneyCallback
-) => Journey;
+) => APIJourney;
+
+export class APIJourney extends Journey {
+  #cb: APIJourneyCallback;
+  #driver?: Driver | APIDriver;
+  constructor(
+    options: JourneyOptions & { type?: 'browser' | 'api' },
+    cb: JourneyCallback,
+    location?: Location
+  ) {
+    super(options, cb, location);
+    this.#cb = cb;
+  }
+}
 
 export type APIJourneyWithAnnotations = APIJourneyType & {
   /**

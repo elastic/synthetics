@@ -24,6 +24,7 @@
  */
 
 import {
+  APIJourney,
   APIJourneyCallback,
   APIJourneyOptions,
   APIJourneyWithAnnotations,
@@ -74,7 +75,7 @@ const createAPIJourney = (type?: 'skip' | 'only') =>
       if (typeof options === 'string') {
         options = { name: options, id: options };
       }
-      const j = new Journey({ ...options, type: 'api' }, callback, location);
+      const j = new APIJourney({ ...options, type: 'api' }, callback, location);
       if (type) {
         j[type] = true;
       }
