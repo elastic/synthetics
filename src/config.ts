@@ -84,7 +84,9 @@ function readAndParseConfig(configPath) {
     const requiredModule = require(configPath);
     return interopRequireDefault(requiredModule).default;
   } catch (e) {
-    throw new Error('Unable to read synthetics config: ' + configPath + '\n' + e);
+    throw new Error(
+      'Unable to read synthetics config: ' + configPath + '\n' + e
+    );
   }
 }
 
