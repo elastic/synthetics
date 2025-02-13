@@ -25,7 +25,7 @@
 
 import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { Journey } from '../dsl/journey';
+import { Journey, JourneyCallbackOpts } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
@@ -44,6 +44,7 @@ import {
   JourneyResult,
   StepResult,
   PushOptions,
+  APIDriver,
 } from '../common_types';
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
@@ -77,7 +78,7 @@ export default class Runner implements RunnerInfo {
   #journeys: Journey[] = [];
   #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   #screenshotPath = join(CACHE_PATH, 'screenshots');
-  #driver?: Driver;
+  #driver?: Driver | APIDriver;
   #browserDelay = -1;
   #hookError: Error | undefined;
   #monitor?: Monitor;
@@ -315,13 +316,15 @@ export default class Runner implements RunnerInfo {
 
   async #startJourney(journey: Journey, options: RunOptions) {
     journey._startTime = monotonicTimeInSeconds();
-    this.#driver = (await Gatherer.setupDriver(options, journey)) as Driver;
+    this.#driver = await Gatherer.setupDriver(options, journey.type);
     await Gatherer.beginRecording(this.#driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.#screenshotPath, { recursive: true });
+    if (journey.type === 'browser') {
+      /**
+       * For each journey we create the screenshots folder for
+       * caching all screenshots and clear them at end of each journey
+       */
+      await mkdir(this.#screenshotPath, { recursive: true });
+    }
     const params = options.params;
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
@@ -330,7 +333,7 @@ export default class Runner implements RunnerInfo {
     /**
      * Execute the journey callback which registers the steps for current journey
      */
-    journey.cb({ ...this.#driver, params, info: this });
+    journey.cb({ ...this.#driver, params, info: this } as JourneyCallbackOpts);
   }
 
   async #endJourney(

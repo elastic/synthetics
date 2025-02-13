@@ -38,7 +38,6 @@ import {
   NetworkConditions,
   RunOptions,
 } from '../common_types';
-import { Journey } from '../dsl';
 
 // Default timeout for Playwright actions and Navigations
 const DEFAULT_TIMEOUT = 50000;
@@ -77,13 +76,13 @@ export class Gatherer {
     });
   }
 
-  static async setupDriver(
+  static async setupDriver<T extends 'browser' | 'api' = 'browser'>(
     options: RunOptions,
-    journey: Journey
-  ): Promise<Driver | APIDriver> {
+    journeyType: T = 'browser' as T
+  ): Promise<T extends 'browser' ? Driver : APIDriver> {
     const { playwrightOptions } = options;
 
-    if (journey.type === 'browser') {
+    if (journeyType === 'browser') {
       await Gatherer.launchBrowser(options);
 
       const context = await Gatherer.browser.newContext({
@@ -108,10 +107,16 @@ export class Gatherer {
       const page = await context.newPage();
       const client = await context.newCDPSession(page);
       const request = await apiRequest.newContext({ ...playwrightOptions });
-      return { browser: Gatherer.browser, context, page, client, request };
+      return {
+        browser: Gatherer.browser,
+        context,
+        page,
+        client,
+        request,
+      } as Driver;
     } else {
       const request = await apiRequest.newContext({ ...playwrightOptions });
-      return { request };
+      return { request } as T extends 'browser' ? Driver : APIDriver;
     }
   }
 

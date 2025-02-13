@@ -50,7 +50,7 @@ export type JourneyOptions = {
 
 type HookType = 'before' | 'after';
 export type Hooks = Record<HookType, Array<HooksCallback>>;
-type JourneyCallbackOpts = {
+export type JourneyCallbackOpts = {
   page: Page;
   context: BrowserContext;
   browser: Browser;
