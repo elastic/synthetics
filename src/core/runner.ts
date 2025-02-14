@@ -442,6 +442,7 @@ export default class Runner implements RunnerInfo {
       alert: options.alert,
       retestOnFailure: options.retestOnFailure,
       enabled: options.enabled,
+      fields: options.fields,
     });
 
     const monitors: Monitor[] = [];

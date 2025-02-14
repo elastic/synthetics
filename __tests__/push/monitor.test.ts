@@ -31,6 +31,7 @@ import {
   createLightweightMonitors,
   diffMonitors,
   parseAlertConfig,
+  parseFields,
   parseSchedule,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
@@ -619,6 +620,61 @@ heartbeat.monitors:
         tls: { enabled: true },
       });
       expect(config).toEqual({});
+    });
+  });
+
+  describe('parseFields', () => {
+    it('extracts fields from config and removes them', () => {
+      const config = {
+        'fields.label1': 'value1',
+        'fields.label2': 'value2',
+        otherKey: 'otherValue',
+      };
+
+      const result = parseFields(config as any);
+
+      expect(result).toEqual({ label1: 'value1', label2: 'value2' });
+      expect(config).toEqual({ otherKey: 'otherValue' }); // Ensure fields were deleted
+    });
+
+    it('merges global fields into parsed fields', () => {
+      const config = {
+        'fields.label1': 'value1',
+      };
+      const gFields = {
+        label2: 'globalValue',
+        label3: 'anotherGlobalValue',
+      };
+
+      const result = parseFields(config as any, gFields);
+
+      expect(result).toEqual({
+        label1: 'value1',
+        label2: 'globalValue',
+        label3: 'anotherGlobalValue',
+      });
+    });
+
+    it('returns only global fields if no config fields exist', () => {
+      const config = {
+        otherKey: 'otherValue',
+      };
+      const gFields = {
+        label1: 'globalValue',
+      };
+
+      const result = parseFields(config as any, gFields);
+
+      expect(result).toEqual({ label1: 'globalValue' });
+    });
+
+    it('returns undefined if no fields exist', () => {
+      const config = {
+        otherKey: 'otherValue',
+      };
+      const result = parseFields(config as any);
+
+      expect(result).toBeUndefined();
     });
   });
 });
