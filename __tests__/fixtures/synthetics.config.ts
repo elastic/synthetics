@@ -49,7 +49,7 @@ module.exports = env => {
         },
       },
       fields: {
-        area: 'website',
+        fromConfig: 'website',
       },
     },
   };
