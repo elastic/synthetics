@@ -104,7 +104,10 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     for (const value of sizes.values()) {
       totalSize += value;
     }
-    progress('total size of the monitors payload is ' + printBytes(totalSize));
+    progress(
+      `total size of the ${sizes.size} monitors payload is ` +
+        printBytes(totalSize)
+    );
   }
 
   if (options.dryRun) {
@@ -119,6 +122,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     const updatedMonSchemas = schemas.filter(s => updatedMonitors.has(s.id));
     const chunks = getSizedChunks(
       updatedMonSchemas,
+      sizes,
       MAX_PAYLOAD_SIZE_KIB,
       CHUNK_SIZE
     );
@@ -323,10 +327,11 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   }
 
   let schemas: MonitorSchema[] = [];
+  let sizes: Map<string, number> = new Map();
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
-    ({ schemas } = await buildMonitorSchema(monitors, false));
-    const chunks = getSizedChunks(schemas, MAX_PAYLOAD_SIZE_KIB, 10);
+    ({ schemas, sizes } = await buildMonitorSchema(monitors, false));
+    const chunks = getSizedChunks(schemas, sizes, MAX_PAYLOAD_SIZE_KIB, 10);
     for (const chunk of chunks) {
       await liveProgress(
         createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),

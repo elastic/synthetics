@@ -38,7 +38,7 @@ import { generateURL } from './utils';
 
 // Default chunk size for bulk put / delete
 export const CHUNK_SIZE = parseInt(process.env.CHUNK_SIZE) || 250;
-export const MAX_PAYLOAD_SIZE_KIB = (1048576 * 100) / 1024;
+export const MAX_PAYLOAD_SIZE_KIB = (1048576 * 50) / 1024; // 50MB
 
 export type PutResponse = {
   createdMonitors: string[];

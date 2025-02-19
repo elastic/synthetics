@@ -98,8 +98,9 @@ export function getChunks(arr: string[], size: number): string[][] {
   return chunks;
 }
 
-export function getSizedChunks<T extends { size?: number }>(
+export function getSizedChunks<T extends { id?: string }>(
   arr: Array<T>,
+  sizes: Map<string, number>,
   maxChunkSizeKB: number,
   maxChunkItems: number
 ): Array<T[]> {
@@ -108,25 +109,28 @@ export function getSizedChunks<T extends { size?: number }>(
   let currentSize = 0;
 
   for (const item of arr) {
-    const size = item.size || 1;
+    const sizeKb = item.id ? sizes.get(item.id) / 1024 : 1;
 
     // If adding the current item would exceed limits, create a new chunk
     if (
       currentChunk.length >= maxChunkItems ||
-      currentSize + size > maxChunkSizeKB
+      currentSize + sizeKb > maxChunkSizeKB
     ) {
       chunks.push(currentChunk);
       currentChunk = [];
       currentSize = 0;
     }
     currentChunk.push(item);
-    currentSize += size;
+    currentSize += sizeKb;
   }
 
   // Push the last chunk if it contains any items
   if (currentChunk.length > 0) {
     chunks.push(currentChunk);
   }
+
+  // log chunk sizes
+  progress(`Monitors will be pushed in ${chunks.length} chunks`);
 
   return chunks;
 }

@@ -112,13 +112,13 @@ export function formatNotFoundError(url: string, message: string) {
 }
 
 export function formatAPIError(
-  statuCode: number,
+  statusCode: number,
   error: string,
   message: string
 ) {
   let outer = bold(`${symbols['failed']} Error\n`);
   let inner = bold(
-    `${symbols['failed']} monitor creation failed - ${statuCode}:${error}\n`
+    `${symbols['failed']} monitor creation failed - ${statusCode}:${error}\n`
   );
   inner += indent(message, '    ');
   outer += indent(inner);

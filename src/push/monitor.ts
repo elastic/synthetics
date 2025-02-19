@@ -301,7 +301,7 @@ export function buildMonitorFromYaml(
   });
 
   /**
-   * Params support is only available for lighweight monitors
+   * Params support is only available for lightweight monitors
    * post 8.7.2 stack
    */
   if (isParamOptionSupported(options.kibanaVersion)) {

@@ -109,12 +109,8 @@ describe('Bundler', () => {
   });
 
   it('build journey', async () => {
-    const { content, sizeKb } = await bundler.build(
-      journeyFile,
-      generateTempPath()
-    );
+    const content = await bundler.build(journeyFile, generateTempPath());
     await validateZip(content);
-    expect(sizeKb).not.toEqual(0);
   });
 
   it('bundle should be idempotent', async () => {
