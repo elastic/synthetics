@@ -41,25 +41,34 @@ describe('Push Utils', () => {
 
   describe('getSizedChunks', () => {
     it('should return empty array when input is empty', () => {
-      expect(getSizedChunks([], 100, 100)).toEqual([]);
+      expect(getSizedChunks([], new Map(), 100, 100)).toEqual([]);
     });
 
     it('should return chunks of input array based on maxChunkSizeKB', () => {
       const input = [
-        { size: 10 },
-        { size: 20 },
-        { size: 30 },
-        { size: 40 },
-        { size: 50 },
-        { size: 60 },
+        { id: '1' },
+        { id: '2' },
+        { id: '3' },
+        { id: '4' },
+        { id: '5' },
+        { id: '6' },
       ];
-      expect(getSizedChunks(input, 1000, 100)).toEqual([input]);
-      expect(getSizedChunks(input, 100, 3)).toEqual([
+      // map of id and sizes
+      const sizes = new Map([
+        ['1', 10 * 1024],
+        ['2', 20 * 1024],
+        ['3', 30 * 1024],
+        ['4', 40 * 1024],
+        ['5', 50 * 1024],
+        ['6', 60 * 1024],
+      ]);
+      expect(getSizedChunks(input, sizes, 1000, 100)).toEqual([input]);
+      expect(getSizedChunks(input, sizes, 100, 3)).toEqual([
         [input[0], input[1], input[2]],
         [input[3], input[4]],
         [input[5]],
       ]);
-      expect(getSizedChunks(input, 100, 2)).toEqual([
+      expect(getSizedChunks(input, sizes, 100, 2)).toEqual([
         [input[0], input[1]],
         [input[2], input[3]],
         [input[4]],
