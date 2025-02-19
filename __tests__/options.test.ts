@@ -92,7 +92,7 @@ describe('options', () => {
         },
       },
       fields: {
-        area: 'website',
+        fromConfig: 'website',
       },
     });
 
@@ -126,7 +126,6 @@ describe('options', () => {
       },
       fields: {
         env: 'dev',
-        area: 'website',
       },
     });
   });

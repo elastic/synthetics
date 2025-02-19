@@ -24,25 +24,19 @@
  */
 
 import path from 'path';
-import { stat, unlink, readFile } from 'fs/promises';
+import { unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
 import { commonOptions } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
 
-// 1500KB Max Gzipped limit for bundled code to be pushed as Kibana project monitors.
-const SIZE_LIMIT_KB = 1500;
-
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
 }
 
 export class Bundler {
-  moduleMap = new Map<string, string>();
-  constructor() {}
-
-  async prepare(absPath: string) {
+  async bundle(absPath: string) {
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
       ...{
@@ -59,57 +53,42 @@ export class Bundler {
     if (result.errors.length > 0) {
       throw result.errors;
     }
-    this.moduleMap.set(absPath, result.outputFiles[0].text);
+    return result.outputFiles[0].text;
   }
 
-  async zip(outputPath: string) {
+  async zip(source: string, code: string, dest: string) {
     return new Promise((fulfill, reject) => {
-      const output = createWriteStream(outputPath);
+      const output = createWriteStream(dest);
       const archive = archiver('zip', {
         zlib: { level: 9 },
       });
       archive.on('error', reject);
       output.on('close', fulfill);
       archive.pipe(output);
-      for (const [path, content] of this.moduleMap.entries()) {
-        const relativePath = relativeToCwd(path);
-        // Date is fixed to Unix epoch so the file metadata is
-        // not modified everytime when files are bundled
-        archive.append(content, {
-          name: relativePath,
-          date: new Date('1970-01-01'),
-        });
-      }
+      const relativePath = relativeToCwd(source);
+      // Date is fixed to Unix epoch so the file metadata is
+      // not modified everytime when files are bundled
+      archive.append(code, {
+        name: relativePath,
+        date: new Date('1970-01-01'),
+      });
       archive.finalize();
     });
   }
 
   async build(entry: string, output: string) {
-    await this.prepare(entry);
-    await this.zip(output);
+    const code = await this.bundle(entry);
+    await this.zip(entry, code, output);
     const content = await this.encode(output);
-    const sizeKb = await this.checkSize(output);
     await this.cleanup(output);
-    return { content, sizeKb };
+    return content;
   }
 
   async encode(outputPath: string) {
     return await readFile(outputPath, 'base64');
   }
 
-  async checkSize(outputPath: string) {
-    const { size } = await stat(outputPath);
-    const sizeKb = size / 1024;
-    if (sizeKb > SIZE_LIMIT_KB) {
-      throw new Error(
-        `Bundled monitor code exceeds the recommended ${SIZE_LIMIT_KB}KB limit. Please check your dependencies and try again.`
-      );
-    }
-    return sizeKb;
-  }
-
   async cleanup(outputPath: string) {
-    this.moduleMap = new Map<string, string>();
     await unlink(outputPath);
   }
 }

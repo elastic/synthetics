@@ -35,7 +35,7 @@ import { runner } from '../../src/core/globals';
 
 beforeEach(async () => await runner._reset());
 
-const noop = () => { };
+const noop = () => {};
 const name = 'journey';
 
 it('add global hooks to runner', () => {
@@ -77,8 +77,8 @@ it('add hooks to journeys', () => {
   expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
   expect(runner.currentJourney?.steps.length).toBe(0);
-  expect(runner.currentJourney?._getHook("before")).toEqual([noop]);
-  expect(runner.currentJourney?._getHook("after")).toEqual([noop]);
+  expect(runner.currentJourney?._getHook('before')).toEqual([noop]);
+  expect(runner.currentJourney?._getHook('after')).toEqual([noop]);
 });
 
 it('add hooks - error on before/after outside journey context', () => {

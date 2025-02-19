@@ -31,6 +31,7 @@ import {
   createLightweightMonitors,
   diffMonitors,
   parseAlertConfig,
+  parseFields,
   parseSchedule,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
@@ -70,11 +71,11 @@ describe('Monitors', () => {
   });
 
   it('build lightweight monitor schema', async () => {
-    const schema = await buildMonitorSchema(
+    const { schemas } = await buildMonitorSchema(
       [createTestMonitor('heartbeat.yml', 'http')],
       true
     );
-    expect(schema[0]).toEqual({
+    expect(schemas[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
@@ -89,8 +90,8 @@ describe('Monitors', () => {
 
   it('build browser monitor schema', async () => {
     const monitor = createTestMonitor('example.journey.ts');
-    const schema = await buildMonitorSchema([monitor], true);
-    expect(schema[0]).toEqual({
+    const { schemas } = await buildMonitorSchema([monitor], true);
+    expect(schemas[0]).toEqual({
       id: 'test-monitor',
       name: 'test',
       schedule: 10,
@@ -106,9 +107,9 @@ describe('Monitors', () => {
       fields: { area: 'website' },
     });
     monitor.update({ locations: ['brazil'], fields: { env: 'dev' } });
-    const schema1 = await buildMonitorSchema([monitor], true);
-    expect(schema1[0].hash).not.toEqual(schema[0].hash);
-    expect(schema1[0].fields).toEqual({
+    const { schemas: schemas1 } = await buildMonitorSchema([monitor], true);
+    expect(schemas1[0].hash).not.toEqual(schemas[0].hash);
+    expect(schemas1[0].fields).toEqual({
       area: 'website',
       env: 'dev',
     });
@@ -619,6 +620,61 @@ heartbeat.monitors:
         tls: { enabled: true },
       });
       expect(config).toEqual({});
+    });
+  });
+
+  describe('parseFields', () => {
+    it('extracts fields from config and removes them', () => {
+      const config = {
+        'fields.label1': 'value1',
+        'fields.label2': 'value2',
+        otherKey: 'otherValue',
+      };
+
+      const result = parseFields(config as any);
+
+      expect(result).toEqual({ label1: 'value1', label2: 'value2' });
+      expect(config).toEqual({ otherKey: 'otherValue' }); // Ensure fields were deleted
+    });
+
+    it('merges global fields into parsed fields', () => {
+      const config = {
+        'fields.label1': 'value1',
+      };
+      const gFields = {
+        label2: 'globalValue',
+        label3: 'anotherGlobalValue',
+      };
+
+      const result = parseFields(config as any, gFields);
+
+      expect(result).toEqual({
+        label1: 'value1',
+        label2: 'globalValue',
+        label3: 'anotherGlobalValue',
+      });
+    });
+
+    it('returns only global fields if no config fields exist', () => {
+      const config = {
+        otherKey: 'otherValue',
+      };
+      const gFields = {
+        label1: 'globalValue',
+      };
+
+      const result = parseFields(config as any, gFields);
+
+      expect(result).toEqual({ label1: 'globalValue' });
+    });
+
+    it('returns undefined if no fields exist', () => {
+      const config = {
+        otherKey: 'otherValue',
+      };
+      const result = parseFields(config as any);
+
+      expect(result).toBeUndefined();
     });
   });
 });

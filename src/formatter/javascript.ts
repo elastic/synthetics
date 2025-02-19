@@ -199,7 +199,9 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     const offset = this.isProject ? 2 + stepIndent : 0 + stepIndent;
     const formatter = new JavaScriptFormatter(offset);
 
-    const locators = actionInContext.frame.framePath.map(selector => `.${super._asLocator(selector)}.contentFrame()`);
+    const locators = actionInContext.frame.framePath.map(
+      selector => `.${super._asLocator(selector)}.contentFrame()`
+    );
     const subject = `${pageAlias}${locators.join('')}`;
     const signals = toSignalMap(action);
 

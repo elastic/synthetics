@@ -25,16 +25,10 @@
 
 import { grey, cyan, dim, italic } from 'kleur/colors';
 import { now } from '../helpers';
-
-/**
- * Set debug based on DEBUG ENV and namespace - synthetics
- */
-if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
-  process.env['__SYNTHETICS__DEBUG__'] = '1';
-}
+import { inDebugMode } from './globals';
 
 export function log(msg) {
-  if (!process.env['__SYNTHETICS__DEBUG__'] || !msg) {
+  if (!inDebugMode() || !msg) {
     return;
   }
   if (typeof msg === 'object') {

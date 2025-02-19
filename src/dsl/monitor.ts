@@ -86,7 +86,6 @@ type MonitorFilter = {
 
 export class Monitor {
   content?: string;
-  size?: number;
   source?: Location;
   filter: MonitorFilter;
   constructor(public config: MonitorConfig = {}) {}
@@ -119,10 +118,6 @@ export class Monitor {
    */
   setContent(content = '') {
     this.content = content;
-  }
-
-  setSize(size: number) {
-    this.size = size;
   }
 
   /**
@@ -161,6 +156,13 @@ export class Monitor {
       .update(this.content || '')
       .update(this.source?.file || '')
       .digest('base64');
+  }
+
+  /**
+   * Returns the size of the monitor in bytes which is sent as payload to Kibana
+   */
+  size() {
+    return JSON.stringify(this).length;
   }
 
   validate() {

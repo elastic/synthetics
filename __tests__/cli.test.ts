@@ -494,9 +494,7 @@ describe('CLI', () => {
 
   describe('TOTP token', () => {
     async function runTotp(args) {
-      const cli = new CLIMock()
-        .args(['totp', ...args])
-        .run({});
+      const cli = new CLIMock().args(['totp', ...args]).run({});
       await cli.exitCode;
       return cli.stderr();
     }
