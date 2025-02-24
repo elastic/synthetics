@@ -13,6 +13,8 @@
     "watch": "tsc -w",
     "lint": "eslint . --rulesdir utils/eslint-rules",
     "lint:fix": "npm run lint -- --fix",
+    "format:check": "prettier --check '**/*.ts'",
+    "format:fix": "prettier --write '**/*.ts'",
     "test": "npm run test:unit && npm run test:browser-service",
     "test:unit": "jest",
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
@@ -30,7 +32,8 @@
   "lint-staged": {
     "*.{js,ts}": [
       "npm run lint:fix",
-      "prettier --write"
+      "npm run format:fix",
+      "git add"
     ]
   },
   "husky": {
@@ -62,16 +65,17 @@
     "micromatch": "^4.0.8",
     "otpauth": "^9.3.2",
     "pirates": "^4.0.5",
-    "playwright": "=1.47.0",
-    "playwright-chromium": "=1.47.0",
-    "playwright-core": "=1.47.0",
+    "playwright": "=1.48.2",
+    "playwright-chromium": "=1.48.2",
+    "playwright-core": "=1.48.2",
     "semver": "^7.5.4",
     "sharp": "^0.33.5",
     "snakecase-keys": "^4.0.1",
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
     "stack-utils": "^2.0.6",
-    "undici": "^5.28.3",
+    "undici": "^5.28.5",
+    "unzip-stream": "^0.3.4",
     "yaml": "^2.2.2"
   },
   "devDependencies": {
@@ -81,7 +85,7 @@
     "@types/babel__code-frame": "^7.0.3",
     "@types/jest": "^28.1.8",
     "@types/micromatch": "^4.0.9",
-    "@types/node": "^16.11.59",
+    "@types/node": "^18.19.63",
     "@types/semver": "^7",
     "@types/stack-utils": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^5.38.0",
@@ -94,13 +98,13 @@
     "lint-staged": "^10.5.3",
     "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
-    "semantic-release": "^21.1.1",
+    "semantic-release": "^22.0.3",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.1.6",
-    "unzipper": "^0.10.11"
+    "typescript": "^5.1.6"
   },
   "overrides": {
-    "follow-redirects": "^1.15.6"
+    "follow-redirects": "^1.15.6",
+    "cross-spawn": "^7.0.5"
   },
   "engines": {
     "node": ">=18.20.3"

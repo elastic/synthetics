@@ -29,7 +29,11 @@ import { renderError, serializeError } from './reporter-util';
 import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import { Journey, Step } from '../dsl';
-import { JourneyEndResult, JourneyStartResult, StepResult } from '../common_types';
+import {
+  JourneyEndResult,
+  JourneyStartResult,
+  StepResult,
+} from '../common_types';
 
 export function renderDuration(durationMs) {
   return parseInt(durationMs);
@@ -62,11 +66,11 @@ export default class BaseReporter implements Reporter {
     this.metrics.registered++;
   }
 
-  onJourneyStart(journey: Journey, { }: JourneyStartResult) {
+  onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(_: Journey, step: Step, { }: StepResult) {
+  onStepEnd(_: Journey, step: Step, {}: StepResult) {
     const { status, error } = step;
     const message = `${symbols[status]}  Step: '${step.name}' ${status} ${gray(
       '(' + renderDuration(step.duration * 1000) + ' ms)'
@@ -80,7 +84,7 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(journey: Journey, { }: JourneyEndResult) {
+  onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**

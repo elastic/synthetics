@@ -25,10 +25,7 @@
 
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname } from 'path';
-import {
-  JourneyEndResult,
-  JourneyStartResult,
-} from '../common_types';
+import { JourneyEndResult, JourneyStartResult } from '../common_types';
 import { Journey, Step } from '../dsl';
 import { indent, now } from '../helpers';
 import BaseReporter from './base';
@@ -59,7 +56,7 @@ export default class JUnitReporter extends BaseReporter {
   private totalSkipped = 0;
   #journeyMap = new Map<string, XMLEntry>();
 
-  override onJourneyStart(journey: Journey, { }: JourneyStartResult) {
+  override onJourneyStart(journey: Journey, {}: JourneyStartResult) {
     if (!this.#journeyMap.has(journey.name)) {
       const entry = {
         name: 'testsuite',
@@ -76,10 +73,7 @@ export default class JUnitReporter extends BaseReporter {
     }
   }
 
-  override onStepEnd(
-    journey: Journey,
-    step: Step,
-  ) {
+  override onStepEnd(journey: Journey, step: Step) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
     }
@@ -117,7 +111,7 @@ export default class JUnitReporter extends BaseReporter {
     entry.children.push(caseEntry);
   }
 
-  override onJourneyEnd(journey: Journey, { }: JourneyEndResult) {
+  override onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
     if (!this.#journeyMap.has(journey.name)) {
       return;
     }

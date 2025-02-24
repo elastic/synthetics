@@ -28,6 +28,7 @@ import { extname, join } from 'path';
 import { LineCounter, parseDocument, Document, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
+import NodeBuffer from 'node:buffer';
 import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
@@ -41,6 +42,8 @@ import { isParamOptionSupported, normalizeMonitorName } from './utils';
 
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
+// 1500kB Max Gzipped limit for bundled monitor code to be pushed as Kibana project monitors.
+const SIZE_LIMIT_KB = 1500;
 
 export type MonitorSchema = Omit<MonitorConfig, 'locations' | 'serviceName'> & {
   locations: string[];
@@ -134,7 +137,8 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   const bundlePath = join(SYNTHETICS_PATH, 'bundles');
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
-  const schemas: MonitorAPISchema[] = [];
+  const schemas: MonitorSchema[] = [];
+  const sizes: Map<string, number> = new Map();
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
@@ -157,6 +161,17 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
       monitor.setContent(content);
       Object.assign(schema, { content, filter });
     }
+    const size = monitor.size();
+    const sizeKB = Math.round(size / 1000);
+    if (sizeKB > SIZE_LIMIT_KB) {
+      let outer = bold(
+        `Aborted: Bundled code ${sizeKB}kB exceeds the recommended ${SIZE_LIMIT_KB}kB limit. Please check the dependencies imported.\n`
+      );
+      const inner = `* ${config.id} - ${source.file}:${source.line}:${source.column}\n`;
+      outer += indent(inner);
+      throw red(outer);
+    }
+    sizes.set(config.id, size);
     /**
      * Generate hash only after the bundled content is created
      * to capture code changes in imported files
@@ -168,7 +183,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
   }
 
   await rm(bundlePath, { recursive: true });
-  return schemas;
+  return { schemas, sizes };
 }
 
 export async function createLightweightMonitors(
@@ -194,7 +209,13 @@ export async function createLightweightMonitors(
   let warnOnce = false;
   const monitors: Monitor[] = [];
   for (const file of lwFiles.values()) {
-    const content = await readFile(file, 'utf-8');
+    // First check encoding and warn if any files are not the correct encoding.
+    const bufferContent = await readFile(file);
+    const isUtf8 = NodeBuffer.isUtf8(bufferContent);
+    if (!isUtf8) {
+      warn(`${file} is not UTF-8 encoded. Monitors might be skipped.`);
+    }
+    const content = bufferContent.toString('utf-8');
     const lineCounter = new LineCounter();
     const parsedDoc = parseDocument(content, {
       lineCounter,
@@ -228,6 +249,7 @@ export async function createLightweightMonitors(
       const monitor = mergedConfig[i];
       // Skip browser monitors from the YML files
       if (monitor['type'] === 'browser') {
+        warn(`Browser monitors from ${file} are skipped.`);
         continue;
       }
       const { line, col } = lineCounter.linePos(offsets[i]);

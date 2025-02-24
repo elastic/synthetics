@@ -35,7 +35,7 @@ import { runner } from '../../src/core/globals';
 
 beforeEach(async () => await runner._reset());
 
-const noop = () => { };
+const noop = () => {};
 const name = 'journey';
 
 it('add global hooks to runner', () => {
@@ -54,7 +54,7 @@ it('add journeys to runner', () => {
 
   expect(j.name).toBe(name);
   expect(j.id).toBe(name);
-  expect(runner.journey).toEqual(j);
+  expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
 });
 
@@ -63,10 +63,10 @@ it('add steps to journeys', () => {
   const s1 = step('step1', noop);
   const s2 = step('step2', noop);
 
-  expect(runner.journey).toEqual(j);
+  expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
-  expect(runner.journey?.steps.length).toBe(2);
-  expect(runner.journey?.steps).toEqual([s1, s2]);
+  expect(runner.currentJourney?.steps.length).toBe(2);
+  expect(runner.currentJourney?.steps).toEqual([s1, s2]);
 });
 
 it('add hooks to journeys', () => {
@@ -74,11 +74,11 @@ it('add hooks to journeys', () => {
   before(noop);
   after(noop);
 
-  expect(runner.journey).toEqual(j);
+  expect(runner.currentJourney).toEqual(j);
   expect(runner.journeys.length).toBe(1);
-  expect(runner.journey?.steps.length).toBe(0);
-  expect(runner.journey?._getHook("before")).toEqual([noop]);
-  expect(runner.journey?._getHook("after")).toEqual([noop]);
+  expect(runner.currentJourney?.steps.length).toBe(0);
+  expect(runner.currentJourney?._getHook('before')).toEqual([noop]);
+  expect(runner.currentJourney?._getHook('after')).toEqual([noop]);
 });
 
 it('add hooks - error on before/after outside journey context', () => {

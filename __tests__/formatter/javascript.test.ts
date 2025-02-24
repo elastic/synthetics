@@ -31,7 +31,7 @@ import {
 const recorderStep: Step = {
   actions: [
     {
-      frame: { pageAlias: 'page', isMainFrame: true, url: 'about:blank' },
+      frame: { pageAlias: 'page', framePath: [] },
       committed: true,
       action: {
         name: 'openPage',
@@ -42,8 +42,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       committed: true,
       action: {
@@ -55,8 +54,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       action: {
         name: 'assert',
@@ -69,8 +67,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       action: {
         name: 'assert',
@@ -83,8 +80,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       action: {
         name: 'assert',
@@ -98,8 +94,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       action: {
         name: 'click',
@@ -120,8 +115,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page1',
-        isMainFrame: true,
-        url: 'https://github.com/babel/minify',
+        framePath: [],
       },
       action: {
         name: 'click',
@@ -154,8 +148,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page1',
-        isMainFrame: true,
-        url: 'https://github.com/babel/minify',
+        framePath: [],
       },
       committed: true,
       action: {
@@ -166,8 +159,7 @@ const recorderStep: Step = {
     {
       frame: {
         pageAlias: 'page',
-        isMainFrame: true,
-        url: 'https://vigneshh.in/',
+        framePath: [],
       },
       committed: true,
       action: {
@@ -219,8 +211,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page',
-              isMainFrame: true,
-              url: 'https://vigneshh.in/',
+              framePath: [],
             },
             committed: true,
             action: {
@@ -233,8 +224,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page',
-              isMainFrame: true,
-              url: 'https://vigneshh.in/',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -263,8 +253,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/zalando/tailor',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -297,8 +286,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/orgs/zalando/packages?repo_name=tailor',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -327,8 +315,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/orgs/zalando/repositories',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -344,8 +331,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/orgs/zalando/repositories',
+              framePath: [],
             },
             action: {
               name: 'fill',
@@ -364,8 +350,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/orgs/zalando/repositories?q=tailor&type=all&language=&sort=',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -398,8 +383,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page',
-              isMainFrame: true,
-              url: 'https://vigneshh.in/',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -428,8 +412,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page2',
-              isMainFrame: true,
-              url: 'https://github.com/babel/minify',
+              framePath: [],
             },
             action: {
               name: 'click',
@@ -470,8 +453,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page2',
-              isMainFrame: true,
-              url: 'https://github.com/topics/babel-minify',
+              framePath: [],
             },
             committed: true,
             action: {
@@ -487,8 +469,7 @@ describe('Synthetics JavaScript formatter', () => {
           {
             frame: {
               pageAlias: 'page1',
-              isMainFrame: true,
-              url: 'https://github.com/zalando/tailor',
+              framePath: [],
             },
             committed: true,
             action: {
@@ -511,8 +492,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               committed: true,
               action: {
@@ -525,8 +505,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -555,8 +534,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                isMainFrame: true,
-                url: 'https://github.com/zalando/tailor',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -585,8 +563,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                isMainFrame: true,
-                url: 'https://github.com/orgs/zalando/packages?repo_name=tailor',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -615,8 +592,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -645,8 +621,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page2',
-                isMainFrame: true,
-                url: 'https://github.com/babel/minify',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -683,8 +658,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page2',
-                isMainFrame: true,
-                url: 'https://github.com/topics/babel-minify',
+                framePath: [],
               },
               committed: true,
               action: {
@@ -696,8 +670,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                isMainFrame: true,
-                url: 'https://github.com/zalando',
+                framePath: [],
               },
               committed: true,
               action: {
@@ -720,8 +693,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'navigate',
@@ -732,8 +704,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -748,7 +719,7 @@ describe('Synthetics JavaScript formatter', () => {
             },
             {
               frame: {
-                url: 'https://github.com/zalando/tailor',
+                framePath: [],
                 pageAlias: 'page1',
               },
               action: {
@@ -772,8 +743,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                url: 'https://github.com/orgs/zalando/packages?repo_name=tailor',
-                isMainFrame: true,
+                framePath: [],
               },
               action: { name: 'closePage', signals: [] },
             },
@@ -781,8 +751,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -801,7 +770,7 @@ describe('Synthetics JavaScript formatter', () => {
           actions: [
             {
               frame: {
-                url: 'https://github.com/babel/minify',
+                framePath: [],
                 pageAlias: 'page2',
               },
               action: { name: 'closePage', signals: [] },
@@ -820,8 +789,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'navigate',
@@ -832,8 +800,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -849,8 +816,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                isMainFrame: true,
-                url: 'https://github.com/zalando/tailor',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -873,8 +839,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page1',
-                isMainFrame: true,
-                url: 'https://github.com/orgs/zalando/packages?repo_name=tailor',
+                framePath: [],
               },
               action: { name: 'closePage', signals: [] },
             },
@@ -885,8 +850,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page',
-                isMainFrame: true,
-                url: 'https://vigneshh.in/',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -902,8 +866,7 @@ describe('Synthetics JavaScript formatter', () => {
             {
               frame: {
                 pageAlias: 'page2',
-                isMainFrame: true,
-                url: 'https://github.com/babel/minify',
+                framePath: [],
               },
               action: {
                 name: 'click',
@@ -925,7 +888,7 @@ describe('Synthetics JavaScript formatter', () => {
           actions: [
             {
               frame: {
-                url: 'https://github.com/topics/babel-minify',
+                framePath: [],
                 pageAlias: 'page2',
               },
               action: { name: 'closePage', signals: [] },

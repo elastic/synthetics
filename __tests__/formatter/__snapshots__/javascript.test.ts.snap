@@ -52,9 +52,7 @@ step('Go to https://vigneshh.in/', async () => {
   const page1Promise = page.waitForEvent('popup');
   await page.locator('text=Tailor').click();
   page1 = await page1Promise;
-  await page1.frame({
-    url: 'https://github.com/zalando/tailor'
-  }).locator('text=Packages 0').click();
+  await page1.locator('text=Packages 0').click();
 });
 step('Close page', async () => {
   await page1.close();
@@ -63,9 +61,7 @@ step('Close page', async () => {
   page2 = await page2Promise;
 });
 step('Close page', async () => {
-  await page2.frame({
-    url: 'https://github.com/babel/minify'
-  }).close();
+  await page2.close();
 });"
 `;
 
@@ -89,9 +85,7 @@ step('Click text=Babel Minify', async () => {
   await page2.locator(':nth-match(a:has-text("babel-minify"), 3)').click();
 });
 step('Close page', async () => {
-  await page2.frame({
-    url: 'https://github.com/topics/babel-minify'
-  }).close();
+  await page2.close();
 });"
 `;
 

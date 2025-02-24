@@ -62,7 +62,7 @@ describe('runner', () => {
     try {
       fs.accessSync(dest);
       fs.unlinkSync(dest);
-    } catch (_) { }
+    } catch (_) {}
   });
   afterAll(async () => await server.close());
 
@@ -167,7 +167,9 @@ describe('runner', () => {
 
   it('run journey - failed on beforeAll', async () => {
     const error = new Error('Broken beforeAll hook');
-    runner._addHook('beforeAll', () => { throw error });
+    runner._addHook('beforeAll', () => {
+      throw error;
+    });
     runner._addJourney(new Journey({ name: 'j1' }, () => step('step1', noop)));
     runner._addJourney(new Journey({ name: 'j2' }, () => step('step1', noop)));
     const result = await runner._run(defaultRunOptions);
@@ -181,14 +183,16 @@ describe('runner', () => {
     const error = new Error('Broken step');
     const j1 = journey('fail-journey-with-hooks', () => {
       before(({ info }) => {
-        expect(info.journey?.status).toBe('pending');
+        expect(info.currentJourney?.status).toBe('pending');
       });
       after(({ info }) => {
-        expect(info.journey?.status).toBe('failed');
-        expect(info.journey?.error).toBe(error);
-        expect(info.journey?.duration).toBeGreaterThan(0);
+        expect(info.currentJourney?.status).toBe('failed');
+        expect(info.currentJourney?.error).toBe(error);
+        expect(info.currentJourney?.duration).toBeGreaterThan(0);
       });
-      step('step1', () => { throw error });
+      step('step1', () => {
+        throw error;
+      });
     });
     const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
@@ -201,12 +205,12 @@ describe('runner', () => {
   it('run journey - expose info in journey', async () => {
     const j1 = journey('with info', ({ info }) => {
       step('step1', () => {
-        expect(info.journey?.status).toBe('pending');
+        expect(info.currentJourney?.status).toBe('pending');
       });
       after(({ info }) => {
-        expect(info.journey?.status).toBe('succeeded');
-        expect(info.journey?.duration).toBeGreaterThan(0);
-      })
+        expect(info.currentJourney?.status).toBe('succeeded');
+        expect(info.currentJourney?.duration).toBeGreaterThan(0);
+      });
     });
     const result = await runner._runJourney(j1, defaultRunOptions);
     await Gatherer.stop();
@@ -223,7 +227,7 @@ describe('runner', () => {
     });
     const runOptions = { ...defaultRunOptions, metrics: true };
     const result = await runner._runJourney(j1, runOptions);
-    await Gatherer.stop()
+    await Gatherer.stop();
     expect(result.stepsresults?.[0].pagemetrics).toBeDefined();
     expect(result.steps).toMatchObject([
       {
@@ -659,7 +663,7 @@ describe('runner', () => {
     });
     runner._addJourney(j1);
     const runOptions = { ...defaultRunOptions, trace: true };
-    const results = await runner._run(runOptions)
+    const results = await runner._run(runOptions);
     const steps = results[j1.name].stepsresults;
     expect(steps?.length).toBe(2);
     expect(steps?.[0].metrics).toBeUndefined();
@@ -783,6 +787,7 @@ describe('runner', () => {
         tags: ['g1', 'g2'],
         alert: { tls: { enabled: true } },
         playwrightOptions: { ignoreHTTPSErrors: true },
+        fields: { area: 'website' },
       });
 
       const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
@@ -818,6 +823,7 @@ describe('runner', () => {
         throttling: { download: 100, latency: 20, upload: 50 },
         alert: { tls: { enabled: true } },
         retestOnFailure: true,
+        fields: { area: 'website' },
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],

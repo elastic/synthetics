@@ -37,14 +37,10 @@ export type Steps = Step[];
 // from playwright-core
 export type FrameDescription = {
   pageAlias: string;
-  isMainFrame?: boolean;
-  url: string;
-  name?: string;
-  selectorsChain?: string[];
+  framePath: string[];
 };
 
 export type ActionInContext = {
-  frameName?: string;
   action: Action;
   committed?: boolean;
   modified?: boolean;
@@ -52,6 +48,9 @@ export type ActionInContext = {
   frame: FrameDescription;
   isOpen?: boolean;
   isSoftDeleted?: boolean;
+  description?: string;
+  startTime?: number;
+  endTime?: number;
 };
 
 export type Action = {
@@ -127,34 +126,6 @@ export function quote(text: string, char = "'"): string {
   throw new Error('Invalid escape char');
 }
 
-type Formattable = string | string[] | Record<string, unknown>;
-
-function isFormattable(value: unknown): value is Formattable {
-  return (
-    typeof value === 'string' ||
-    (Array.isArray(value) && value.every(v => typeof v === 'string')) ||
-    typeof value === 'object'
-  );
-}
-
-function formatObject(value: Formattable, indent = '  '): string {
-  if (typeof value === 'string') return quote(value);
-  if (Array.isArray(value))
-    return `[${value.map(o => formatObject(o)).join(', ')}]`;
-  if (typeof value === 'object') {
-    const keys = Object.keys(value);
-    if (!keys.length) return '{}';
-    const tokens: string[] = [];
-    for (const key of keys) {
-      const child = value[key];
-      if (child === undefined || !isFormattable(child)) continue;
-      tokens.push(`${key}: ${formatObject(child)}`);
-    }
-    return `{\n${indent}${tokens.join(`,\n${indent}`)}\n}`;
-  }
-  return String(value);
-}
-
 /**
  * Generates an appropriate title string based on the action type/data.
  * @param action Playwright action IR
@@ -228,27 +199,10 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
     const offset = this.isProject ? 2 + stepIndent : 0 + stepIndent;
     const formatter = new JavaScriptFormatter(offset);
 
-    let subject: string;
-    if (actionInContext.frame.isMainFrame) {
-      subject = pageAlias;
-    } else if (
-      actionInContext.frame.selectorsChain &&
-      action.name !== 'navigate'
-    ) {
-      const locators = actionInContext.frame.selectorsChain.map(
-        selector => `.frameLocator(${quote(selector)})`
-      );
-      subject = `${pageAlias}${locators.join('')}`;
-    } else if (actionInContext.frame.name) {
-      subject = `${pageAlias}.frame(${formatObject({
-        name: actionInContext.frame.name,
-      })})`;
-    } else {
-      subject = `${pageAlias}.frame(${formatObject({
-        url: actionInContext.frame.url,
-      })})`;
-    }
-
+    const locators = actionInContext.frame.framePath.map(
+      selector => `.${super._asLocator(selector)}.contentFrame()`
+    );
+    const subject = `${pageAlias}${locators.join('')}`;
     const signals = toSignalMap(action);
 
     if (signals.dialog) {
@@ -289,12 +243,12 @@ export class SyntheticsGenerator extends JavaScriptLanguageGenerator {
   }
 
   isNewStep(actioninContext: ActionInContext) {
-    const { action, frame } = actioninContext;
+    const { action } = actioninContext;
     if (action.name === 'navigate') {
       return true;
     } else if (action.name === 'click') {
       return (
-        this.previousContext?.frame.url === frame.url &&
+        this.previousContext?.action.url === action.url &&
         action.signals.length > 0
       );
     }

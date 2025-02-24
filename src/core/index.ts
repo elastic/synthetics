@@ -30,7 +30,7 @@ import {
   JourneyWithAnnotations,
   StepWithAnnotations,
 } from '../dsl';
-import { runner } from "./globals"
+import { runner as runnerGlobal } from './globals';
 import { VoidCallback, HooksCallback, Location } from '../common_types';
 import { wrapFnWithLocation } from '../helpers';
 import { log } from './logger';
@@ -64,7 +64,7 @@ const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(
     (location: Location, name: string, callback: VoidCallback) => {
       log(`Step register: ${name}`);
-      const step = runner.journey?._addStep(name, callback, location);
+      const step = runner.currentJourney?._addStep(name, callback, location);
       if (type) {
         step[type] = true;
       }
@@ -83,8 +83,8 @@ export const monitor = {
      * If the context is inside journey, then set it to journey context
      * otherwise set to the global monitor which will be used for all journeys
      */
-    if (runner.journey) {
-      runner.journey._updateMonitor(config);
+    if (runner.currentJourney) {
+      runner.currentJourney._updateMonitor(config);
     } else {
       runner._updateMonitor(config);
     }
@@ -100,15 +100,17 @@ export const afterAll = (callback: HooksCallback) => {
 };
 
 export const before = (callback: HooksCallback) => {
-  if (!runner.journey) {
+  if (!runner.currentJourney) {
     throw new Error('before is called outside of the journey context');
   }
-  return runner.journey._addHook('before', callback);
+  return runner.currentJourney._addHook('before', callback);
 };
 
 export const after = (callback: HooksCallback) => {
-  if (!runner.journey) {
+  if (!runner.currentJourney) {
     throw new Error('after is called outside of the journey context');
   }
-  return runner.journey._addHook('after', callback);
+  return runner.currentJourney._addHook('after', callback);
 };
+
+export const runner = runnerGlobal;
