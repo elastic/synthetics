@@ -263,6 +263,7 @@ export type PushOptions = Partial<ProjectSettings> &
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
     grepOpts?: GrepOptions;
+    serviceName?: string;
   };
 
 export type ProjectSettings = {

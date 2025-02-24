@@ -443,6 +443,7 @@ export default class Runner implements RunnerInfo {
       retestOnFailure: options.retestOnFailure,
       enabled: options.enabled,
       fields: options.fields,
+      serviceName: options.serviceName,
     });
 
     const monitors: Monitor[] = [];
