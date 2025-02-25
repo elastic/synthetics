@@ -23,29 +23,26 @@
  *
  */
 
-import { join } from 'path';
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, rm } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
-import { reporters, Reporter } from '../reporters';
+import { Reporter, reporters } from '../reporters';
 import {
   CACHE_PATH,
-  monotonicTimeInSeconds,
   getTimestamp,
+  monotonicTimeInSeconds,
   runParallel,
-  generateUniqueId,
 } from '../helpers';
 import {
-  HooksCallback,
-  HooksArgs,
   Driver,
-  Screenshot,
-  RunOptions,
+  HooksArgs,
+  HooksCallback,
   JourneyResult,
-  StepResult,
   PushOptions,
+  RunOptions,
+  StepResult,
 } from '../common_types';
-import { PerformanceManager, filterBrowserMessages } from '../plugins';
+import { filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
@@ -65,7 +62,7 @@ export interface RunnerInfo {
    */
   readonly currentJourney: Journey | undefined;
   /**
-   * All registerd journeys
+   * All registered journeys
    */
   readonly journeys: Journey[];
 }
@@ -76,7 +73,6 @@ export default class Runner implements RunnerInfo {
   #currentJourney?: Journey = null;
   #journeys: Journey[] = [];
   #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
-  #screenshotPath = join(CACHE_PATH, 'screenshots');
   #driver?: Driver;
   #browserDelay = -1;
   #hookError: Error | undefined;
@@ -93,35 +89,6 @@ export default class Runner implements RunnerInfo {
 
   get hooks() {
     return this.#hooks;
-  }
-
-  private async captureScreenshot(page: Driver['page'], step: Step) {
-    try {
-      const buffer = await page.screenshot({
-        type: 'jpeg',
-        quality: 80,
-        timeout: 5000,
-      });
-      /**
-       * Write the screenshot image buffer with additional details (step
-       * information) which could be extracted at the end of
-       * each journey without impacting the step timing information
-       */
-      const fileName = `${generateUniqueId()}.json`;
-      const screenshot: Screenshot = {
-        step,
-        timestamp: getTimestamp(),
-        data: buffer.toString('base64'),
-      };
-      await writeFile(
-        join(this.#screenshotPath, fileName),
-        JSON.stringify(screenshot)
-      );
-      log(`Runner: captured screenshot for (${step.name})`);
-    } catch (_) {
-      // Screenshot may fail sometimes, log and continue.
-      log(`Runner: failed to capture screenshot for (${step.name})`);
-    }
   }
 
   _addHook(type: HookType, callback: HooksCallback) {
@@ -178,12 +145,12 @@ export default class Runner implements RunnerInfo {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd, dryRun } = options;
+    const { reporter, outfd, dryRun, outputDir } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd, dryRun });
+    this.#reporter = new Reporter({ fd: outfd, dryRun, outputDir });
   }
 
   async #runBeforeAllHook(args: HooksArgs) {
@@ -208,7 +175,6 @@ export default class Runner implements RunnerInfo {
 
   async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
-    const { metrics, screenshots, filmstrips, trace } = options;
     /**
      * URL needs to be the first navigation request of any step
      * Listening for request solves the case where `about:blank` would be
@@ -223,14 +189,12 @@ export default class Runner implements RunnerInfo {
     this.#driver.context.on('request', captureUrl);
 
     const data: StepResult = {};
-    const traceEnabled = trace || filmstrips;
     try {
       /**
        * Set up plugin manager context and also register
        * step level plugins
        */
-      Gatherer.pluginManager.onStep(step);
-      traceEnabled && (await Gatherer.pluginManager.start('trace'));
+      await Gatherer.pluginManager.onStep(step, options);
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
       await cb();
@@ -239,32 +203,8 @@ export default class Runner implements RunnerInfo {
       step.status = 'failed';
       step.error = error;
     } finally {
-      /**
-       * Collect all step level metrics and trace events
-       */
-      if (metrics) {
-        data.pagemetrics = await (
-          Gatherer.pluginManager.get('performance') as PerformanceManager
-        ).getMetrics();
-      }
-      if (traceEnabled) {
-        const traceOutput = await Gatherer.pluginManager.stop('trace');
-        Object.assign(data, traceOutput);
-      }
-      /**
-       * Capture screenshot for the newly created pages
-       * via popup or new windows/tabs
-       *
-       * Last open page will get us the correct screenshot
-       */
-      const pages = this.#driver.context.pages();
-      const page = pages[pages.length - 1];
-      if (page) {
-        step.url ??= page.url();
-        if (screenshots && screenshots !== 'off') {
-          await this.captureScreenshot(page, step);
-        }
-      }
+      // Run all the registered plugins for the current step
+      await Gatherer.pluginManager.onStepEnd(step, options, data);
     }
     log(`Runner: end step (${step.name})`);
     return data;
@@ -311,18 +251,15 @@ export default class Runner implements RunnerInfo {
     journey._startTime = monotonicTimeInSeconds();
     this.#driver = await Gatherer.setupDriver(options);
     await Gatherer.beginRecording(this.#driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.#screenshotPath, { recursive: true });
+    await Gatherer.pluginManager.onJourneyStart();
+
     const params = options.params;
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
       params,
     });
     /**
-     * Exeucute the journey callback which registers the steps for current journey
+     * Execute the journey callback which registers the steps for current journey
      */
     journey.cb({ ...this.#driver, params, info: this });
   }
@@ -344,11 +281,12 @@ export default class Runner implements RunnerInfo {
       options,
       networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
+      attachments: pOutput.attachments,
     });
     await Gatherer.endRecording();
     await Gatherer.dispose(this.#driver);
-    // clear screenshots cache after each journey
-    await rm(this.#screenshotPath, { recursive: true, force: true });
+    await Gatherer.pluginManager.onJourneyEnd();
+
     return Object.assign(result, {
       networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
@@ -509,9 +447,9 @@ export default class Runner implements RunnerInfo {
     const { dryRun, grepOpts } = options;
 
     // collect all journeys with `.only` annotation and skip the rest
-    const onlyJournerys = this.#journeys.filter(j => j.only);
-    if (onlyJournerys.length > 0) {
-      this.#journeys = onlyJournerys;
+    const onlyJourneys = this.#journeys.filter(j => j.only);
+    if (onlyJourneys.length > 0) {
+      this.#journeys = onlyJourneys;
     } else {
       // filter journeys based on tags and skip annotations
       this.#journeys = this.#journeys.filter(
@@ -549,10 +487,9 @@ export default class Runner implements RunnerInfo {
     this.#browserDelay = monotonicTimeInSeconds() - browserStart;
 
     for (const journey of this.#journeys) {
-      const journeyResult: JourneyResult = this.#hookError
+      result[journey.name] = this.#hookError
         ? await this.#runFakeJourney(journey, options)
         : await this._runJourney(journey, options);
-      result[journey.name] = journeyResult;
     }
     await Gatherer.stop();
     return result;
