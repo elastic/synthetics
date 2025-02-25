@@ -141,6 +141,7 @@ export async function normalizeOptions(
         options.ssblocks = true;
         options.network = true;
         options.trace = true;
+        options.metrics = true;
         options.quietExitCode = true;
       }
 
