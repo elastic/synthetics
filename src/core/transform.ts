@@ -58,6 +58,32 @@ sourceMapSupport.install({
   },
 });
 
+const TEXT_EXTS = [
+  '.csv',
+  '.pdf',
+  '.docx',
+  '.odt',
+  '.xlsx',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.zip',
+  '.tar.gz',
+  '.rar',
+  '.7z',
+  '.txt',
+  '.log',
+  '.json',
+  '.xml',
+  '.mp3',
+  '.wav',
+  '.mp4',
+  '.avi',
+  '.webm',
+];
+
 /**
  * Default list of files and corresponding loaders we support
  * while pushing project based monitors
@@ -71,6 +97,7 @@ const LOADERS: Record<string, Loader> = {
 
 const getLoader = (filename: string) => {
   const ext = path.extname(filename);
+  if (TEXT_EXTS.includes(ext)) return 'text';
   return LOADERS[ext] || 'default';
 };
 
@@ -92,7 +119,7 @@ export function commonOptions(): CommonOptions {
 
 /**
  * Transform the given code using esbuild and save the corresponding
- * map file in memory to be retrived later.
+ * map file in memory to be retried later.
  */
 export function transform(
   code: string,
@@ -105,7 +132,7 @@ export function transform(
     loader: getLoader(filename),
     /**
      * Add this only for the transformation phase, using it on
-     * bundling phase would disable tree shaking and uncessary bloat
+     * bundling phase would disable tree shaking and unnecessary bloat
      *
      * Ensures backwards compatability with tsc's implicit strict behaviour
      */
@@ -148,7 +175,9 @@ export function installTransform() {
       const { code } = transform(source, filename);
       return code;
     },
-    { exts: ['.ts', '.js', '.mjs', '.cjs'] }
+    {
+      exts: ['.ts', '.js', '.mjs', '.cjs', ...TEXT_EXTS],
+    } // List of file extensions to hook
   );
 
   return () => {
