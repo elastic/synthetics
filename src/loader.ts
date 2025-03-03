@@ -80,7 +80,7 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
   const files =
     args.length > 0 ? args : (await readStdin()).split('\n').filter(Boolean);
   const suites = await prepareSuites(files, options.pattern);
-  await requireSuites(suites);
+  requireSuites(suites);
 }
 
 const loadInlineScript = source => {
@@ -122,9 +122,9 @@ async function readStdin() {
   return chunks.join();
 }
 
-async function requireSuites(suites: Iterable<string>) {
+function requireSuites(suites: Iterable<string>) {
   for (const suite of suites) {
-    await import(suite); // Use a correct relative path for each suite
+    require(suite); // Use a correct relative path for each suite
   }
 }
 
