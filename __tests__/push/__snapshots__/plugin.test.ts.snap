@@ -1,16 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Asset Plugin should include imported assets in the bundle 1`] = `
-"(() => {
-  // __tests__/push/test-assets/sample.pdf
-  var sample_default = 'export default "/Users/shahzad/elastic/synthetics/__tests__/push/test-assets/sample.pdf";';
-
-  // __tests__/push/test-assets/bundle.journey.ts
-  console.log("PDF file path:", sample_default);
-})();
-"
-`;
-
 exports[`SyntheticsBundlePlugin skip locally resolved synthetics package 1`] = `
 "var import__ = require("../../");
 (0, import__.journey)("journey 1", () => {

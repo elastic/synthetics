@@ -120,7 +120,7 @@ console.log("PDF file path:", pdfPath);`
 
     // Ensure the asset is referenced in the output
     const bundleText = result.outputFiles[0].text;
-    expect(bundleText).toMatchSnapshot();
+    expect(bundleText).toContain('push/test-assets/sample.pdf');
   });
 
   it('should bundle, zip, and contain the correct pdf asset content', async () => {
