@@ -124,7 +124,7 @@ async function readStdin() {
 
 function requireSuites(suites: Iterable<string>) {
   for (const suite of suites) {
-    require(suite); // Use a correct relative path for each suite
+    require(suite);
   }
 }
 
