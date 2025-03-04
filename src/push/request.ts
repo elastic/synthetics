@@ -64,7 +64,7 @@ export async function sendReqAndHandleError<T>(
       statusCode,
       options.url,
       body,
-      `${options.body?.length} number of monitors were sent, with a total size of ${options.body?.length} bytes`
+      `${options.body?.length} bytes sent`
     )
   ).json() as Promise<T>;
 }

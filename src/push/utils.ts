@@ -129,8 +129,10 @@ export function getSizedBatches<T extends { id?: string }>(
     batches.push(currentBatch);
   }
 
-  // log chunk sizes
-  progress(`Monitors will be pushed in ${batches.length} batches`);
+  // log batch sizes
+  if (batches.length > 1) {
+    progress(`Monitors will be pushed in ${batches.length} requests.`);
+  }
 
   return batches;
 }
