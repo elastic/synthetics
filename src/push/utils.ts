@@ -90,49 +90,49 @@ export function printBytes(bytes: number) {
   return `${bytes.toFixed(1)} ${BYTE_UNITS[exponent]}`;
 }
 
-export function getChunks(arr: string[], size: number): string[][] {
-  const chunks = [];
+export function getBatches(arr: string[], size: number): string[][] {
+  const batches = [];
   for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
+    batches.push(arr.slice(i, i + size));
   }
-  return chunks;
+  return batches;
 }
 
-export function getSizedChunks<T extends { id?: string }>(
+export function getSizedBatches<T extends { id?: string }>(
   arr: Array<T>,
   sizes: Map<string, number>,
-  maxChunkSizeKB: number,
-  maxChunkItems: number
+  maxBatchSizeKiB: number,
+  maxBatchItems: number
 ): Array<T[]> {
-  const chunks: Array<T[]> = [];
-  let currentChunk: T[] = [];
+  const batches: Array<T[]> = [];
+  let currentBatch: T[] = [];
   let currentSize = 0;
 
   for (const item of arr) {
-    const sizeKb = item.id ? sizes.get(item.id) / 1024 : 1;
+    const sizeKiB = item.id ? sizes.get(item.id) / 1024 : 1;
 
     // If adding the current item would exceed limits, create a new chunk
     if (
-      currentChunk.length >= maxChunkItems ||
-      currentSize + sizeKb > maxChunkSizeKB
+      currentBatch.length >= maxBatchItems ||
+      currentSize + sizeKiB > maxBatchSizeKiB
     ) {
-      chunks.push(currentChunk);
-      currentChunk = [];
+      batches.push(currentBatch);
+      currentBatch = [];
       currentSize = 0;
     }
-    currentChunk.push(item);
-    currentSize += sizeKb;
+    currentBatch.push(item);
+    currentSize += sizeKiB;
   }
 
   // Push the last chunk if it contains any items
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk);
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
   }
 
   // log chunk sizes
-  progress(`Monitors will be pushed in ${chunks.length} chunks`);
+  progress(`Monitors will be pushed in ${batches.length} batches`);
 
-  return chunks;
+  return batches;
 }
 
 type Operation =

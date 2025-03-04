@@ -50,12 +50,12 @@ import {
   bulkGetMonitors,
   bulkPutMonitors,
   createMonitorsLegacy,
-  CHUNK_SIZE,
+  BATCH_SIZE,
   MAX_PAYLOAD_SIZE_KIB,
 } from './kibana_api';
 import {
-  getChunks,
-  getSizedChunks,
+  getBatches,
+  getSizedBatches,
   isBulkAPISupported,
   isLightweightMonitorSupported,
   logDiff,
@@ -120,16 +120,16 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
     const updatedMonSchemas = schemas.filter(s => updatedMonitors.has(s.id));
-    const chunks = getSizedChunks(
+    const batches = getSizedBatches(
       updatedMonSchemas,
       sizes,
       MAX_PAYLOAD_SIZE_KIB,
-      CHUNK_SIZE
+      BATCH_SIZE
     );
-    for (const chunk of chunks) {
+    for (const batch of batches) {
       await liveProgress(
-        bulkPutMonitors(options, chunk),
-        `creating or updating ${chunk.length} monitors`
+        bulkPutMonitors(options, batch),
+        `creating or updating ${batch.length} monitors`
       );
     }
   }
@@ -146,11 +146,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
         options.yes
       );
     }
-    const chunks = getChunks(Array.from(removedIDs), CHUNK_SIZE);
-    for (const chunk of chunks) {
+    const batches = getBatches(Array.from(removedIDs), BATCH_SIZE);
+    for (const batch of batches) {
       await liveProgress(
-        bulkDeleteMonitors(options, chunk),
-        `deleting ${chunk.length} monitors`
+        bulkDeleteMonitors(options, batch),
+        `deleting ${batch.length} monitors`
       );
     }
   }
@@ -331,11 +331,11 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
     ({ schemas, sizes } = await buildMonitorSchema(monitors, false));
-    const chunks = getSizedChunks(schemas, sizes, MAX_PAYLOAD_SIZE_KIB, 10);
-    for (const chunk of chunks) {
+    const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KIB, 10);
+    for (const batch of batches) {
       await liveProgress(
-        createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),
-        `creating or updating ${chunk.length} monitors`
+        createMonitorsLegacy({ schemas: batch, keepStale: true, options }),
+        `creating or updating ${batch.length} monitors`
       );
     }
   } else {

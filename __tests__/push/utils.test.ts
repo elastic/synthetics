@@ -23,7 +23,7 @@
  *
  */
 
-import { getSizedChunks, normalizeMonitorName } from '../../src/push/utils';
+import { getSizedBatches, normalizeMonitorName } from '../../src/push/utils';
 
 describe('Push Utils', () => {
   it("normalize monitor's name", () => {
@@ -41,7 +41,7 @@ describe('Push Utils', () => {
 
   describe('getSizedChunks', () => {
     it('should return empty array when input is empty', () => {
-      expect(getSizedChunks([], new Map(), 100, 100)).toEqual([]);
+      expect(getSizedBatches([], new Map(), 100, 100)).toEqual([]);
     });
 
     it('should return chunks of input array based on maxChunkSizeKB', () => {
@@ -62,13 +62,13 @@ describe('Push Utils', () => {
         ['5', 50 * 1024],
         ['6', 60 * 1024],
       ]);
-      expect(getSizedChunks(input, sizes, 1000, 100)).toEqual([input]);
-      expect(getSizedChunks(input, sizes, 100, 3)).toEqual([
+      expect(getSizedBatches(input, sizes, 1000, 100)).toEqual([input]);
+      expect(getSizedBatches(input, sizes, 100, 3)).toEqual([
         [input[0], input[1], input[2]],
         [input[3], input[4]],
         [input[5]],
       ]);
-      expect(getSizedChunks(input, sizes, 100, 2)).toEqual([
+      expect(getSizedBatches(input, sizes, 100, 2)).toEqual([
         [input[0], input[1]],
         [input[2], input[3]],
         [input[4]],
