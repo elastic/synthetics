@@ -64,7 +64,7 @@ export async function sendReqAndHandleError<T>(
       statusCode,
       options.url,
       body,
-      `${options.body?.length} bytes sent`
+      statusCode === 413 ? `${options.body?.length} bytes sent` : ''
     )
   ).json() as Promise<T>;
 }
