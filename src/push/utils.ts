@@ -101,7 +101,7 @@ export function getBatches(arr: string[], size: number): string[][] {
 export function getSizedBatches<T extends { id?: string }>(
   arr: Array<T>,
   sizes: Map<string, number>,
-  maxBatchSizeKiB: number,
+  maxBatchSizeKB: number,
   maxBatchItems: number
 ): Array<T[]> {
   const batches: Array<T[]> = [];
@@ -109,31 +109,24 @@ export function getSizedBatches<T extends { id?: string }>(
   let currentSize = 0;
 
   for (const item of arr) {
-    const sizeKiB = item.id ? sizes.get(item.id) / 1024 : 1;
-
+    const sizeKB = item.id ? Math.round(sizes.get(item.id) / 1000) : 1;
     // If adding the current item would exceed limits, create a new chunk
     if (
       currentBatch.length >= maxBatchItems ||
-      currentSize + sizeKiB > maxBatchSizeKiB
+      currentSize + sizeKB > maxBatchSizeKB
     ) {
       batches.push(currentBatch);
       currentBatch = [];
       currentSize = 0;
     }
     currentBatch.push(item);
-    currentSize += sizeKiB;
+    currentSize += sizeKB;
   }
 
   // Push the last chunk if it contains any items
   if (currentBatch.length > 0) {
     batches.push(currentBatch);
   }
-
-  // log batch sizes
-  if (batches.length > 1) {
-    progress(`Monitors will be pushed in ${batches.length} requests.`);
-  }
-
   return batches;
 }
 

@@ -51,7 +51,7 @@ import {
   bulkPutMonitors,
   createMonitorsLegacy,
   BATCH_SIZE,
-  MAX_PAYLOAD_SIZE_KIB,
+  MAX_PAYLOAD_SIZE_KB,
 } from './kibana_api';
 import {
   getBatches,
@@ -123,9 +123,12 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     const batches = getSizedBatches(
       updatedMonSchemas,
       sizes,
-      MAX_PAYLOAD_SIZE_KIB,
+      MAX_PAYLOAD_SIZE_KB,
       BATCH_SIZE
     );
+    if (batches.length > 1) {
+      progress(`Monitors will be pushed as ${batches.length} batches.`);
+    }
     for (const batch of batches) {
       await liveProgress(
         bulkPutMonitors(options, batch),
@@ -331,7 +334,10 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
     ({ schemas, sizes } = await buildMonitorSchema(monitors, false));
-    const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KIB, 10);
+    const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KB, 10);
+    if (batches.length > 1) {
+      progress(`Monitors will be pushed as ${batches.length} batches.`);
+    }
     for (const batch of batches) {
       await liveProgress(
         createMonitorsLegacy({ schemas: batch, keepStale: true, options }),

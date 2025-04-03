@@ -38,7 +38,7 @@ import { generateURL } from './utils';
 
 // Default batch size for bulk put / delete
 export const BATCH_SIZE = parseInt(process.env.CHUNK_SIZE) || 250;
-export const MAX_PAYLOAD_SIZE_KIB = 50 * 1024; // 50 MiB in KiB
+export const MAX_PAYLOAD_SIZE_KB = 50 * 1000; // 50 MB in KB
 
 export type PutResponse = {
   createdMonitors: string[];
