@@ -23,7 +23,7 @@
  *
  */
 
-import { normalizeMonitorName } from '../../src/push/utils';
+import { getSizedBatches, normalizeMonitorName } from '../../src/push/utils';
 
 describe('Push Utils', () => {
   it("normalize monitor's name", () => {
@@ -37,5 +37,43 @@ describe('Push Utils', () => {
     expect(normalizeMonitorName('/x/y/z')).toBe('_x_y_z');
     expect(normalizeMonitorName('x.y.z')).toBe('x_y_z');
     expect(normalizeMonitorName('foo:bar:blah')).toBe('foo_bar_blah');
+  });
+
+  describe('getSizedChunks', () => {
+    it('should return empty array when input is empty', () => {
+      expect(getSizedBatches([], new Map(), 100, 100)).toEqual([]);
+    });
+
+    it('should return chunks of input array based on maxChunkSizeKB', () => {
+      const input = [
+        { id: '1' },
+        { id: '2' },
+        { id: '3' },
+        { id: '4' },
+        { id: '5' },
+        { id: '6' },
+      ];
+      // map of id and sizes
+      const sizes = new Map([
+        ['1', 10 * 1024],
+        ['2', 20 * 1024],
+        ['3', 30 * 1024],
+        ['4', 40 * 1024],
+        ['5', 50 * 1024],
+        ['6', 60 * 1024],
+      ]);
+      expect(getSizedBatches(input, sizes, 1000, 100)).toEqual([input]);
+      expect(getSizedBatches(input, sizes, 100, 3)).toEqual([
+        [input[0], input[1], input[2]],
+        [input[3], input[4]],
+        [input[5]],
+      ]);
+      expect(getSizedBatches(input, sizes, 100, 2)).toEqual([
+        [input[0], input[1]],
+        [input[2], input[3]],
+        [input[4]],
+        [input[5]],
+      ]);
+    });
   });
 });
