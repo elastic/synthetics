@@ -50,6 +50,7 @@ export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
   content?: string;
   filter?: Monitor['filter'];
   hash?: string;
+  size?: number;
 };
 
 // Abbreviated monitor info, as often returned by the API,
@@ -300,7 +301,7 @@ export function buildMonitorFromYaml(
   });
 
   /**
-   * Params support is only available for lighweight monitors
+   * Params support is only available for lightweight monitors
    * post 8.7.2 stack
    */
   if (isParamOptionSupported(options.kibanaVersion)) {

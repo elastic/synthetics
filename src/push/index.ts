@@ -50,10 +50,12 @@ import {
   bulkGetMonitors,
   bulkPutMonitors,
   createMonitorsLegacy,
-  CHUNK_SIZE,
+  BATCH_SIZE,
+  MAX_PAYLOAD_SIZE_KB,
 } from './kibana_api';
 import {
-  getChunks,
+  getBatches,
+  getSizedBatches,
   isBulkAPISupported,
   isLightweightMonitorSupported,
   logDiff,
@@ -102,7 +104,10 @@ export async function push(monitors: Monitor[], options: PushOptions) {
     for (const value of sizes.values()) {
       totalSize += value;
     }
-    progress('total size of the monitors payload is ' + printBytes(totalSize));
+    progress(
+      `total size of the ${sizes.size} monitors payload is ` +
+        printBytes(totalSize)
+    );
   }
 
   if (options.dryRun) {
@@ -115,11 +120,19 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const updatedMonitors = new Set<string>([...changedIDs, ...newIDs]);
   if (updatedMonitors.size > 0) {
     const updatedMonSchemas = schemas.filter(s => updatedMonitors.has(s.id));
-    const chunks = getChunks(updatedMonSchemas, CHUNK_SIZE);
-    for (const chunk of chunks) {
+    const batches = getSizedBatches(
+      updatedMonSchemas,
+      sizes,
+      MAX_PAYLOAD_SIZE_KB,
+      BATCH_SIZE
+    );
+    if (batches.length > 1) {
+      progress(`Monitors will be pushed as ${batches.length} batches.`);
+    }
+    for (const batch of batches) {
       await liveProgress(
-        bulkPutMonitors(options, chunk),
-        `creating or updating ${chunk.length} monitors`
+        bulkPutMonitors(options, batch),
+        `creating or updating ${batch.length} monitors`
       );
     }
   }
@@ -136,11 +149,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
         options.yes
       );
     }
-    const chunks = getChunks(Array.from(removedIDs), CHUNK_SIZE);
-    for (const chunk of chunks) {
+    const batches = getBatches(Array.from(removedIDs), BATCH_SIZE);
+    for (const batch of batches) {
       await liveProgress(
-        bulkDeleteMonitors(options, chunk),
-        `deleting ${chunk.length} monitors`
+        bulkDeleteMonitors(options, batch),
+        `deleting ${batch.length} monitors`
       );
     }
   }
@@ -317,14 +330,18 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   }
 
   let schemas: MonitorSchema[] = [];
+  let sizes: Map<string, number> = new Map();
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
-    ({ schemas } = await buildMonitorSchema(monitors, false));
-    const chunks = getChunks(schemas, 10);
-    for (const chunk of chunks) {
+    ({ schemas, sizes } = await buildMonitorSchema(monitors, false));
+    const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KB, 10);
+    if (batches.length > 1) {
+      progress(`Monitors will be pushed as ${batches.length} batches.`);
+    }
+    for (const batch of batches) {
       await liveProgress(
-        createMonitorsLegacy({ schemas: chunk, keepStale: true, options }),
-        `creating or updating ${chunk.length} monitors`
+        createMonitorsLegacy({ schemas: batch, keepStale: true, options }),
+        `creating or updating ${batch.length} monitors`
       );
     }
   } else {
