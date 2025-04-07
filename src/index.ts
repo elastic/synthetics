@@ -35,6 +35,7 @@ export async function run(options: RunOptions) {
  */
 export {
   journey,
+  apiJourney,
   step,
   monitor,
   beforeAll,
