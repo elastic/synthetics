@@ -59,7 +59,7 @@
     "commander": "^10.0.1",
     "deepmerge": "^4.3.1",
     "enquirer": "^2.3.6",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.25.2",
     "http-proxy": "^1.18.1",
     "kleur": "^4.1.5",
     "micromatch": "^4.0.8",
@@ -74,7 +74,7 @@
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
     "stack-utils": "^2.0.6",
-    "undici": "^5.28.3",
+    "undici": "^5.28.5",
     "unzip-stream": "^0.3.4",
     "yaml": "^2.2.2"
   },
@@ -98,7 +98,7 @@
     "lint-staged": "^10.5.3",
     "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
-    "semantic-release": "^21.1.1",
+    "semantic-release": "^22.0.3",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
   },

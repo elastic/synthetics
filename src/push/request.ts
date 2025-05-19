@@ -58,8 +58,14 @@ export async function sendReqAndHandleError<T>(
   options: APIRequestOptions
 ): Promise<T> {
   const { statusCode, body } = await sendRequest(options);
+
   return (
-    await handleError(statusCode, options.url, body)
+    await handleError(
+      statusCode,
+      options.url,
+      body,
+      statusCode === 413 ? `${options.body?.length} bytes sent` : ''
+    )
   ).json() as Promise<T>;
 }
 
@@ -74,7 +80,8 @@ type APIError = {
 export async function handleError(
   statusCode: number,
   url: string,
-  body: Dispatcher.ResponseData['body']
+  body: Dispatcher.ResponseData['body'],
+  extraMessage?: string
 ): Promise<Dispatcher.ResponseData['body']> {
   if (statusCode === 404) {
     throw formatNotFoundError(url, await body.text());
@@ -84,9 +91,19 @@ export async function handleError(
       const resp = await body.text();
       parsed = JSON.parse(resp) as APIError;
     } catch (e) {
-      throw formatAPIError(statusCode, 'unexpected error', e.message);
+      throw formatAPIError(
+        statusCode,
+        'unexpected error',
+        e.message,
+        extraMessage
+      );
     }
-    throw formatAPIError(statusCode, parsed.error, parsed.message);
+    throw formatAPIError(
+      statusCode,
+      parsed.error,
+      parsed.message,
+      extraMessage
+    );
   }
 
   return body;
@@ -111,16 +128,18 @@ export function formatNotFoundError(url: string, message: string) {
 }
 
 export function formatAPIError(
-  statuCode: number,
+  statusCode: number,
   error: string,
-  message: string
+  message: string,
+  extraMessage = ''
 ) {
   let outer = bold(`${symbols['failed']} Error\n`);
   let inner = bold(
-    `${symbols['failed']} monitor creation failed - ${statuCode}:${error}\n`
+    `${symbols['failed']} monitor creation failed - ${statusCode}:${error}\n`
   );
   inner += indent(message, '    ');
   outer += indent(inner);
+  outer += extraMessage ? indent(extraMessage, '    ') : '';
   return red(outer);
 }
 

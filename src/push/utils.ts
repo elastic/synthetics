@@ -90,12 +90,44 @@ export function printBytes(bytes: number) {
   return `${bytes.toFixed(1)} ${BYTE_UNITS[exponent]}`;
 }
 
-export function getChunks<T>(arr: Array<T>, size: number): Array<T[]> {
-  const chunks = [];
+export function getBatches(arr: string[], size: number): string[][] {
+  const batches = [];
   for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
+    batches.push(arr.slice(i, i + size));
   }
-  return chunks;
+  return batches;
+}
+
+export function getSizedBatches<T extends { id?: string }>(
+  arr: Array<T>,
+  sizes: Map<string, number>,
+  maxBatchSizeKB: number,
+  maxBatchItems: number
+): Array<T[]> {
+  const batches: Array<T[]> = [];
+  let currentBatch: T[] = [];
+  let currentSize = 0;
+
+  for (const item of arr) {
+    const sizeKB = item.id ? Math.round(sizes.get(item.id) / 1000) : 1;
+    // If adding the current item would exceed limits, create a new chunk
+    if (
+      currentBatch.length >= maxBatchItems ||
+      currentSize + sizeKB > maxBatchSizeKB
+    ) {
+      batches.push(currentBatch);
+      currentBatch = [];
+      currentSize = 0;
+    }
+    currentBatch.push(item);
+    currentSize += sizeKB;
+  }
+
+  // Push the last chunk if it contains any items
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+  return batches;
 }
 
 type Operation =

@@ -4,8 +4,6 @@ updates:
   # GitHub actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    reviewers:
-      - "elastic/observablt-ci"
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -14,3 +12,9 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
