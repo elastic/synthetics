@@ -788,6 +788,7 @@ describe('runner', () => {
         alert: { tls: { enabled: true } },
         playwrightOptions: { ignoreHTTPSErrors: true },
         fields: { area: 'website' },
+        namespace: 'test',
       });
 
       const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
@@ -824,6 +825,7 @@ describe('runner', () => {
         alert: { tls: { enabled: true } },
         retestOnFailure: true,
         fields: { area: 'website' },
+        namespace: 'test',
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],
