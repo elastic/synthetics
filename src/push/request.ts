@@ -32,6 +32,7 @@ import { indent, symbols } from '../helpers';
 const { version } = require('../../package.json');
 
 export type APIRequestOptions = {
+  proxyAgent: Dispatcher;
   url: string;
   method: Dispatcher.HttpMethod;
   auth: string;
@@ -39,7 +40,7 @@ export type APIRequestOptions = {
 };
 
 export async function sendRequest(options: APIRequestOptions) {
-  return await request(options.url, {
+  const request_options = {
     method: options.method,
     body: options.body,
     headers: {
@@ -51,7 +52,9 @@ export async function sendRequest(options: APIRequestOptions) {
     },
     // align with the default timeout of the kibana route
     headersTimeout: 2 * 60 * 1000,
-  });
+  };
+  if (options.proxyAgent) request_options['dispatcher'] = options.proxyAgent;
+  return await request(options.url, request_options);
 }
 
 export async function sendReqAndHandleError<T>(

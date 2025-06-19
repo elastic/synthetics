@@ -34,7 +34,7 @@ import {
   sendRequest,
   APIMonitorError,
 } from './request';
-import { generateURL } from './utils';
+import { build_proxy_settings, generateURL } from './utils';
 
 // Default batch size for bulk put / delete
 export const BATCH_SIZE = parseInt(process.env.CHUNK_SIZE) || 250;
@@ -57,6 +57,7 @@ export async function bulkPutMonitors(
     method: 'PUT',
     auth: options.auth,
     body: JSON.stringify({ monitors: schemas }),
+    proxyAgent: build_proxy_settings(options.proxy_uri, options.proxy_token),
   });
 
   const { failedMonitors } = resp;
@@ -103,6 +104,7 @@ const fetchMonitors = async (options: PushOptions, afterKey?: string) => {
     url,
     method: 'GET',
     auth: options.auth,
+    proxyAgent: build_proxy_settings(options.proxy_uri, options.proxy_token),
   });
   return {
     afterKey: resp.after_key,
@@ -124,6 +126,7 @@ export async function bulkDeleteMonitors(
     method: 'DELETE',
     auth: options.auth,
     body: JSON.stringify({ monitors: monitorIDs }),
+    proxyAgent: build_proxy_settings(options.proxy_uri, options.proxy_token),
   });
 }
 
@@ -138,6 +141,7 @@ export async function getVersion(options: PushOptions) {
     url: generateURL(options, 'status'),
     method: 'GET',
     auth: options.auth,
+    proxyAgent: build_proxy_settings(options?.proxy_uri, options?.proxy_token),
   });
 
   return data.kibana.version;
@@ -169,6 +173,7 @@ export async function createMonitorsLegacy({
     method: 'PUT',
     auth: options.auth,
     body: JSON.stringify(schema),
+    proxyAgent: build_proxy_settings(options.proxy_uri, options.proxy_token),
   });
 
   const resBody = await handleError(statusCode, url, body);

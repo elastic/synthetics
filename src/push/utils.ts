@@ -28,6 +28,7 @@ import { progress, removeTrailingSlash } from '../helpers';
 import { green, red, grey, yellow, Colorize, bold } from 'kleur/colors';
 import { PushOptions } from '../common_types';
 import { Monitor } from '../dsl/monitor';
+import { ProxyAgent } from 'undici';
 
 export function logDiff<T extends Set<string>>(
   newIDs: T,
@@ -198,4 +199,15 @@ export function normalizeMonitorName(p: string, replacement = '_') {
   // remove colons
   p = p.replace(/[:]+/g, replacement);
   return p;
+}
+
+export function build_proxy_settings(proxy_uri: string, proxy_auth: string) {
+  let proxyAgent = null;
+  if (proxy_uri) {
+    proxyAgent = new ProxyAgent({
+      uri: proxy_uri,
+      token: proxy_auth,
+    });
+  }
+  return proxyAgent;
 }
