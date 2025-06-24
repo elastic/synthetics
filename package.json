@@ -69,7 +69,7 @@
     "playwright-chromium": "=1.53.1",
     "playwright-core": "=1.53.1",
     "semver": "^7.5.4",
-    "sharp": "^0.33.5",
+    "sharp": "^0.34.2",
     "snakecase-keys": "^4.0.1",
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
