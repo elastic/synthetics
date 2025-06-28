@@ -77,6 +77,7 @@ export type MonitorConfig = {
    * By default, the monitor will be retested on failure
    */
   retestOnFailure?: boolean;
+  namespace?: string;
 };
 
 type MonitorFilter = {
