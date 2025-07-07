@@ -193,6 +193,8 @@ program
     '--space <space>',
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
+  .option('--proxy_uri <uri>', 'proxy uri to use when pushing to kibana')
+  .option('--proxy_token <token>', 'auth token to use the proxy')
   .option('-y, --yes', 'skip all questions and run non-interactively')
   .addOption(pattern)
   .addOption(tags)
