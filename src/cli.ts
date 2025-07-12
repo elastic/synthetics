@@ -54,6 +54,7 @@ import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
+import { setGlobalProxy } from './push/utils';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -68,6 +69,11 @@ const {
   tags,
   match,
   fields,
+  proxyToken,
+  proxyUri,
+  proxyNoVerify,
+  proxyCa,
+  proxyCert,
 } = getCommonCommandOpts();
 
 program
@@ -193,9 +199,12 @@ program
     '--space <space>',
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
-  .option('--proxy_uri <uri>', 'proxy uri to use when pushing to kibana')
-  .option('--proxy_token <token>', 'auth token to use the proxy')
   .option('-y, --yes', 'skip all questions and run non-interactively')
+  .addOption(proxyUri)
+  .addOption(proxyToken)
+  .addOption(proxyNoVerify)
+  .addOption(proxyCa)
+  .addOption(proxyCert)
   .addOption(pattern)
   .addOption(tags)
   .addOption(fields)
@@ -218,6 +227,16 @@ program
         },
         'push'
       )) as PushOptions;
+
+      //Set up global proxy agent if any of the related options are set
+      setGlobalProxy(
+        options.proxyUri,
+        options.proxyToken,
+        options.proxyNoVerify ? false : true,
+        options.proxyCa,
+        options.proxyCert
+      );
+
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
       if ((options as CliArgs).throttling == null) {

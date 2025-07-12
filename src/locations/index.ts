@@ -49,7 +49,6 @@ export async function getLocations(options: LocationCmdOptions) {
     url: generateURL(options, 'location'),
     method: 'GET',
     auth: options.auth,
-    proxyAgent: null, // for now we don't support proxy with this.
   });
   return resp.locations;
 }

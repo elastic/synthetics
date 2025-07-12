@@ -28,6 +28,8 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { THROTTLING_WARNING_MSG, warn } from './helpers';
+import path from 'path';
+import { existsSync, readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
 
@@ -255,6 +257,27 @@ export function getCommonCommandOpts() {
     }, {});
   });
 
+  const proxyUri = createOption(
+    '--proxy-uri <uri>',
+    'proxy uri to use when pushing to kibana'
+  );
+  const proxyToken = createOption(
+    '--proxy-token <token>',
+    'auth token to use the proxy'
+  );
+  const proxyCa = createOption(
+    '--proxy-ca <path>',
+    'provide a CA override for proxy endpoint, as a path to be loaded or as string '
+  ).argParser(parseFileOption);
+  const proxyCert = createOption(
+    '--proxy-cert <path>',
+    'provide a cert override for proxy endpoint, as a path to be loaded or as string '
+  ).argParser(parseFileOption);
+  const proxyNoVerify = createOption(
+    '--proxy-no-verify',
+    'disable TLS verification for the proxy connection'
+  );
+
   return {
     auth,
     authMandatory,
@@ -265,6 +288,11 @@ export function getCommonCommandOpts() {
     tags,
     match,
     fields,
+    proxyUri,
+    proxyToken,
+    proxyCa,
+    proxyCert,
+    proxyNoVerify,
   };
 }
 
@@ -297,5 +325,19 @@ function parseAsBuffer(value: any): Buffer {
     return Buffer.from(value);
   } catch (e) {
     return value;
+  }
+}
+
+function parseFileOption(value: string) {
+  const filePath = path.resolve(value);
+
+  if (!existsSync(filePath)) {
+    return value;
+  }
+
+  try {
+    return readFileSync(filePath);
+  } catch (e) {
+    throw new Error(`could not be read provided path ${filePath}: ${e}`);
   }
 }
