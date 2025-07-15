@@ -27,6 +27,14 @@ import { spawn } from 'child_process';
 import { wsEndpoint } from './test-config';
 
 module.exports = async () => {
+  // Unset the SYNTHETICS_API_KEY to ensure it doesn't affect tests
+  if (process.env.SYNTHETICS_API_KEY) {
+    console.log(
+      '\nUnsetting SYNTHETICS_API_KEY environment variable for tests'
+    );
+    delete process.env.SYNTHETICS_API_KEY;
+  }
+
   if (wsEndpoint) {
     return new Promise((resolve, reject) => {
       console.log(`\nRunning BrowserService ${wsEndpoint}`);
