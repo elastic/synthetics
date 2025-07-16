@@ -29,9 +29,7 @@ import { wsEndpoint } from './test-config';
 module.exports = async () => {
   // Unset the SYNTHETICS_API_KEY to ensure it doesn't affect tests
   if (process.env.SYNTHETICS_API_KEY) {
-    console.log(
-      'Unsetting SYNTHETICS_API_KEY environment variable for tests'
-    );
+    console.log('Unsetting SYNTHETICS_API_KEY environment variable for tests');
     delete process.env.SYNTHETICS_API_KEY;
   }
 
