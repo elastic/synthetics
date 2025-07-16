@@ -39,7 +39,7 @@ export type APIRequestOptions = {
 };
 
 export async function sendRequest(options: APIRequestOptions) {
-  return await request(options.url, {
+  const request_options = {
     method: options.method,
     body: options.body,
     headers: {
@@ -51,7 +51,8 @@ export async function sendRequest(options: APIRequestOptions) {
     },
     // align with the default timeout of the kibana route
     headersTimeout: 2 * 60 * 1000,
-  });
+  };
+  return await request(options.url, request_options);
 }
 
 export async function sendReqAndHandleError<T>(
