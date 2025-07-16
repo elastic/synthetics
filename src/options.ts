@@ -145,6 +145,7 @@ export async function normalizeOptions(
       }
 
       options.screenshots = cliArgs.screenshots ?? 'on';
+      options.outputDom = cliArgs.outputDom ?? false;
       break;
     case 'push':
       /**

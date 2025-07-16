@@ -48,6 +48,7 @@ describe('options', () => {
       params: {},
       screenshots: 'on',
     });
+
     expect(await normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
       environment: 'test',
@@ -186,5 +187,15 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.origin)).toBeFalsy();
       expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
     });
+  });
+
+  it('normalizes outputDom option', async () => {
+    // Test that outputDom is false by default
+    let options = await normalizeOptions({});
+    expect(options.outputDom).toBe(false);
+
+    // Test that outputDom is set when true in CLI args
+    options = await normalizeOptions({ outputDom: true });
+    expect(options.outputDom).toBe(true);
   });
 });

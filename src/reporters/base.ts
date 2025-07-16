@@ -43,6 +43,7 @@ export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
   dryRun: boolean;
+  outputDom: boolean;
   metrics = {
     succeeded: 0,
     failed: 0,
@@ -53,6 +54,7 @@ export default class BaseReporter implements Reporter {
   constructor(options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
     this.dryRun = options.dryRun ?? false;
+    this.outputDom = options.outputDom ?? false;
     /**
      * minLength is set to 1 byte to make sure we flush the
      * content even if its the last byte on the stream buffer
@@ -84,7 +86,7 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  onJourneyEnd(journey: Journey, { pageDom }: JourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**
@@ -94,6 +96,24 @@ export default class BaseReporter implements Reporter {
     if (total === 0 && journey.error) {
       const message = renderError(serializeError(journey.error));
       this.write(indent(message) + '\n');
+    }
+
+    // Log the full page DOM when available and outputDom option is enabled
+    if (this.outputDom && pageDom) {
+      this.write(indent('\n--- PAGE DOM START ---'));
+      // If DOM is too large, truncate it to a reasonable size
+      const maxDomLength = 100000; // Limit to ~100KB
+      if (pageDom.length > maxDomLength) {
+        this.write(
+          indent(
+            pageDom.substring(0, maxDomLength) +
+              '\n... (DOM truncated due to large size)'
+          )
+        );
+      } else {
+        this.write(indent(pageDom));
+      }
+      this.write(indent('--- PAGE DOM END ---\n'));
     }
   }
 
