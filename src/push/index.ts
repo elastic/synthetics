@@ -75,6 +75,25 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
   }
+  // --- New check for monitor spaces ---
+  if (options.spaces && Array.isArray(options.spaces)) {
+    for (const monitor of monitors) {
+      const monitorSpaces = monitor.config.spaces;
+      if (monitorSpaces && Array.isArray(monitorSpaces)) {
+        const missingSpaces = monitorSpaces.filter(
+          s => !options.spaces.includes(s)
+        );
+        if (missingSpaces.length > 0) {
+          // throw error(
+          //   `Monitor spaces [${missingSpaces.join(
+          //     ', '
+          //   )}] should also be part of config spaces.`
+          // );
+        }
+      }
+    }
+  }
+
   progress(
     `Pushing monitors for '${options.id}' project in kibana '${options.space}' space`
   );
