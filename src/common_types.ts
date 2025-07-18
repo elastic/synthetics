@@ -224,6 +224,7 @@ type BaseArgs = {
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
   fields?: MonitorConfig['fields'];
+  spaces?: MonitorConfig['spaces'];
 };
 
 export type CliArgs = BaseArgs & {
@@ -268,7 +269,11 @@ export type PushOptions = Partial<ProjectSettings> &
 export type ProjectSettings = {
   id: string;
   url: string;
+  /**
+   * @deprecated Since 9.1.0 , we recommend using `spaces` instead.
+   */
   space: string;
+  spaces?: string[];
 };
 
 export type PlaywrightOptions = LaunchOptions &
@@ -283,6 +288,7 @@ export type SyntheticsConfig = {
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  spaces?: string[];
 };
 
 /** Runner Payload types */

@@ -70,6 +70,7 @@ export async function normalizeOptions(
       : {};
 
   options.params = Object.freeze(merge(config.params, cliArgs.params || {}));
+  options.spaces = merge(config.spaces || [], cliArgs.spaces || []);
   options.fields = Object.freeze(
     merge(config.monitor?.fields ?? {}, cliArgs?.fields || {})
   );
