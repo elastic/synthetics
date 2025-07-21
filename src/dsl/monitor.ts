@@ -112,10 +112,6 @@ export class Monitor {
     return this.config.type;
   }
 
-  setSpaces(spaces: string[]) {
-    this.config.spaces = spaces;
-  }
-
   setSource(source: Location) {
     this.source = source;
   }

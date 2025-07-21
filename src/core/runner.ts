@@ -49,6 +49,7 @@ import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { parseSpaces } from '../push/monitor';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
@@ -466,10 +467,10 @@ export default class Runner implements RunnerInfo {
       // TODO: Fix backwards compatibility with 1.14 and prior
       (journey.cb ?? journey.callback)({ params: options.params } as any);
       const monitor = journey.monitor ?? journey?._getMonitor();
-      monitor.update(this.#monitor?.config);
-      monitor.setSpaces(
-        Array.from(new Set([...(monitor.config.spaces ?? []), options.space]))
-      );
+      monitor.update({
+        ...this.#monitor?.config,
+        spaces: parseSpaces(monitor.config, options),
+      });
       if (!monitor.isMatch(options.grepOpts?.match, options.grepOpts?.tags)) {
         continue;
       }
