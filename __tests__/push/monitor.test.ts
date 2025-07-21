@@ -505,6 +505,7 @@ heartbeat.monitors:
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        space: 'default',
         auth: 'foo',
         params: { foo: 'bar' },
         kibanaVersion: '8.8.0',
@@ -513,7 +514,7 @@ heartbeat.monitors:
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
-        space: 'default',
+        spaces: ['default'],
       });
 
       expect(mon.config).toEqual({
@@ -554,6 +555,7 @@ heartbeat.monitors:
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        space: 'default',
         auth: 'foo',
         params: { foo: 'bar' },
         kibanaVersion: '8.8.0',
@@ -578,7 +580,7 @@ heartbeat.monitors:
           baz: 'qux',
           foo: 'bar',
         },
-        spaces: ['space1', 'space2'],
+        spaces: ['default', 'space1', 'space2'],
       });
     });
   });

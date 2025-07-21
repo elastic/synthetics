@@ -349,6 +349,7 @@ export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
     // If the user has provided a wildcard space, we should not override it with the global space
     return ['*'];
   }
+  return spaces;
 };
 
 export const parseFields = (
