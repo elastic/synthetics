@@ -51,6 +51,7 @@ export async function bulkPutMonitors(
   schemas: MonitorSchema[]
 ) {
   const url = generateURL(options, 'bulk_update') + '/_bulk_update';
+  // '/_bulk_update?savedObjectType=synthetics-monitor';
 
   const resp = await sendReqAndHandleError<PutResponse>({
     url,

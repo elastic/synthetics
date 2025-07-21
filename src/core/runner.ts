@@ -443,6 +443,7 @@ export default class Runner implements RunnerInfo {
       retestOnFailure: options.retestOnFailure,
       enabled: options.enabled,
       fields: options.fields,
+      spaces: Array.from(new Set([...(options.spaces ?? []), options.space])),
     });
 
     const monitors: Monitor[] = [];
@@ -466,6 +467,9 @@ export default class Runner implements RunnerInfo {
       (journey.cb ?? journey.callback)({ params: options.params } as any);
       const monitor = journey.monitor ?? journey?._getMonitor();
       monitor.update(this.#monitor?.config);
+      monitor.setSpaces(
+        Array.from(new Set([...(monitor.config.spaces ?? []), options.space]))
+      );
       if (!monitor.isMatch(options.grepOpts?.match, options.grepOpts?.tags)) {
         continue;
       }

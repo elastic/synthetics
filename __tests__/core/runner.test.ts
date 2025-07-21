@@ -767,6 +767,7 @@ describe('runner', () => {
         locations: ['united_kingdom'],
         schedule: 3,
         throttling: { download: 5, latency: 20, upload: 3 },
+        spaces: [],
       });
       expect(monitors[1].config).toMatchObject({
         throttling: { latency: 1000 },
@@ -824,6 +825,7 @@ describe('runner', () => {
         alert: { tls: { enabled: true } },
         retestOnFailure: true,
         fields: { area: 'website' },
+        spaces: [],
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],

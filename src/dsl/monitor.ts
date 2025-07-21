@@ -77,6 +77,10 @@ export type MonitorConfig = {
    * By default, the monitor will be retested on failure
    */
   retestOnFailure?: boolean;
+  /**
+   * The kibana spaces where the monitor will be visible.
+   */
+  spaces?: string[];
 };
 
 type MonitorFilter = {
@@ -106,6 +110,10 @@ export class Monitor {
 
   get type() {
     return this.config.type;
+  }
+
+  setSpaces(spaces: string[]) {
+    this.config.spaces = spaces;
   }
 
   setSource(source: Location) {

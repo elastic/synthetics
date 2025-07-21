@@ -289,6 +289,13 @@ export function buildMonitorFromYaml(
 
   const mon = new Monitor({
     enabled: config.enabled ?? options.enabled,
+    spaces: Array.from(
+      new Set([
+        options.space,
+        ...(config.spaces ?? []),
+        ...(options.spaces ?? []),
+      ])
+    ),
     locations: options.locations,
     tags: options.tags,
     fields: parseFields(config, options.fields),
