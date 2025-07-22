@@ -68,6 +68,7 @@ const {
   tags,
   match,
   fields,
+  namespace,
 } = getCommonCommandOpts();
 
 program
@@ -197,6 +198,7 @@ program
   .addOption(pattern)
   .addOption(tags)
   .addOption(fields)
+  .addOption(namespace)
   .addOption(match)
   .addOption(params)
   .addOption(playwrightOpts)
