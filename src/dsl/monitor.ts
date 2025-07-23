@@ -77,6 +77,10 @@ export type MonitorConfig = {
    * By default, the monitor will be retested on failure
    */
   retestOnFailure?: boolean;
+  /**
+   * The kibana spaces where the monitor will be visible.
+   */
+  spaces?: string[];
 };
 
 type MonitorFilter = {
