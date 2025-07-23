@@ -293,7 +293,7 @@ export function buildMonitorFromYaml(
     tags: options.tags,
     fields: parseFields(config, options.fields),
     ...normalizeConfig(config),
-    spaces: parseSpaces(config, options),
+    ...parseSpaces(config, options),
     retestOnFailure,
     privateLocations,
     schedule:
@@ -337,6 +337,12 @@ export const parseAlertConfig = (
 };
 
 export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
+  const baseSpaces = [...(config.spaces ?? []), ...(options.spaces ?? [])];
+  if (!baseSpaces.length) {
+    // If no spaces are defined, we return an empty object
+    return {};
+  }
+
   // If the user has provided a global space, merge it with the monitor spaces
   const spaces = Array.from(
     new Set([
@@ -345,11 +351,12 @@ export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
       ...(options.spaces ?? []),
     ])
   );
+
   if (spaces.includes('*')) {
     // If the user has provided a wildcard space, we should not override it with the global space
-    return ['*'];
+    return { spaces: ['*'] };
   }
-  return spaces;
+  return { spaces };
 };
 
 export const parseFields = (

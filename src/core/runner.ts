@@ -469,7 +469,7 @@ export default class Runner implements RunnerInfo {
       const monitor = journey.monitor ?? journey?._getMonitor();
       monitor.update({
         ...this.#monitor?.config,
-        spaces: parseSpaces(monitor.config, options),
+        ...parseSpaces(monitor.config, options),
       });
       if (!monitor.isMatch(options.grepOpts?.match, options.grepOpts?.tags)) {
         continue;
