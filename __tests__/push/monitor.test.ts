@@ -33,6 +33,7 @@ import {
   parseAlertConfig,
   parseFields,
   parseSchedule,
+  parseSpaces,
 } from '../../src/push/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
@@ -732,6 +733,60 @@ heartbeat.monitors:
       const result = parseFields(config as any);
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('parseSpaces', () => {
+    it('returns empty object if no spaces are defined', () => {
+      expect(parseSpaces({}, {} as any)).toEqual({});
+      expect(parseSpaces({ spaces: undefined }, {} as any)).toEqual({});
+      expect(parseSpaces({}, { spaces: undefined } as any)).toEqual({});
+    });
+
+    it('merges config and options spaces, including global space', () => {
+      const config = { spaces: ['space1'] };
+      const options = { spaces: ['space2'], space: 'global' };
+      expect(parseSpaces(config, options as any)).toEqual({
+        spaces: ['global', 'space1', 'space2'],
+      });
+    });
+
+    it('handles only config spaces', () => {
+      expect(parseSpaces({ spaces: ['foo'] }, {} as any)).toEqual({
+        spaces: ['foo'],
+      });
+    });
+
+    it('handles only options spaces', () => {
+      expect(parseSpaces({}, { spaces: ['bar'] } as any)).toEqual({
+        spaces: ['bar'],
+      });
+    });
+
+    it('handles global space only', () => {
+      expect(parseSpaces({}, { space: 'default' } as any)).toEqual({});
+    });
+
+    it('deduplicates spaces', () => {
+      const config = { spaces: ['space1', 'space2'] };
+      const options = { spaces: ['space2', 'space3'], space: 'space1' };
+      expect(parseSpaces(config, options as any)).toEqual({
+        spaces: ['space1', 'space2', 'space3'],
+      });
+    });
+
+    it('returns wildcard if present', () => {
+      expect(
+        parseSpaces({ spaces: ['*'] }, {
+          space: 'default',
+          spaces: ['foo'],
+        } as any)
+      ).toEqual({
+        spaces: ['*'],
+      });
+      expect(parseSpaces({}, { spaces: ['*'] } as any)).toEqual({
+        spaces: ['*'],
+      });
     });
   });
 });

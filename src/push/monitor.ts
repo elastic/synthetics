@@ -345,11 +345,9 @@ export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
 
   // If the user has provided a global space, merge it with the monitor spaces
   const spaces = Array.from(
-    new Set([
-      options.space,
-      ...(config.spaces ?? []),
-      ...(options.spaces ?? []),
-    ])
+    options.space
+      ? new Set([options.space, ...baseSpaces])
+      : new Set(baseSpaces)
   );
 
   if (spaces.includes('*')) {
