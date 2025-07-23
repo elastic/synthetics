@@ -263,6 +263,11 @@ export type PushOptions = Partial<ProjectSettings> &
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
     grepOpts?: GrepOptions;
+    proxyUri?: string;
+    proxyToken?: string;
+    proxyCa?: string;
+    proxyCert?: string;
+    proxyNoVerify?: string;
   };
 
 export type ProjectSettings = {
