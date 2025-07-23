@@ -352,7 +352,6 @@ heartbeat.monitors:
         schedule: 5,
         tags: ['ltag1', 'ltag2'],
         retestOnFailure: true,
-        spaces: [],
       });
     });
 
@@ -380,7 +379,6 @@ heartbeat.monitors:
         schedule: 10,
         tags: ['gtag1', 'gtag2'],
         retestOnFailure: false,
-        spaces: [],
       });
     });
 
@@ -427,7 +425,6 @@ heartbeat.monitors:
         ssl: {
           certificate_authorities: ['/etc/ca.crt'],
         },
-        spaces: [],
       });
     });
 
