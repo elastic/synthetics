@@ -445,6 +445,7 @@ export default class Runner implements RunnerInfo {
       enabled: options.enabled,
       fields: options.fields,
       spaces: Array.from(new Set([...(options.spaces ?? []), options.space])),
+      namespace: options.namespace,
     });
 
     const monitors: Monitor[] = [];

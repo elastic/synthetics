@@ -265,6 +265,7 @@ export type PushOptions = Partial<ProjectSettings> &
     enabled?: boolean;
     grepOpts?: GrepOptions;
     spaces?: MonitorConfig['spaces'];
+    namespace?: string;
   };
 
 export type ProjectSettings = {
