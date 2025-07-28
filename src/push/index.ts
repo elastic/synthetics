@@ -75,6 +75,7 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
   }
+
   progress(
     `Pushing monitors for '${options.id}' project in kibana '${options.space}' space`
   );
