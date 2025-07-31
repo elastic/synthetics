@@ -275,10 +275,23 @@ program
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
   .addOption(auth)
+  .addOption(proxyUri)
+  .addOption(proxyToken)
+  .addOption(proxyNoVerify)
+  .addOption(proxyCa)
+  .addOption(proxyCert)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
     try {
+      //Set up global proxy agent if any of the related options are set
+      setGlobalProxy(
+        cmdOpts.proxyUri,
+        cmdOpts.proxyToken,
+        cmdOpts.proxyNoVerify ? false : true,
+        cmdOpts.proxyCa,
+        cmdOpts.proxyCert
+      );
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,
