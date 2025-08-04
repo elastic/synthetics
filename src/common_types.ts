@@ -224,6 +224,7 @@ type BaseArgs = {
   locations?: MonitorConfig['locations'];
   privateLocations?: MonitorConfig['privateLocations'];
   fields?: MonitorConfig['fields'];
+  spaces?: MonitorConfig['spaces'];
 };
 
 export type CliArgs = BaseArgs & {
@@ -268,6 +269,7 @@ export type PushOptions = Partial<ProjectSettings> &
     proxyCa?: string;
     proxyCert?: string;
     proxyNoVerify?: string;
+    spaces?: MonitorConfig['spaces'];
   };
 
 export type ProjectSettings = {
