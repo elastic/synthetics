@@ -28,8 +28,6 @@ import { progress, removeTrailingSlash } from '../helpers';
 import { green, red, grey, yellow, Colorize, bold } from 'kleur/colors';
 import { PushOptions } from '../common_types';
 import { Monitor } from '../dsl/monitor';
-import { ProxyAgent, setGlobalDispatcher } from 'undici';
-import { EnvHttpProxyAgent } from 'undici';
 
 export function logDiff<T extends Set<string>>(
   newIDs: T,
@@ -200,23 +198,4 @@ export function normalizeMonitorName(p: string, replacement = '_') {
   // remove colons
   p = p.replace(/[:]+/g, replacement);
   return p;
-}
-
-export function setGlobalProxy(
-  uri: string,
-  token: string,
-  rejectUnauthorized: boolean,
-  ca: string,
-  cert: string
-) {
-  // Create proxy agent if options exist, if not attempt to load env proxy
-  const proxyAgent = uri
-    ? new ProxyAgent({
-        uri,
-        token,
-        proxyTls: { ca: ca ?? null, cert: cert ?? null, rejectUnauthorized },
-      })
-    : new EnvHttpProxyAgent();
-
-  setGlobalDispatcher(proxyAgent);
 }

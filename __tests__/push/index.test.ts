@@ -32,6 +32,7 @@ import { createKibanaTestServer } from '../utils/kibana-test-server';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
 import { THROTTLING_WARNING_MSG } from '../../src/helpers';
+import Straightforward from 'straightforward';
 
 describe('Push', () => {
   let server: Server;
@@ -351,6 +352,143 @@ heartbeat.monitors:
       );
       const output = await runPush();
       expect(output).toMatchSnapshot();
+    });
+  });
+  describe('Proxy options', () => {
+    let requests: Array<any> = [];
+    let proxyServer;
+    let tlsServer;
+
+    beforeAll(async () => {
+      proxyServer = new Straightforward();
+      proxyServer.onConnect.use(async ({ req }, next) => {
+        requests.push(req);
+        return next();
+      });
+      await proxyServer.listen(8019);
+      tlsServer = await createKibanaTestServer('8.6.0', true, (req: any) =>
+        requests.push(req)
+      );
+    });
+
+    afterAll(async () => {
+      proxyServer.close();
+    });
+
+    beforeEach(() => {
+      requests = [];
+      delete process.env.HTTP_PROXY,
+        process.env.HTTP_PROXYS,
+        process.env.NO_PROXY,
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    });
+
+    it('enables proxy based on HTTP_PROXY', async () => {
+      process.env.HTTP_PROXY = 'http://localhost:8019';
+      await fakeProjectSetup(
+        { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
+    });
+
+    it('honors NO_PROXY with env variables', async () => {
+      process.env.HTTP_PROXY = 'http://localhost:8019';
+      process.env.NO_PROXY = '*';
+      await fakeProjectSetup(
+        { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests).toHaveLength(0);
+    });
+
+    it('enables proxy based on HTTPS_PROXY', async () => {
+      process.env.HTTPS_PROXY = 'http://localhost:8019';
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      await fakeProjectSetup(
+        {
+          project: {
+            id: 'test-project',
+            space: 'dummy',
+            url: tlsServer.PREFIX,
+          },
+        },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
+    });
+
+    it('enables proxy based on --proxy-uri', async () => {
+      await fakeProjectSetup(
+        { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush(
+        [
+          ...DEFAULT_ARGS,
+          '--tags',
+          'chunk',
+          '--proxy-uri',
+          'http://localhost:8019',
+        ],
+        {
+          CHUNK_SIZE: '1',
+        }
+      );
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
     });
   });
 });

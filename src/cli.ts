@@ -54,7 +54,7 @@ import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
-import { setGlobalProxy } from './push/utils';
+import { setGlobalProxy } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -284,7 +284,7 @@ program
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
     try {
-      //Set up global proxy agent if any of the related options are set
+      // Set up global proxy agent if any of the related options are set
       setGlobalProxy(
         cmdOpts.proxyUri,
         cmdOpts.proxyToken,

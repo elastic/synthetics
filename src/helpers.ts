@@ -38,6 +38,8 @@ import {
   ThrottlingOptions,
 } from './common_types';
 import micromatch from 'micromatch';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
+import { EnvHttpProxyAgent } from 'undici';
 
 const SEPARATOR = '\n';
 
@@ -403,4 +405,23 @@ export function isMatch(
 export function tagsMatch(tags, pattern) {
   const matchess = micromatch(tags || ['*'], pattern);
   return matchess.length > 0;
+}
+
+export function setGlobalProxy(
+  uri: string,
+  token: string,
+  rejectUnauthorized: boolean,
+  ca: string,
+  cert: string
+) {
+  // Create proxy agent if options exist, if not attempt to load env proxy
+  const proxyAgent = uri
+    ? new ProxyAgent({
+        uri,
+        token,
+        proxyTls: { ca: ca ?? null, cert: cert ?? null, rejectUnauthorized },
+      })
+    : new EnvHttpProxyAgent();
+
+  setGlobalDispatcher(proxyAgent);
 }

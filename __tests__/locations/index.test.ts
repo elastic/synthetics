@@ -33,8 +33,7 @@ import { LOCATIONS } from '../fixtures/locationinfo';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
 import { mkdir, rm, writeFile } from 'fs/promises';
-// import { createProxyServer } from 'http-proxy';
-// import http from "http";
+import { Straightforward } from 'straightforward';
 
 describe('Locations', () => {
   const apiKey = 'foo';
@@ -102,8 +101,7 @@ describe('Locations', () => {
       const cli = new CLIMock(true)
         .args(['locations', ...args])
         .run({ cwd: PROJECT_DIR, env: process.env });
-      // expect(await cli.exitCode).toBe(0);
-      console.log(cli.stderr());
+      expect(await cli.exitCode).toBe(0);
       return cli.stderr();
     };
 
@@ -130,47 +128,73 @@ describe('Locations', () => {
     });
 
     describe('Proxy options', () => {
-      // let requests: Array<any> = [];
-      // let proxyServer;
+      let requests: Array<any> = [];
+      let proxyServer;
+      let tlsServer;
 
       beforeAll(async () => {
-        await fakeProjectSetup({ url: server.PREFIX });
-        // proxyServer = createProxyServer({ target: server.PREFIX }).listen(8019);
-        // proxyServer.on('proxyReq', function (proxyReq, req) {
-        //   requests.push(req);
-        // });
-        // const proxy = createProxyServer({});
-
-        //
-        // Create your custom server and just call `proxy.web()` to proxy
-        // a web request to the target passed in the options
-        // also you can use `proxy.ws()` to proxy a websockets request
-        //
-        // proxyServer = http.createServer(function (req, res) {
-        //   proxy.web(req, res, { target: server.PREFIX });
-        // }).listen(8019);
+        proxyServer = new Straightforward();
+        proxyServer.onConnect.use(async ({ req }, next) => {
+          requests.push(req);
+          return next();
+        });
+        await proxyServer.listen(8019);
+        tlsServer = await Server.create({ tls: true });
+        tlsServer.route('/internal/uptime/service/locations', (req, res) => {
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify({ locations: LOCATIONS }));
+        });
       });
 
-      // afterAll(async () => {
-      //   proxyServer.close();
-      // });
+      afterAll(async () => {
+        proxyServer.close();
+      });
 
-      // beforeEach(() => {
-      //   requests = []
-      // });
+      beforeEach(() => {
+        requests = [];
+        delete process.env.HTTP_PROXY,
+          process.env.HTTP_PROXYS,
+          process.env.NO_PROXY,
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      });
 
       it('enables proxy based on HTTP_PROXY', async () => {
+        process.env.HTTP_PROXY = 'http://localhost:8019';
+        await fakeProjectSetup({ url: server.PREFIX });
+        const output = await runLocations(['--auth', apiKey]);
+        expect(output).toContain(`custom location 1`);
+        expect(requests).toHaveLength(1);
+      });
+
+      it('honors NO_PROXY with env variables', async () => {
+        process.env.HTTP_PROXY = 'http://localhost:8019';
+        process.env.NO_PROXY = '*';
+        await fakeProjectSetup({ url: server.PREFIX });
+        const output = await runLocations(['--auth', apiKey]);
+        expect(output).toContain(`custom location 1`);
+        expect(requests).toHaveLength(0);
+      });
+
+      it('enables proxy based on HTTPS_PROXY', async () => {
+        process.env.HTTPS_PROXY = 'http://localhost:8019';
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        await fakeProjectSetup({ url: tlsServer.PREFIX });
+        const output = await runLocations(['--auth', apiKey]);
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+        expect(output).toContain(`custom location 1`);
+        expect(requests).toHaveLength(1);
+      });
+
+      it('enables proxy based on --proxy-uri', async () => {
+        await fakeProjectSetup({ url: server.PREFIX });
         const output = await runLocations([
-          '--url',
-          server.PREFIX,
           '--auth',
           apiKey,
           '--proxy-uri',
-          'http://localhost:9191',
+          'http://localhost:8019',
         ]);
-        console.log(output);
-        // expect(requests).toHaveLength(1);
         expect(output).toContain(`custom location 1`);
+        expect(requests).toHaveLength(1);
       });
     });
   });
