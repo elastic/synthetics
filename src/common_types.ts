@@ -225,6 +225,7 @@ type BaseArgs = {
   privateLocations?: MonitorConfig['privateLocations'];
   fields?: MonitorConfig['fields'];
   spaces?: MonitorConfig['spaces'];
+  namespace?: MonitorConfig['namespace'];
 };
 
 export type CliArgs = BaseArgs & {
@@ -265,7 +266,6 @@ export type PushOptions = Partial<ProjectSettings> &
     enabled?: boolean;
     grepOpts?: GrepOptions;
     spaces?: MonitorConfig['spaces'];
-    namespace?: string;
   };
 
 export type ProjectSettings = {
