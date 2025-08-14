@@ -209,19 +209,21 @@ export default class Runner implements RunnerInfo {
 
   async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
-    const { metrics, screenshots, filmstrips, trace } = options;
+    const { metrics, screenshots, filmstrips, trace, disableBrowser } = options;
     /**
      * URL needs to be the first navigation request of any step
      * Listening for request solves the case where `about:blank` would be
      * reported for failed navigations
      */
-    const captureUrl = req => {
-      if (!step.url && req.isNavigationRequest()) {
-        step.url = req.url();
-      }
-      this.#driver.context.off('request', captureUrl);
-    };
-    this.#driver.context.on('request', captureUrl);
+    if (!disableBrowser) {
+      const captureUrl = req => {
+        if (!step.url && req.isNavigationRequest()) {
+          step.url = req.url();
+        }
+        this.#driver.context.off('request', captureUrl);
+      };
+      this.#driver.context.on('request', captureUrl);
+    }
 
     const data: StepResult = {};
     const traceEnabled = trace || filmstrips;
@@ -230,7 +232,9 @@ export default class Runner implements RunnerInfo {
        * Set up plugin manager context and also register
        * step level plugins
        */
-      Gatherer.pluginManager.onStep(step);
+      if (!disableBrowser) {
+        Gatherer.pluginManager.onStep(step);
+      }
       traceEnabled && (await Gatherer.pluginManager.start('trace'));
       // invoke the step callback by extracting to a variable to get better stack trace
       const cb = step.cb;
@@ -258,7 +262,8 @@ export default class Runner implements RunnerInfo {
        *
        * Last open page will get us the correct screenshot
        */
-      const pages = this.#driver.context.pages();
+
+      const pages = disableBrowser ? [] : this.#driver.context.pages();
       const page = pages[pages.length - 1];
       if (page) {
         step.url ??= page.url();
@@ -311,7 +316,9 @@ export default class Runner implements RunnerInfo {
   async #startJourney(journey: Journey, options: RunOptions) {
     journey._startTime = monotonicTimeInSeconds();
     this.#driver = await Gatherer.setupDriver(options);
-    await Gatherer.beginRecording(this.#driver, options);
+    if (!options.disableBrowser) {
+      await Gatherer.beginRecording(this.#driver, options);
+    }
     /**
      * For each journey we create the screenshots folder for
      * caching all screenshots and clear them at end of each journey
@@ -334,6 +341,10 @@ export default class Runner implements RunnerInfo {
     options: RunOptions
   ) {
     // Enhance the journey results
+    const { disableBrowser } = options;
+    if (disableBrowser) {
+      return Object.assign(result, { ...journey });
+    }
     const pOutput = await Gatherer.pluginManager.output();
     const bConsole = filterBrowserMessages(
       pOutput.browserconsole,
@@ -549,9 +560,12 @@ export default class Runner implements RunnerInfo {
   }
 
   async _runJourneys(options: RunOptions) {
+    const { disableBrowser } = options;
     const result: RunResult = {};
     const browserStart = monotonicTimeInSeconds();
-    await Gatherer.launchBrowser(options);
+    if (!disableBrowser) {
+      await Gatherer.launchBrowser(options);
+    }
     this.#browserDelay = monotonicTimeInSeconds() - browserStart;
 
     for (const journey of this.#journeys) {

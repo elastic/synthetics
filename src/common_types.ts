@@ -238,6 +238,7 @@ export type CliArgs = BaseArgs & {
   sandbox?: boolean;
   richEvents?: boolean;
   headless?: boolean;
+  disableBrowser?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
 };
@@ -252,6 +253,7 @@ export type RunOptions = BaseArgs & {
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
   grepOpts?: GrepOptions;
+  disableBrowser?: boolean;
 };
 
 export type PushOptions = Partial<ProjectSettings> &

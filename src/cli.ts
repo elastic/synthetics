@@ -92,6 +92,10 @@ program
   )
   .option('--no-headless', 'run with the browser in headful mode')
   .option(
+    '--disable-browser',
+    'run journeys without a browser, with a limited API'
+  )
+  .option(
     '--capability <features...>',
     'Enable capabilities through feature flags'
   )

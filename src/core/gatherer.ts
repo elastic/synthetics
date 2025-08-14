@@ -72,8 +72,19 @@ export class Gatherer {
   }
 
   static async setupDriver(options: RunOptions): Promise<Driver> {
+    const { playwrightOptions, disableBrowser } = options;
+    const request = await apiRequest.newContext({ ...playwrightOptions });
+    if (disableBrowser) {
+      return {
+        browser: null,
+        context: null,
+        page: null,
+        client: null,
+        request,
+      };
+    }
+
     await Gatherer.launchBrowser(options);
-    const { playwrightOptions } = options;
     const context = await Gatherer.browser.newContext({
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
@@ -95,7 +106,6 @@ export class Gatherer {
 
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
-    const request = await apiRequest.newContext({ ...playwrightOptions });
     return { browser: Gatherer.browser, context, page, client, request };
   }
 
