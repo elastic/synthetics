@@ -74,7 +74,7 @@
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
     "stack-utils": "^2.0.6",
-    "undici": "^5.29.0",
+    "undici": "^7.15.0",
     "unzip-stream": "^0.3.4",
     "yaml": "^2.2.2"
   },
