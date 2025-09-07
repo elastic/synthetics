@@ -37,7 +37,7 @@ jobs:
           repositories: >-
             ["synthetics"]
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ steps.get_token.outputs.token }}
