@@ -8,6 +8,8 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "22:00"
+    cooldown:
+      days: 14
     groups:
       github-actions:
         patterns:
