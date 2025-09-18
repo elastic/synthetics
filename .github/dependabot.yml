@@ -18,5 +18,5 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      days: 14
+      default-days: 14
     open-pull-requests-limit: 10
