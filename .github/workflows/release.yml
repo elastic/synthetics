@@ -31,6 +31,8 @@ jobs:
           private-key: ${{ secrets.OBS_AUTOMATION_APP_PEM }}
           owner: elastic
           repositories: synthetics
+          permission-contents: write
+          permission-pull-requests: write
 
       - uses: actions/checkout@v4
         with:
