@@ -240,6 +240,7 @@ export type CliArgs = BaseArgs & {
   headless?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
+  outputDom?: boolean;
 };
 
 export type RunOptions = BaseArgs & {
@@ -250,6 +251,7 @@ export type RunOptions = BaseArgs & {
   filmstrips?: boolean;
   environment?: string;
   networkConditions?: NetworkConditions;
+  outputDom?: boolean;
   reporter?: BuiltInReporterName | ReporterInstance;
   grepOpts?: GrepOptions;
 };
@@ -325,6 +327,7 @@ export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
     browserDelay: number;
     options: RunOptions;
+    pageDom?: string;
   };
 
 export type StepEndResult = StepResult;

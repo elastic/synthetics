@@ -84,4 +84,40 @@ describe('base reporter', () => {
     reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
   });
+
+  it('should not print DOM when outputDom is disabled', async () => {
+    const j1 = tJourney();
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onJourneyEnd(j1, {
+      timestamp,
+      browserDelay: 0,
+      options: {},
+      pageDom: '<html><body>Test DOM</body></html>',
+    });
+    reporter.onEnd();
+    const output = await readAndCloseStream();
+    expect(output).not.toContain('PAGE DOM START');
+    expect(output).not.toContain('<html><body>Test DOM</body></html>');
+  });
+
+  it('should print DOM when outputDom is enabled', async () => {
+    const reporter = new BaseReporter({
+      fd: fs.openSync(dest, 'w'),
+      outputDom: true,
+    });
+    stream = reporter.stream;
+
+    const j1 = tJourney();
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onJourneyEnd(j1, {
+      timestamp,
+      browserDelay: 0,
+      options: {},
+      pageDom: '<html><body>Test DOM</body></html>',
+    });
+    reporter.onEnd();
+    const output = await readAndCloseStream();
+    expect(output).toContain('PAGE DOM START');
+    expect(output).toContain('<html><body>Test DOM</body></html>');
+  });
 });

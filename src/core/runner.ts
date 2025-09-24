@@ -179,12 +179,12 @@ export default class Runner implements RunnerInfo {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd, dryRun } = options;
+    const { reporter, outfd, dryRun, outputDom } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd, dryRun });
+    this.#reporter = new Reporter({ fd: outfd, dryRun, outputDom });
   }
 
   async #runBeforeAllHook(args: HooksArgs) {
@@ -339,12 +339,29 @@ export default class Runner implements RunnerInfo {
       pOutput.browserconsole,
       journey.status
     );
+
+    // Get the current page DOM if available
+    let pageDom: string | undefined;
+    if (this.#driver && this.#driver.page) {
+      try {
+        // Get the last active page
+        const pages = this.#driver.context.pages();
+        const page = pages[pages.length - 1];
+        if (page) {
+          pageDom = await page.content();
+        }
+      } catch (error) {
+        log('Error capturing page DOM: ' + error);
+      }
+    }
+
     await this.#reporter?.onJourneyEnd?.(journey, {
       browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
       options,
       networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
+      pageDom,
     });
     await Gatherer.endRecording();
     await Gatherer.dispose(this.#driver);
