@@ -23,7 +23,7 @@
  *
  */
 
-import { PluginOutput, Driver } from '../common_types';
+import { PluginOutput, Driver, RunOptions, StepResult } from '../common_types';
 import {
   BrowserConsole,
   NetworkManager,
@@ -32,10 +32,22 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { AttachmentOptions, AttachmentsManager } from './attachments';
+import { Gatherer } from '../core/gatherer';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
-type PluginOptions = TraceOptions;
+type PluginType =
+  | 'network'
+  | 'trace'
+  | 'performance'
+  | 'browserconsole'
+  | 'attachments';
+type Plugin =
+  | NetworkManager
+  | Tracing
+  | PerformanceManager
+  | BrowserConsole
+  | AttachmentsManager;
+type PluginOptions = TraceOptions & AttachmentOptions;
 
 export class PluginManager {
   protected plugins = new Map<PluginType, Plugin>();
@@ -44,6 +56,7 @@ export class PluginManager {
     'trace',
     'performance',
     'browserconsole',
+    'attachments',
   ];
   constructor(private driver: Driver) {}
 
@@ -61,6 +74,9 @@ export class PluginManager {
         break;
       case 'browserconsole':
         instance = new BrowserConsole(this.driver);
+        break;
+      case 'attachments':
+        instance = new AttachmentsManager(this.driver, options);
         break;
     }
     instance && this.plugins.set(type, instance);
@@ -97,9 +113,44 @@ export class PluginManager {
     return this.plugins.get(type);
   }
 
-  onStep(step: Step) {
+  async onStep(step: Step, options: RunOptions) {
+    const { filmstrips, trace } = options;
+
+    const traceEnabled = trace || filmstrips;
+    traceEnabled && (await Gatherer.pluginManager.start('trace'));
+
     (this.get('browserconsole') as BrowserConsole)._currentStep = step;
     (this.get('network') as NetworkManager)._currentStep = step;
+  }
+
+  async onJourneyStart() {
+    await (this.get('attachments') as AttachmentsManager).setup();
+  }
+
+  async onStepEnd(step: Step, options: RunOptions, data: StepResult) {
+    const { metrics, filmstrips, trace } = options;
+    const traceEnabled = trace || filmstrips;
+
+    /**
+     * Collect all step level metrics and trace events
+     */
+    if (metrics) {
+      data.pagemetrics = await (
+        Gatherer.pluginManager.get('performance') as PerformanceManager
+      ).getMetrics();
+    }
+    if (traceEnabled) {
+      const traceOutput = await Gatherer.pluginManager.stop('trace');
+      Object.assign(data, traceOutput);
+    }
+
+    await (this.get('attachments') as AttachmentsManager).recordScreenshots(
+      step
+    );
+  }
+
+  async onJourneyEnd() {
+    await (this.get('attachments') as AttachmentsManager)?.clear();
   }
 
   async output() {
@@ -109,6 +160,8 @@ export class PluginManager {
         data.networkinfo = await plugin.stop();
       } else if (plugin instanceof BrowserConsole) {
         data.browserconsole = plugin.stop();
+      } else if (plugin instanceof AttachmentsManager) {
+        data.attachments = plugin.stop();
       }
     }
     return data;
