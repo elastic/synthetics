@@ -25,7 +25,7 @@
 
 import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { Journey } from '../dsl/journey';
+import { Journey, JourneyCallbackOpts } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
@@ -44,6 +44,7 @@ import {
   JourneyResult,
   StepResult,
   PushOptions,
+  APIDriver,
 } from '../common_types';
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
@@ -66,7 +67,7 @@ export interface RunnerInfo {
    */
   readonly currentJourney: Journey | undefined;
   /**
-   * All registerd journeys
+   * All registered journeys
    */
   readonly journeys: Journey[];
 }
@@ -78,7 +79,7 @@ export default class Runner implements RunnerInfo {
   #journeys: Journey[] = [];
   #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
   #screenshotPath = join(CACHE_PATH, 'screenshots');
-  #driver?: Driver;
+  #driver?: Driver | APIDriver;
   #browserDelay = -1;
   #hookError: Error | undefined;
   #monitor?: Monitor;
@@ -210,18 +211,22 @@ export default class Runner implements RunnerInfo {
   async #runStep(step: Step, options: RunOptions): Promise<StepResult> {
     log(`Runner: start step (${step.name})`);
     const { metrics, screenshots, filmstrips, trace } = options;
-    /**
-     * URL needs to be the first navigation request of any step
-     * Listening for request solves the case where `about:blank` would be
-     * reported for failed navigations
-     */
-    const captureUrl = req => {
-      if (!step.url && req.isNavigationRequest()) {
-        step.url = req.url();
-      }
-      this.#driver.context.off('request', captureUrl);
-    };
-    this.#driver.context.on('request', captureUrl);
+
+    if ('context' in this.#driver) {
+      /**
+       * URL needs to be the first navigation request of any step
+       * Listening for request solves the case where `about:blank` would be
+       * reported for failed navigations
+       */
+      const captureUrl = req => {
+        if (!step.url && req.isNavigationRequest()) {
+          step.url = req.url();
+        }
+        'context' in this.#driver &&
+          this.#driver.context.off('request', captureUrl);
+      };
+      this.#driver.context.on('request', captureUrl);
+    }
 
     const data: StepResult = {};
     const traceEnabled = trace || filmstrips;
@@ -240,30 +245,32 @@ export default class Runner implements RunnerInfo {
       step.status = 'failed';
       step.error = error;
     } finally {
-      /**
-       * Collect all step level metrics and trace events
-       */
-      if (metrics) {
-        data.pagemetrics = await (
-          Gatherer.pluginManager.get('performance') as PerformanceManager
-        ).getMetrics();
-      }
-      if (traceEnabled) {
-        const traceOutput = await Gatherer.pluginManager.stop('trace');
-        Object.assign(data, traceOutput);
-      }
-      /**
-       * Capture screenshot for the newly created pages
-       * via popup or new windows/tabs
-       *
-       * Last open page will get us the correct screenshot
-       */
-      const pages = this.#driver.context.pages();
-      const page = pages[pages.length - 1];
-      if (page) {
-        step.url ??= page.url();
-        if (screenshots && screenshots !== 'off') {
-          await this.captureScreenshot(page, step);
+      if ('context' in this.#driver) {
+        /**
+         * Collect all step level metrics and trace events
+         */
+        if (metrics) {
+          data.pagemetrics = await (
+            Gatherer.pluginManager.get('performance') as PerformanceManager
+          ).getMetrics();
+        }
+        if (traceEnabled) {
+          const traceOutput = await Gatherer.pluginManager.stop('trace');
+          Object.assign(data, traceOutput);
+        }
+        /**
+         * Capture screenshot for the newly created pages
+         * via popup or new windows/tabs
+         *
+         * Last open page will get us the correct screenshot
+         */
+        const pages = this.#driver.context.pages();
+        const page = pages[pages.length - 1];
+        if (page) {
+          step.url ??= page.url();
+          if (screenshots && screenshots !== 'off') {
+            await this.captureScreenshot(page, step);
+          }
         }
       }
     }
@@ -310,22 +317,24 @@ export default class Runner implements RunnerInfo {
 
   async #startJourney(journey: Journey, options: RunOptions) {
     journey._startTime = monotonicTimeInSeconds();
-    this.#driver = await Gatherer.setupDriver(options);
+    this.#driver = await Gatherer.setupDriver(options, journey.type);
     await Gatherer.beginRecording(this.#driver, options);
-    /**
-     * For each journey we create the screenshots folder for
-     * caching all screenshots and clear them at end of each journey
-     */
-    await mkdir(this.#screenshotPath, { recursive: true });
+    if (journey.type === 'browser') {
+      /**
+       * For each journey we create the screenshots folder for
+       * caching all screenshots and clear them at end of each journey
+       */
+      await mkdir(this.#screenshotPath, { recursive: true });
+    }
     const params = options.params;
     this.#reporter?.onJourneyStart?.(journey, {
       timestamp: getTimestamp(),
       params,
     });
     /**
-     * Exeucute the journey callback which registers the steps for current journey
+     * Execute the journey callback which registers the steps for current journey
      */
-    journey.cb({ ...this.#driver, params, info: this });
+    journey.cb({ ...this.#driver, params, info: this } as JourneyCallbackOpts);
   }
 
   async #endJourney(
@@ -515,9 +524,9 @@ export default class Runner implements RunnerInfo {
     const { dryRun, grepOpts } = options;
 
     // collect all journeys with `.only` annotation and skip the rest
-    const onlyJournerys = this.#journeys.filter(j => j.only);
-    if (onlyJournerys.length > 0) {
-      this.#journeys = onlyJournerys;
+    const onlyJourneys = this.#journeys.filter(j => j.only);
+    if (onlyJourneys.length > 0) {
+      this.#journeys = onlyJourneys;
     } else {
       // filter journeys based on tags and skip annotations
       this.#journeys = this.#journeys.filter(
@@ -577,7 +586,7 @@ export default class Runner implements RunnerInfo {
     this.#journeys = [];
     this.#active = false;
     /**
-     * Clear all cache data stored for post processing by
+     * Clear all cache data stored for post-processing by
      * the current synthetic agent run
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
