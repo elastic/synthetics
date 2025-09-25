@@ -36,6 +36,7 @@ import {
   NetworkConditions,
   Location,
   ThrottlingOptions,
+  ProxySettings,
 } from './common_types';
 import micromatch from 'micromatch';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
@@ -407,19 +408,17 @@ export function tagsMatch(tags, pattern) {
   return matchess.length > 0;
 }
 
-export function setGlobalProxy(
-  uri: string,
-  token: string,
-  rejectUnauthorized: boolean,
-  ca: string,
-  cert: string
-) {
+export function setGlobalProxy(opts: ProxySettings) {
   // Create proxy agent if options exist, if not attempt to load env proxy
-  const proxyAgent = uri
+  const proxyAgent = opts.uri
     ? new ProxyAgent({
-        uri,
-        token,
-        proxyTls: { ca: ca ?? null, cert: cert ?? null, rejectUnauthorized },
+        uri: opts.uri,
+        token: opts.token,
+        proxyTls: {
+          ca: opts.ca ?? null,
+          cert: opts.cert ?? null,
+          rejectUnauthorized: !opts.noVerify,
+        },
       })
     : new EnvHttpProxyAgent();
 

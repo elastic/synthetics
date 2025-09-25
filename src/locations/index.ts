@@ -30,11 +30,6 @@ import { generateURL } from '../push/utils';
 export type LocationCmdOptions = {
   auth: string;
   url: string;
-  proxyUri?: string;
-  proxyToken?: string;
-  proxyCa?: string;
-  proxyCert?: string;
-  proxyNoVerify?: string;
 };
 
 type LocationMetadata = {

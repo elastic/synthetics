@@ -225,6 +225,7 @@ type BaseArgs = {
   privateLocations?: MonitorConfig['privateLocations'];
   fields?: MonitorConfig['fields'];
   spaces?: MonitorConfig['spaces'];
+  proxy?: ProxySettings;
 };
 
 export type CliArgs = BaseArgs & {
@@ -264,11 +265,6 @@ export type PushOptions = Partial<ProjectSettings> &
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
     grepOpts?: GrepOptions;
-    proxyUri?: string;
-    proxyToken?: string;
-    proxyCa?: string;
-    proxyCert?: string;
-    proxyNoVerify?: string;
     spaces?: MonitorConfig['spaces'];
   };
 
@@ -290,6 +286,7 @@ export type SyntheticsConfig = {
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  proxy?: ProxySettings;
 };
 
 /** Runner Payload types */
@@ -332,3 +329,11 @@ export type JourneyEndResult = JourneyStartResult &
   };
 
 export type StepEndResult = StepResult;
+
+export type ProxySettings = {
+  uri?: string;
+  token?: string;
+  ca?: string | Buffer;
+  cert?: string | Buffer;
+  noVerify?: boolean;
+};

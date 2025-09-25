@@ -27,9 +27,9 @@ import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
-import { THROTTLING_WARNING_MSG, warn } from './helpers';
+import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
 import path from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
 
@@ -100,6 +100,9 @@ export async function normalizeOptions(
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
   };
 
+  options.proxy = Object.freeze(
+    merge(config?.proxy ?? {}, cliArgs?.proxy || {})
+  );
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
    * or pushing the project monitors
@@ -257,27 +260,6 @@ export function getCommonCommandOpts() {
     }, {});
   });
 
-  const proxyUri = createOption(
-    '--proxy-uri <uri>',
-    'proxy uri to use when pushing to kibana'
-  );
-  const proxyToken = createOption(
-    '--proxy-token <token>',
-    'auth token to use the proxy'
-  );
-  const proxyCa = createOption(
-    '--proxy-ca <path>',
-    'provide a CA override for proxy endpoint, as a path to be loaded or as string '
-  ).argParser(parseFileOption);
-  const proxyCert = createOption(
-    '--proxy-cert <path>',
-    'provide a cert override for proxy endpoint, as a path to be loaded or as string '
-  ).argParser(parseFileOption);
-  const proxyNoVerify = createOption(
-    '--proxy-no-verify',
-    'disable TLS verification for the proxy connection'
-  );
-
   return {
     auth,
     authMandatory,
@@ -288,11 +270,6 @@ export function getCommonCommandOpts() {
     tags,
     match,
     fields,
-    proxyUri,
-    proxyToken,
-    proxyCa,
-    proxyCert,
-    proxyNoVerify,
   };
 }
 
@@ -328,10 +305,10 @@ function parseAsBuffer(value: any): Buffer {
   }
 }
 
-function parseFileOption(value: string) {
+export function parseFileOption(value: string) {
   const filePath = path.resolve(value);
 
-  if (!existsSync(filePath)) {
+  if (!isFile(filePath)) {
     return value;
   }
 
@@ -340,4 +317,13 @@ function parseFileOption(value: string) {
   } catch (e) {
     throw new Error(`could not be read provided path ${filePath}: ${e}`);
   }
+}
+
+// This is a generic util to collect multiple options into a single
+// dictionary
+export function collectOpts(key, accumulator, nextParser?) {
+  return value => {
+    accumulator[key] = nextParser ? nextParser(value) : value;
+    return accumulator[key];
+  };
 }
