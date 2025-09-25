@@ -196,11 +196,13 @@ describe('options', () => {
   describe('parseFileOption', () => {
     it('parses file', () => {
       expect(
-        parseFileOption(join(__dirname, 'fixtures', 'synthetics.config.ts'))
+        parseFileOption('test')(
+          join(__dirname, 'fixtures', 'synthetics.config.ts')
+        )
       ).toBeInstanceOf(Buffer);
     });
     it('parses string', () => {
-      expect(parseFileOption('test')).toEqual('test');
+      expect(parseFileOption('test')('test')).toEqual('test');
     });
   });
 

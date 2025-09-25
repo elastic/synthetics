@@ -28,7 +28,6 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
-import path from 'path';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -305,18 +304,18 @@ function parseAsBuffer(value: any): Buffer {
   }
 }
 
-export function parseFileOption(value: string) {
-  const filePath = path.resolve(value);
+export function parseFileOption(opt: string) {
+  return (value: string) => {
+    if (!isFile(value)) {
+      return value;
+    }
 
-  if (!isFile(filePath)) {
-    return value;
-  }
-
-  try {
-    return readFileSync(filePath);
-  } catch (e) {
-    throw new Error(`could not be read provided path ${filePath}: ${e}`);
-  }
+    try {
+      return readFileSync(value);
+    } catch (e) {
+      throw new Error(`${opt} - could not read provided path ${value}: ${e}`);
+    }
+  };
 }
 
 // This is a generic util to collect multiple options into a single

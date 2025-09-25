@@ -305,12 +305,12 @@ program
   .option(
     '--proxy-ca <path>',
     'provide a CA override for proxy endpoint, as a path to be loaded or as string',
-    collectOpts('ca', proxySettings, parseFileOption)
+    collectOpts('ca', proxySettings, parseFileOption('--proxy-ca'))
   )
   .option(
     '--proxy-cert <path>',
     'provide a cert override for proxy endpoint, as a path to be loaded or as string',
-    collectOpts('cert', proxySettings, parseFileOption)
+    collectOpts('cert', proxySettings, parseFileOption('--proxy-cert'))
   )
   .option(
     '--proxy-no-verify',
