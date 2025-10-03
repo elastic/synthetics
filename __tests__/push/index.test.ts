@@ -359,7 +359,7 @@ heartbeat.monitors:
   describe('Proxy options', () => {
     let requests: Array<any> = [];
     let proxyServer: Straightforward;
-    let tlsServer;
+    let tlsServer: any;
     let proxyUrl: string;
 
     beforeAll(async () => {
