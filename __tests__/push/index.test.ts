@@ -377,8 +377,8 @@ heartbeat.monitors:
     });
 
     afterAll(async () => {
-      proxyServer.close();
-      tlsServer.close();
+      proxyServer?.close();
+      tlsServer?.close();
     });
 
     beforeEach(() => {

@@ -134,7 +134,7 @@ describe('Locations', () => {
     describe('Proxy options', () => {
       let requests: Array<any> = [];
       let proxyServer: Straightforward;
-      let tlsServer;
+      let tlsServer: any;
       let proxyUrl: string;
 
       beforeAll(async () => {
@@ -154,8 +154,8 @@ describe('Locations', () => {
       });
 
       afterAll(async () => {
-        proxyServer.close();
-        tlsServer.close();
+        proxyServer?.close();
+        tlsServer?.close();
       });
 
       beforeEach(() => {
