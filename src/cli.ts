@@ -29,12 +29,14 @@ import { program, Option } from 'commander';
 import { cwd } from 'process';
 import { bold } from 'kleur/colors';
 import { resolve } from 'path';
-import { CliArgs, PushOptions } from './common_types';
+import { CliArgs, PushOptions, RunOptions } from './common_types';
 import { reporters } from './reporters';
 import {
   normalizeOptions,
   parseThrottling,
   getCommonCommandOpts,
+  collectOpts,
+  parseFileOption,
 } from './options';
 import { globalSetup } from './loader';
 import { run } from './';
@@ -54,9 +56,12 @@ import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
+import { setGlobalProxy } from './helpers';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
+
+const proxySettings = {};
 
 const {
   params,
@@ -194,6 +199,32 @@ program
     'the target Kibana spaces for the pushed monitors — spaces help you organise pushed monitors.'
   )
   .option('-y, --yes', 'skip all questions and run non-interactively')
+  .option(
+    '--proxy-uri <uri>',
+    'proxy uri to use when pushing to kibana',
+    collectOpts('uri', proxySettings)
+  )
+  .option(
+    '--proxy-token <token>',
+    'auth token to use the proxy',
+    collectOpts('token', proxySettings)
+  )
+  .option(
+    '--proxy-ca <path>',
+    'provide a CA override for proxy endpoint, as a path to be loaded or as string',
+    collectOpts('ca', proxySettings, parseFileOption)
+  )
+  .option(
+    '--proxy-cert <path>',
+    'provide a cert override for proxy endpoint, as a path to be loaded or as string',
+    collectOpts('cert', proxySettings, parseFileOption)
+  )
+  .option(
+    '--proxy-no-verify',
+    'disable TLS verification for the proxy connection',
+    collectOpts('noVerify', proxySettings),
+    false
+  )
   .addOption(pattern)
   .addOption(tags)
   .addOption(fields)
@@ -213,9 +244,16 @@ program
         {
           ...settings,
           ...cmdOpts,
+          ...{
+            proxy: proxySettings,
+          },
         },
         'push'
       )) as PushOptions;
+
+      //Set up global proxy agent if any of the related options are set
+      setGlobalProxy(options.proxy ?? {});
+
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
       if ((options as CliArgs).throttling == null) {
@@ -254,10 +292,47 @@ program
   )
   .option('--url <url>', 'Kibana URL to fetch all public and private locations')
   .addOption(auth)
+  .option(
+    '--proxy-uri <uri>',
+    'proxy uri to use when pushing to kibana',
+    collectOpts('uri', proxySettings)
+  )
+  .option(
+    '--proxy-token <token>',
+    'auth token to use the proxy',
+    collectOpts('token', proxySettings)
+  )
+  .option(
+    '--proxy-ca <path>',
+    'provide a CA override for proxy endpoint, as a path to be loaded or as string',
+    collectOpts('ca', proxySettings, parseFileOption('--proxy-ca'))
+  )
+  .option(
+    '--proxy-cert <path>',
+    'provide a cert override for proxy endpoint, as a path to be loaded or as string',
+    collectOpts('cert', proxySettings, parseFileOption('--proxy-cert'))
+  )
+  .option(
+    '--proxy-no-verify',
+    'disable TLS verification for the proxy connection',
+    collectOpts('noVerify', proxySettings),
+    false
+  )
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
     try {
+      const settings = await loadSettings(null, true);
+      const options = (await normalizeOptions({
+        ...settings,
+        ...cmdOpts,
+        ...{
+          proxy: proxySettings,
+        },
+      })) as RunOptions;
+
+      //Set up global proxy agent if any of the related options are set
+      setGlobalProxy(options.proxy ?? {});
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,

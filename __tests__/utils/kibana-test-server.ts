@@ -28,19 +28,27 @@ import {
   LegacyAPISchema,
   PutResponse,
 } from '../../src/push/kibana_api';
+import { noop } from '../../src/helpers';
 
-export const createKibanaTestServer = async (kibanaVersion: string) => {
-  const server = await Server.create({ port: 0 });
-  server.route('/s/dummy/api/status', (req, res) =>
-    res.end(JSON.stringify({ version: { number: kibanaVersion } }))
-  );
-  server.route('/s/dummy/api/stats', (req, res) =>
-    res.end(JSON.stringify({ kibana: { version: kibanaVersion } }))
-  );
+export const createKibanaTestServer = async (
+  kibanaVersion: string,
+  tls?: boolean,
+  reqCallback?: any
+) => {
+  const server = await Server.create({ port: 0, tls });
+  server.route('/s/dummy/api/status', (req, res) => {
+    (reqCallback ?? noop)(req);
+    res.end(JSON.stringify({ version: { number: kibanaVersion } }));
+  });
+  server.route('/s/dummy/api/stats', (req, res) => {
+    (reqCallback ?? noop)(req);
+    res.end(JSON.stringify({ kibana: { version: kibanaVersion } }));
+  });
   // Legacy
   server.route(
     '/s/dummy/api/synthetics/service/project/monitors',
     async (req, res) => {
+      (reqCallback ?? noop)(req);
       await new Promise(r => setTimeout(r, 20));
       req.on('data', chunks => {
         const schema = JSON.parse(chunks.toString()) as LegacyAPISchema;
@@ -66,6 +74,7 @@ export const createKibanaTestServer = async (kibanaVersion: string) => {
   // Post 8.6
   const basePath = '/s/dummy/api/synthetics/project/test-project/monitors';
   server.route(basePath, (req, res) => {
+    (reqCallback ?? noop)(req);
     const getResp = {
       total: 2,
       monitors: [
@@ -76,6 +85,7 @@ export const createKibanaTestServer = async (kibanaVersion: string) => {
     res.end(JSON.stringify(getResp));
   });
   server.route(basePath + '/_bulk_update', (req, res) => {
+    (reqCallback ?? noop)(req);
     const updateResponse = {
       createdMonitors: ['j1', 'j2'],
       updatedMonitors: [],
@@ -84,6 +94,7 @@ export const createKibanaTestServer = async (kibanaVersion: string) => {
     res.end(JSON.stringify(updateResponse));
   });
   server.route(basePath + '/_bulk_delete', (req, res) => {
+    (reqCallback ?? noop)(req);
     res.end(JSON.stringify({ deleted_monitors: ['j3', 'j4'] }));
   });
   return server;

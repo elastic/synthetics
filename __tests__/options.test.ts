@@ -24,7 +24,12 @@
  */
 
 import { CliArgs } from '../src/common_types';
-import { normalizeOptions, parsePlaywrightOptions } from '../src/options';
+import {
+  collectOpts,
+  normalizeOptions,
+  parseFileOption,
+  parsePlaywrightOptions,
+} from '../src/options';
 import { join } from 'path';
 
 describe('options', () => {
@@ -185,6 +190,31 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
       expect(Buffer.isBuffer(t.origin)).toBeFalsy();
       expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
+    });
+  });
+
+  describe('parseFileOption', () => {
+    it('parses file', () => {
+      expect(
+        parseFileOption('test')(
+          join(__dirname, 'fixtures', 'synthetics.config.ts')
+        )
+      ).toBeInstanceOf(Buffer);
+    });
+    it('parses string', () => {
+      expect(parseFileOption('test')('test')).toEqual('test');
+    });
+  });
+
+  describe('collectOpts', () => {
+    it('collects options in the accumulator', () => {
+      const opts = { a: 'a', b: 'b', c: true };
+      const result = {};
+      Object.entries(opts).forEach(([key, value]) => {
+        collectOpts(key, result)(value);
+      });
+
+      expect(result).toEqual(opts);
     });
   });
 });

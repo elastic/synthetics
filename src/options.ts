@@ -27,7 +27,8 @@ import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
-import { THROTTLING_WARNING_MSG, warn } from './helpers';
+import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
+import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
 
@@ -98,6 +99,9 @@ export async function normalizeOptions(
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
   };
 
+  options.proxy = Object.freeze(
+    merge(config?.proxy ?? {}, cliArgs?.proxy || {})
+  );
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
    * or pushing the project monitors
@@ -298,4 +302,27 @@ function parseAsBuffer(value: any): Buffer {
   } catch (e) {
     return value;
   }
+}
+
+export function parseFileOption(opt: string) {
+  return (value: string) => {
+    if (!isFile(value)) {
+      return value;
+    }
+
+    try {
+      return readFileSync(value);
+    } catch (e) {
+      throw new Error(`${opt} - could not read provided path ${value}: ${e}`);
+    }
+  };
+}
+
+// This is a generic util to collect multiple options into a single
+// dictionary
+export function collectOpts(key, accumulator, nextParser?) {
+  return value => {
+    accumulator[key] = nextParser ? nextParser(value) : value;
+    return accumulator[key];
+  };
 }

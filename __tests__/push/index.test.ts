@@ -32,6 +32,8 @@ import { createKibanaTestServer } from '../utils/kibana-test-server';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
 import { THROTTLING_WARNING_MSG } from '../../src/helpers';
+import Straightforward from 'straightforward';
+import { AddressInfo } from 'net';
 
 describe('Push', () => {
   let server: Server;
@@ -47,8 +49,8 @@ describe('Push', () => {
   }
 
   async function fakeProjectSetup(
-    settings,
-    monitor,
+    settings: any,
+    monitor: any,
     filename = 'synthetics.config.ts'
   ) {
     await writeFile(
@@ -351,6 +353,166 @@ heartbeat.monitors:
       );
       const output = await runPush();
       expect(output).toMatchSnapshot();
+    });
+  });
+
+  describe('Proxy options', () => {
+    let requests: Array<any> = [];
+    let proxyServer: Straightforward;
+    let tlsServer: any;
+    let proxyUrl: string;
+
+    beforeAll(async () => {
+      proxyServer = new Straightforward();
+      proxyServer.onConnect.use(async ({ req }, next) => {
+        requests.push(req);
+        return next();
+      });
+      await proxyServer.listen(Math.trunc(65e3 * Math.random()));
+      tlsServer = await createKibanaTestServer('8.6.0', true, (req: any) =>
+        requests.push(req)
+      );
+      const server = proxyServer.server.address() as AddressInfo;
+      proxyUrl = `http://127.0.0.1:${server.port}`;
+    });
+
+    afterAll(async () => {
+      proxyServer?.close();
+      tlsServer?.close();
+    });
+
+    beforeEach(() => {
+      requests = [];
+    });
+
+    it('enables proxy based on HTTP_PROXY', async () => {
+      await fakeProjectSetup(
+        { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+        HTTP_PROXY: proxyUrl,
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
+    });
+
+    it('honors NO_PROXY with env variables', async () => {
+      await fakeProjectSetup(
+        { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+        HTTP_PROXY: proxyUrl,
+        NO_PROXY: '*',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests).toHaveLength(0);
+    });
+
+    it('enables proxy based on HTTPS_PROXY', async () => {
+      await fakeProjectSetup(
+        {
+          project: {
+            id: 'test-project',
+            space: 'dummy',
+            url: tlsServer.PREFIX,
+          },
+        },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+        HTTPS_PROXY: proxyUrl,
+        NODE_TLS_REJECT_UNAUTHORIZED: '0',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
+    });
+
+    it('enables proxy based on --proxy-uri', async () => {
+      await fakeProjectSetup(
+        {
+          project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          proxy: { uri: proxyUrl },
+        },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush(
+        [...DEFAULT_ARGS, '--tags', 'chunk', '--proxy-uri', proxyUrl],
+        {
+          CHUNK_SIZE: '1',
+        }
+      );
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
+    });
+
+    it('enables proxy based on proxy settings', async () => {
+      await fakeProjectSetup(
+        {
+          project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
+          proxy: { uri: proxyUrl },
+        },
+        { locations: ['test-loc'], schedule: 3 }
+      );
+      const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+      await writeFile(
+        testJourney,
+        `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+      );
+      const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
+        CHUNK_SIZE: '1',
+      });
+      await rm(testJourney, { force: true });
+      expect(output).toContain('Added(2)');
+      expect(output).toContain('creating or updating 1 monitors');
+      expect(output).toContain('✓ Pushed:');
+      expect(requests.length).toBeGreaterThan(0);
     });
   });
 });
