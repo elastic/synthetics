@@ -34,5 +34,5 @@ module.exports = {
   modulePathIgnorePatterns: ['/e2e/', '/utils/', '/common/', '/fixtures/'],
   globalSetup: `${__dirname}/__tests__/utils/jest-global-setup.ts`,
   globalTeardown: `${__dirname}/__tests__/utils/jest-global-teardown.ts`,
-  testTimeout: 15000,
+  testTimeout: 45e3,
 };

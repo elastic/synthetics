@@ -20,9 +20,6 @@
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
     "coverage": "jest --coverage"
   },
-  "jest": {
-    "testTimeout": 60e3
-  },
   "bin": {
     "@elastic/synthetics": "dist/cli.js",
     "elastic-synthetics": "dist/cli.js"
