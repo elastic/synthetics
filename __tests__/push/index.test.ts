@@ -368,7 +368,7 @@ heartbeat.monitors:
         requests.push(req);
         return next();
       });
-      await proxyServer.listen();
+      await proxyServer.listen(Math.trunc(65e3 * Math.random()));
       tlsServer = await createKibanaTestServer('8.6.0', true, (req: any) =>
         requests.push(req)
       );

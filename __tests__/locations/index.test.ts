@@ -143,7 +143,7 @@ describe('Locations', () => {
           requests.push(req);
           return next();
         });
-        await proxyServer.listen();
+        await proxyServer.listen(Math.trunc(65e3 * Math.random()));
         tlsServer = await Server.create({ tls: true });
         tlsServer.route('/internal/uptime/service/locations', (req, res) => {
           res.setHeader('content-type', 'application/json');
