@@ -49,8 +49,8 @@ describe('Push', () => {
   }
 
   async function fakeProjectSetup(
-    settings,
-    monitor,
+    settings: any,
+    monitor: any,
     filename = 'synthetics.config.ts'
   ) {
     await writeFile(
@@ -373,7 +373,7 @@ heartbeat.monitors:
         requests.push(req)
       );
       const server = proxyServer.server.address() as AddressInfo;
-      proxyUrl = `http://localhost:${server.port}`;
+      proxyUrl = `http://127.0.0.1:${server.port}`;
     });
 
     afterAll(async () => {

@@ -150,7 +150,7 @@ describe('Locations', () => {
           res.end(JSON.stringify({ locations: LOCATIONS }));
         });
         const server = proxyServer.server.address() as AddressInfo;
-        proxyUrl = `http://localhost:${server.port}`;
+        proxyUrl = `http://127.0.0.1:${server.port}`;
       });
 
       afterAll(async () => {
