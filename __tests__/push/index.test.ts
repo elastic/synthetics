@@ -360,7 +360,7 @@ heartbeat.monitors:
     let requests: Array<any> = [];
     let proxyServer: Straightforward;
     let tlsServer;
-    let proxyPort: number;
+    let proxyUrl: string;
 
     beforeAll(async () => {
       proxyServer = new Straightforward();
@@ -372,7 +372,8 @@ heartbeat.monitors:
       tlsServer = await createKibanaTestServer('8.6.0', true, (req: any) =>
         requests.push(req)
       );
-      ({ port: proxyPort } = proxyServer.server.address() as AddressInfo);
+      const server = proxyServer.server.address() as AddressInfo;
+      proxyUrl = `http://localhost:${server.port}`;
     });
 
     afterAll(async () => {
@@ -398,7 +399,7 @@ heartbeat.monitors:
       );
       const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
         CHUNK_SIZE: '1',
-        HTTP_PROXY: `http://localhost:${proxyPort}`,
+        HTTP_PROXY: proxyUrl,
       });
       await rm(testJourney, { force: true });
       expect(output).toContain('Added(2)');
@@ -421,7 +422,7 @@ heartbeat.monitors:
       );
       const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
         CHUNK_SIZE: '1',
-        HTTP_PROXY: `http://localhost:${proxyPort}`,
+        HTTP_PROXY: proxyUrl,
         NO_PROXY: '*',
       });
       await rm(testJourney, { force: true });
@@ -451,7 +452,7 @@ heartbeat.monitors:
       );
       const output = await runPush([...DEFAULT_ARGS, '--tags', 'chunk'], {
         CHUNK_SIZE: '1',
-        HTTPS_PROXY: `http://localhost:${proxyPort}`,
+        HTTPS_PROXY: proxyUrl,
         NODE_TLS_REJECT_UNAUTHORIZED: '0',
       });
       await rm(testJourney, { force: true });
@@ -465,7 +466,7 @@ heartbeat.monitors:
       await fakeProjectSetup(
         {
           project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
-          proxy: { uri: `http://localhost:${proxyPort}` },
+          proxy: { uri: proxyUrl },
         },
         { locations: ['test-loc'], schedule: 3 }
       );
@@ -477,13 +478,7 @@ heartbeat.monitors:
     journey('b', () => monitor.use({ tags: ['chunk'] }));`
       );
       const output = await runPush(
-        [
-          ...DEFAULT_ARGS,
-          '--tags',
-          'chunk',
-          '--proxy-uri',
-          `http://localhost:${proxyPort}`,
-        ],
+        [...DEFAULT_ARGS, '--tags', 'chunk', '--proxy-uri', proxyUrl],
         {
           CHUNK_SIZE: '1',
         }
@@ -499,7 +494,7 @@ heartbeat.monitors:
       await fakeProjectSetup(
         {
           project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
-          proxy: { uri: `http://localhost:${proxyPort}` },
+          proxy: { uri: proxyUrl },
         },
         { locations: ['test-loc'], schedule: 3 }
       );

@@ -135,7 +135,7 @@ describe('Locations', () => {
       let requests: Array<any> = [];
       let proxyServer: Straightforward;
       let tlsServer;
-      let proxyPort: number;
+      let proxyUrl: string;
 
       beforeAll(async () => {
         proxyServer = new Straightforward();
@@ -149,7 +149,8 @@ describe('Locations', () => {
           res.setHeader('content-type', 'application/json');
           res.end(JSON.stringify({ locations: LOCATIONS }));
         });
-        ({ port: proxyPort } = proxyServer.server.address() as AddressInfo);
+        const server = proxyServer.server.address() as AddressInfo;
+        proxyUrl = `http://localhost:${server.port}`;
       });
 
       afterAll(async () => {
@@ -164,7 +165,7 @@ describe('Locations', () => {
       it('enables proxy based on HTTP_PROXY', async () => {
         await fakeProjectSetup({ project: { url: server.PREFIX } });
         const output = await runLocations(['--auth', apiKey], {
-          HTTP_PROXY: `http://localhost:${proxyPort}`,
+          HTTP_PROXY: proxyUrl,
         });
         expect(output).toContain(`custom location 1`);
         expect(requests).toHaveLength(1);
@@ -174,7 +175,7 @@ describe('Locations', () => {
         await fakeProjectSetup({ project: { url: server.PREFIX } });
         const output = await runLocations(['--auth', apiKey], {
           NO_PROXY: '*',
-          HTTP_PROXY: `http://localhost:${proxyPort}`,
+          HTTP_PROXY: proxyUrl,
         });
         expect(output).toContain(`custom location 1`);
         expect(requests).toHaveLength(0);
@@ -183,7 +184,7 @@ describe('Locations', () => {
       it('enables proxy based on HTTPS_PROXY', async () => {
         await fakeProjectSetup({ project: { url: tlsServer.PREFIX } });
         const output = await runLocations(['--auth', apiKey], {
-          HTTPS_PROXY: `http://localhost:${proxyPort}`,
+          HTTPS_PROXY: proxyUrl,
           NODE_TLS_REJECT_UNAUTHORIZED: '0',
         });
         expect(output).toContain(`custom location 1`);
@@ -196,7 +197,7 @@ describe('Locations', () => {
           '--auth',
           apiKey,
           '--proxy-uri',
-          `http://localhost:${proxyPort}`,
+          proxyUrl,
         ]);
         expect(output).toContain(`custom location 1`);
         expect(requests).toHaveLength(1);
@@ -205,7 +206,7 @@ describe('Locations', () => {
       it('enables proxy based on proxy settings', async () => {
         await fakeProjectSetup({
           project: { url: server.PREFIX },
-          proxy: { uri: `http://localhost:${proxyPort}` },
+          proxy: { uri: proxyUrl },
         });
         const output = await runLocations(['--auth', apiKey]);
         expect(output).toContain(`custom location 1`);
