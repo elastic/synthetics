@@ -581,6 +581,34 @@ heartbeat.monitors:
         spaces: ['default', 'space1', 'space2'],
       });
     });
+
+    it('supports namespace in config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+  namespace: "foo"
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        schedule: 10,
+        namespace: 'foo',
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        type: 'icmp',
+        schedule: 5,
+        namespace: 'foo',
+      });
+    });
   });
 
   describe('parseAlertConfig', () => {

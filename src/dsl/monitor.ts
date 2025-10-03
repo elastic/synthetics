@@ -81,6 +81,7 @@ export type MonitorConfig = {
    * The kibana spaces where the monitor will be visible.
    */
   spaces?: string[];
+  namespace?: string;
 };
 
 type MonitorFilter = {
