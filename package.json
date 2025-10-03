@@ -66,7 +66,7 @@
     "otpauth": "^9.3.2",
     "pirates": "^4.0.5",
     "playwright": "=1.53.1",
-    "playwright-chromium": "=1.53.1",
+    "playwright-chromium": "=1.55.0",
     "playwright-core": "=1.53.1",
     "semver": "^7.5.4",
     "sharp": "^0.34.2",
