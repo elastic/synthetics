@@ -24,7 +24,7 @@
  */
 
 import path from 'path';
-import { unlink, readFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
@@ -37,6 +37,26 @@ function relativeToCwd(entry: string) {
 
 export class Bundler {
   async bundle(absPath: string) {
+    const assets: { [key: string]: Uint8Array } = {}; // Store asset files
+    const assetPlugin: esbuild.Plugin = {
+      name: 'asset-plugin',
+      setup(build) {
+        build.onLoad(
+          {
+            filter:
+              /\.(pdf|docx?|odt|csv|xlsx?|png|jpe?g|gif|webp|zip|tar\.gz|rar|7z|txt|log|json|xml|mp3|wav|mp4|avi|webm)$/,
+          },
+          async args => {
+            const content = await readFile(args.path, 'utf-8'); // Read file contents as text
+            assets[args.path] = await readFile(args.path);
+            return {
+              contents: `export default ${JSON.stringify(content)};`,
+              loader: 'text',
+            };
+          }
+        );
+      },
+    };
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
       ...{
@@ -46,17 +66,22 @@ export class Bundler {
         minifyWhitespace: true,
         sourcemap: 'inline',
         external: ['@elastic/synthetics'],
-        plugins: [SyntheticsBundlePlugin()],
+        plugins: [SyntheticsBundlePlugin(), assetPlugin],
       },
     };
     const result = await esbuild.build(options);
     if (result.errors.length > 0) {
       throw result.errors;
     }
-    return result.outputFiles[0].text;
+    return { code: result.outputFiles[0].text, assets };
   }
 
-  async zip(source: string, code: string, dest: string) {
+  async zip(
+    source: string,
+    code: string,
+    dest: string,
+    assets: { [key: string]: Uint8Array }
+  ) {
     return new Promise((fulfill, reject) => {
       const output = createWriteStream(dest);
       const archive = archiver('zip', {
@@ -72,13 +97,23 @@ export class Bundler {
         name: relativePath,
         date: new Date('1970-01-01'),
       });
+
+      // Add asset files
+      for (const [filePath, content] of Object.entries(assets)) {
+        const assetRelativePath = relativeToCwd(filePath);
+        archive.append(content, {
+          name: assetRelativePath,
+          date: new Date('1970-01-01'),
+        });
+      }
+
       archive.finalize();
     });
   }
 
   async build(entry: string, output: string) {
-    const code = await this.bundle(entry);
-    await this.zip(entry, code, output);
+    const { code, assets } = await this.bundle(entry);
+    await this.zip(entry, code, output, assets);
     const content = await this.encode(output);
     await this.cleanup(output);
     return content;
