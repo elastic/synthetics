@@ -21,6 +21,9 @@ jobs:
       VERSION: ${{ github.event.inputs.version }}
       DIST_TAG: ${{ github.event.inputs.dist-tag }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC and provenance (npm publish)
     steps:
       - uses: actions/checkout@v4
 
@@ -40,9 +43,6 @@ jobs:
             echo "Dist tag input '${DIST_TAG}' is not a valid dist-tag"
             exit 1 ;;
           esac
-
-      - name: configure NPMJS token
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
       - name: NPM dist-tag
         run: |

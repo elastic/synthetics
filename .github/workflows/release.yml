@@ -15,13 +15,14 @@ on:
         default: false
 
 permissions:
-  id-token: write # to enable use of OIDC for npm provenance
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      NPM_CONFIG_PROVENANCE: true
+    permissions:
+      contents: read
+      id-token: write # required for OIDC and provenance (npm publish)
     steps:
       - name: Get token
         id: get_token
@@ -34,7 +35,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ steps.get_token.outputs.token }}
@@ -43,10 +44,12 @@ jobs:
         with:
           github-token: ${{ steps.get_token.outputs.token }}
 
-      - run: npm ci # runs npm prepublish
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version-file: .nvmrc
 
-      - name: configure NPMJS token
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+      - run: npm ci # runs npm prepublish
 
       - run: npx semantic-release --dry-run="${DRY_RUN}"
         env:
