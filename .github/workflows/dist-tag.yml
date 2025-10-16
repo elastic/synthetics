@@ -46,4 +46,4 @@ jobs:
 
       - name: NPM dist-tag
         run: |
-          npm dist-tag add "@elastic/synthetics@${VERSION}" "${DIST_TAG}"
+          npm dist-tag add "test-2fa@${VERSION}" "${DIST_TAG}"
