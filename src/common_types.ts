@@ -192,6 +192,7 @@ export type PluginOutput = {
   browserconsole?: Array<BrowserMessage>;
   traces?: Array<TraceOutput>;
   metrics?: PerfMetrics;
+  attachments?: Array<Attachment>;
 };
 
 export type ScreenshotOptions = 'on' | 'off' | 'only-on-failure';
@@ -215,6 +216,7 @@ type BaseArgs = {
   config?: string;
   auth?: string;
   outfd?: number;
+  outputDir?: string;
   wsEndpoint?: string;
   pauseOnError?: boolean;
   playwrightOptions?: PlaywrightOptions;
@@ -290,11 +292,35 @@ export type SyntheticsConfig = {
   proxy?: ProxySettings;
 };
 
+export type Attachment = {
+  /**
+   * Attachment name.
+   */
+  name: string;
+
+  /**
+   * Content type of this attachment to properly present in the report, for example `'application/json'` or
+   * `'image/png'`.
+   */
+  contentType: string;
+
+  /**
+   * Optional path on the filesystem to the attached file.
+   */
+  path?: string;
+
+  /**
+   * Optional attachment body used instead of a file.
+   */
+  body?: Buffer;
+};
+
 /** Runner Payload types */
 export type JourneyResult = Partial<Journey> & {
   networkinfo?: PluginOutput['networkinfo'];
   browserconsole?: PluginOutput['browserconsole'];
   stepsresults?: Array<StepResult>;
+  attachments?: Array<Attachment>;
 };
 
 export type TestError = {

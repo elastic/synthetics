@@ -70,7 +70,14 @@ describe('base reporter', () => {
     reporter.onJourneyStart(j1, { timestamp });
     reporter.onStepEnd(j1, s1, {});
     reporter.onEnd();
-    expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+    const output = await readAndCloseStream();
+    expect(output.toString().trim()).toContain(`Journey: j1
+   ✖  Step: 's1' failed (1000 ms)
+   ---
+      stack: |-
+        Error: step failed
+   ---`);
+    expect(output.toString().trim()).toContain(`.screenshots/j1/s1.jpg`);
   });
 
   it('render hook errors without steps', async () => {
