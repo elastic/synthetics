@@ -800,6 +800,7 @@ describe('runner', () => {
         locations: ['united_kingdom'],
         privateLocations: ['spain'],
         retestOnFailure: true,
+        maintenanceWindows: ['daily', 'weekly'],
       });
       j2._updateMonitor({ throttling: { latency: 1000 }, enabled: true });
       runner._addJourney(j1);
@@ -809,6 +810,7 @@ describe('runner', () => {
         ...options,
         enabled: false,
         retestOnFailure: false,
+        maintenanceWindows: ['daily', 'weekly'],
       });
       expect(monitors.length).toBe(2);
       expect(monitors[0].config).toEqual({
@@ -828,6 +830,7 @@ describe('runner', () => {
         fields: { area: 'website' },
         spaces: [],
         namespace: 'test',
+        maintenanceWindows: ['daily', 'weekly'],
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],

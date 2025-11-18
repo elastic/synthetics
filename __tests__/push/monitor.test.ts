@@ -330,6 +330,7 @@ heartbeat.monitors:
     - ltag1
     - ltag2
   retest_on_failure: true
+  maintenance_windows: ["daily", "weekly"]
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
@@ -341,6 +342,7 @@ heartbeat.monitors:
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
+        maintenanceWindows: ['daily', 'weekly'],
       });
 
       expect(mon.config).toEqual({
@@ -353,6 +355,7 @@ heartbeat.monitors:
         schedule: 5,
         tags: ['ltag1', 'ltag2'],
         retestOnFailure: true,
+        maintenanceWindows: ['daily', 'weekly'],
       });
     });
 
