@@ -34,4 +34,4 @@ echo "${bold}Starting elasticsearch , kibana and synthetics docker${normal}"
 echo "" # newline
 
 
-STACK_VERSION=8.3.0-SNAPSHOT docker compose --file docker-compose.yml up --remove-orphans -d
+STACK_VERSION=8.18.0-SNAPSHOT docker compose --file docker-compose.yml up --remove-orphans -d
