@@ -33,7 +33,7 @@ services:
     container_name: kibana
     depends_on:
       - elasticsearch
-      # - synthetic
+      - synthetic
     healthcheck:
       test: ['CMD', 'curl', '-s', '-f', 'http://localhost:5601/api/status']
       interval: 30s
