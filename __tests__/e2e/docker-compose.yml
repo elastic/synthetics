@@ -56,8 +56,8 @@ services:
     volumes:
       - ../../examples/docker/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro
       - ../../:/opt/elastic-synthetics:ro
-    # security_opt:
-    #   - seccomp=../../examples/docker/seccomp_profile.json
+    security_opt:
+      - seccomp=../../examples/docker/seccomp_profile.json
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
