@@ -51,6 +51,7 @@ module.exports = env => {
       fields: {
         fromConfig: 'website',
       },
+      maintenanceWindows: ['test'],
     },
   };
   if (env !== 'development' && config.params) {
