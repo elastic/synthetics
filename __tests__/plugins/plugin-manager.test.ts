@@ -29,7 +29,7 @@ import { PluginManager } from '../../src/plugins';
 jest.mock('../../src/plugins/network');
 
 describe('plugin manager', () => {
-  const pluginManager = new PluginManager({} as any);
+  const pluginManager = new PluginManager({ context: {} } as any);
 
   it('register plugin by type', async () => {
     await pluginManager.register('network', {});

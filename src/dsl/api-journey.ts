@@ -23,27 +23,50 @@
  *
  */
 
-import Runner from './runner';
+import { APIRequestContext } from 'playwright-core';
+import { APIDriver, Driver, Location, Params } from '../common_types';
 
-/**
- * Use a global Runner which would be accessed by the runtime and
- * required to handle the local vs global invocation through CLI
- */
-const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');
-if (!global[SYNTHETICS_RUNNER]) {
-  global[SYNTHETICS_RUNNER] = new Runner();
+import { Journey, JourneyCallback, JourneyOptions } from './journey';
+import { RunnerInfo } from '../core/runner';
+
+export type APIJourneyOptions = {
+  name: string;
+  id?: string;
+  tags?: string[];
+};
+
+export type APIJourneyCallbackOpts = {
+  params: Params;
+  request: APIRequestContext;
+  info: RunnerInfo;
+};
+export type APIJourneyCallback = (options: APIJourneyCallbackOpts) => void;
+
+type APIJourneyType = (
+  options: string | APIJourneyOptions,
+  callback: APIJourneyCallback
+) => APIJourney;
+
+export class APIJourney extends Journey {
+  #cb: APIJourneyCallback;
+  #driver?: Driver | APIDriver;
+  constructor(
+    options: JourneyOptions & { type?: 'browser' | 'api' },
+    cb: JourneyCallback,
+    location?: Location
+  ) {
+    super(options, cb, location);
+    this.#cb = cb;
+  }
 }
 
-/**
- * Set debug based on DEBUG ENV and namespace - synthetics
- */
-if (process.env.DEBUG && process.env.DEBUG.includes('synthetics')) {
-  process.env['__SYNTHETICS__DEBUG__'] = '1';
-}
-
-export const runner: Runner = global[SYNTHETICS_RUNNER];
-
-// is Debug mode enabled
-export function inDebugMode() {
-  return !!process.env['__SYNTHETICS__DEBUG__'];
-}
+export type APIJourneyWithAnnotations = APIJourneyType & {
+  /**
+   * Skip this journey and all its steps
+   */
+  skip: APIJourneyType;
+  /**
+   * Run only this journey and skip rest of the journeys
+   */
+  only: APIJourneyType;
+};

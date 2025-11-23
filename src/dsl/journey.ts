@@ -50,7 +50,7 @@ export type JourneyOptions = {
 
 type HookType = 'before' | 'after';
 export type Hooks = Record<HookType, Array<HooksCallback>>;
-type JourneyCallbackOpts = {
+export type JourneyCallbackOpts = {
   page: Page;
   context: BrowserContext;
   browser: Browser;
@@ -62,6 +62,7 @@ type JourneyCallbackOpts = {
 export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
 export class Journey {
+  readonly type: 'browser' | 'api' = 'browser';
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
@@ -78,10 +79,11 @@ export class Journey {
   error?: Error;
 
   constructor(
-    options: JourneyOptions,
+    options: JourneyOptions & { type?: 'browser' | 'api' },
     cb: JourneyCallback,
     location?: Location
   ) {
+    this.type = options.type ?? 'browser';
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;

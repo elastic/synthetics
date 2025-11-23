@@ -30,6 +30,7 @@ import { symbols, indent, now } from '../helpers';
 import { Reporter, ReporterOptions } from '.';
 import { Journey, Step } from '../dsl';
 import {
+  APIJourneyEndResult,
   JourneyEndResult,
   JourneyStartResult,
   StepResult,
@@ -84,7 +85,7 @@ export default class BaseReporter implements Reporter {
   }
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  onJourneyEnd(journey: Journey, {}: JourneyEndResult | APIJourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**

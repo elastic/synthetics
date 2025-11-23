@@ -24,4 +24,5 @@
  */
 
 export * from './journey';
+export * from './api-journey';
 export * from './step';
