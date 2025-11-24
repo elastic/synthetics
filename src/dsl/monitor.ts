@@ -82,6 +82,7 @@ export type MonitorConfig = {
    */
   spaces?: string[];
   namespace?: string;
+  maintenanceWindows?: string[];
 };
 
 type MonitorFilter = {

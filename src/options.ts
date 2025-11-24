@@ -102,6 +102,7 @@ export async function normalizeOptions(
   options.proxy = Object.freeze(
     merge(config?.proxy ?? {}, cliArgs?.proxy || {})
   );
+
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
    * or pushing the project monitors
@@ -259,6 +260,11 @@ export function getCommonCommandOpts() {
     }, {});
   });
 
+  const maintenanceWindows = createOption(
+    '--maintenance-windows <ids...>',
+    "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
+  );
+
   return {
     auth,
     authMandatory,
@@ -269,6 +275,7 @@ export function getCommonCommandOpts() {
     tags,
     match,
     fields,
+    maintenanceWindows,
   };
 }
 

@@ -285,6 +285,9 @@ export function buildMonitorFromYaml(
     options.privateLocations;
   const retestOnFailure =
     config['retest_on_failure'] ?? options.retestOnFailure;
+  const maintenanceWindows =
+    (config['maintenance_windows'] || config.maintenanceWindows) ??
+    options.maintenanceWindows;
   const alertConfig = parseAlertConfig(config, options.alert);
 
   const mon = new Monitor({
@@ -300,6 +303,7 @@ export function buildMonitorFromYaml(
     schedule:
       (schedule as typeof ALLOWED_SCHEDULES[number]) || options.schedule,
     alert: alertConfig,
+    maintenanceWindows,
   });
 
   /**
@@ -317,6 +321,7 @@ export function buildMonitorFromYaml(
 function normalizeConfig(config: MonitorConfig) {
   delete config['private_locations'];
   delete config['retest_on_failure'];
+  delete config['maintenance_windows'];
   return config;
 }
 

@@ -330,6 +330,7 @@ heartbeat.monitors:
     - ltag1
     - ltag2
   retest_on_failure: true
+  maintenance_windows: ["daily", "weekly"]
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
@@ -341,6 +342,7 @@ heartbeat.monitors:
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
+        maintenanceWindows: [],
       });
 
       expect(mon.config).toEqual({
@@ -353,6 +355,7 @@ heartbeat.monitors:
         schedule: 5,
         tags: ['ltag1', 'ltag2'],
         retestOnFailure: true,
+        maintenanceWindows: ['daily', 'weekly'],
       });
     });
 
@@ -401,6 +404,7 @@ heartbeat.monitors:
     method: POST
     headers:
       'Content-Type': 'application/x-www-form-urlencoded'
+  maintenance_windows: ["daily"]
       `);
 
       const [monitor] = await createLightweightMonitors(PROJECT_DIR, {
@@ -426,6 +430,7 @@ heartbeat.monitors:
         ssl: {
           certificate_authorities: ['/etc/ca.crt'],
         },
+        maintenanceWindows: ['daily'],
       });
     });
 
@@ -607,6 +612,33 @@ heartbeat.monitors:
         type: 'icmp',
         schedule: 5,
         namespace: 'foo',
+      });
+    });
+
+    it('supports maintenance-windows in config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        schedule: 10,
+        maintenanceWindows: ['daily'],
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        type: 'icmp',
+        schedule: 5,
+        maintenanceWindows: ['daily'],
       });
     });
   });

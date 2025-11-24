@@ -73,6 +73,7 @@ const {
   tags,
   match,
   fields,
+  maintenanceWindows,
 } = getCommonCommandOpts();
 
 program
@@ -232,6 +233,7 @@ program
   .addOption(params)
   .addOption(playwrightOpts)
   .addOption(configOpt)
+  .addOption(maintenanceWindows)
   .action(async cmdOpts => {
     cmdOpts = { ...cmdOpts, ...program.opts() };
     const workDir = cwd();
