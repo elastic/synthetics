@@ -34,11 +34,13 @@ import { CLIMock } from '../utils/test-config';
 import { THROTTLING_WARNING_MSG } from '../../src/helpers';
 import Straightforward from 'straightforward';
 import { AddressInfo } from 'net';
+import { IncomingMessage } from 'http';
 
 describe('Push', () => {
   let server: Server;
   const PROJECT_DIR = join(__dirname, 'new-project');
   const DEFAULT_ARGS = ['--auth', 'foo'];
+  let requests: { req: IncomingMessage; body: any }[] = [];
 
   async function runPush(args = DEFAULT_ARGS, env?) {
     const cli = new CLIMock()
@@ -60,9 +62,16 @@ describe('Push', () => {
   }
 
   beforeAll(async () => {
-    server = await createKibanaTestServer('8.6.0');
+    server = await createKibanaTestServer('8.6.0', false, (req: any) =>
+      requests.push(req)
+    );
     await mkdir(PROJECT_DIR, { recursive: true });
   });
+
+  beforeEach(async () => {
+    requests = [];
+  });
+
   afterAll(async () => {
     process.env.NO_COLOR = '';
     await server.close();
@@ -257,6 +266,48 @@ heartbeat.monitors:
     expect(output).toContain('Added(2)');
     expect(output).toContain('creating or updating 1 monitors');
     expect(output).toContain('✓ Pushed:');
+  });
+
+  it('respects --maintenance-windows', async () => {
+    await fakeProjectSetup(
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+    );
+    const output = await runPush(
+      [
+        ...DEFAULT_ARGS,
+        '--tags',
+        'chunk',
+        '--maintenance-windows',
+        '123',
+        '456',
+      ],
+      {
+        CHUNK_SIZE: '1',
+      }
+    );
+    await rm(testJourney, { force: true });
+    expect(output).toContain('Added(2)');
+    expect(output).toContain('creating or updating 1 monitors');
+    expect(output).toContain('✓ Pushed:');
+
+    //Checked pushed config contains the expected maintenance windows
+    const monitors = requests
+      .filter(r => {
+        return r.req?.url?.includes('_bulk_update');
+      })
+      .flatMap(r => r.body?.monitors);
+    expect(monitors).toHaveLength(2);
+    monitors.forEach(m => {
+      expect(m).toHaveProperty('maintenanceWindows', ['123', '456']);
+    });
   });
 
   ['8.5.0', '8.6.0'].forEach(version => {

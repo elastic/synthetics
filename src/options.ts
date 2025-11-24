@@ -262,7 +262,7 @@ export function getCommonCommandOpts() {
 
   const maintenanceWindows = createOption(
     '--maintenance-windows <ids...>',
-    "List of Kibana's Maintenance Windows IDs assigned by default"
+    "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
   );
 
   return {

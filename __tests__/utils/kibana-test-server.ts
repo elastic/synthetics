@@ -85,13 +85,19 @@ export const createKibanaTestServer = async (
     res.end(JSON.stringify(getResp));
   });
   server.route(basePath + '/_bulk_update', (req, res) => {
-    (reqCallback ?? noop)(req);
     const updateResponse = {
       createdMonitors: ['j1', 'j2'],
       updatedMonitors: [],
       failedMonitors: [],
     } as PutResponse;
-    res.end(JSON.stringify(updateResponse));
+    let body;
+    req.on('data', chunks => {
+      body = JSON.parse(chunks.toString()) as LegacyAPISchema;
+      (reqCallback ?? noop)({ req, body });
+    });
+    req.on('end', () => {
+      res.end(JSON.stringify(updateResponse));
+    });
   });
   server.route(basePath + '/_bulk_delete', (req, res) => {
     (reqCallback ?? noop)(req);
