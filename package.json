@@ -105,7 +105,10 @@
   },
   "overrides": {
     "follow-redirects": "^1.15.6",
-    "cross-spawn": "^7.0.5"
+    "cross-spawn": "^7.0.5",
+    "archiver": {
+      "glob": "^10.5.0"
+    }
   },
   "engines": {
     "node": ">=18.20.3"
