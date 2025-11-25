@@ -10,18 +10,19 @@ on:
         default: false
       dry-run:
         type: boolean
-        description: "Should we run in dry-run mode?"
+        description: 'Should we run in dry-run mode?'
         required: true
         default: false
 
 permissions:
-  id-token: write # to enable use of OIDC for npm provenance
+  contents: read
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      NPM_CONFIG_PROVENANCE: true
+    permissions:
+      contents: read
+      id-token: write # required for OIDC and provenance (npm publish)
     steps:
       - name: Get token
         id: get_token
@@ -34,7 +35,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ steps.get_token.outputs.token }}
@@ -43,10 +44,12 @@ jobs:
         with:
           github-token: ${{ steps.get_token.outputs.token }}
 
-      - run: npm ci # runs npm prepublish
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version-file: .nvmrc
 
-      - name: configure NPMJS token
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+      - run: npm ci # runs npm prepublish
 
       - run: npx semantic-release --dry-run="${DRY_RUN}"
         env:
@@ -58,12 +61,14 @@ jobs:
           echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
           echo "NPM_PACKAGE=$(jq -r '.name' package.json)" >> $GITHUB_ENV
 
-      - name: Create 'stack_release' dist-tag
+      - name: Configure NPMJS token and create 'stack_release' dist-tag
         if: ${{ github.event.inputs.dry-run == 'false' && github.event.inputs.is-stack-release == 'true' }}
-        run: npm dist-tag add "${NPM_PACKAGE}@${VERSION}" stack_release
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          npm dist-tag add "${NPM_PACKAGE}@${VERSION}" stack_release
 
       - if: ${{ always() && github.event.inputs.dry-run == 'false' }}
         uses: elastic/oblt-actions/slack/notify-result@v1
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: "#synthetics-user_experience-uptime"
+          channel-id: '#synthetics-user_experience-uptime'
