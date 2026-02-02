@@ -310,6 +310,38 @@ heartbeat.monitors:
     });
   });
 
+  it('respects --timeout', async () => {
+    await fakeProjectSetup(
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'chunk.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['chunk'] }));
+    journey('b', () => monitor.use({ tags: ['chunk'] }));`
+    );
+    const output = await runPush(
+      [...DEFAULT_ARGS, '--tags', 'chunk', '--timeout', '30s'],
+      { CHUNK_SIZE: '1' }
+    );
+    await rm(testJourney, { force: true });
+    expect(output).toContain('Added(2)');
+    expect(output).toContain('creating or updating 1 monitors');
+    expect(output).toContain('✓ Pushed:');
+
+    const monitors = requests
+      .filter(r => {
+        return r.req?.url?.includes('_bulk_update');
+      })
+      .flatMap(r => r.body?.monitors);
+    expect(monitors).toHaveLength(2);
+    monitors.forEach(m => {
+      expect(m).toHaveProperty('timeout', '30s');
+    });
+  });
+
   ['8.5.0', '8.6.0'].forEach(version => {
     describe('API: ' + version, () => {
       let server: Server;
