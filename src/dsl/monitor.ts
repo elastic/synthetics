@@ -83,6 +83,12 @@ export type MonitorConfig = {
   spaces?: string[];
   namespace?: string;
   maintenanceWindows?: string[];
+  /**
+   * Timeout for the monitor execution. It should be a string
+   * representing time duration. E.g.: "30s", "5m", "1h".
+   * Supported time units are "s" for seconds, "m" for minutes and "h" for hours.
+   */
+  timeout?: string;
 };
 
 type MonitorFilter = {
@@ -171,7 +177,18 @@ export class Monitor {
     return JSON.stringify(this).length;
   }
 
-  validate() {
+  private validateTimeout() {
+    if (!this.config.timeout) return;
+    const timeoutRegex = /^(\d+)(s|m|h)$/;
+    const match = this.config.timeout.match(timeoutRegex);
+    if (!match) {
+      throw red(
+        `Invalid timeout format: ${this.config.timeout}. Expected format is a number followed by 's', 'm', or 'h'.`
+      );
+    }
+  }
+
+  private validateSchedule() {
     const schedule = this.config.schedule;
     if (ALLOWED_SCHEDULES.includes(schedule)) {
       return;
@@ -187,5 +204,10 @@ export class Monitor {
       outer += indent(inner);
     }
     throw red(outer);
+  }
+
+  validate() {
+    this.validateTimeout();
+    this.validateSchedule();
   }
 }

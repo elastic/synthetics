@@ -366,3 +366,25 @@ export function warnIfThrottled(monitors: Monitor[]) {
     warn(THROTTLING_WARNING_MSG);
   }
 }
+
+// prints warning if timeout and public locations are configured
+export function warnIfTimeoutWithPublicLocations(monitors: Monitor[]) {
+  const monitorsWithTimeoutAndPublicLocations = monitors.filter(monitor => {
+    const hasTimeout = !!monitor.config.timeout;
+    const hasPublicLocations =
+      monitor.config.locations && monitor.config.locations.length > 0;
+
+    return hasTimeout && hasPublicLocations;
+  });
+
+  if (monitorsWithTimeoutAndPublicLocations.length > 0) {
+    warn(
+      'Timeout is only enforced when monitors run in private locations. ' +
+        'The following monitors have timeout configured along with public locations:' +
+        '\n' +
+        monitorsWithTimeoutAndPublicLocations
+          .map(m => `  - ${m.config.name || m.config.id}`)
+          .join('\n')
+    );
+  }
+}

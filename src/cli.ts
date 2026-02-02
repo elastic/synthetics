@@ -42,7 +42,13 @@ import { globalSetup } from './loader';
 import { run } from './';
 import { runner } from './core/globals';
 import { SyntheticsLocations } from './dsl/monitor';
-import { push, loadSettings, validatePush, warnIfThrottled } from './push';
+import {
+  push,
+  loadSettings,
+  validatePush,
+  warnIfThrottled,
+  warnIfTimeoutWithPublicLocations,
+} from './push';
 import {
   formatLocations,
   getLocations,
@@ -226,6 +232,10 @@ program
     collectOpts('noVerify', proxySettings),
     false
   )
+  .option(
+    '--timeout <value>',
+    'Timeout for monitor execution. This timeout is enforced only when the monitor is run in a private location. It should be a string representing time duration. E.g.: "30s", "5m", "1h". Supported time units are "s" for seconds, "m" for minutes and "h" for hours.'
+  )
   .addOption(pattern)
   .addOption(tags)
   .addOption(fields)
@@ -261,6 +271,7 @@ program
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);
       }
+      warnIfTimeoutWithPublicLocations(monitors);
       options.kibanaVersion = await getVersion(options);
       monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);
