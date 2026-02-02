@@ -105,6 +105,9 @@
     "follow-redirects": "^1.15.6",
     "cross-spawn": "^7.0.5",
     "archiver": {
+      "archiver-utils": {
+        "lodash": "^4.17.23"
+      },
       "glob": "^10.5.0"
     }
   },
