@@ -83,6 +83,10 @@ export type MonitorConfig = {
   spaces?: string[];
   namespace?: string;
   maintenanceWindows?: string[];
+  /**
+   * Timeout in minutes for the monitor. Defaults to 15 minutes if not specified.
+   */
+  timeout?: number;
 };
 
 type MonitorFilter = {

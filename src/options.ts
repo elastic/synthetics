@@ -264,6 +264,10 @@ export function getCommonCommandOpts() {
     '--maintenance-windows <ids...>',
     "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
   );
+  const timeout = createOption(
+    '--timeout <minutes>',
+    'Monitor timeout in minutes. Overrides default agent timeout.'
+  ).argParser(parseInt);
 
   return {
     auth,
@@ -276,6 +280,7 @@ export function getCommonCommandOpts() {
     match,
     fields,
     maintenanceWindows,
+    timeout,
   };
 }
 

@@ -45,12 +45,14 @@ const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
 // 1500kB Max Gzipped limit for bundled monitor code to be pushed as Kibana project monitors.
 const SIZE_LIMIT_KB = 1500;
 
-export type MonitorSchema = Omit<MonitorConfig, 'locations'> & {
+export type MonitorSchema = Omit<MonitorConfig, 'locations' | 'timeout'> & {
   locations: string[];
   content?: string;
   filter?: Monitor['filter'];
   hash?: string;
   size?: number;
+  /** Timeout as a string with time unit suffix (e.g., "3m" for 3 minutes) */
+  timeout?: string;
 };
 
 // Abbreviated monitor info, as often returned by the API,
@@ -138,8 +140,13 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
 
   for (const monitor of monitors) {
     const { source, config, filter, type } = monitor;
+    // Format timeout as a string with time unit suffix (e.g., "3m" for 3 minutes)
+    // Kibana API expects timeout as a string like "3m", "60s", etc.
+    const timeout: string | undefined =
+      config.timeout != null ? `${config.timeout}m` : undefined;
     const schema: MonitorSchema = {
       ...config,
+      timeout,
       locations: translateLocation(config.locations),
     };
 
@@ -288,6 +295,7 @@ export function buildMonitorFromYaml(
   const maintenanceWindows =
     (config['maintenance_windows'] || config.maintenanceWindows) ??
     options.maintenanceWindows;
+  const timeout = config.timeout ?? options.timeout;
   const alertConfig = parseAlertConfig(config, options.alert);
 
   const mon = new Monitor({
@@ -304,6 +312,7 @@ export function buildMonitorFromYaml(
       (schedule as typeof ALLOWED_SCHEDULES[number]) || options.schedule,
     alert: alertConfig,
     maintenanceWindows,
+    timeout,
   });
 
   /**

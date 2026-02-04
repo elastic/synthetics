@@ -121,6 +121,22 @@ describe('Monitors', () => {
     });
   });
 
+  it('formats timeout as string with minutes suffix', async () => {
+    const monitor = createTestMonitor('example.journey.ts');
+    // Add timeout to the monitor config
+    monitor.update({ timeout: 5 });
+    const { schemas } = await buildMonitorSchema([monitor], true);
+    // Timeout should be formatted as "5m" for 5 minutes
+    expect(schemas[0].timeout).toBe('5m');
+  });
+
+  it('omits timeout when not specified', async () => {
+    const monitor = createTestMonitor('example.journey.ts');
+    const { schemas } = await buildMonitorSchema([monitor], true);
+    // Timeout should be undefined when not specified
+    expect(schemas[0].timeout).toBeUndefined();
+  });
+
   it('parse @every schedule format', async () => {
     expect(() => parseSchedule('* * * *')).toThrowError(
       `Monitor schedule format(* * * *) not supported: use '@every' syntax instead`

@@ -228,6 +228,7 @@ type BaseArgs = {
   proxy?: ProxySettings;
   namespace?: MonitorConfig['namespace'];
   maintenanceWindows?: MonitorConfig['maintenanceWindows'];
+  timeout?: MonitorConfig['timeout'];
 };
 
 export type CliArgs = BaseArgs & {

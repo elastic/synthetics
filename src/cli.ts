@@ -74,6 +74,7 @@ const {
   match,
   fields,
   maintenanceWindows,
+  timeout,
 } = getCommonCommandOpts();
 
 program
@@ -234,6 +235,7 @@ program
   .addOption(playwrightOpts)
   .addOption(configOpt)
   .addOption(maintenanceWindows)
+  .addOption(timeout)
   .action(async cmdOpts => {
     cmdOpts = { ...cmdOpts, ...program.opts() };
     const workDir = cwd();
