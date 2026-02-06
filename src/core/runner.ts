@@ -48,7 +48,7 @@ import {
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
+import { Monitor, MonitorConfig, parseMonitorTimeout } from '../dsl/monitor';
 import { parseSpaces } from '../push/monitor';
 
 type HookType = 'beforeAll' | 'afterAll';
@@ -389,19 +389,23 @@ export default class Runner implements RunnerInfo {
       params: options.params,
       info: this,
     };
+    const timeoutValue = this.getJourneyTimeoutValue(journey, options);
+    const timeoutMs = parseMonitorTimeout(timeoutValue);
     try {
       await this.#startJourney(journey, options);
-      await this.#runBeforeHook(journey, hookArgs);
-      const stepResults = await this.#runSteps(journey, options);
-      journey.status = 'succeeded';
-      // Mark journey as failed if any one of the step fails
-      for (const step of journey.steps) {
-        if (step.status === 'failed') {
-          journey.status = step.status;
-          journey.error = step.error;
+      await this.withJourneyTimeout(timeoutMs, timeoutValue, async () => {
+        await this.#runBeforeHook(journey, hookArgs);
+        const stepResults = await this.#runSteps(journey, options);
+        journey.status = 'succeeded';
+        // Mark journey as failed if any one of the step fails
+        for (const step of journey.steps) {
+          if (step.status === 'failed') {
+            journey.status = step.status;
+            journey.error = step.error;
+          }
         }
-      }
-      result.stepsresults = stepResults;
+        result.stepsresults = stepResults;
+      });
     } catch (e) {
       journey.status = 'failed';
       journey.error = e;
@@ -417,6 +421,39 @@ export default class Runner implements RunnerInfo {
     }
     log(`Runner: end journey (${journey.name})`);
     return result;
+  }
+
+  private getJourneyTimeoutValue(
+    journey: Journey,
+    options: RunOptions
+  ): string | undefined {
+    const journeyTimeout = journey._getMonitor()?.config?.timeout;
+    const globalTimeout = this.#monitor?.config?.timeout;
+    return journeyTimeout ?? globalTimeout ?? options.timeout;
+  }
+
+  private async withJourneyTimeout<T>(
+    timeoutMs: number | undefined,
+    timeoutValue: string | undefined,
+    fn: () => Promise<T>
+  ): Promise<T> {
+    if (!timeoutMs) {
+      return await fn();
+    }
+    const timeoutError = new Error(
+      `Journey timeout of ${timeoutValue} exceeded`
+    );
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = setTimeout(() => reject(timeoutError), timeoutMs);
+    });
+    try {
+      return await Promise.race([fn(), timeoutPromise]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   /**

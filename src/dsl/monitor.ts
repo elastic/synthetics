@@ -44,6 +44,29 @@ export const ALLOWED_SCHEDULES = [
   1, 2, 3, 5, 10, 15, 20, 30, 60, 120, 240,
 ] as const;
 
+export function parseMonitorTimeout(timeout?: string): number | undefined {
+  if (!timeout) return;
+  const timeoutRegex = /^(\d+)(s|m|h)$/;
+  const match = timeout.match(timeoutRegex);
+  if (!match) {
+    throw red(
+      `Invalid timeout format: ${timeout}. Expected format is a number followed by 's', 'm', or 'h'.`
+    );
+  }
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case 's':
+      return value * 1000;
+    case 'm':
+      return value * 60 * 1000;
+    case 'h':
+      return value * 60 * 60 * 1000;
+    default:
+      return;
+  }
+}
+
 export interface AlertConfig {
   status?: {
     enabled: boolean;
@@ -178,14 +201,7 @@ export class Monitor {
   }
 
   private validateTimeout() {
-    if (!this.config.timeout) return;
-    const timeoutRegex = /^(\d+)(s|m|h)$/;
-    const match = this.config.timeout.match(timeoutRegex);
-    if (!match) {
-      throw red(
-        `Invalid timeout format: ${this.config.timeout}. Expected format is a number followed by 's', 'm', or 'h'.`
-      );
-    }
+    parseMonitorTimeout(this.config.timeout);
   }
 
   private validateSchedule() {
