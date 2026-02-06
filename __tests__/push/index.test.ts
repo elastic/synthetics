@@ -342,6 +342,25 @@ heartbeat.monitors:
     });
   });
 
+  it('warns when timeout is set without private locations', async () => {
+    await fakeProjectSetup(
+      { project: { id: 'test-project', space: 'dummy', url: server.PREFIX } },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'timeout-warning.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+    journey('a', () => monitor.use({ tags: ['timeout-warning'] }));`
+    );
+    const output = await runPush(
+      [...DEFAULT_ARGS, '--tags', 'timeout-warning', '--timeout', '30s'],
+      { CHUNK_SIZE: '1' }
+    );
+    await rm(testJourney, { force: true });
+    expect(output).toContain('timeout will have no effect');
+  });
+
   ['8.5.0', '8.6.0'].forEach(version => {
     describe('API: ' + version, () => {
       let server: Server;
