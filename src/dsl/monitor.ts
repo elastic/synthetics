@@ -44,7 +44,7 @@ export const ALLOWED_SCHEDULES = [
   1, 2, 3, 5, 10, 15, 20, 30, 60, 120, 240,
 ] as const;
 
-export function parseMonitorTimeout(timeout?: string): number | undefined {
+export function validateTimeout(timeout?: string) {
   if (!timeout) return;
   const timeoutRegex = /^(\d+)(s|m|h)$/;
   const match = timeout.match(timeoutRegex);
@@ -53,6 +53,13 @@ export function parseMonitorTimeout(timeout?: string): number | undefined {
       `Invalid timeout format: ${timeout}. Expected format is a number followed by 's', 'm', or 'h'.`
     );
   }
+}
+
+export function parseTimeout(timeout?: string): number | undefined {
+  validateTimeout(timeout);
+  if (!timeout) return;
+  const match = timeout.match(/^(\d+)(s|m|h)$/);
+  if (!match) return;
   const value = parseInt(match[1], 10);
   const unit = match[2];
   switch (unit) {
@@ -201,7 +208,7 @@ export class Monitor {
   }
 
   private validateTimeout() {
-    parseMonitorTimeout(this.config.timeout);
+    validateTimeout(this.config.timeout);
   }
 
   private validateSchedule() {

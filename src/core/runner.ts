@@ -48,7 +48,7 @@ import {
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
-import { Monitor, MonitorConfig, parseMonitorTimeout } from '../dsl/monitor';
+import { Monitor, MonitorConfig, parseTimeout } from '../dsl/monitor';
 import { parseSpaces } from '../push/monitor';
 
 type HookType = 'beforeAll' | 'afterAll';
@@ -390,7 +390,7 @@ export default class Runner implements RunnerInfo {
       info: this,
     };
     const timeoutValue = this.getJourneyTimeoutValue(journey, options);
-    const timeoutMs = parseMonitorTimeout(timeoutValue);
+    const timeoutMs = parseTimeout(timeoutValue);
     try {
       await this.#startJourney(journey, options);
       await this.withJourneyTimeout(timeoutMs, timeoutValue, async () => {

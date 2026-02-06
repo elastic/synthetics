@@ -189,6 +189,39 @@ heartbeat.monitors:
       );
     });
 
+    it('apply timeout from cli options', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, {
+        ...opts,
+        timeout: '30s',
+      });
+      expect(monitors[0].config.timeout).toBe('30s');
+    });
+
+    it('reject invalid timeout from cli options', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+      `);
+      expect(
+        createLightweightMonitors(PROJECT_DIR, {
+          ...opts,
+          timeout: '1x',
+        })
+      ).rejects.toContain(
+        `Invalid timeout format: 1x. Expected format is a number followed by 's', 'm', or 'h'.`
+      );
+    });
+
     it('validate id check', async () => {
       await writeHBFile(`
 heartbeat.monitors:
