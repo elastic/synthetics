@@ -440,7 +440,7 @@ export default class Runner implements RunnerInfo {
     timeoutValue: string | undefined,
     fn: () => Promise<T>
   ): Promise<T> {
-    if (!timeoutMs) {
+    if (timeoutMs === undefined || timeoutMs < 0) {
       return await fn();
     }
     const timeoutError = new Error(
