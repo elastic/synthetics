@@ -941,6 +941,26 @@ describe('runner', () => {
       expect(result.status).toBe('failed');
       expect(result.error?.message).toContain('Journey timeout of 1s exceeded');
     });
+
+    it('run journey - invalid timeout format fails journey gracefully', async () => {
+      runner._updateMonitor({ timeout: '10x' });
+      const j1 = new Journey({ name: 'timeout-invalid-format' }, noop);
+      j1._addStep('step', noop);
+      const result = await runner._runJourney(j1, defaultRunOptions);
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('Invalid timeout format');
+    });
+
+    it('run journey - invalid timeout via cli fails journey gracefully', async () => {
+      const j1 = new Journey({ name: 'timeout-invalid-cli' }, noop);
+      j1._addStep('step', noop);
+      const result = await runner._runJourney(j1, {
+        ...defaultRunOptions,
+        timeout: 'bad',
+      });
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('Invalid timeout format');
+    });
   });
 
   describe('journey and step annotations', () => {
