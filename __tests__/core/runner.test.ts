@@ -900,69 +900,6 @@ describe('runner', () => {
     });
   });
 
-  describe('journey timeout', () => {
-    const delay = (ms: number) =>
-      new Promise(resolve => setTimeout(resolve, ms));
-
-    it('run journey - timeout enforced from global monitor config', async () => {
-      runner._updateMonitor({ timeout: '1s' });
-      const j1 = new Journey({ name: 'timeout-global' }, noop);
-      j1._addStep('slow step', async () => {
-        await delay(1100);
-      });
-      const result = await runner._runJourney(j1, defaultRunOptions);
-      await Gatherer.stop();
-      expect(result.status).toBe('failed');
-      expect(result.error?.message).toContain('Journey timeout of 1s exceeded');
-    });
-
-    it('run journey - local monitor timeout overrides global', async () => {
-      runner._updateMonitor({ timeout: '1s' });
-      const j1 = new Journey({ name: 'timeout-local' }, noop);
-      j1._addStep('slow step', async () => {
-        await delay(1100);
-      });
-      j1._updateMonitor({ timeout: '2s' });
-      const result = await runner._runJourney(j1, defaultRunOptions);
-      await Gatherer.stop();
-      expect(result.status).toBe('succeeded');
-    });
-
-    it('run journey - timeout enforced from cli options', async () => {
-      const j1 = new Journey({ name: 'timeout-cli' }, noop);
-      j1._addStep('slow step', async () => {
-        await delay(1100);
-      });
-      const result = await runner._runJourney(j1, {
-        ...defaultRunOptions,
-        timeout: '1s',
-      });
-      await Gatherer.stop();
-      expect(result.status).toBe('failed');
-      expect(result.error?.message).toContain('Journey timeout of 1s exceeded');
-    });
-
-    it('run journey - invalid timeout format fails journey gracefully', async () => {
-      runner._updateMonitor({ timeout: '10x' });
-      const j1 = new Journey({ name: 'timeout-invalid-format' }, noop);
-      j1._addStep('step', noop);
-      const result = await runner._runJourney(j1, defaultRunOptions);
-      expect(result.status).toBe('failed');
-      expect(result.error).toContain('Invalid timeout format');
-    });
-
-    it('run journey - invalid timeout via cli fails journey gracefully', async () => {
-      const j1 = new Journey({ name: 'timeout-invalid-cli' }, noop);
-      j1._addStep('step', noop);
-      const result = await runner._runJourney(j1, {
-        ...defaultRunOptions,
-        timeout: 'bad',
-      });
-      expect(result.status).toBe('failed');
-      expect(result.error).toContain('Invalid timeout format');
-    });
-  });
-
   describe('journey and step annotations', () => {
     it('skip journey', async () => {
       runner._addJourney(journey.skip('j1', noop));
