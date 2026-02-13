@@ -334,27 +334,24 @@ export default class Runner implements RunnerInfo {
     options: RunOptions
   ) {
     // Enhance the journey results
-    const pOutput = await Gatherer.pluginManager?.output();
-    const bConsole = pOutput
-      ? filterBrowserMessages(pOutput.browserconsole, journey.status)
-      : [];
+    const pOutput = await Gatherer.pluginManager.output();
+    const bConsole = filterBrowserMessages(
+      pOutput.browserconsole,
+      journey.status
+    );
     await this.#reporter?.onJourneyEnd?.(journey, {
       browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
       options,
-      networkinfo: pOutput?.networkinfo,
+      networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
     });
-    if (Gatherer.pluginManager) {
-      await Gatherer.endRecording();
-    }
-    if (this.#driver) {
-      await Gatherer.dispose(this.#driver);
-    }
+    await Gatherer.endRecording();
+    await Gatherer.dispose(this.#driver);
     // clear screenshots cache after each journey
     await rm(this.#screenshotPath, { recursive: true, force: true });
     return Object.assign(result, {
-      networkinfo: pOutput?.networkinfo,
+      networkinfo: pOutput.networkinfo,
       browserconsole: bConsole,
       ...journey,
     });
