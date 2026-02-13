@@ -47,7 +47,7 @@ import {
   loadSettings,
   validatePush,
   warnIfThrottled,
-  warnIfTimeoutWithPublicLocations,
+  warnIfTimeoutWithoutPrivateLocations,
 } from './push';
 import {
   formatLocations,
@@ -271,7 +271,7 @@ program
       if ((options as CliArgs).throttling == null) {
         warnIfThrottled(monitors);
       }
-      warnIfTimeoutWithPublicLocations(monitors);
+      warnIfTimeoutWithoutPrivateLocations(monitors);
       options.kibanaVersion = await getVersion(options);
       monitors.push(...(await createLightweightMonitors(workDir, options)));
       await push(monitors, options);

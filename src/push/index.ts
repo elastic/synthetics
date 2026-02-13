@@ -367,8 +367,8 @@ export function warnIfThrottled(monitors: Monitor[]) {
   }
 }
 
-// prints warning if timeout and public locations are configured
-export function warnIfTimeoutWithPublicLocations(monitors: Monitor[]) {
+// prints warning if timeout and no private locations are configured
+export function warnIfTimeoutWithoutPrivateLocations(monitors: Monitor[]) {
   const monitorsWithTimeoutNoPrivateLocations = monitors.filter(monitor => {
     const hasTimeout = !!monitor.config.timeout;
     const hasPrivateLocations =
