@@ -96,7 +96,7 @@
     "jest-junit": "^15.0.0",
     "lint-staged": "^10.5.3",
     "prettier": "^2.7.1",
-    "rimraf": "^3.0.2",
+    "rimraf": "^6.1.3",
     "straightforward": "^4.2.2",
     "ts-jest": "^29.1.1",
     "typescript": "^5.1.6"
@@ -108,7 +108,16 @@
       "archiver-utils": {
         "lodash": "^4.17.23"
       },
-      "glob": "^10.5.0"
+      "readdir-glob": {
+        "minimatch":"^5.1.8"
+      },
+      "glob": {
+        ".": "^10.5.0",
+        "minimatch": "^9.0.7"
+      }
+    },
+    "eslint": {
+      "minimatch": "^3.1.3"
     }
   },
   "engines": {
