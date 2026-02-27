@@ -34,4 +34,11 @@ echo "${bold}Starting elasticsearch , kibana and synthetics docker${normal}"
 echo "" # newline
 
 
-STACK_VERSION=8.3.0-SNAPSHOT docker compose --file docker-compose.yml up --remove-orphans -d --wait
+if STACK_VERSION=8.3.0-SNAPSHOT docker compose --file docker-compose.yml up --remove-orphans -d --wait; then
+  echo "${bold}Successfully started docker-compose${normal}"
+else
+  echo "${bold}docker-compose up failed:${normal}"
+  docker-compose logs -n 50 elasticsearch
+  docker-compose logs -n 50 kibana
+  docker-compose logs -n 50 synthetics
+fi 
