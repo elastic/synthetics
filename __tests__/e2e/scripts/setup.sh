@@ -38,7 +38,7 @@ if STACK_VERSION=8.3.0-SNAPSHOT docker compose --file docker-compose.yml up --re
   echo "${bold}Successfully started docker-compose${normal}"
 else
   echo "${bold}docker-compose up failed:${normal}"
-  docker-compose logs -n 50 elasticsearch
-  docker-compose logs -n 50 kibana
-  docker-compose logs -n 50 synthetics
+  docker compose logs -n 50 elasticsearch
+  docker compose logs -n 50 kibana
+  docker compose logs -n 50 synthetics
 fi 
