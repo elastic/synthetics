@@ -23,7 +23,12 @@
  *
  */
 
+import { trace } from '@opentelemetry/api';
 import { Journey, Step } from '../../src/dsl';
+import { addMonitorConfigAttributesToSpan } from '../../src/otel';
+
+jest.mock('../../src/otel');
+jest.spyOn(trace, 'getActiveSpan').mockImplementation(() => 'span' as any);
 
 const noop = () => {};
 describe('Journey', () => {
@@ -43,5 +48,17 @@ describe('Journey', () => {
     const s2 = journey._addStep('s2', noop);
     expect(s2).toBeInstanceOf(Step);
     expect(journey.steps.length).toBe(2);
+  });
+
+  describe('OpenTelemetry', () => {
+    it('updates span when otel enabled and monitor config is added', () => {
+      const journey = new Journey({ name: 'j1' }, noop);
+      journey._updateMonitor('config' as any);
+      expect(trace.getActiveSpan).toHaveBeenCalled();
+      expect(addMonitorConfigAttributesToSpan).toHaveBeenCalledWith(
+        'span',
+        'config'
+      );
+    });
   });
 });

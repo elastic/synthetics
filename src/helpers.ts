@@ -424,3 +424,30 @@ export function setGlobalProxy(opts: ProxySettings) {
 
   setGlobalDispatcher(proxyAgent);
 }
+
+export const getPackageInfo = (): BasicPackageInfo => {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  return require('../package.json');
+};
+
+export const maskCredentialsInURL = (url?: string) => {
+  if (!url) {
+    return;
+  }
+  const urlObj = new URL(url);
+  if (urlObj.username || urlObj.password) {
+    urlObj.username = '***';
+    urlObj.password = '***';
+  }
+  return urlObj.href;
+};
+
+interface BasicPackageInfo {
+  name: string;
+  version: string;
+  description: string;
+  keywords: string[];
+  author: string;
+  license: string;
+  [key: string]: any;
+}

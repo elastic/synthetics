@@ -36,6 +36,7 @@ import {
   isDirectory,
   getDurationInUs,
   processStart,
+  getPackageInfo,
 } from '../helpers';
 import { Journey, Step } from '../dsl';
 import snakeCaseKeys from 'snakecase-keys';
@@ -55,8 +56,7 @@ import {
 } from '../common_types';
 import { inspect } from 'util';
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { version, name } = require('../../package.json');
+const { version, name } = getPackageInfo();
 
 type OutputType =
   | 'synthetics/metadata'

@@ -31,7 +31,15 @@ import { wsEndpoint } from '../utils/test-config';
 
 describe('BrowserConsole', () => {
   let server: Server;
-  const currentStep = { name: 'test-step', index: 0 };
+  const currentStep = {
+    name: 'test-step',
+    index: 0,
+    _getSpan: () => undefined,
+  };
+  const getCurrentStepNameAndIndex = () => {
+    const { name, index } = currentStep;
+    return { name, index };
+  };
   beforeAll(async () => {
     server = await Server.create();
   });
@@ -65,7 +73,7 @@ describe('BrowserConsole', () => {
     expect(warnMessage?.text).toEqual('console.warn');
     expect(warnMessage?.type).toEqual('warning');
     expect(warnMessage?.timestamp).toBeDefined();
-    expect(warnMessage?.step).toEqual(currentStep);
+    expect(warnMessage?.step).toEqual(getCurrentStepNameAndIndex());
     expect(messages.slice(1).map(m => m.text)).toEqual([
       'console.error',
       'console.error popup',
@@ -93,13 +101,13 @@ describe('BrowserConsole', () => {
       `Failed to load resource: the server responded with a status of 404 (Not Found)`
     );
     expect(notFoundMessage?.type).toEqual('error');
-    expect(notFoundMessage?.step).toEqual(currentStep);
+    expect(notFoundMessage?.step).toEqual(getCurrentStepNameAndIndex());
 
     const referenceError = messages.find(
       m => m.text.indexOf('that is not defined') >= 0
     );
     expect(referenceError?.type).toEqual('error');
-    expect(referenceError?.step).toEqual(currentStep);
+    expect(referenceError?.step).toEqual(getCurrentStepNameAndIndex());
   });
 
   it('capture unhandled rejections on all pages', async () => {
@@ -130,7 +138,7 @@ describe('BrowserConsole', () => {
     expect(messages.length).toEqual(2);
     const [page1Err, page2Err] = messages;
     expect(page1Err?.type).toEqual('error');
-    expect(page1Err?.step).toEqual(currentStep);
+    expect(page1Err?.step).toEqual(getCurrentStepNameAndIndex());
     expect(page2Err?.text).toEqual('popup error');
   });
 
@@ -186,6 +194,44 @@ describe('BrowserConsole', () => {
       );
       expect(withLog.some(msg => msg.type === 'log')).toBe(true);
       expect(withLog.length).toEqual(100);
+    });
+  });
+
+  describe('OpenTelemetry', () => {
+    it('should record console messages as span events', async () => {
+      const addEvent = jest.fn();
+      const driver = await Gatherer.setupDriver({ wsEndpoint });
+      const browserConsole = new BrowserConsole(driver);
+      browserConsole._currentStep = {
+        ...currentStep,
+        _getSpan: () => ({ addEvent } as any),
+      };
+      browserConsole.start();
+      await driver.page.evaluate(() => {
+        console.warn('console.warn');
+        console.error('console.error');
+        console.log('console.log');
+        console.info('console.info');
+      });
+      browserConsole.stop();
+      await Gatherer.stop();
+
+      expect(addEvent).toHaveBeenCalledWith('browser.console', {
+        'console.type': 'warning',
+        'console.text': 'console.warn',
+      });
+      expect(addEvent).toHaveBeenCalledWith('browser.console', {
+        'console.type': 'error',
+        'console.text': 'console.error',
+      });
+      expect(addEvent).toHaveBeenCalledWith('browser.console', {
+        'console.type': 'log',
+        'console.text': 'console.log',
+      });
+      expect(addEvent).not.toHaveBeenCalledWith('browser.console', {
+        'console.type': 'info',
+        'console.text': 'console.info',
+      });
     });
   });
 });

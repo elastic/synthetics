@@ -24,8 +24,9 @@
  */
 
 import { Location, StatusValue, VoidCallback } from '../common_types';
+import { OtelTraceable } from '../otel';
 
-export class Step {
+export class Step extends OtelTraceable {
   readonly name: string;
   readonly index: number;
   readonly location?: Location;
@@ -45,6 +46,7 @@ export class Step {
     cb: VoidCallback,
     location: Location
   ) {
+    super();
     this.name = name;
     this.index = index;
     this.#cb = cb;
