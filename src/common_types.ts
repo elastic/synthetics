@@ -232,6 +232,7 @@ type BaseArgs = {
   proxy?: ProxySettings;
   namespace?: MonitorConfig['namespace'];
   maintenanceWindows?: MonitorConfig['maintenanceWindows'];
+  otel?: boolean;
 };
 
 export type CliArgs = BaseArgs & {
@@ -300,6 +301,7 @@ export type SyntheticsConfig = {
   monitor?: MonitorConfig;
   project?: ProjectSettings;
   proxy?: ProxySettings;
+  otel?: boolean;
 };
 
 /** Runner Payload types */

@@ -34,6 +34,7 @@ import {
   microSecsToSeconds,
   wrapFnWithLocation,
   isMatch,
+  maskCredentialsInURL,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -145,4 +146,13 @@ it('match tags and names', () => {
   // match both name and tags
   expect(isMatch(['bar'], 'foo', undefined, 'ba*')).toBe(true);
   expect(isMatch(['bar'], 'foo', undefined, 'test*')).toBe(false);
+});
+
+it('mask credentials in URL', () => {
+  expect(maskCredentialsInURL('https://user:password@example.com')).toBe(
+    'https://***:***@example.com/'
+  );
+  expect(maskCredentialsInURL('https://example.com')).toBe(
+    'https://example.com/'
+  );
 });
