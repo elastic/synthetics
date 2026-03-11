@@ -22,6 +22,7 @@ updates:
     open-pull-requests-limit: 10
 
   - package-ecosystem: pre-commit
+    directory: "/"
     schedule:
       interval: 'weekly'
       day: 'sunday'
