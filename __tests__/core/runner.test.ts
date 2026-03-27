@@ -24,6 +24,7 @@
  */
 
 import fs from 'fs';
+import { trace } from '@opentelemetry/api';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
 import { step, journey, before, after } from '../../src/core';
@@ -42,6 +43,16 @@ import {
   RunOptions,
   StartEvent,
 } from '../../src/common_types';
+import { initOtel } from '../../src/otel/manager';
+import {
+  getJourneySpanOptions,
+  getStepSpanOptions,
+  endJourneySpan,
+  endStepSpan,
+} from '../../src/otel/events';
+
+jest.mock('../../src/otel/events');
+jest.mock('../../src/otel/manager');
 
 describe('runner', () => {
   let runner: Runner,
@@ -1011,6 +1022,57 @@ describe('runner', () => {
             },
           ],
         },
+      });
+    });
+  });
+
+  describe('OpenTelemetry', () => {
+    it('skips init instrumentation when not enabled', async () => {
+      await runner._run({ ...defaultRunOptions, otel: false });
+      expect(initOtel).not.toHaveBeenCalled();
+    });
+
+    it('inits and shutdowns instrumentation when enabled', async () => {
+      const shutdown = jest.fn();
+      (initOtel as jest.Mock).mockImplementation(() => ({
+        shutdown,
+      }));
+      await runner._run({ ...defaultRunOptions, otel: true });
+      expect(initOtel).toHaveBeenCalled();
+      expect(shutdown).toHaveBeenCalled();
+    });
+
+    it('records spans for journey and steps', async () => {
+      jest.spyOn(trace, 'getTracer').mockReturnValue({
+        startActiveSpan: (
+          name: string,
+          options: any,
+          fn: (span: any) => Promise<void>
+        ) => {
+          return fn('span');
+        },
+      } as any);
+
+      const j1 = new Journey({ name: 'otel journey' }, noop);
+      const s1 = j1._addStep('step1', noop);
+      runner._addJourney(j1);
+
+      await runner._run({ ...defaultRunOptions, otel: true });
+
+      expect(trace.getTracer).toBeCalled();
+      expect(getJourneySpanOptions).toBeCalledWith(j1, expect.any(Date));
+      expect(endJourneySpan).toBeCalledWith({
+        span: 'span',
+        journey: j1,
+        endTime: expect.any(Number),
+      });
+
+      expect(getStepSpanOptions).toBeCalledWith(s1, expect.any(Date));
+      expect(endStepSpan).toBeCalledWith({
+        span: 'span',
+        step: s1,
+        data: {},
+        endTime: expect.any(Number),
       });
     });
   });

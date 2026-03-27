@@ -74,6 +74,7 @@ export async function normalizeOptions(
   options.fields = Object.freeze(
     merge(config.monitor?.fields ?? {}, cliArgs?.fields || {})
   );
+  options.otel = cliArgs.otel ?? config.otel ?? false;
 
   /**
    * Merge playwright options from CLI and Synthetics config

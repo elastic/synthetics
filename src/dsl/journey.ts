@@ -41,6 +41,8 @@ import {
 import { Monitor, MonitorConfig } from './monitor';
 import { isMatch } from '../helpers';
 import { RunnerInfo } from '../core/runner';
+import { addMonitorConfigAttributesToSpan, OtelTraceable } from '../otel';
+import { trace } from '@opentelemetry/api';
 
 export type JourneyOptions = {
   name: string;
@@ -61,7 +63,7 @@ type JourneyCallbackOpts = {
 };
 export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
-export class Journey {
+export class Journey extends OtelTraceable {
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
@@ -82,6 +84,7 @@ export class Journey {
     cb: JourneyCallback,
     location?: Location
   ) {
+    super();
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
@@ -151,6 +154,8 @@ export class Journey {
       tags: this.tags ?? [],
       ...config,
     });
+    const span = trace.getActiveSpan();
+    span && addMonitorConfigAttributesToSpan(span, config);
     this.#monitor.setSource(this.location);
     this.#monitor.setFilter({ match: this.name });
   }

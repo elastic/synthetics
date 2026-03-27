@@ -24,6 +24,7 @@
  */
 
 import { join } from 'path';
+import { context, trace } from '@opentelemetry/api';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { Journey } from '../dsl/journey';
 import { Step } from '../dsl/step';
@@ -34,6 +35,7 @@ import {
   getTimestamp,
   runParallel,
   generateUniqueId,
+  getPackageInfo,
 } from '../helpers';
 import {
   HooksCallback,
@@ -50,6 +52,16 @@ import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { parseSpaces } from '../push/monitor';
+import {
+  initOtel,
+  OtelManager,
+  getJourneySpanOptions,
+  endJourneySpan,
+  getStepSpanOptions,
+  endStepSpan,
+} from '../otel';
+
+const { name, version } = getPackageInfo();
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
@@ -83,6 +95,7 @@ export default class Runner implements RunnerInfo {
   #hookError: Error | undefined;
   #monitor?: Monitor;
   config: RunOptions;
+  #otel?: OtelManager;
 
   get currentJourney() {
     return this.#currentJourney;
@@ -292,13 +305,32 @@ export default class Runner implements RunnerInfo {
       ) {
         step.status = 'skipped';
       } else {
-        data = await this.#runStep(step, options);
-        /**
-         * skip next steps if the previous step returns error
-         */
-        if (step.error && !step.soft) skipStep = true;
+        const startTime = new Date();
+        await trace
+          .getTracer(name, version)
+          .startActiveSpan(
+            step.name,
+            getStepSpanOptions(step, startTime),
+            async span => {
+              // Enable plugin access
+              step._setContext(context.active());
+              step._setSpan(span);
+              data = await this.#runStep(step, options);
+              step.duration = monotonicTimeInSeconds() - step._startTime;
+              /**
+               * skip next steps if the previous step returns error
+               */
+              if (step.error && !step.soft) skipStep = true;
+
+              endStepSpan({
+                span,
+                step,
+                data,
+                endTime: startTime.getTime() + step.duration * 1000,
+              });
+            }
+          );
       }
-      step.duration = monotonicTimeInSeconds() - step._startTime;
       this.#reporter?.onStepEnd?.(journey, step, data);
       if (options.pauseOnError && step.error) {
         await new Promise(r => process.stdin.on('data', r));
@@ -492,6 +524,10 @@ export default class Runner implements RunnerInfo {
 
   async #init(options: RunOptions) {
     this.setReporter(options);
+    if (options.otel) {
+      log('Runner: initializing OpenTelemetry');
+      this.#otel = initOtel(name, version);
+    }
     this.#reporter.onStart?.({
       numJourneys: this.#journeys.length,
       networkConditions: options.networkConditions,
@@ -556,10 +592,24 @@ export default class Runner implements RunnerInfo {
     this.#browserDelay = monotonicTimeInSeconds() - browserStart;
 
     for (const journey of this.#journeys) {
-      const journeyResult: JourneyResult = this.#hookError
-        ? await this.#runFakeJourney(journey, options)
-        : await this._runJourney(journey, options);
-      result[journey.name] = journeyResult;
+      const startTime = new Date();
+      const tracer = trace.getTracer(name, version);
+      await tracer.startActiveSpan(
+        journey.id,
+        getJourneySpanOptions(journey, startTime),
+        async span => {
+          const journeyResult: JourneyResult = this.#hookError
+            ? await this.#runFakeJourney(journey, options)
+            : await this._runJourney(journey, options);
+
+          endJourneySpan({
+            span,
+            journey,
+            endTime: startTime.getTime() + journey.duration * 1000,
+          });
+          result[journey.name] = journeyResult;
+        }
+      );
     }
     await Gatherer.stop();
     return result;
@@ -583,6 +633,7 @@ export default class Runner implements RunnerInfo {
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
     await this.#reporter?.onEnd?.();
+    await this.#otel?.shutdown();
   }
 
   /**

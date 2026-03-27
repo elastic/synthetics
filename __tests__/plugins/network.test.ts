@@ -23,10 +23,12 @@
  *
  */
 
+import { trace } from '@opentelemetry/api';
 import { Gatherer } from '../../src/core/gatherer';
 import { NetworkManager } from '../../src/plugins/network';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
+import * as helpers from '../../src/helpers';
 
 describe('network', () => {
   let server: Server;
@@ -365,5 +367,99 @@ describe('network', () => {
     const netinfo = await network.stop();
     await Gatherer.stop();
     expect(netinfo.length).toBe(2);
+  });
+
+  describe('OpenTelemetry', () => {
+    const mockedSetAttributes = jest.fn();
+    const mockedSetStatus = jest.fn();
+    const mockedEnd = jest.fn();
+    const mockedStartSpan = jest.fn().mockReturnValue({
+      setAttributes: mockedSetAttributes,
+      setStatus: mockedSetStatus,
+      end: mockedEnd,
+    });
+    const mockedGetTracer = jest.fn().mockReturnValue({
+      startSpan: mockedStartSpan,
+    });
+
+    jest.spyOn(trace, 'getTracer').mockImplementation(mockedGetTracer);
+    jest.spyOn(helpers, 'getPackageInfo').mockImplementation(() => {
+      return {
+        name: '@elastic/synthetics',
+        version: '1.0.0',
+      } as any;
+    });
+
+    it('should record OpenTelemetry spans', async () => {
+      const driver = await Gatherer.setupDriver({ wsEndpoint });
+      const network = new NetworkManager(driver);
+      const _getContext = jest.fn(() => 'context' as any);
+      network._currentStep = { name: 'step1', _getContext };
+      await network.start();
+
+      await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+      await network.stop();
+      await Gatherer.stop();
+
+      expect(mockedGetTracer).toBeCalledWith('@elastic/synthetics', '1.0.0');
+      expect(_getContext).toBeCalled();
+      expect(mockedStartSpan).toBeCalledWith(
+        'HTTP GET localhost',
+        {
+          kind: 2,
+          attributes: {
+            'http.request.method': 'GET',
+            'url.full': server.TEST_PAGE,
+            'url.path': '/index.html',
+            'url.query': '',
+            'url.scheme': 'http',
+          },
+        },
+        'context'
+      );
+      expect(mockedSetAttributes).toBeCalledWith({
+        'http.response.status_code': 200,
+      });
+      expect(mockedEnd).toBeCalled();
+    });
+
+    it('should record OpenTelemetry spans with errors', async () => {
+      const driver = await Gatherer.setupDriver({ wsEndpoint });
+      const network = new NetworkManager(driver);
+      const _getContext = jest.fn(() => 'context' as any);
+      network._currentStep = { name: 'step1', _getContext };
+      await network.start();
+
+      await driver.page.goto(`${server.PREFIX}/not-found.html`, {
+        waitUntil: 'networkidle',
+      });
+      await network.stop();
+      await Gatherer.stop();
+
+      expect(mockedGetTracer).toBeCalledWith('@elastic/synthetics', '1.0.0');
+      expect(_getContext).toBeCalled();
+      expect(mockedStartSpan).toBeCalledWith(
+        'HTTP GET localhost',
+        {
+          kind: 2,
+          attributes: {
+            'http.request.method': 'GET',
+            'url.full': `${server.PREFIX}/not-found.html`,
+            'url.path': '/not-found.html',
+            'url.query': '',
+            'url.scheme': 'http',
+          },
+        },
+        'context'
+      );
+      expect(mockedSetAttributes).toBeCalledWith({
+        'http.response.status_code': 404,
+      });
+      expect(mockedSetStatus).toBeCalledWith({
+        code: 2,
+        message: 'Not Found',
+      });
+      expect(mockedEnd).toBeCalled();
+    });
   });
 });
