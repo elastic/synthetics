@@ -227,6 +227,7 @@ type BaseArgs = {
   spaces?: MonitorConfig['spaces'];
   proxy?: ProxySettings;
   namespace?: MonitorConfig['namespace'];
+  maintenanceWindows?: MonitorConfig['maintenanceWindows'];
 };
 
 export type CliArgs = BaseArgs & {

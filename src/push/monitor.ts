@@ -289,6 +289,7 @@ export function buildMonitorFromYaml(
 
   const mon = new Monitor({
     namespace: config.namespace ?? options.namespace,
+    maintenanceWindows: config.maintenanceWindows ?? options.maintenanceWindows,
     enabled: config.enabled ?? options.enabled,
     locations: options.locations,
     tags: options.tags,

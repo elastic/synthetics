@@ -609,6 +609,61 @@ heartbeat.monitors:
         namespace: 'foo',
       });
     });
+
+    it('supports maintenanceWindows in config', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+  maintenanceWindows: ["mw-1", "mw-2"]
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        schedule: 10,
+        maintenanceWindows: ['global-mw'],
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        type: 'icmp',
+        schedule: 5,
+        maintenanceWindows: ['mw-1', 'mw-2'],
+      });
+    });
+
+    it('falls back to global maintenanceWindows when not set per monitor', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: icmp
+  schedule: @every 5m
+  id: "test-icmp"
+  name: "test-icmp"
+      `);
+
+      const [mon] = await createLightweightMonitors(PROJECT_DIR, {
+        auth: 'foo',
+        kibanaVersion: '8.8.0',
+        locations: ['australia_east'],
+        schedule: 10,
+        maintenanceWindows: ['global-mw'],
+      });
+
+      expect(mon.config).toEqual({
+        id: 'test-icmp',
+        name: 'test-icmp',
+        locations: ['australia_east'],
+        type: 'icmp',
+        schedule: 5,
+        maintenanceWindows: ['global-mw'],
+      });
+    });
   });
 
   describe('parseAlertConfig', () => {

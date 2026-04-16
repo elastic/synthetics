@@ -82,6 +82,8 @@ export type MonitorConfig = {
    */
   spaces?: string[];
   namespace?: string;
+  /** Maintenance window IDs or titles from Kibana */
+  maintenanceWindows?: string[];
 };
 
 type MonitorFilter = {

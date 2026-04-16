@@ -790,6 +790,7 @@ describe('runner', () => {
         playwrightOptions: { ignoreHTTPSErrors: true },
         fields: { area: 'website' },
         namespace: 'test',
+        maintenanceWindows: ['mw-1', 'mw-2'],
       });
 
       const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
@@ -828,6 +829,7 @@ describe('runner', () => {
         fields: { area: 'website' },
         spaces: [],
         namespace: 'test',
+        maintenanceWindows: ['mw-1', 'mw-2'],
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],
