@@ -23,7 +23,7 @@
  *
  */
 
-import { PluginOutput, Driver } from '../common_types';
+import { PluginOutput, Driver, APIDriver } from '../common_types';
 import {
   BrowserConsole,
   NetworkManager,
@@ -32,9 +32,15 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { APINetworkManager } from './api-network';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+type Plugin =
+  | NetworkManager
+  | Tracing
+  | PerformanceManager
+  | BrowserConsole
+  | APINetworkManager;
 type PluginOptions = TraceOptions;
 
 export class PluginManager {
@@ -45,23 +51,32 @@ export class PluginManager {
     'performance',
     'browserconsole',
   ];
-  constructor(private driver: Driver) {}
+  constructor(private driver: Driver | APIDriver) {}
 
   register(type: PluginType, options: PluginOptions) {
     let instance: Plugin;
-    switch (type) {
-      case 'network':
-        instance = new NetworkManager(this.driver);
-        break;
-      case 'trace':
-        instance = new Tracing(this.driver, options);
-        break;
-      case 'performance':
-        instance = new PerformanceManager(this.driver);
-        break;
-      case 'browserconsole':
-        instance = new BrowserConsole(this.driver);
-        break;
+
+    if ('context' in this.driver) {
+      switch (type) {
+        case 'network':
+          instance = new NetworkManager(this.driver);
+          break;
+        case 'trace':
+          instance = new Tracing(this.driver, options);
+          break;
+        case 'performance':
+          instance = new PerformanceManager(this.driver);
+          break;
+        case 'browserconsole':
+          instance = new BrowserConsole(this.driver);
+          break;
+      }
+    } else {
+      switch (type) {
+        case 'network':
+          instance = new APINetworkManager(this.driver);
+          break;
+      }
     }
     instance && this.plugins.set(type, instance);
     return instance;
@@ -98,7 +113,9 @@ export class PluginManager {
   }
 
   onStep(step: Step) {
-    (this.get('browserconsole') as BrowserConsole)._currentStep = step;
+    if (this.get('browserconsole') as BrowserConsole) {
+      (this.get('browserconsole') as BrowserConsole)._currentStep = step;
+    }
     (this.get('network') as NetworkManager)._currentStep = step;
   }
 
