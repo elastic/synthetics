@@ -27,9 +27,14 @@ import { beforeAll, journey, step } from '@elastic/synthetics';
 import axios from 'axios';
 
 beforeAll(async () => {
-  await waitForElasticSearch();
-  await waitForSyntheticsData();
-  await waitForKibana();
+  try {
+    await waitForOrTimeout(waitForElasticSearch(), 60e3);
+    await waitForOrTimeout(waitForSyntheticsData(), 60e3);
+    await waitForOrTimeout(waitForKibana(), 60e3);
+  } catch (e) {
+    console.log(`failed to set up e2e test dependencies: ${e}`);
+    throw e;
+  }
 });
 
 journey('E2e test synthetics', async ({ page }) => {
@@ -121,4 +126,13 @@ async function waitForKibana() {
       esStatus = data?.status.overall.level === 'available';
     } catch (e) {}
   }
+}
+
+async function waitForOrTimeout(awaitable: Promise<void>, timeout: number) {
+  return Promise.race([
+    awaitable,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(`timeout expired: ${timeout}`), timeout)
+    ),
+  ]);
 }
