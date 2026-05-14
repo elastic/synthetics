@@ -19,7 +19,7 @@
     "test:unit": "jest",
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
     "coverage": "jest --coverage",
-    "prepare": "husky"
+    "prepare": "node .husky/install.mjs"
   },
   "bin": {
     "@elastic/synthetics": "dist/cli.js",
