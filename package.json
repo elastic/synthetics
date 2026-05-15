@@ -19,7 +19,7 @@
     "test:unit": "jest",
     "test:browser-service": "WSENDPOINT=ws://localhost:9322 npm run test:unit",
     "coverage": "jest --coverage",
-    "prepare": "node .husky/install.mjs"
+    "prepare": "node .husky/install.mjs || true"
   },
   "bin": {
     "@elastic/synthetics": "dist/cli.js",
@@ -28,7 +28,8 @@
   "files": [
     "dist",
     "src",
-    "templates"
+    "templates",
+    ".husky/install.mjs"
   ],
   "lint-staged": {
     "*.{js,ts}": [
