@@ -2,6 +2,6 @@
 try {
   const husky = await import('husky');
   husky.default();
-} catch {
-  // husky not a dependency, skip
+} catch (e) {
+  if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e;
 }
