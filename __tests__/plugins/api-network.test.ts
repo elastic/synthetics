@@ -73,6 +73,38 @@ describe('APINetworkManager', () => {
       entry.requestSentTime
     );
     expect(entry.timings.total).toBeGreaterThanOrEqual(0);
+    // Response body bytes derived either from Content-Length or from
+    // the body buffer length.
+    expect(entry.response.body?.bytes).toBeGreaterThan(0);
+    expect(entry.transferSize).toBeGreaterThanOrEqual(
+      entry.response.body?.bytes ?? 0
+    );
+    expect(entry.resourceSize).toBe(entry.response.body?.bytes);
+  });
+
+  it('records request body bytes for POST', async () => {
+    await mgr.start();
+    server.route('/post', (req, res) => {
+      res.writeHead(200);
+      res.end('ok');
+    });
+    await request.post(`${server.PREFIX}/post`, {
+      data: { hello: 'world' },
+    });
+    const results = await mgr.stop();
+    const expectedReqBody = Buffer.byteLength(
+      JSON.stringify({ hello: 'world' })
+    );
+    expect(results[0].request.body?.bytes).toBe(expectedReqBody);
+    expect(results[0].request.bytes).toBeGreaterThanOrEqual(expectedReqBody);
+  });
+
+  it('does not probe TLS for plain HTTP (no securityDetails)', async () => {
+    await mgr.start();
+    await request.get(`${server.PREFIX}/hello`);
+    const results = await mgr.stop();
+    expect(results[0].response.securityDetails).toBeUndefined();
+    expect(results[0].response.remoteIPAddress).toBeUndefined();
   });
 
   it('captures HTTP methods passed via request.fetch options.method', async () => {
