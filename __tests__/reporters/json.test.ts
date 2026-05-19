@@ -201,7 +201,11 @@ describe('json reporter', () => {
       type: 'fetch',
       isNavigationRequest: false,
       timestamp: 0,
-      request: { url: 'https://api.example.com/foo', method: 'GET', headers: {} },
+      request: {
+        url: 'https://api.example.com/foo',
+        method: 'GET',
+        headers: {},
+      },
       response: {
         url: 'https://api.example.com/foo',
         status: 200,

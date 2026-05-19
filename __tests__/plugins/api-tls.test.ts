@@ -39,25 +39,24 @@ describe('probeTLS', () => {
 
   it('returns a SecurityDetails object with cert fields for HTTPS', async () => {
     const result = await probeTLS('localhost', port);
-    expect(result).not.toBeNull();
-    expect(result!.securityDetails).toMatchObject({
+    if (!result) throw new Error('expected non-null TLS probe result');
+    expect(result.securityDetails).toMatchObject({
       protocol: expect.stringMatching(/^TLS /),
       validFrom: expect.any(Number),
       validTo: expect.any(Number),
     });
-    expect(result!.securityDetails.validTo).toBeGreaterThan(
-      result!.securityDetails.validFrom!
-    );
-    expect(result!.remotePort).toBe(port);
-    expect(result!.remoteAddress).toBeDefined();
+    const { validFrom, validTo } = result.securityDetails;
+    expect(validTo).toBeGreaterThan(validFrom as number);
+    expect(result.remotePort).toBe(port);
+    expect(result.remoteAddress).toBeDefined();
   });
 
   it('measures dns, connect, and ssl timings', async () => {
     const result = await probeTLS('localhost', port);
-    expect(result).not.toBeNull();
-    expect(result!.timings.dns).toBeGreaterThanOrEqual(0);
-    expect(result!.timings.connect).toBeGreaterThanOrEqual(0);
-    expect(result!.timings.ssl).toBeGreaterThanOrEqual(0);
+    if (!result) throw new Error('expected non-null TLS probe result');
+    expect(result.timings.dns).toBeGreaterThanOrEqual(0);
+    expect(result.timings.connect).toBeGreaterThanOrEqual(0);
+    expect(result.timings.ssl).toBeGreaterThanOrEqual(0);
   });
 
   it('resolves null on connection refused', async () => {

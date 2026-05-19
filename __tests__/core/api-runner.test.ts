@@ -150,7 +150,10 @@ describe('API runner', () => {
      * not the empty first one — `step` reference identity is the contract
      * `journey/network_info` events rely on for waterfall grouping.
      */
-    expect(result['api-mixed'].networkinfo![0].step?.name).toBe('hit ok');
+    const ni = result['api-mixed'].networkinfo;
+    if (!ni || ni.length === 0)
+      throw new Error('expected one network entry for api-mixed');
+    expect(ni[0].step?.name).toBe('hit ok');
   });
 
   it('isolates cookies between API journeys (independent APIRequestContexts)', async () => {
@@ -227,8 +230,9 @@ describe('API runner', () => {
       });
       expect(result['api-https'].status).toBe('succeeded');
       const ni = result['api-https'].networkinfo;
-      expect(ni).toHaveLength(1);
-      const entry = ni![0];
+      if (!ni || ni.length === 0)
+        throw new Error('expected one network entry for api-https');
+      const entry = ni[0];
       expect(entry.response.securityDetails).toMatchObject({
         protocol: expect.stringMatching(/^TLS /),
         validFrom: expect.any(Number),
@@ -236,10 +240,9 @@ describe('API runner', () => {
       });
       expect(entry.response.remoteIPAddress).toBeDefined();
       expect(entry.response.remotePort).toBeDefined();
-      expect(entry.response.body?.bytes).toBeGreaterThan(0);
-      expect(entry.transferSize).toBeGreaterThanOrEqual(
-        entry.response.body!.bytes
-      );
+      const bodyBytes = entry.response.body?.bytes ?? 0;
+      expect(bodyBytes).toBeGreaterThan(0);
+      expect(entry.transferSize).toBeGreaterThanOrEqual(bodyBytes);
     });
   });
 });
