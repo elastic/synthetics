@@ -50,7 +50,7 @@ export type JourneyOptions = {
 
 type HookType = 'before' | 'after';
 export type Hooks = Record<HookType, Array<HooksCallback>>;
-type JourneyCallbackOpts = {
+export type JourneyCallbackOpts = {
   page: Page;
   context: BrowserContext;
   browser: Browser;
@@ -62,6 +62,7 @@ type JourneyCallbackOpts = {
 export type JourneyCallback = (options: JourneyCallbackOpts) => void;
 
 export class Journey {
+  readonly type: 'browser' | 'api' = 'browser';
   readonly name: string;
   readonly id?: string;
   readonly tags?: string[];
@@ -78,10 +79,11 @@ export class Journey {
   error?: Error;
 
   constructor(
-    options: JourneyOptions,
+    options: JourneyOptions & { type?: 'browser' | 'api' },
     cb: JourneyCallback,
     location?: Location
   ) {
+    this.type = options.type ?? 'browser';
     this.name = options.name;
     this.id = options.id || options.name;
     this.tags = options.tags;
@@ -144,13 +146,23 @@ export class Journey {
     /**
      * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this.#monitor = new Monitor({
-      name: this.name,
-      id: this.id,
-      type: 'browser',
-      tags: this.tags ?? [],
-      ...config,
-    });
+    this._setMonitor(
+      new Monitor({
+        name: this.name,
+        id: this.id,
+        type: 'browser',
+        tags: this.tags ?? [],
+        ...config,
+      })
+    );
+  }
+
+  /**
+   * Subclasses use this to swap in a monitor with a different default
+   * `type` while reusing the source-location and name-filter wiring.
+   */
+  protected _setMonitor(monitor: Monitor) {
+    this.#monitor = monitor;
     this.#monitor.setSource(this.location);
     this.#monitor.setFilter({ match: this.name });
   }
