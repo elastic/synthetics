@@ -194,6 +194,93 @@ describe('json reporter', () => {
     }
   });
 
+  it('emits TLS cert info and server.ip/port when response has them', () => {
+    const event = formatNetworkFields({
+      browser: { name: 'api', version: '' },
+      url: 'https://api.example.com/foo',
+      type: 'fetch',
+      isNavigationRequest: false,
+      timestamp: 0,
+      request: { url: 'https://api.example.com/foo', method: 'GET', headers: {} },
+      response: {
+        url: 'https://api.example.com/foo',
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        mimeType: 'application/json',
+        remoteIPAddress: '93.184.216.34',
+        remotePort: 443,
+        securityDetails: {
+          issuer: 'Test CA',
+          subjectName: 'api.example.com',
+          protocol: 'TLS 1.3',
+          validFrom: 1700000000,
+          validTo: 1800000000,
+        },
+      },
+      requestSentTime: 0,
+      loadEndTime: 0,
+      responseReceivedTime: 0,
+      resourceSize: 0,
+      transferSize: 0,
+      timings: {
+        blocked: -1,
+        dns: 10,
+        ssl: 20,
+        connect: 5,
+        send: -1,
+        wait: 100,
+        receive: 0,
+        total: 100,
+      },
+    } as any);
+    expect(event.ecs.server).toEqual({ ip: '93.184.216.34', port: 443 });
+    expect(event.ecs.tls).toMatchObject({
+      version_protocol: 'tls',
+      version: '1.3',
+      server: {
+        x509: expect.objectContaining({
+          issuer: { common_name: 'Test CA' },
+          subject: { common_name: 'api.example.com' },
+        }),
+      },
+    });
+  });
+
+  it('omits server when response has no remote info', () => {
+    const event = formatNetworkFields({
+      browser: { name: 'api', version: '' },
+      url: 'http://example.com/foo',
+      type: 'fetch',
+      isNavigationRequest: false,
+      timestamp: 0,
+      request: { url: 'http://example.com/foo', method: 'GET', headers: {} },
+      response: {
+        url: 'http://example.com/foo',
+        status: 200,
+        headers: {},
+        mimeType: 'text/plain',
+      },
+      requestSentTime: 0,
+      loadEndTime: 0,
+      responseReceivedTime: 0,
+      resourceSize: 0,
+      transferSize: 0,
+      timings: {
+        blocked: -1,
+        dns: -1,
+        ssl: -1,
+        connect: -1,
+        send: -1,
+        wait: -1,
+        receive: -1,
+        total: -1,
+      },
+    } as any);
+    expect(event.ecs.server).toBeUndefined();
+    expect(event.ecs.tls).toBeUndefined();
+  });
+
   it('redact sensitive req/response headers', async () => {
     expect(
       redactKeys({

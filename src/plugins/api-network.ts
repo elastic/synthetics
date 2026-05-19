@@ -28,6 +28,7 @@ import { NetworkInfo, APIDriver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
+import { probeTLS, TLSProbeResult } from './api-tls';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -56,11 +57,50 @@ function normalizeUrl(urlOrRequest: RequestLike): string {
   }
 }
 
+/**
+ * Best-effort byte size for a request body. Playwright accepts
+ * `data` (string/Buffer/object), `form` (record), `multipart` (record)
+ * and `postData` (Buffer/string). For unknown shapes we return 0 rather
+ * than guess.
+ */
+function bodyBytes(body: unknown): number {
+  if (body == null) return 0;
+  if (typeof body === 'string') return Buffer.byteLength(body);
+  if (Buffer.isBuffer(body)) return body.byteLength;
+  if (body instanceof Uint8Array) return body.byteLength;
+  if (typeof body === 'object') {
+    try {
+      return Buffer.byteLength(JSON.stringify(body));
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Sum of `name: value\r\n` lengths for ECS `request/response.bytes`
+ * which includes headers plus body.
+ */
+function headersBytes(headers: Record<string, string>): number {
+  let total = 0;
+  for (const [k, v] of Object.entries(headers ?? {})) {
+    total += Buffer.byteLength(k) + Buffer.byteLength(String(v)) + 4; // ": " + CRLF
+  }
+  return total;
+}
+
 export class APINetworkManager {
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
   private _originalFetch?: APIRequestContext['fetch'];
   private _patched = false;
+  /**
+   * Cache TLS probe promises keyed by `host:port`. Each origin is
+   * probed at most once per journey, regardless of how many requests
+   * hit it.
+   */
+  private _tlsCache = new Map<string, Promise<TLSProbeResult | null>>();
 
   constructor(private driver: APIDriver) {}
 
@@ -74,6 +114,27 @@ export class APINetworkManager {
     this._patched = true;
   }
 
+  private _scheduleTLSProbe(
+    rawUrl: string
+  ): Promise<TLSProbeResult | null> | null {
+    let parsed: URL;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return null;
+    }
+    if (parsed.protocol !== 'https:') return null;
+    const host = parsed.hostname;
+    const port = Number(parsed.port) || 443;
+    const key = `${host}:${port}`;
+    let pending = this._tlsCache.get(key);
+    if (!pending) {
+      pending = probeTLS(host, port);
+      this._tlsCache.set(key, pending);
+    }
+    return pending;
+  }
+
   private async _interceptRequest(
     urlOrRequest: RequestLike,
     options?: any
@@ -85,6 +146,10 @@ export class APINetworkManager {
 
     log(`API network: ${httpMethod} ${url}`);
 
+    const requestBody = options?.postData ?? options?.data;
+    const requestBodyBytes = bodyBytes(requestBody);
+    const requestHeaders = options?.headers ?? {};
+
     const entry: NetworkInfo = {
       step: this._currentStep,
       timestamp,
@@ -95,8 +160,9 @@ export class APINetworkManager {
       request: {
         url,
         method: httpMethod,
-        headers: options?.headers ?? {},
-        body: options?.postData ?? options?.data ?? undefined,
+        headers: requestHeaders,
+        bytes: headersBytes(requestHeaders) + requestBodyBytes,
+        body: requestBodyBytes > 0 ? { bytes: requestBodyBytes } : undefined,
       },
       response: {
         status: -1,
@@ -121,6 +187,13 @@ export class APINetworkManager {
     };
     this.results.push(entry);
 
+    /**
+     * Kick off the TLS probe in parallel with the HTTP request. We
+     * don't await it before issuing the request so the user-visible
+     * wall time stays accurate.
+     */
+    const tlsProbe = this._scheduleTLSProbe(url);
+
     const wallStart = Date.now();
     try {
       const response = (await this._originalFetch(
@@ -129,24 +202,85 @@ export class APINetworkManager {
       )) as APIResponse;
       const wallEnd = Date.now();
       const headers = response.headers();
+
+      /**
+       * Determine response body size. Prefer the server-advertised
+       * `Content-Length` when present (cheap, zero-copy); fall back to
+       * the actual body buffer length only when the header is missing
+       * (typical for chunked responses).
+       */
+      const contentLength = parseContentLength(headers['content-length']);
+      let responseBodyBytes = contentLength;
+      if (responseBodyBytes < 0) {
+        try {
+          const buf = await response.body();
+          responseBodyBytes = buf?.byteLength ?? 0;
+        } catch {
+          responseBodyBytes = 0;
+        }
+      }
+      const responseHeaderBytes = headersBytes(headers);
+      const transferBytes = responseHeaderBytes + responseBodyBytes;
       entry.response = {
         url: response.url(),
         status: response.status(),
         statusText: response.statusText(),
         headers,
         mimeType: headers['content-type'] ?? 'x-unknown',
+        bytes: transferBytes,
+        body: { bytes: responseBodyBytes },
       };
+      entry.transferSize = transferBytes;
+      entry.resourceSize = responseBodyBytes;
       entry.responseReceivedTime = epochTimeInSeconds();
       entry.loadEndTime = entry.responseReceivedTime;
       const wait = roundMilliSecs(wallEnd - wallStart);
       entry.timings.wait = wait;
       entry.timings.receive = 0;
       entry.timings.total = wait;
+
+      /**
+       * Fold the TLS probe result back into the entry. The probe runs
+       * in parallel with the request, so by the time we awaited the
+       * response it's usually already done. We tolerate it being null
+       * (non-HTTPS, probe failure, timeout) — the existing JSON reporter
+       * already handles `securityDetails` being undefined.
+       */
+      if (tlsProbe) {
+        const tls = await tlsProbe;
+        if (tls) {
+          entry.response.securityDetails = tls.securityDetails;
+          entry.response.remoteIPAddress = tls.remoteAddress;
+          entry.response.remotePort = tls.remotePort;
+          if (entry.timings.dns < 0) entry.timings.dns = tls.timings.dns;
+          if (entry.timings.connect < 0)
+            entry.timings.connect = tls.timings.connect;
+          if (entry.timings.ssl < 0) entry.timings.ssl = tls.timings.ssl;
+        }
+      }
       return response;
     } catch (error) {
       entry.responseReceivedTime = epochTimeInSeconds();
       entry.loadEndTime = entry.responseReceivedTime;
       entry.timings.total = roundMilliSecs(Date.now() - wallStart);
+      /**
+       * Even on a failed HTTP request, surface whatever the TLS probe
+       * could capture — for HTTPS endpoints that fail at the
+       * application layer the cert info is still meaningful (and is
+       * sometimes the cause of the failure).
+       */
+      if (tlsProbe) {
+        try {
+          const tls = await tlsProbe;
+          if (tls) {
+            entry.response.securityDetails = tls.securityDetails;
+            entry.response.remoteIPAddress = tls.remoteAddress;
+            entry.response.remotePort = tls.remotePort;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
       throw error;
     }
   }
@@ -165,7 +299,14 @@ export class APINetworkManager {
 
   async stop() {
     this._restore();
+    this._tlsCache.clear();
     log(`Plugins: stopped collecting API network events`);
     return this.results;
   }
+}
+
+function parseContentLength(raw: string | undefined): number {
+  if (!raw) return -1;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : -1;
 }

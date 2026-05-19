@@ -138,6 +138,19 @@ function getMetadata() {
   };
 }
 
+/**
+ * ECS `server.ip` / `server.port` — destination address of the
+ * request. Currently only populated for API journeys (via TLS probe);
+ * browser journeys don't surface this through CDP today.
+ */
+function formatServer(response: NetworkInfo['response']) {
+  if (!response?.remoteIPAddress && !response?.remotePort) return undefined;
+  return {
+    ip: response.remoteIPAddress,
+    port: response.remotePort,
+  };
+}
+
 function formatTLS(tls: SecurityDetails) {
   if (!tls || !tls.protocol) {
     return;
@@ -209,6 +222,7 @@ export function formatNetworkFields(network: NetworkInfo) {
       response,
     },
     tls: formatTLS(response?.securityDetails),
+    server: formatServer(response),
   };
 
   const pickItems: Array<keyof NetworkInfo> = [
