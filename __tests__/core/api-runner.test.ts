@@ -128,4 +128,118 @@ describe('API runner', () => {
     await runner._run(runOptions);
     expect(launchSpy).not.toHaveBeenCalled();
   });
+
+  it('handles steps that issue zero requests without breaking network grouping', async () => {
+    const j = new APIJourney('api-mixed', ({ request }) => {
+      runner.currentJourney?._addStep('empty step', async () => {
+        // intentionally no requests — exercises the "step with no network
+        // activity" case (e.g. assertion on local data, sleeps, etc.).
+      });
+      runner.currentJourney?._addStep('hit ok', async () => {
+        const res = await request.get(`${server.PREFIX}/ok`);
+        if (res.status() !== 200) throw new Error('bad status');
+      });
+    });
+    runner._addJourney(j);
+
+    const result = await runner._run(runOptions);
+    expect(result['api-mixed'].status).toBe('succeeded');
+    expect(result['api-mixed'].networkinfo).toHaveLength(1);
+    /**
+     * The single captured request must be attributed to the second step,
+     * not the empty first one — `step` reference identity is the contract
+     * `journey/network_info` events rely on for waterfall grouping.
+     */
+    expect(result['api-mixed'].networkinfo![0].step?.name).toBe('hit ok');
+  });
+
+  it('isolates cookies between API journeys (independent APIRequestContexts)', async () => {
+    /**
+     * Server sets a cookie on /set and echoes the inbound Cookie header
+     * back on /echo so each journey can assert what *it* sent. If the two
+     * journeys share an APIRequestContext, journey B would see the cookie
+     * set during journey A.
+     */
+    server.route('/set-cookie', (_, res) => {
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'set-cookie': 'session=abc; Path=/',
+      });
+      res.end('{}');
+    });
+    server.route('/echo-cookie', (req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ cookie: req.headers.cookie ?? '' }));
+    });
+
+    const seenCookies: Record<string, string> = {};
+    runner._addJourney(
+      new APIJourney('first', ({ request }) => {
+        runner.currentJourney?._addStep('set cookie', async () => {
+          await request.get(`${server.PREFIX}/set-cookie`);
+          const r = await request.get(`${server.PREFIX}/echo-cookie`);
+          seenCookies.first = (await r.json()).cookie;
+        });
+      })
+    );
+    runner._addJourney(
+      new APIJourney('second', ({ request }) => {
+        runner.currentJourney?._addStep('echo cookie', async () => {
+          const r = await request.get(`${server.PREFIX}/echo-cookie`);
+          seenCookies.second = (await r.json()).cookie;
+        });
+      })
+    );
+
+    await runner._run(runOptions);
+    expect(seenCookies.first).toContain('session=abc');
+    // Second journey must NOT inherit the cookie from the first.
+    expect(seenCookies.second).toBe('');
+  });
+
+  describe('with HTTPS endpoint', () => {
+    let httpsServer: Server;
+    beforeAll(async () => {
+      httpsServer = await Server.create({ tls: true });
+      httpsServer.route('/secure', (_, res) => {
+        const body = '{"ok":"true"}';
+        res.writeHead(200, {
+          'content-type': 'application/json',
+          'content-length': String(Buffer.byteLength(body)),
+        });
+        res.end(body);
+      });
+    });
+    afterAll(async () => await httpsServer.close());
+
+    it('captures TLS certificate info, remote address, and body bytes for HTTPS calls', async () => {
+      const j = new APIJourney('api-https', ({ request }) => {
+        runner.currentJourney?._addStep('hit secure', async () => {
+          const res = await request.get(`${httpsServer.PREFIX}/secure`);
+          if (res.status() !== 200) throw new Error('bad status');
+        });
+      });
+      runner._addJourney(j);
+
+      const result = await runner._run({
+        ...runOptions,
+        playwrightOptions: { ignoreHTTPSErrors: true },
+      });
+      expect(result['api-https'].status).toBe('succeeded');
+      const ni = result['api-https'].networkinfo;
+      expect(ni).toHaveLength(1);
+      const entry = ni![0];
+      expect(entry.response.securityDetails).toMatchObject({
+        protocol: expect.stringMatching(/^TLS /),
+        validFrom: expect.any(Number),
+        validTo: expect.any(Number),
+      });
+      expect(entry.response.remoteIPAddress).toBeDefined();
+      expect(entry.response.remotePort).toBeDefined();
+      expect(entry.response.body?.bytes).toBeGreaterThan(0);
+      expect(entry.transferSize).toBeGreaterThanOrEqual(
+        entry.response.body!.bytes
+      );
+    });
+  });
 });
