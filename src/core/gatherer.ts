@@ -79,45 +79,45 @@ export class Gatherer {
   static async setupDriver<T extends 'browser' | 'api' = 'browser'>(
     options: RunOptions,
     journeyType: T = 'browser' as T
-  ): Promise<T extends 'browser' ? Driver : APIDriver> {
+  ): Promise<T extends 'api' ? APIDriver : Driver> {
     const { playwrightOptions } = options;
 
-    if (journeyType === 'browser') {
-      await Gatherer.launchBrowser(options);
-
-      const context = await Gatherer.browser.newContext({
-        ...playwrightOptions,
-        userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
-      });
-      // Set timeouts for actions and navigations
-      context.setDefaultTimeout(
-        playwrightOptions?.actionTimeout ?? DEFAULT_TIMEOUT
-      );
-      context.setDefaultNavigationTimeout(
-        playwrightOptions?.navigationTimeout ?? DEFAULT_TIMEOUT
-      );
-
-      // TODO: Network throttling via chrome devtools emulation is disabled for now.
-      // See docs/throttling.md for more details.
-      // Gatherer.setNetworkConditions(context, networkConditions);
-      if (playwrightOptions?.testIdAttribute) {
-        selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
-      }
-
-      const page = await context.newPage();
-      const client = await context.newCDPSession(page);
+    if (journeyType === 'api') {
       const request = await apiRequest.newContext({ ...playwrightOptions });
-      return {
-        browser: Gatherer.browser,
-        context,
-        page,
-        client,
-        request,
-      } as Driver;
-    } else {
-      const request = await apiRequest.newContext({ ...playwrightOptions });
-      return { request } as T extends 'browser' ? Driver : APIDriver;
+      return { request } as T extends 'api' ? APIDriver : Driver;
     }
+
+    await Gatherer.launchBrowser(options);
+
+    const context = await Gatherer.browser.newContext({
+      ...playwrightOptions,
+      userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
+    });
+    // Set timeouts for actions and navigations
+    context.setDefaultTimeout(
+      playwrightOptions?.actionTimeout ?? DEFAULT_TIMEOUT
+    );
+    context.setDefaultNavigationTimeout(
+      playwrightOptions?.navigationTimeout ?? DEFAULT_TIMEOUT
+    );
+
+    // TODO: Network throttling via chrome devtools emulation is disabled for now.
+    // See docs/throttling.md for more details.
+    // Gatherer.setNetworkConditions(context, networkConditions);
+    if (playwrightOptions?.testIdAttribute) {
+      selectors.setTestIdAttribute(playwrightOptions.testIdAttribute);
+    }
+
+    const page = await context.newPage();
+    const client = await context.newCDPSession(page);
+    const request = await apiRequest.newContext({ ...playwrightOptions });
+    return {
+      browser: Gatherer.browser,
+      context,
+      page,
+      client,
+      request,
+    } as T extends 'api' ? APIDriver : Driver;
   }
 
   static async getUserAgent(userAgent?: string) {
@@ -169,6 +169,11 @@ export class Gatherer {
       metrics &&
         plugins.push(await Gatherer.pluginManager.start('performance'));
     } else {
+      /**
+       * API journeys only produce network traffic. Network capture is the
+       * only data source for the reporter, so it is always enabled
+       * regardless of `options.network`.
+       */
       plugins.push(await Gatherer.pluginManager.start('network'));
     }
     await Promise.all(plugins);

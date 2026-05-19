@@ -83,6 +83,11 @@ export type {
   JourneyWithAnnotations,
   JourneyOptions,
   StepWithAnnotations,
+  APIJourney,
+  APIJourneyCallback,
+  APIJourneyCallbackOpts,
+  APIJourneyOptions,
+  APIJourneyWithAnnotations,
 } from './dsl';
 
 export type {

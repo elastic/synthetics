@@ -51,6 +51,7 @@ import {
   JourneyStartResult,
   StepEndResult,
   JourneyEndResult,
+  APIJourneyEndResult,
   PageMetrics,
 } from '../common_types';
 import { inspect } from 'util';
@@ -257,10 +258,18 @@ function journeyInfo(journey: Partial<Journey>, type: OutputFields['type']) {
   if (!journey) {
     return;
   }
+  /**
+   * Surface the journey type for non-default journeys (currently only
+   * `api`) so downstream consumers (Heartbeat, Kibana) can route to the
+   * right document type. Browser journey output stays byte-compatible.
+   */
+  const journeyType =
+    journey.type && journey.type !== 'browser' ? journey.type : undefined;
   const info: JourneyInfo = {
     name: journey.name,
     id: journey.id,
     tags: journey.tags,
+    ...(journeyType ? { type: journeyType } : {}),
   };
   const isEnd = type === 'journey/end';
   if (isEnd) {
@@ -439,40 +448,46 @@ export default class JSONReporter extends BaseReporter {
 
   override async onJourneyEnd(
     journey: Journey,
-    {
-      timestamp,
-      browserDelay,
-      networkinfo,
-      browserconsole,
-      options,
-    }: JourneyEndResult
+    result: JourneyEndResult | APIJourneyEndResult
   ) {
-    const { ssblocks, screenshots } = options;
-    const writeScreenshots =
-      screenshots === 'on' ||
-      (screenshots === 'only-on-failure' && journey.status === 'failed');
-    if (writeScreenshots) {
-      await gatherScreenshots(
-        join(CACHE_PATH, 'screenshots'),
-        async screenshot => {
-          const { data, timestamp, step } = screenshot;
-          if (!data) {
-            return;
+    const { timestamp, networkinfo, options } = result;
+    const isAPIJourney = journey.type === 'api';
+    /**
+     * Browser-only fields. The runner omits these for API journeys and
+     * the discriminated union does too, so default them to `undefined`
+     * when missing.
+     */
+    const browserDelay = (result as JourneyEndResult).browserDelay;
+    const browserconsole = (result as JourneyEndResult).browserconsole;
+
+    if (!isAPIJourney) {
+      const { ssblocks, screenshots } = options;
+      const writeScreenshots =
+        screenshots === 'on' ||
+        (screenshots === 'only-on-failure' && journey.status === 'failed');
+      if (writeScreenshots) {
+        await gatherScreenshots(
+          join(CACHE_PATH, 'screenshots'),
+          async screenshot => {
+            const { data, timestamp, step } = screenshot;
+            if (!data) {
+              return;
+            }
+            if (ssblocks) {
+              await this.writeScreenshotBlocks(journey, screenshot);
+            } else {
+              this.writeJSON({
+                type: 'step/screenshot',
+                timestamp,
+                journey,
+                step,
+                blob: data,
+                blob_mime: 'image/jpeg',
+              });
+            }
           }
-          if (ssblocks) {
-            await this.writeScreenshotBlocks(journey, screenshot);
-          } else {
-            this.writeJSON({
-              type: 'step/screenshot',
-              timestamp,
-              journey,
-              step,
-              blob: data,
-              blob_mime: 'image/jpeg',
-            });
-          }
-        }
-      );
+        );
+      }
     }
 
     if (networkinfo) {
@@ -504,18 +519,28 @@ export default class JSONReporter extends BaseReporter {
       });
     }
 
+    /**
+     * Keep `browser_delay_us` in the payload for browser journeys to
+     * preserve the existing on-the-wire shape, but omit it entirely for
+     * API journeys where the field has no meaning. The key order
+     * matches the previous output to stay backward-compatible with
+     * Heartbeat ingestion snapshots.
+     */
+    const endPayload: Payload = {
+      status: journey.status,
+      ...(isAPIJourney
+        ? {}
+        : { browser_delay_us: getDurationInUs(browserDelay) }),
+      // timestamp in microseconds at which the current node process began, measured in Unix time.
+      process_startup_epoch_us: Math.trunc(processStart * 1000),
+    };
+
     this.writeJSON({
       type: 'journey/end',
       journey,
       timestamp,
       error: journey.error,
-      payload: {
-        status: journey.status,
-        // convert from monotonic seconds time to microseconds
-        browser_delay_us: getDurationInUs(browserDelay),
-        // timestamp in microseconds at which the current node process began, measured in Unix time.
-        process_startup_epoch_us: Math.trunc(processStart * 1000),
-      },
+      payload: endPayload,
     });
   }
 

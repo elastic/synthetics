@@ -24,9 +24,10 @@
  */
 
 import { APIRequestContext } from 'playwright-core';
-import { APIDriver, Driver, Location, Params } from '../common_types';
+import { Location, Params } from '../common_types';
 
-import { Journey, JourneyCallback, JourneyOptions } from './journey';
+import { Journey } from './journey';
+import { Monitor, MonitorConfig } from './monitor';
 import { RunnerInfo } from '../core/runner';
 
 export type APIJourneyOptions = {
@@ -47,16 +48,48 @@ type APIJourneyType = (
   callback: APIJourneyCallback
 ) => APIJourney;
 
+/**
+ * API journeys reuse the same step-based execution model as browser
+ * journeys but never spin up a Chromium context. The only structural
+ * differences from a browser `Journey` are:
+ *
+ *  - `type === 'api'`, used by the runner/gatherer/plugin-manager to skip
+ *    browser-only setup,
+ *  - the default monitor type is `http` so `push` registers the right
+ *    Kibana monitor.
+ */
 export class APIJourney extends Journey {
-  #cb: APIJourneyCallback;
-  #driver?: Driver | APIDriver;
   constructor(
-    options: JourneyOptions & { type?: 'browser' | 'api' },
-    cb: JourneyCallback,
+    options: APIJourneyOptions | string,
+    cb: APIJourneyCallback,
     location?: Location
   ) {
-    super(options, cb, location);
-    this.#cb = cb;
+    const opts =
+      typeof options === 'string'
+        ? { name: options, id: options }
+        : { ...options };
+    /**
+     * `Journey` expects a `JourneyCallback` whose argument is the full
+     * browser driver shape. The runner narrows the callback args based on
+     * `journey.type` before invoking it, so the cast here is sound.
+     */
+    super({ ...opts, type: 'api' }, cb as any, location);
+  }
+
+  /**
+   * Override default monitor type so `synthetics push` registers this
+   * journey as an HTTP monitor rather than a browser monitor.
+   */
+  override _updateMonitor(config: MonitorConfig) {
+    this._setMonitor(
+      new Monitor({
+        name: this.name,
+        id: this.id,
+        type: 'http',
+        tags: this.tags ?? [],
+        ...config,
+      })
+    );
   }
 }
 

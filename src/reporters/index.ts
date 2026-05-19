@@ -53,7 +53,6 @@ export const reporters: {
   default: BaseReporter,
   json: JSONReporter,
   junit: JUnitReporter,
-  // 'api-default': APIReporter,
   'buildkite-cli': BuildKiteCLIReporter,
 };
 

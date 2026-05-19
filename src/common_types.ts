@@ -349,7 +349,6 @@ export type JourneyEndResult = JourneyStartResult &
 
 export type APIJourneyEndResult = JourneyStartResult &
   APIJourneyResult & {
-    browserDelay: number;
     options: RunOptions;
   };
 

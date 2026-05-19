@@ -344,24 +344,34 @@ export default class Runner implements RunnerInfo {
   ) {
     // Enhance the journey results
     const pOutput = await Gatherer.pluginManager.output();
-    const bConsole = filterBrowserMessages(
-      pOutput.browserconsole,
-      journey.status
-    );
-    await this.#reporter?.onJourneyEnd?.(journey, {
-      browserDelay: this.#browserDelay,
-      timestamp: getTimestamp(),
-      options,
-      networkinfo: pOutput.networkinfo,
-      browserconsole: bConsole,
-    });
+    const isBrowserJourney = journey.type === 'browser';
+    const bConsole = isBrowserJourney
+      ? filterBrowserMessages(pOutput.browserconsole, journey.status)
+      : undefined;
+    if (isBrowserJourney) {
+      await this.#reporter?.onJourneyEnd?.(journey, {
+        browserDelay: this.#browserDelay,
+        timestamp: getTimestamp(),
+        options,
+        networkinfo: pOutput.networkinfo,
+        browserconsole: bConsole,
+      });
+    } else {
+      await this.#reporter?.onJourneyEnd?.(journey, {
+        timestamp: getTimestamp(),
+        options,
+        networkinfo: pOutput.networkinfo,
+      });
+    }
     await Gatherer.endRecording();
     await Gatherer.dispose(this.#driver);
     // clear screenshots cache after each journey
-    await rm(this.#screenshotPath, { recursive: true, force: true });
+    if (isBrowserJourney) {
+      await rm(this.#screenshotPath, { recursive: true, force: true });
+    }
     return Object.assign(result, {
       networkinfo: pOutput.networkinfo,
-      browserconsole: bConsole,
+      ...(isBrowserJourney ? { browserconsole: bConsole } : {}),
       ...journey,
     });
   }
@@ -560,9 +570,16 @@ export default class Runner implements RunnerInfo {
 
   async _runJourneys(options: RunOptions) {
     const result: RunResult = {};
-    const browserStart = monotonicTimeInSeconds();
-    await Gatherer.launchBrowser(options);
-    this.#browserDelay = monotonicTimeInSeconds() - browserStart;
+    /**
+     * Only spin up a Chromium browser if at least one browser journey is
+     * scheduled to run. Pure API-journey suites skip launch entirely.
+     */
+    const hasBrowserJourneys = this.#journeys.some(j => j.type === 'browser');
+    if (hasBrowserJourneys) {
+      const browserStart = monotonicTimeInSeconds();
+      await Gatherer.launchBrowser(options);
+      this.#browserDelay = monotonicTimeInSeconds() - browserStart;
+    }
 
     for (const journey of this.#journeys) {
       const journeyResult: JourneyResult = this.#hookError
