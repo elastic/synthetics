@@ -32,6 +32,7 @@ import {
   JourneyEndResult,
   JourneyStartResult,
   StepEndResult,
+  APIJourneyEndResult,
 } from '../common_types';
 import BuildKiteCLIReporter from './build_kite_cli';
 
@@ -52,6 +53,7 @@ export const reporters: {
   default: BaseReporter,
   json: JSONReporter,
   junit: JUnitReporter,
+  // 'api-default': APIReporter,
   'buildkite-cli': BuildKiteCLIReporter,
 };
 
@@ -63,7 +65,7 @@ export interface Reporter {
   onStepEnd?(journey: Journey, step: Step, result: StepEndResult): void;
   onJourneyEnd?(
     journey: Journey,
-    result: JourneyEndResult
+    result: JourneyEndResult | APIJourneyEndResult
   ): void | Promise<void>;
   onEnd?(): void | Promise<void>;
 }
