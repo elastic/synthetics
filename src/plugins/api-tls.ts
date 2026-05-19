@@ -101,9 +101,7 @@ export async function probeTLS(
             timings: {
               dns: dnsEnd > 0 ? round(dnsEnd - dnsStart) : -1,
               connect:
-                connectEnd > 0 && dnsEnd > 0
-                  ? round(connectEnd - dnsEnd)
-                  : -1,
+                connectEnd > 0 && dnsEnd > 0 ? round(connectEnd - dnsEnd) : -1,
               ssl: connectEnd > 0 ? round(sslEnd - connectEnd) : -1,
             },
           });
@@ -146,7 +144,10 @@ function round(ms: number): number {
 function normalizeProtocol(raw: string | null): string | undefined {
   if (!raw) return undefined;
   // "TLSv1.3" → "TLS 1.3", "SSLv3" → "SSL 3", "TLS 1.2" → "TLS 1.2"
-  const normalized = raw.replace(/\s*v(?=\d)/i, ' ').replace(/\s+/g, ' ').trim();
+  const normalized = raw
+    .replace(/\s*v(?=\d)/i, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const parts = normalized.split(' ');
   if (parts.length < 2) return normalized;
   return `${parts[0].toUpperCase()} ${parts.slice(1).join(' ')}`;
