@@ -146,13 +146,23 @@ export class Journey {
     /**
      * Use defaults values from journey for monitor object (id, name and tags)
      */
-    this.#monitor = new Monitor({
-      name: this.name,
-      id: this.id,
-      type: 'browser',
-      tags: this.tags ?? [],
-      ...config,
-    });
+    this._setMonitor(
+      new Monitor({
+        name: this.name,
+        id: this.id,
+        type: 'browser',
+        tags: this.tags ?? [],
+        ...config,
+      })
+    );
+  }
+
+  /**
+   * Subclasses use this to swap in a monitor with a different default
+   * `type` while reusing the source-location and name-filter wiring.
+   */
+  protected _setMonitor(monitor: Monitor) {
+    this.#monitor = monitor;
     this.#monitor.setSource(this.location);
     this.#monitor.setFilter({ match: this.name });
   }

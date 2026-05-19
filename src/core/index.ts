@@ -75,7 +75,7 @@ const createAPIJourney = (type?: 'skip' | 'only') =>
       if (typeof options === 'string') {
         options = { name: options, id: options };
       }
-      const j = new APIJourney({ ...options, type: 'api' }, callback, location);
+      const j = new APIJourney(options, callback, location);
       if (type) {
         j[type] = true;
       }
@@ -85,6 +85,8 @@ const createAPIJourney = (type?: 'skip' | 'only') =>
   );
 
 export const apiJourney = createAPIJourney() as APIJourneyWithAnnotations;
+apiJourney.skip = createAPIJourney('skip');
+apiJourney.only = createAPIJourney('only');
 
 const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(

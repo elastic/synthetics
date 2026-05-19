@@ -27,7 +27,7 @@ import fs, { mkdirSync } from 'fs';
 import { join } from 'path';
 import snakeCaseKeys from 'snakecase-keys';
 import SonicBoom from 'sonic-boom';
-import { journey } from '../../src/core';
+import { apiJourney, journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
   gatherScreenshots,
@@ -301,6 +301,116 @@ describe('json reporter', () => {
     const screenshot1 = await collectScreenshots();
     const screenshot2 = await collectScreenshots();
     expect(screenshot1).toEqual(screenshot2);
+  });
+
+  describe('api journeys', () => {
+    it("includes journey type 'api' on register, start, and end", async () => {
+      const jj = apiJourney({ name: 'api-j', id: 'api-j' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+
+      reporter.onJourneyRegister(jj);
+      reporter.onJourneyStart(jj, { timestamp });
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+        networkinfo: [],
+      });
+
+      const events = await readAndCloseStreamJson();
+      const register = events.find(e => e.type === 'journey/register');
+      const start = events.find(e => e.type === 'journey/start');
+      const end = events.find(e => e.type === 'journey/end');
+      expect(register.journey).toMatchObject({ name: 'api-j', type: 'api' });
+      expect(start.journey).toMatchObject({ name: 'api-j', type: 'api' });
+      expect(end.journey).toMatchObject({ name: 'api-j', type: 'api' });
+    });
+
+    it('omits browser_delay_us from journey/end payload for API journeys', async () => {
+      const jj = apiJourney({ name: 'api-delay', id: 'api-delay' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+      });
+
+      const end = (await readAndCloseStreamJson()).find(
+        e => e.type === 'journey/end'
+      );
+      expect(end.payload).not.toHaveProperty('browser_delay_us');
+      expect(end.payload).toMatchObject({
+        status: 'succeeded',
+        process_startup_epoch_us: expect.any(Number),
+      });
+    });
+
+    it('emits network_info events captured by APINetworkManager', async () => {
+      const jj = apiJourney({ name: 'api-net', id: 'api-net' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+        networkinfo: [
+          {
+            url: 'http://api.example.com/v1/things',
+            timestamp,
+            type: 'fetch',
+            isNavigationRequest: false,
+            browser: { name: 'api', version: '' },
+            request: {
+              url: 'http://api.example.com/v1/things',
+              method: 'GET',
+              headers: { authorization: 'Bearer x' },
+            },
+            response: {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+              mimeType: 'application/json',
+            },
+            requestSentTime: 1,
+            responseReceivedTime: 1.1,
+            loadEndTime: 1.1,
+            timings: {
+              blocked: -1,
+              dns: -1,
+              ssl: -1,
+              connect: -1,
+              send: -1,
+              wait: 0.1,
+              receive: 0,
+              total: 0.1,
+            },
+          } as any,
+        ],
+      });
+
+      const events = await readAndCloseStreamJson();
+      const ni = events.find(e => e.type === 'journey/network_info');
+      expect(ni).toBeDefined();
+      expect(ni.root_fields.url).toBe('http://api.example.com/v1/things');
+      expect(ni.root_fields.http.request.method).toBe('GET');
+      // Authorization header must be redacted
+      expect(ni.root_fields.http.request.headers.authorization).toBe(
+        '[REDACTED]'
+      );
+      expect(ni.payload.type).toBe('fetch');
+    });
+
+    it('does not emit step/screenshot for API journeys', async () => {
+      const jj = apiJourney({ name: 'api-noss', id: 'api-noss' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      // screenshots=on should still not produce screenshot docs for API journeys
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: { screenshots: 'on' } as any,
+      });
+      const events = await readAndCloseStreamJson();
+      expect(events.find(e => e.type === 'step/screenshot')).toBeUndefined();
+      expect(events.find(e => e.type === 'screenshot/block')).toBeUndefined();
+    });
   });
 
   describe('screenshots', () => {

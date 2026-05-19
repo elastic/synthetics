@@ -23,7 +23,7 @@
  *
  */
 
-import { Frame, Page, Request } from 'playwright-core';
+import { APIRequestContext, APIResponse } from 'playwright-core';
 import { NetworkInfo, APIDriver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
@@ -38,119 +38,134 @@ function epochTimeInSeconds() {
   return getTimestamp() / 1e6;
 }
 
-const roundMilliSecs = (value: number): number => {
-  return Math.floor(value * 1000) / 1000;
-};
+const roundMilliSecs = (ms: number): number => Math.floor(ms * 1000) / 1000;
+
+/**
+ * Playwright's `APIRequestContext.get/post/put/delete/patch/head` are
+ * thin wrappers that funnel into `fetch(urlOrRequest, options)`, so we
+ * only need to intercept `fetch` to capture every request exactly once.
+ */
+type RequestLike = string | { url(): string };
+
+function normalizeUrl(urlOrRequest: RequestLike): string {
+  if (typeof urlOrRequest === 'string') return urlOrRequest;
+  try {
+    return urlOrRequest.url();
+  } catch {
+    return String(urlOrRequest);
+  }
+}
 
 export class APINetworkManager {
-  private _barrierPromises = new Set<Promise<void>>();
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
-  _originalMethods: any;
+  private _originalFetch?: APIRequestContext['fetch'];
+  private _patched = false;
 
-  constructor(private driver: APIDriver) {
-    this._originalMethods = {};
-  }
-
-  /**
-   * Adds a protection barrier aganist all asynchronous extract operations from
-   * request/response object that are happening during page lifecycle, If the
-   * page is closed during the extraction, the barrier enforces those operations
-   * to not result in exception
-   */
-  private _addBarrier(page: Page, promise: Promise<void>) {
-    if (!page) return;
-    const race = Promise.race([
-      new Promise<void>(resolve =>
-        page.on('close', () => {
-          this._barrierPromises.delete(race);
-          resolve();
-        })
-      ),
-      promise,
-    ]);
-    this._barrierPromises.add(race);
-    race.then(() => this._barrierPromises.delete(race));
-  }
-
-  private _nullableFrameBarrier(req: Request): Frame | null {
-    try {
-      return req.frame();
-    } catch (_) {
-      // frame might be unavailable for certain requests if they are issued
-      // before the frame is created - true for navigation requests
-      // https://playwright.dev/docs/api/class-request#request-frame
-    }
-    return null;
-  }
+  constructor(private driver: APIDriver) {}
 
   async start() {
-    log(`Plugins: started collecting network events`);
-    const { request } = this.driver;
-
-    // Intercept API requests
-    ['fetch', 'get', 'post', 'put', 'delete', 'patch', 'head'].forEach(
-      method => {
-        this._originalMethods[method] = request[method].bind(request);
-        request[method] = this._interceptRequest.bind(this, method);
-      }
-    );
+    if (this._patched) return;
+    log(`Plugins: started collecting API network events`);
+    const request = this.driver.request;
+    this._originalFetch = request.fetch.bind(request);
+    (request as any).fetch = (urlOrRequest: RequestLike, options?: any) =>
+      this._interceptRequest(urlOrRequest, options);
+    this._patched = true;
   }
 
-  async _interceptRequest(method, url, options: any) {
+  private async _interceptRequest(
+    urlOrRequest: RequestLike,
+    options?: any
+  ): Promise<APIResponse> {
+    const url = normalizeUrl(urlOrRequest);
     const timestamp = getTimestamp();
-    const requestStartTime = epochTimeInSeconds();
+    const requestSentTime = epochTimeInSeconds();
+    const httpMethod = (options?.method ?? 'GET').toUpperCase();
 
-    log(`Intercepting request: ${url}`);
+    log(`API network: ${httpMethod} ${url}`);
 
-    const requestEntry = {
+    const entry: NetworkInfo = {
       step: this._currentStep,
       timestamp,
       url,
       type: 'fetch',
+      isNavigationRequest: false,
+      browser: { name: 'api', version: '' },
       request: {
         url,
-        method: method.toUpperCase(),
-        headers: options?.headers || {},
-        body: options?.postData || options?.data || null,
+        method: httpMethod,
+        headers: options?.headers ?? {},
+        body: options?.postData ?? options?.data ?? undefined,
       },
       response: {
         status: -1,
         headers: {},
         mimeType: 'x-unknown',
       },
-      requestSentTime: requestStartTime,
+      requestSentTime,
       loadEndTime: -1,
       responseReceivedTime: -1,
+      resourceSize: 0,
+      transferSize: 0,
       timings: {
+        blocked: -1,
+        dns: -1,
+        ssl: -1,
+        connect: -1,
+        send: -1,
         wait: -1,
         receive: -1,
         total: -1,
       },
     };
+    this.results.push(entry);
 
-    this.results.push(requestEntry as any);
+    const wallStart = Date.now();
+    try {
+      const response = (await this._originalFetch(
+        urlOrRequest as any,
+        options
+      )) as APIResponse;
+      const wallEnd = Date.now();
+      const headers = response.headers();
+      entry.response = {
+        url: response.url(),
+        status: response.status(),
+        statusText: response.statusText(),
+        headers,
+        mimeType: headers['content-type'] ?? 'x-unknown',
+      };
+      entry.responseReceivedTime = epochTimeInSeconds();
+      entry.loadEndTime = entry.responseReceivedTime;
+      const wait = roundMilliSecs(wallEnd - wallStart);
+      entry.timings.wait = wait;
+      entry.timings.receive = 0;
+      entry.timings.total = wait;
+      return response;
+    } catch (error) {
+      entry.responseReceivedTime = epochTimeInSeconds();
+      entry.loadEndTime = entry.responseReceivedTime;
+      entry.timings.total = roundMilliSecs(Date.now() - wallStart);
+      throw error;
+    }
+  }
 
-    const start = Date.now();
-    const response = await this._originalMethods[method](url, options);
-    const end = Date.now();
-
-    requestEntry.responseReceivedTime = epochTimeInSeconds();
-    requestEntry.loadEndTime = requestEntry.responseReceivedTime;
-    requestEntry.response = {
-      // url: response.url() as any,
-      status: response.status(),
-      headers: await response.headers(),
-      mimeType: response.headers()['content-type'] || 'x-unknown',
-    };
-    requestEntry.timings.wait = roundMilliSecs((end - start) / 1000);
-    requestEntry.timings.receive = requestEntry.timings.wait;
-    requestEntry.timings.total = requestEntry.timings.wait;
-
-    return response;
+  /**
+   * Drop the own-property `fetch` so the prototype method becomes
+   * reachable again. This keeps the `APIRequestContext` usable after the
+   * plugin stops, e.g. when external code retains a reference.
+   */
+  private _restore() {
+    if (!this._patched) return;
+    delete (this.driver.request as any).fetch;
+    this._originalFetch = undefined;
+    this._patched = false;
   }
 
   async stop() {
+    this._restore();
+    log(`Plugins: stopped collecting API network events`);
     return this.results;
   }
 }
