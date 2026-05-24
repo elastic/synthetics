@@ -123,6 +123,41 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('runs inline apiJourney module with ESM imports', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `import { apiJourney, step, expect } from '@elastic/synthetics';
+apiJourney('inline api', ({ request }) => {
+  step('fetch', async () => {
+    const r = await request.get(params.url);
+    expect(r.status()).toBe(200);
+  });
+});`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline api');
+      expect(await cli.exitCode).toBe(0);
+    });
+
+    it('runs inline journey module with ESM imports', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `import { journey, step, expect } from '@elastic/synthetics';
+journey('inline browser', ({ page, params }) => {
+  step('check h2', async () => {
+    await page.goto(params.url, { timeout: 1500 });
+    const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
+    expect(await sel.textContent()).toBe('Synthetics test page');
+  });
+});`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline browser');
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('does not load a configuration file without a config param', async () => {
       const output = async () => {
         const cli = new CLIMock()
