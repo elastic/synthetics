@@ -30,7 +30,10 @@ import { commonOptions } from '../../src/core/transform';
 import { SyntheticsBundlePlugin } from '../../src/push/plugin';
 
 describe('SyntheticsBundlePlugin', () => {
-  const PROJECT_DIR = join(__dirname, 'test-bundler');
+  // Use a suite-unique directory; sharing with `bundler.test.ts` caused
+  // races between each suite's beforeAll/afterAll when jest runs them in
+  // parallel workers (manifests as "Could not resolve" or empty zip output).
+  const PROJECT_DIR = join(__dirname, 'test-plugin');
   const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
 
   beforeAll(async () => {

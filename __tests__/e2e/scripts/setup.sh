@@ -34,7 +34,7 @@ echo "${bold}Starting elasticsearch , kibana and synthetics docker${normal}"
 echo "" # newline
 
 
-if STACK_VERSION=8.3.0-SNAPSHOT docker compose --file docker-compose.yml up --remove-orphans -d --wait; then
+if STACK_VERSION="${STACK_VERSION:-8.19.0-SNAPSHOT}" docker compose --file docker-compose.yml up --remove-orphans -d --wait; then
   echo "${bold}Successfully started docker-compose${normal}"
 else
   echo "${bold}docker-compose up failed:${normal}"
