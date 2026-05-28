@@ -150,6 +150,19 @@ async function waitForKibana() {
 }
 
 async function installSyntheticsIntegration() {
+  // Skip the install (and the destructive data-stream drop below) if the
+  // package is already installed — e.g. on a warm re-run against a stack
+  // that's already been bootstrapped. Only install/drop when we actually
+  // need to, which removes the race window altogether.
+  const { data: pkg } = await axios.get(
+    `${KIBANA_URL}/api/fleet/epm/packages/synthetics`,
+    { auth: AUTH, headers: KBN_HEADERS }
+  );
+  if (pkg?.item?.status === 'installed') {
+    console.log('Synthetics Fleet integration already installed, skipping');
+    return;
+  }
+
   console.log('Installing Synthetics Fleet integration package');
   await axios.post(
     `${KIBANA_URL}/api/fleet/epm/packages/synthetics`,
