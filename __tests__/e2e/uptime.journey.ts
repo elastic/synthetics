@@ -160,10 +160,9 @@ async function installSyntheticsIntegration() {
   // (dynamic) mapping before the integration's templates were installed,
   // drop it so the next publish recreates it from the proper template.
   try {
-    await axios.delete(
-      `${ES_URL}/_data_stream/synthetics-browser-default`,
-      { auth: AUTH }
-    );
+    await axios.delete(`${ES_URL}/_data_stream/synthetics-browser-default`, {
+      auth: AUTH,
+    });
   } catch (e) {
     // 404 means it doesn't exist yet — fine.
   }
