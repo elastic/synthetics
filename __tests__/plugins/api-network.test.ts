@@ -121,6 +121,38 @@ describe('APINetworkManager', () => {
     expect(results[0].request.method).toBe('PUT');
   });
 
+  /**
+   * The patch deliberately only intercepts `fetch`, relying on Playwright's
+   * convenience methods (`get`/`post`/`put`/`delete`/`patch`/`head`) being
+   * thin `this.fetch(...)` wrappers. If a future Playwright bypasses
+   * `this.fetch` for any of them, that helper will silently disappear from
+   * the captured `results` array — this guard catches that regression.
+   */
+  it('captures every Playwright APIRequestContext helper', async () => {
+    server.route('/all', (req, res) => {
+      res.writeHead(200);
+      res.end(req.method);
+    });
+    await mgr.start();
+    await request.get(`${server.PREFIX}/all`);
+    await request.post(`${server.PREFIX}/all`, { data: { ok: true } });
+    await request.put(`${server.PREFIX}/all`, { data: 'p' });
+    await request.patch(`${server.PREFIX}/all`, { data: 'p' });
+    await request.delete(`${server.PREFIX}/all`);
+    await request.head(`${server.PREFIX}/all`);
+    await request.fetch(`${server.PREFIX}/all`, { method: 'OPTIONS' });
+    const results = await mgr.stop();
+    expect(results.map(r => r.request.method)).toEqual([
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'HEAD',
+      'OPTIONS',
+    ]);
+  });
+
   it('records non-2xx responses with the correct status', async () => {
     await mgr.start();
     const res = await request.get(`${server.PREFIX}/notfound`);

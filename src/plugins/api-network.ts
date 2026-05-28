@@ -92,7 +92,7 @@ function headersBytes(headers: Record<string, string>): number {
 
 export class APINetworkManager {
   results: Array<NetworkInfo> = [];
-  _currentStep: Partial<Step> = null;
+  _currentStep: Partial<Step> | null = null;
   private _originalFetch?: APIRequestContext['fetch'];
   private _patched = false;
   /**

@@ -26,7 +26,7 @@
 import { stdin, cwd } from 'process';
 import { extname, resolve, join } from 'path';
 import { tmpdir } from 'os';
-import { mkdtempSync, writeFileSync } from 'fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import Module from 'module';
 import { CliArgs } from './common_types';
 import { step, journey } from './core';
@@ -93,15 +93,16 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
  * legacy inline form, which is a bare set of statements that rely on
  * `step`, `page`, `params`, `expect`, `request`, and `mfa` being injected as
  * locals inside an implicit `journey('inline', ...)` wrapper.
+ *
+ * We deliberately key off `import`/`export` only. A naive `journey(`/
+ * `apiJourney(` regex picks up matches inside string literals and
+ * comments and silently routes legacy scripts through the module loader,
+ * stripping the implicit injection. Users who want module semantics opt
+ * in by adding the `import` line — that's the contract documented in
+ * the README.
  */
 const isModuleInlineSource = (source: string): boolean => {
-  if (/^\s*(?:import|export)\b/m.test(source)) {
-    return true;
-  }
-  if (/\b(?:apiJourney|journey)\s*\(/.test(source)) {
-    return true;
-  }
-  return false;
+  return /^\s*(?:import|export)\b/m.test(source);
 };
 
 const loadInlineScript = (source: string) => {
@@ -188,6 +189,19 @@ const installSyntheticsRequireAlias = () => {
 const loadInlineModule = (source: string) => {
   installSyntheticsRequireAlias();
   const dir = mkdtempSync(join(tmpdir(), 'synthetics-inline-'));
+  /**
+   * Best-effort cleanup of the materialised module on process exit.
+   * Heartbeat invokes `elastic-synthetics --inline` once per process, so
+   * the directory normally lives for the lifetime of a single run; this
+   * keeps long-lived hosts from accumulating tmp dirs.
+   */
+  process.once('exit', () => {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      /* swallow — best-effort cleanup */
+    }
+  });
   const file = join(dir, 'inline.journey.ts');
   writeFileSync(file, source);
   require(file);
