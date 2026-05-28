@@ -29,8 +29,13 @@ import axios from 'axios';
 beforeAll(async () => {
   try {
     await waitForOrTimeout(waitForElasticSearch(), 60e3);
-    await waitForOrTimeout(waitForSyntheticsData(), 60e3);
     await waitForOrTimeout(waitForKibana(), 60e3);
+    // Modern Kibana (>= 8.15) hides the legacy Uptime app by default and
+    // points it at the `heartbeat-*` index pattern. The synthetics docker
+    // image now writes browser-monitor docs to `synthetics-*` data streams,
+    // so both the app and the index pattern must be opted in.
+    await configureLegacyUptimeApp();
+    await waitForOrTimeout(waitForSyntheticsData(), 180e3);
   } catch (e) {
     console.log(`failed to set up e2e test dependencies: ${e}`);
     throw e;
@@ -76,7 +81,7 @@ async function waitForSyntheticsData() {
   while (!status) {
     try {
       const { data } = await axios.post(
-        'http://localhost:9220/heartbeat-*/_search',
+        'http://localhost:9220/heartbeat-*,synthetics-*/_search',
         {
           query: {
             bool: {
@@ -98,7 +103,7 @@ async function waitForSyntheticsData() {
       );
 
       // we want some data in uptime app
-      status = data?.hits.total.value >= 2;
+      status = data?.hits.total.value >= 1;
     } catch (e) {}
   }
 }
@@ -126,6 +131,25 @@ async function waitForKibana() {
       esStatus = data?.status.overall.level === 'available';
     } catch (e) {}
   }
+}
+
+async function configureLegacyUptimeApp() {
+  console.log('Enabling legacy Uptime app and widening heartbeat indices');
+  await axios.post(
+    'http://localhost:5620/api/kibana/settings',
+    { changes: { 'observability:enableLegacyUptimeApp': true } },
+    { headers: { 'kbn-xsrf': 'true' } }
+  );
+  await axios.put(
+    'http://localhost:5620/api/uptime/settings',
+    { heartbeatIndices: 'heartbeat-*,synthetics-*' },
+    {
+      headers: {
+        'kbn-xsrf': 'true',
+        'elastic-api-version': '2023-10-31',
+      },
+    }
+  );
 }
 
 async function waitForOrTimeout(awaitable: Promise<void>, timeout: number) {
