@@ -75,15 +75,29 @@ async function validateZip(content) {
 
   const files: Array<string> = [];
   let contents = '';
-  await new Promise(r => {
+  await new Promise<void>((resolve, reject) => {
+    // Each entry is its own sub-stream; the parser's `close` event can
+    // fire before the last entry's `data` events flush, leaving
+    // `contents` missing the bundled body and causing flaky failures.
+    // Track every entry and only resolve once they have all ended.
+    const entryDone: Array<Promise<void>> = [];
     createReadStream(pathToZip)
       .pipe(unzip.Parse())
       .on('entry', function (entry) {
         files.push(entry.path);
         contents += '\n' + entry.path + '\n';
-        entry.on('data', d => (contents += d));
+        entryDone.push(
+          new Promise<void>((res, rej) => {
+            entry.on('data', d => (contents += d));
+            entry.on('end', () => res());
+            entry.on('error', rej);
+          })
+        );
       })
-      .on('close', r);
+      .on('error', reject)
+      .on('close', () => {
+        Promise.all(entryDone).then(() => resolve(), reject);
+      });
   });
 
   expect(files).toEqual([partialPath]);
