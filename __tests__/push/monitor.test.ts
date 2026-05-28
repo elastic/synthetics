@@ -184,7 +184,9 @@ heartbeat.monitors:
   id: "foo"
   name: "foo"
       `);
-      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(
         `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
       );
     });
@@ -195,9 +197,9 @@ heartbeat.monitors:
 - type: http
   name: "foo"
       `);
-      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
-        `Aborted: Monitor id is required`
-      );
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(`Aborted: Monitor id is required`);
     });
 
     it('validate name check', async () => {
@@ -206,9 +208,9 @@ heartbeat.monitors:
 - type: http
   id: "foo"
       `);
-      expect(createLightweightMonitors(PROJECT_DIR, opts)).rejects.toContain(
-        `Aborted: Monitor name is required`
-      );
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(`Aborted: Monitor name is required`);
     });
 
     it('prefer user provider pattern option', async () => {

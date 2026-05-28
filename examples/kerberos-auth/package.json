@@ -1,0 +1,12 @@
+{
+  "name": "synthetics-kerberos-auth-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example: Elastic Synthetics browser monitor against a Kerberos/NTLM protected site",
+  "scripts": {
+    "test": "npx @elastic/synthetics ."
+  },
+  "dependencies": {
+    "@elastic/synthetics": "*"
+  }
+}
