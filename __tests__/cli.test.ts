@@ -218,15 +218,30 @@ journey('inline browser', ({ page, params }) => {
   });
 
   it('produce json with reporter=json flag', async () => {
-    const output = async args => {
-      const cli = new CLIMock()
-        .args([join(FIXTURES_DIR, 'fake.journey.ts'), ...args])
-        .run();
-      await cli.waitFor('fake journey');
-      expect(await cli.exitCode).toBe(0);
-      return JSON.parse(cli.output());
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'fake.journey.ts'), '--reporter', 'json'])
+      .run();
+    await cli.waitFor('fake journey');
+    expect(await cli.exitCode).toBe(0);
+    /**
+     * The json reporter writes one event per line, but the OS may
+     * deliver multiple events in a single `data` chunk on stdout. Parse
+     * each captured line independently and look for `journey/start`
+     * rather than calling `JSON.parse` on the last raw chunk, which is
+     * order-and-flush-dependent and flakes on Linux CI.
+     */
+    const tryParse = (line: string) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
     };
-    expect((await output(['--reporter', 'json'])).journey).toEqual({
+    const journeyStart = cli
+      .buffer()
+      .map(tryParse)
+      .find(e => e?.type === 'journey/start');
+    expect(journeyStart?.journey).toEqual({
       id: 'fake journey',
       name: 'fake journey',
     });
