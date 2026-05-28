@@ -1,16 +1,4 @@
 ---
-# Kibana's legacy Uptime app uses a scripted_metric that hard-references
-# `observer.geo.name`. Without an explicit location, that field is never
-# mapped on the synthetics-* data streams that 8.19 Heartbeat writes to,
-# so the Painless script throws per shard and the snapshot count is empty.
-# Injecting the field globally via a processor keeps the legacy app happy.
-processors:
-  - add_fields:
-      target: observer.geo
-      fields:
-        name: docker
-        location: "0, 0"
-
 heartbeat.monitors:
   - type: browser
     id: my-monitor

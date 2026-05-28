@@ -7,7 +7,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'curl -s http://localhost:9200/_cluster/health | grep -vq ''"status":"red"''',
+          'curl -s -u elastic:changeme http://localhost:9200/_cluster/health | grep -vq ''"status":"red"''',
         ]
       retries: 10
       interval: 20s
@@ -16,7 +16,14 @@ services:
       - cluster.name=es-docker-cluster
       - cluster.initial_master_nodes=elasticsearch
       - bootstrap.memory_lock=true
-      - xpack.security.enabled=false
+      # Security is required for Fleet (which we use to install the
+      # Synthetics integration package so synthetics-* data streams get
+      # the right mappings). Keep HTTP/transport SSL off to avoid
+      # certificate plumbing for an e2e stack.
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ELASTIC_PASSWORD=changeme
       - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
     ulimits:
       memlock:
@@ -28,12 +35,43 @@ services:
       - '9220'
     networks:
       - elastic
+  setup:
+    # One-shot container that runs after Elasticsearch is healthy and sets
+    # the kibana_system user's password to a known value. Kibana refuses to
+    # boot if `elasticsearch.username` is `elastic`, so we need a working
+    # kibana_system credential before Kibana starts.
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: setup
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    command:
+      - bash
+      - -c
+      - |
+        until curl -sS -u "elastic:changeme" http://elasticsearch:9200 > /dev/null; do
+          echo "waiting for elasticsearch...";
+          sleep 2;
+        done;
+        echo "Setting kibana_system password";
+        curl -sS -X POST -u "elastic:changeme" \
+          "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H 'Content-Type: application/json' \
+          -d '{"password":"changeme"}';
+        echo " done";
+    networks:
+      - elastic
+
   kibana:
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
     container_name: kibana
     depends_on:
-      - elasticsearch
-      - synthetic
+      elasticsearch:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+      synthetic:
+        condition: service_started
     healthcheck:
       test: ['CMD', 'curl', '-s', '-f', 'http://localhost:5601/api/status']
       interval: 30s
@@ -46,6 +84,13 @@ services:
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: changeme
+      # Stable encryption keys so saved objects / Fleet API tokens
+      # remain valid across container restarts.
+      XPACK_SECURITY_ENCRYPTIONKEY: 0123456789abcdef0123456789abcdef
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: 0123456789abcdef0123456789abcdef
+      XPACK_REPORTING_ENCRYPTIONKEY: 0123456789abcdef0123456789abcdef
     networks:
       - elastic
   synthetic:
@@ -56,10 +101,12 @@ services:
     volumes:
       - ../../examples/docker/heartbeat.docker.yml:/usr/share/heartbeat/heartbeat.yml:ro
       - ../../:/opt/elastic-synthetics:ro
+    security_opt:
+      - seccomp=../../examples/docker/seccomp_profile.json
     environment:
       ELASTICSEARCH_URL: http://elasticsearch:9200
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    command: -E output.elasticsearch.hosts=["elasticsearch:9200"] --strict.perms=false --environment container
+    command: -E output.elasticsearch.hosts=["elasticsearch:9200"] -E output.elasticsearch.username=elastic -E output.elasticsearch.password=changeme --strict.perms=false --environment container
     networks:
       - elastic
 
