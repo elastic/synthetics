@@ -127,7 +127,7 @@ describe('CLI', () => {
       const cli = new CLIMock()
         .stdin(
           `import { apiJourney, step, expect } from '@elastic/synthetics';
-apiJourney('inline api', ({ request }) => {
+apiJourney('inline api', ({ request, params }) => {
   step('fetch', async () => {
     const r = await request.get(params.url);
     expect(r.status()).toBe(200);
