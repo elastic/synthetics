@@ -285,6 +285,59 @@ describe('json reporter', () => {
     expect(event.ecs.tls).toBeUndefined();
   });
 
+  /**
+   * Regression: a TLS probe can resolve with `protocol` set but cert
+   * dates missing (malformed `valid_from` / `valid_to`). Previously
+   * `formatTLS` invoked `new Date(undefined * 1000).toISOString()` which
+   * throws `RangeError: Invalid time value`, sinking the entire
+   * `journey/end` document for the affected journey.
+   */
+  it('does not throw when TLS cert dates are missing', () => {
+    expect(() =>
+      formatNetworkFields({
+        browser: { name: 'api', version: '' },
+        url: 'https://api.example.com/foo',
+        type: 'fetch',
+        isNavigationRequest: false,
+        timestamp: 0,
+        request: {
+          url: 'https://api.example.com/foo',
+          method: 'GET',
+          headers: {},
+        },
+        response: {
+          url: 'https://api.example.com/foo',
+          status: 200,
+          headers: {},
+          mimeType: 'application/json',
+          remoteIPAddress: '1.2.3.4',
+          remotePort: 443,
+          securityDetails: {
+            issuer: 'X',
+            subjectName: 'Y',
+            protocol: 'TLS 1.3',
+            // validFrom / validTo intentionally missing
+          },
+        },
+        requestSentTime: 0,
+        loadEndTime: 0,
+        responseReceivedTime: 0,
+        resourceSize: 0,
+        transferSize: 0,
+        timings: {
+          blocked: -1,
+          dns: -1,
+          ssl: -1,
+          connect: -1,
+          send: -1,
+          wait: -1,
+          receive: -1,
+          total: -1,
+        },
+      } as any)
+    ).not.toThrow();
+  });
+
   it('redact sensitive req/response headers', async () => {
     expect(
       redactKeys({

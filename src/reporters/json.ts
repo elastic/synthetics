@@ -151,6 +151,20 @@ function formatServer(response: NetworkInfo['response']) {
   };
 }
 
+/**
+ * Convert a numeric epoch in seconds to an ISO-8601 string, tolerating
+ * `undefined` and other non-finite inputs. The TLS probe can return a
+ * `SecurityDetails` with `protocol` set but cert dates missing (e.g.
+ * malformed `valid_from` / `valid_to`); without this guard
+ * `new Date(undefined * 1000).toISOString()` throws `RangeError` and
+ * sinks the entire `journey/end` document.
+ */
+function epochToIso(epochSeconds: number | undefined): string | undefined {
+  if (epochSeconds == null || !Number.isFinite(epochSeconds)) return undefined;
+  const date = new Date(epochSeconds * 1000);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function formatTLS(tls: SecurityDetails) {
   if (!tls || !tls.protocol) {
     return;
@@ -165,8 +179,8 @@ function formatTLS(tls: SecurityDetails) {
         subject: {
           common_name: tls.subjectName,
         },
-        not_after: new Date(tls.validTo * 1000).toISOString(),
-        not_before: new Date(tls.validFrom * 1000).toISOString(),
+        not_after: epochToIso(tls.validTo),
+        not_before: epochToIso(tls.validFrom),
       },
     },
     version_protocol: name,

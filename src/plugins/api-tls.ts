@@ -88,6 +88,14 @@ export async function probeTLS(
         try {
           const cert = socket.getPeerCertificate(true);
           const protocol = normalizeProtocol(socket.getProtocol());
+          /**
+           * IP-literal hosts skip DNS, so `lookup` never fires and
+           * `dnsEnd` stays at its sentinel `-1`. Treat that as "no DNS
+           * work happened" (`dns: 0`) so the connect timing remains
+           * meaningful instead of cascading into `connect: -1`.
+           */
+          const dnsResolvedAt = dnsEnd > 0 ? dnsEnd : dnsStart;
+          const dnsDuration = dnsEnd > 0 ? round(dnsEnd - dnsStart) : 0;
           settle({
             securityDetails: {
               issuer: cert?.issuer?.CN,
@@ -99,9 +107,8 @@ export async function probeTLS(
             remoteAddress: socket.remoteAddress,
             remotePort: socket.remotePort,
             timings: {
-              dns: dnsEnd > 0 ? round(dnsEnd - dnsStart) : -1,
-              connect:
-                connectEnd > 0 && dnsEnd > 0 ? round(connectEnd - dnsEnd) : -1,
+              dns: dnsDuration,
+              connect: connectEnd > 0 ? round(connectEnd - dnsResolvedAt) : -1,
               ssl: connectEnd > 0 ? round(sslEnd - connectEnd) : -1,
             },
           });

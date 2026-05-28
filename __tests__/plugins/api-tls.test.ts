@@ -59,6 +59,19 @@ describe('probeTLS', () => {
     expect(result.timings.ssl).toBeGreaterThanOrEqual(0);
   });
 
+  /**
+   * IP-literal hosts skip DNS, so the `lookup` event never fires. The
+   * probe must still surface a meaningful `connect` timing instead of
+   * cascading through the missing-DNS sentinel.
+   */
+  it('reports connect timing for IP-literal hosts (no DNS)', async () => {
+    const result = await probeTLS('127.0.0.1', port);
+    if (!result) throw new Error('expected non-null TLS probe result');
+    expect(result.timings.dns).toBe(0);
+    expect(result.timings.connect).toBeGreaterThanOrEqual(0);
+    expect(result.timings.ssl).toBeGreaterThanOrEqual(0);
+  });
+
   it('resolves null on connection refused', async () => {
     // Port 1 is reserved; nothing listens there.
     const result = await probeTLS('127.0.0.1', 1, 500);

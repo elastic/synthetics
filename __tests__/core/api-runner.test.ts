@@ -26,7 +26,7 @@
 import fs from 'fs';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { APIJourney } from '../../src/dsl';
+import { APIJourney, Journey } from '../../src/dsl';
 import { generateTempPath, noop } from '../../src/helpers';
 import { Reporter } from '../../src/reporters';
 import {
@@ -198,6 +198,53 @@ describe('API runner', () => {
     expect(seenCookies.first).toContain('session=abc');
     // Second journey must NOT inherit the cookie from the first.
     expect(seenCookies.second).toBe('');
+  });
+
+  /**
+   * Mixed suites are the default for users adopting `apiJourney` in an
+   * existing browser-journey project. The runner must launch Chromium
+   * exactly once (for the browser journey) and skip browser setup for
+   * the API journey, while routing each through the right driver.
+   */
+  it('coexists with a browser journey: launches the browser only for browser journeys', async () => {
+    const setupSpy = jest
+      .spyOn(Gatherer, 'setupDriver')
+      .mockImplementation(async (_opts, type) => {
+        if (type === 'api') {
+          return {
+            request: {
+              fetch: async () => ({}),
+              dispose: async () => {},
+            } as any,
+          };
+        }
+        return {
+          browser: {} as any,
+          context: {
+            on: jest.fn(),
+            off: jest.fn(),
+            pages: () => [],
+            close: async () => {},
+          } as any,
+          page: {} as any,
+          client: {} as any,
+          request: {
+            fetch: async () => ({}),
+            dispose: async () => {},
+          } as any,
+        };
+      });
+    try {
+      runner._addJourney(new Journey({ name: 'browser-j' }, () => {}));
+      runner._addJourney(new APIJourney('api-j', () => {}));
+
+      await runner._run(runOptions);
+      expect(launchSpy).toHaveBeenCalledTimes(1);
+      const types = setupSpy.mock.calls.map(([, type]) => type);
+      expect(types).toEqual(['browser', 'api']);
+    } finally {
+      setupSpy.mockRestore();
+    }
   });
 
   describe('with HTTPS endpoint', () => {
