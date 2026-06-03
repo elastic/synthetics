@@ -32,7 +32,12 @@ import {
 } from 'playwright-core';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
-import { Driver, NetworkConditions, RunOptions } from '../common_types';
+import {
+  APIDriver,
+  Driver,
+  NetworkConditions,
+  RunOptions,
+} from '../common_types';
 
 // Default timeout for Playwright actions and Navigations
 const DEFAULT_TIMEOUT = 50000;
@@ -71,9 +76,19 @@ export class Gatherer {
     });
   }
 
-  static async setupDriver(options: RunOptions): Promise<Driver> {
-    await Gatherer.launchBrowser(options);
+  static async setupDriver<T extends 'browser' | 'api' = 'browser'>(
+    options: RunOptions,
+    journeyType: T = 'browser' as T
+  ): Promise<T extends 'api' ? APIDriver : Driver> {
     const { playwrightOptions } = options;
+
+    if (journeyType === 'api') {
+      const request = await apiRequest.newContext({ ...playwrightOptions });
+      return { request } as T extends 'api' ? APIDriver : Driver;
+    }
+
+    await Gatherer.launchBrowser(options);
+
     const context = await Gatherer.browser.newContext({
       ...playwrightOptions,
       userAgent: await Gatherer.getUserAgent(playwrightOptions?.userAgent),
@@ -96,7 +111,13 @@ export class Gatherer {
     const page = await context.newPage();
     const client = await context.newCDPSession(page);
     const request = await apiRequest.newContext({ ...playwrightOptions });
-    return { browser: Gatherer.browser, context, page, client, request };
+    return {
+      browser: Gatherer.browser,
+      context,
+      page,
+      client,
+      request,
+    } as T extends 'api' ? APIDriver : Driver;
   }
 
   static async getUserAgent(userAgent?: string) {
@@ -136,14 +157,25 @@ export class Gatherer {
    * Starts recording all events related to the v8 devtools protocol
    * https://chromedevtools.github.io/devtools-protocol/v8/
    */
-  static async beginRecording(driver: Driver, options: RunOptions) {
+  static async beginRecording(driver: Driver | APIDriver, options: RunOptions) {
     log('Gatherer: started recording');
     const { network, metrics } = options;
     Gatherer.pluginManager = new PluginManager(driver);
     Gatherer.pluginManager.registerAll(options);
-    const plugins = [await Gatherer.pluginManager.start('browserconsole')];
-    network && plugins.push(await Gatherer.pluginManager.start('network'));
-    metrics && plugins.push(await Gatherer.pluginManager.start('performance'));
+    const plugins = [];
+    if ('browser' in driver) {
+      plugins.push(await Gatherer.pluginManager.start('browserconsole'));
+      network && plugins.push(await Gatherer.pluginManager.start('network'));
+      metrics &&
+        plugins.push(await Gatherer.pluginManager.start('performance'));
+    } else {
+      /**
+       * API journeys only produce network traffic. Network capture is the
+       * only data source for the reporter, so it is always enabled
+       * regardless of `options.network`.
+       */
+      plugins.push(await Gatherer.pluginManager.start('network'));
+    }
     await Promise.all(plugins);
     return Gatherer.pluginManager;
   }
@@ -153,10 +185,12 @@ export class Gatherer {
     await Gatherer.pluginManager.unregisterAll();
   }
 
-  static async dispose(driver: Driver) {
+  static async dispose(driver: Driver | APIDriver) {
     log(`Gatherer: closing all contexts`);
     await driver.request.dispose();
-    await driver.context.close();
+    if ('context' in driver) {
+      await driver.context.close();
+    }
   }
 
   static async stop() {

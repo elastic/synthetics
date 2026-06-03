@@ -24,6 +24,10 @@
  */
 
 import {
+  APIJourney,
+  APIJourneyCallback,
+  APIJourneyOptions,
+  APIJourneyWithAnnotations,
   Journey,
   JourneyCallback,
   JourneyOptions,
@@ -59,6 +63,30 @@ const createJourney = (type?: 'skip' | 'only') =>
 export const journey = createJourney() as JourneyWithAnnotations;
 journey.skip = createJourney('skip');
 journey.only = createJourney('only');
+
+const createAPIJourney = (type?: 'skip' | 'only') =>
+  wrapFnWithLocation(
+    (
+      location: Location,
+      options: APIJourneyOptions | string,
+      callback: APIJourneyCallback
+    ) => {
+      log(`API Journey register: ${JSON.stringify(options)}`);
+      if (typeof options === 'string') {
+        options = { name: options, id: options };
+      }
+      const j = new APIJourney(options, callback, location);
+      if (type) {
+        j[type] = true;
+      }
+      runner._addJourney(j);
+      return j;
+    }
+  );
+
+export const apiJourney = createAPIJourney() as APIJourneyWithAnnotations;
+apiJourney.skip = createAPIJourney('skip');
+apiJourney.only = createAPIJourney('only');
 
 const createStep = (type?: 'skip' | 'soft' | 'only') =>
   wrapFnWithLocation(
