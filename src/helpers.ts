@@ -37,7 +37,9 @@ import {
   Location,
   ThrottlingOptions,
   ProxySettings,
+  CertificateAuthorities,
 } from './common_types';
+import { buildCABundle } from './core/certs';
 import micromatch from 'micromatch';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import { EnvHttpProxyAgent } from 'undici';
@@ -408,7 +410,18 @@ export function tagsMatch(tags, pattern) {
   return matchess.length > 0;
 }
 
-export function setGlobalProxy(opts: ProxySettings) {
+export function setGlobalProxy(
+  opts: ProxySettings,
+  certificateAuthorities?: CertificateAuthorities
+) {
+  /**
+   * Trust the user provided CAs (in addition to the public roots) when talking
+   * to the end server e.g. a Kibana instance behind an internal CA. The
+   * `NODE_EXTRA_CA_CERTS` environment variable is honored by undici out of the
+   * box and keeps working alongside this.
+   */
+  const ca = buildCABundle(certificateAuthorities);
+
   // Create proxy agent if options exist, if not attempt to load env proxy
   const proxyAgent = opts.uri
     ? new ProxyAgent({
@@ -419,8 +432,10 @@ export function setGlobalProxy(opts: ProxySettings) {
           cert: opts.cert ?? null,
           rejectUnauthorized: !opts.noVerify,
         },
+        // TLS settings used for the request to the end server (through the proxy)
+        requestTls: ca ? { ca } : undefined,
       })
-    : new EnvHttpProxyAgent();
+    : new EnvHttpProxyAgent(ca ? { connect: { ca } } : undefined);
 
   setGlobalDispatcher(proxyAgent);
 }
