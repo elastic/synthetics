@@ -24,6 +24,7 @@
  */
 
 import { X509Certificate, createHash } from 'crypto';
+import { rootCertificates } from 'tls';
 import { CertificateAuthorities } from '../common_types';
 
 const PEM_CERTIFICATE_RE =
@@ -89,4 +90,19 @@ export function getSpkiFingerprints(ca?: CertificateAuthorities): string[] {
     }
   }
   return [...fingerprints];
+}
+
+/**
+ * Produce a CA bundle suitable for Node/undici TLS clients. The user supplied
+ * authorities are appended to Node's built-in root certificates so trusting an
+ * internal CA never silently drops trust for publicly signed endpoints.
+ */
+export function buildCABundle(
+  ca?: CertificateAuthorities
+): string[] | undefined {
+  const extra = normalizeCertificateAuthorities(ca);
+  if (extra.length === 0) {
+    return undefined;
+  }
+  return [...rootCertificates, ...extra];
 }

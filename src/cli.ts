@@ -257,7 +257,7 @@ program
       )) as PushOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
 
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
@@ -337,7 +337,7 @@ program
       })) as RunOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,

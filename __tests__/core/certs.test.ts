@@ -25,7 +25,9 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { rootCertificates } from 'tls';
 import {
+  buildCABundle,
   getSpkiFingerprint,
   getSpkiFingerprints,
   normalizeCertificateAuthorities,
@@ -121,6 +123,19 @@ describe('certs', () => {
           '-----BEGIN CERTIFICATE-----\nnope\n-----END CERTIFICATE-----'
         )
       ).toEqual([]);
+    });
+  });
+
+  describe('buildCABundle', () => {
+    it('returns undefined when no CA is provided', () => {
+      expect(buildCABundle(undefined)).toBeUndefined();
+      expect(buildCABundle([])).toBeUndefined();
+    });
+
+    it('appends the provided CA to the built-in roots', () => {
+      const bundle = buildCABundle(localhostCA);
+      expect(bundle).toHaveLength(rootCertificates.length + 1);
+      expect(bundle).toContain(localhostCA);
     });
   });
 });
