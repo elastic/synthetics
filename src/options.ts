@@ -28,6 +28,7 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
+import { normalizeCertificateAuthorities } from './core/certs';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -102,6 +103,19 @@ export async function normalizeOptions(
   options.proxy = Object.freeze(
     merge(config?.proxy ?? {}, cliArgs?.proxy || {})
   );
+
+  /**
+   * Merge custom certificate authorities from the Synthetics config and the
+   * CLI. Each entry can be inline PEM content or a path to a PEM file that we
+   * resolve here so downstream consumers only ever deal with PEM strings.
+   */
+  const certificateAuthorities = [
+    ...normalizeCertificateAuthorities(config.certificateAuthorities),
+    ...normalizeCertificateAuthorities(cliArgs.certificateAuthorities),
+  ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
+  options.certificateAuthorities = certificateAuthorities.length
+    ? certificateAuthorities
+    : undefined;
 
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
@@ -265,6 +279,11 @@ export function getCommonCommandOpts() {
     "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
   );
 
+  const certificateAuthorities = createOption(
+    '--certificate-authorities <pathOrPem...>',
+    'One or more trusted CA certificates, each provided as inline PEM content or a path to a PEM file. Lets browser monitors and the CLI trust internal/private CAs without rebuilding the agent image.'
+  );
+
   return {
     auth,
     authMandatory,
@@ -276,6 +295,7 @@ export function getCommonCommandOpts() {
     match,
     fields,
     maintenanceWindows,
+    certificateAuthorities,
   };
 }
 
