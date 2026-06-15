@@ -99,12 +99,15 @@ describe('APINetworkManager', () => {
     expect(results[0].request.bytes).toBeGreaterThanOrEqual(expectedReqBody);
   });
 
-  it('does not probe TLS for plain HTTP (no securityDetails)', async () => {
+  it('captures remote address but no securityDetails for plain HTTP', async () => {
     await mgr.start();
     await request.get(`${server.PREFIX}/hello`);
     const results = await mgr.stop();
+    // Non-HTTPS responses resolve `securityDetails()` to null.
     expect(results[0].response.securityDetails).toBeUndefined();
-    expect(results[0].response.remoteIPAddress).toBeUndefined();
+    // `serverAddr()` still reports the destination address over plain HTTP.
+    expect(results[0].response.remoteIPAddress).toBeDefined();
+    expect(results[0].response.remotePort).toBeDefined();
   });
 
   it('captures HTTP methods passed via request.fetch options.method', async () => {
