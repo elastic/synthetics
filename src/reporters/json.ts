@@ -138,11 +138,13 @@ function getMetadata() {
 }
 
 function formatTLS(tls: SecurityDetails) {
-  if (!tls || !tls.protocol) {
+  // For invalid-cert navigations (e.g. expired certs) the handshake may not
+  // expose a protocol, but the cert dates are still captured and are what the
+  // TLS-expiry alert needs, so we emit the x509 block whenever we have them.
+  if (!tls || (!tls.protocol && tls.validTo == null)) {
     return;
   }
-  const [name, version] = tls.protocol.toLowerCase().split(' ');
-  return {
+  const result: Record<string, unknown> = {
     server: {
       x509: {
         issuer: {
@@ -151,13 +153,23 @@ function formatTLS(tls: SecurityDetails) {
         subject: {
           common_name: tls.subjectName,
         },
-        not_after: new Date(tls.validTo * 1000).toISOString(),
-        not_before: new Date(tls.validFrom * 1000).toISOString(),
+        not_after:
+          tls.validTo != null
+            ? new Date(tls.validTo * 1000).toISOString()
+            : undefined,
+        not_before:
+          tls.validFrom != null
+            ? new Date(tls.validFrom * 1000).toISOString()
+            : undefined,
       },
     },
-    version_protocol: name,
-    version,
   };
+  if (tls.protocol) {
+    const [name, version] = tls.protocol.toLowerCase().split(' ');
+    result.version_protocol = name;
+    result.version = version;
+  }
+  return result;
 }
 
 /**

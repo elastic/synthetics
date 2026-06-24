@@ -79,6 +79,27 @@ describe('network', () => {
     });
   });
 
+  it('capture tls details for invalid-cert navigation', async () => {
+    const tlsServer = await Server.create({ tls: true });
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager(driver);
+    await network.start();
+    // Self-signed cert fails validation (ERR_CERT_AUTHORITY_INVALID) so no CDP
+    // response carries securityDetails; we expect it from the Security domain.
+    await driver.page.goto(tlsServer.TEST_PAGE).catch(() => {});
+    await delay(100);
+    const netinfo = await network.stop();
+    await Gatherer.stop();
+    await tlsServer.close();
+
+    const navEntry = netinfo.find(ni => ni.isNavigationRequest);
+    expect(navEntry).toBeDefined();
+    expect(navEntry.response.securityDetails).toMatchObject({
+      validTo: expect.any(Number),
+      validFrom: expect.any(Number),
+    });
+  });
+
   it('not include data URL in network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);

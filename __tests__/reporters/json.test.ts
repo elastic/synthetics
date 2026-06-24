@@ -194,6 +194,32 @@ describe('json reporter', () => {
     }
   });
 
+  it('emits tls block for invalid-cert navigations without protocol', async () => {
+    const network = {
+      ...NETWORK_INFO[0],
+      response: {
+        ...NETWORK_INFO[0].response,
+        securityDetails: {
+          issuer: 'BadSSL',
+          subjectName: '*.badssl.com',
+          validFrom: 1428897600,
+          validTo: 1492056000,
+        },
+      },
+    };
+    const { ecs } = formatNetworkFields(network as any);
+    expect(ecs.tls).toEqual({
+      server: {
+        x509: {
+          issuer: { common_name: 'BadSSL' },
+          subject: { common_name: '*.badssl.com' },
+          not_after: new Date(1492056000 * 1000).toISOString(),
+          not_before: new Date(1428897600 * 1000).toISOString(),
+        },
+      },
+    });
+  });
+
   it('redact sensitive req/response headers', async () => {
     expect(
       redactKeys({
