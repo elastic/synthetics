@@ -425,8 +425,10 @@ export function parseSchedule(schedule: string) {
   const duration = schedule.substring(EVERY_SYNTAX.length + 1);
   // split between non-digit (\D) and a digit (\d)
   const durations = duration.split(/(?<=\D)(?=\d)/g);
-  let minutes = 0;
-  let seconds = 0;
+  // Accumulate everything as seconds so the same total duration maps to the
+  // same schedule regardless of the units it was expressed in
+  // (e.g. `1m59s` and `119s`).
+  let totalSeconds = 0;
   for (const dur of durations) {
     // split between a digit and non-digit
     const [value, format] = dur.split(/(?<=\d)(?=\D)/g);
@@ -434,33 +436,32 @@ export function parseSchedule(schedule: string) {
     const scheduleValue = parseInt(value, 10);
     switch (format) {
       case 's':
-        if (scheduleValue < 60) {
-          seconds += scheduleValue;
-        } else {
-          minutes += Math.round(scheduleValue / 60);
-        }
+        totalSeconds += scheduleValue;
         break;
       case 'm':
-        minutes += scheduleValue;
+        totalSeconds += scheduleValue * 60;
         break;
       case 'h':
-        minutes += scheduleValue * 60;
+        totalSeconds += scheduleValue * 60 * 60;
         break;
       case 'd':
-        minutes += scheduleValue * 24 * 60;
+        totalSeconds += scheduleValue * 24 * 60 * 60;
         break;
     }
   }
-  return nearestSchedule(minutes, seconds);
+  return nearestSchedule(totalSeconds);
 }
 
 // Find the nearest schedule that is supported by the platform
 // from the parsed schedule value
-function nearestSchedule(minutes: number, seconds: number) {
-  if (seconds > 0 && minutes === 0) {
+function nearestSchedule(totalSeconds: number) {
+  if (totalSeconds < 60) {
     // we allow only 10 and 30 seconds, return the nearest one
-    return seconds < 20 ? '10s' : '30s';
+    return totalSeconds < 20 ? '10s' : '30s';
   }
+  // Round to the nearest whole minute, breaking ties downward (e.g. `2m30s`
+  // stays at 2m) so the matched schedule never overshoots the requested cadence.
+  const minutes = Math.ceil((totalSeconds - 30) / 60);
   let nearest: typeof ALLOWED_SCHEDULES[number] = ALLOWED_SCHEDULES[0];
   let prev = Math.abs(nearest - minutes);
   for (let i = 1; i < ALLOWED_SCHEDULES.length; i++) {
