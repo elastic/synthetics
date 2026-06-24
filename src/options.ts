@@ -98,6 +98,7 @@ export async function normalizeOptions(
     ignoreHTTPSErrors:
       cliArgs.ignoreHttpsErrors ?? playwrightOpts?.ignoreHTTPSErrors,
   };
+  validateClientCertificates(options.playwrightOptions.clientCertificates);
 
   options.proxy = Object.freeze(
     merge(config?.proxy ?? {}, cliArgs?.proxy || {})
@@ -277,6 +278,46 @@ export function getCommonCommandOpts() {
     fields,
     maintenanceWindows,
   };
+}
+
+/**
+ * Validate the structure of `clientCertificates` entries early so misconfigured
+ * monitors fail with a clear message instead of an opaque browser startup crash
+ * (or, for malformed shapes, an Elastic Agent panic during config transpilation).
+ * See https://github.com/elastic/synthetics/issues/1123
+ *
+ * Only the shape is validated here; file existence and PEM validity are surfaced
+ * at runtime by Playwright when the browser context is created.
+ */
+export function validateClientCertificates(
+  clientCertificates: unknown,
+  source = 'playwrightOptions.clientCertificates'
+) {
+  if (clientCertificates == null) {
+    return;
+  }
+  if (!Array.isArray(clientCertificates)) {
+    throw new Error(`${source} must be an array of certificate entries.`);
+  }
+  clientCertificates.forEach((entry, index) => {
+    const at = `${source}[${index}]`;
+    if (entry == null || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`${at} must be an object.`);
+    }
+    if (!entry.origin || typeof entry.origin !== 'string') {
+      throw new Error(
+        `${at} must specify an "origin" (the exact request origin the client certificate applies to).`
+      );
+    }
+    const hasCertAndKey =
+      (entry.cert || entry.certPath) && (entry.key || entry.keyPath);
+    const hasPfx = Boolean(entry.pfx || entry.pfxPath);
+    if (!hasCertAndKey && !hasPfx) {
+      throw new Error(
+        `${at} must provide a certificate via "cert"/"certPath" together with "key"/"keyPath", or via "pfx"/"pfxPath".`
+      );
+    }
+  });
 }
 
 export function parsePlaywrightOptions(playwrightOpts: string) {
