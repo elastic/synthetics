@@ -193,6 +193,56 @@ describe('options', () => {
     });
   });
 
+  describe('clientCertificates validation (#1123)', () => {
+    const withCerts = (clientCertificates: any) =>
+      normalizeOptions(
+        { playwrightOptions: { clientCertificates } } as CliArgs,
+        'run'
+      );
+
+    it('rejects an empty clientCertificates entry', async () => {
+      await expect(withCerts([{}])).rejects.toThrow(/clientCertificates/);
+    });
+
+    it('rejects entries without an origin', async () => {
+      await expect(
+        withCerts([{ cert: Buffer.from('c'), key: Buffer.from('k') }])
+      ).rejects.toThrow(/origin/);
+    });
+
+    it('rejects entries without any certificate material', async () => {
+      await expect(
+        withCerts([{ origin: 'https://test.example.com' }])
+      ).rejects.toThrow(/cert|pfx/);
+    });
+
+    it('accepts a valid inline clientCertificates entry', async () => {
+      await expect(
+        withCerts([
+          {
+            origin: 'https://test.example.com',
+            cert: Buffer.from('c'),
+            key: Buffer.from('k'),
+          },
+        ])
+      ).resolves.toMatchObject({
+        playwrightOptions: { clientCertificates: expect.any(Array) },
+      });
+    });
+
+    it('accepts a structurally valid path-based entry (existence checked at runtime)', async () => {
+      await expect(
+        withCerts([
+          {
+            origin: 'https://test.example.com',
+            certPath: '/etc/mtls/cert.crt',
+            keyPath: '/etc/mtls/cert.key',
+          },
+        ])
+      ).resolves.toBeDefined();
+    });
+  });
+
   describe('parseFileOption', () => {
     it('parses file', () => {
       expect(

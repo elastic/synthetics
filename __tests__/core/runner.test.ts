@@ -138,6 +138,26 @@ describe('runner', () => {
     });
   });
 
+  it('run journey - surfaces startup error instead of masking it (#1123)', async () => {
+    // Simulate browser/context startup (e.g. bad clientCertificates) failing
+    // before recording starts, which leaves Gatherer.pluginManager uninitialized.
+    Gatherer.pluginManager = undefined as any;
+    const startupError = new Error('client certificate startup failure');
+    const setupSpy = jest
+      .spyOn(Gatherer, 'setupDriver')
+      .mockRejectedValue(startupError);
+    try {
+      const j1 = new Journey({ name: 'startup-fail' }, noop);
+      const result = await runner._runJourney(j1, defaultRunOptions);
+      expect(result).toMatchObject({
+        status: 'failed',
+        error: startupError,
+      });
+    } finally {
+      setupSpy.mockRestore();
+    }
+  });
+
   it('run journey - with hooks', async () => {
     const journey = new Journey({ name: 'with hooks' }, noop);
     journey._addHook('before', noop);

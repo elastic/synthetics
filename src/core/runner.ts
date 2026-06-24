@@ -333,25 +333,31 @@ export default class Runner implements RunnerInfo {
     result: JourneyResult,
     options: RunOptions
   ) {
-    // Enhance the journey results
-    const pOutput = await Gatherer.pluginManager.output();
-    const bConsole = filterBrowserMessages(
-      pOutput.browserconsole,
-      journey.status
-    );
+    // When browser/context startup fails before recording begins (e.g. invalid
+    // clientCertificates), the plugin manager and driver are never initialized.
+    // Guard against that so the original startup error surfaces instead of being
+    // masked by a cleanup crash. See https://github.com/elastic/synthetics/issues/1123
+    const pOutput = await Gatherer.pluginManager?.output();
+    const bConsole = pOutput
+      ? filterBrowserMessages(pOutput.browserconsole, journey.status)
+      : undefined;
     await this.#reporter?.onJourneyEnd?.(journey, {
       browserDelay: this.#browserDelay,
       timestamp: getTimestamp(),
       options,
-      networkinfo: pOutput.networkinfo,
+      networkinfo: pOutput?.networkinfo,
       browserconsole: bConsole,
     });
-    await Gatherer.endRecording();
-    await Gatherer.dispose(this.#driver);
+    if (Gatherer.pluginManager) {
+      await Gatherer.endRecording();
+    }
+    if (this.#driver) {
+      await Gatherer.dispose(this.#driver);
+    }
     // clear screenshots cache after each journey
     await rm(this.#screenshotPath, { recursive: true, force: true });
     return Object.assign(result, {
-      networkinfo: pOutput.networkinfo,
+      networkinfo: pOutput?.networkinfo,
       browserconsole: bConsole,
       ...journey,
     });
