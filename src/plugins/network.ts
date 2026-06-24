@@ -23,11 +23,58 @@
  *
  */
 
+import { connect as tlsConnect, PeerCertificate } from 'tls';
 import { Frame, Page, Request, Response } from 'playwright-core';
-import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
+import {
+  NetworkInfo,
+  BrowserInfo,
+  Driver,
+  SecurityDetails,
+} from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
+
+/**
+ * Chromium network errors that indicate the navigation failed during TLS
+ * certificate validation. For these, Chromium fires `Network.loadingFailed`
+ * instead of a response, so no `securityDetails` is captured and we recover the
+ * certificate via a direct TLS probe.
+ */
+const CERTIFICATE_ERROR = /ERR_CERT|ERR_SSL/;
+
+const CERT_PROBE_TIMEOUT = 5000;
+
+/**
+ * Node returns protocols as e.g. `TLSv1.3`, while the CDP `securityDetails`
+ * (and downstream `formatTLS`) expect the `TLS 1.3` form.
+ */
+function normalizeProtocol(protocol?: string): string | undefined {
+  if (!protocol) return undefined;
+  const match = protocol.match(/^TLSv([\d.]+)$/);
+  return match ? `TLS ${match[1]}` : protocol;
+}
+
+function toEpochSeconds(value?: string): number | undefined {
+  if (!value) return undefined;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000);
+}
+
+function toSecurityDetails(
+  cert: PeerCertificate,
+  protocol: string | null
+): SecurityDetails | undefined {
+  // An empty object is returned when no peer certificate is available.
+  if (!cert || !cert.valid_to) return undefined;
+  return {
+    protocol: normalizeProtocol(protocol ?? undefined),
+    issuer: cert.issuer?.CN,
+    subjectName: cert.subject?.CN,
+    validFrom: toEpochSeconds(cert.valid_from),
+    validTo: toEpochSeconds(cert.valid_to),
+  };
+}
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -67,6 +114,20 @@ type RequestWithEntry = Request & {
 export class NetworkManager {
   private _browser: BrowserInfo;
   private _barrierPromises = new Set<Promise<void>>();
+  /**
+   * In-flight TLS probes used to recover certificate details for navigations
+   * that fail cert validation. Awaited (with per-probe timeouts) on stop so the
+   * details are present before the results are reported.
+   */
+  private _certProbes = new Set<Promise<void>>();
+  /**
+   * Memoizes the TLS probe per origin so multiple failed requests to the same
+   * host trigger only one outbound connection.
+   */
+  private _certProbeCache = new Map<
+    string,
+    Promise<SecurityDetails | undefined>
+  >();
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
 
@@ -285,6 +346,8 @@ export class NetworkManager {
     networkEntry.timings.receive = receive;
     this._calcTotalTime(networkEntry, timing);
 
+    this._maybeAttachCertDetails(request, networkEntry);
+
     // For aborted/failed requests sizes will not be present
     if (timing.startTime <= 0) {
       return;
@@ -308,6 +371,89 @@ export class NetworkManager {
         };
       })
     );
+  }
+
+  /**
+   * Navigations that fail TLS validation never produce a CDP response, so the
+   * usual `response.securityDetails` path captures nothing. Recover the cert
+   * from the Security domain so a `tls` block is still emitted (e.g. so the
+   * browser TLS-expiry alert can fire on already-expired certs).
+   */
+  private _maybeAttachCertDetails(request: Request, networkEntry: NetworkInfo) {
+    const failure = request.failure();
+    if (
+      !failure ||
+      networkEntry.response.securityDetails ||
+      !CERTIFICATE_ERROR.test(failure.errorText)
+    ) {
+      return;
+    }
+    const probe = this._probeCertificate(networkEntry.url).then(details => {
+      if (details) networkEntry.response.securityDetails = details;
+    });
+    this._certProbes.add(probe);
+    probe.finally(() => this._certProbes.delete(probe));
+  }
+
+  /**
+   * Opens a TLS connection (without verifying the cert) purely to read the peer
+   * certificate. This recovers cert details for hosts the browser refused to
+   * connect to due to an invalid cert.
+   */
+  private _probeCertificate(
+    urlString: string
+  ): Promise<SecurityDetails | undefined> {
+    let url: URL;
+    try {
+      url = new URL(urlString);
+    } catch (_) {
+      return Promise.resolve(undefined);
+    }
+    if (url.protocol !== 'https:') return Promise.resolve(undefined);
+
+    const origin = url.origin;
+    const cached = this._certProbeCache.get(origin);
+    if (cached) return cached;
+
+    const probe = new Promise<SecurityDetails | undefined>(resolve => {
+      let settled = false;
+      const done = (details?: SecurityDetails) => {
+        if (settled) return;
+        settled = true;
+        resolve(details);
+      };
+      try {
+        const socket = tlsConnect(
+          {
+            host: url.hostname,
+            port: url.port ? Number(url.port) : 443,
+            servername: url.hostname,
+            rejectUnauthorized: false,
+            timeout: CERT_PROBE_TIMEOUT,
+          },
+          () => {
+            const details = toSecurityDetails(
+              socket.getPeerCertificate(),
+              socket.getProtocol()
+            );
+            socket.end();
+            done(details);
+          }
+        );
+        socket.once('error', () => {
+          socket.destroy();
+          done();
+        });
+        socket.once('timeout', () => {
+          socket.destroy();
+          done();
+        });
+      } catch (_) {
+        done();
+      }
+    });
+    this._certProbeCache.set(origin, probe);
+    return probe;
   }
 
   /**
@@ -348,11 +494,18 @@ export class NetworkManager {
     if (this._barrierPromises.size > 0) {
       log(`Plugins: dropping ${this._barrierPromises.size} network events`);
     }
+    // Cert probes are bounded by their own timeout, so awaiting them here is
+    // safe and ensures recovered TLS details are present in the results.
+    if (this._certProbes.size > 0) {
+      await Promise.allSettled(this._certProbes);
+    }
     const context = this.driver.context;
     context.off('request', this._onRequest.bind(this));
     context.off('response', this._onResponse.bind(this));
     context.off('requestfinished', this._onRequestCompleted.bind(this));
     context.off('requestfailed', this._onRequestCompleted.bind(this));
+    this._certProbes.clear();
+    this._certProbeCache.clear();
     this._barrierPromises.clear();
     log(`Plugins: stopped collecting network events`);
     return this.results;
