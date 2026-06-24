@@ -128,6 +128,9 @@ describe('Monitors', () => {
     expect(parseSchedule('@every 4s')).toBe('10s');
     expect(parseSchedule('@every 40s')).toBe('30s');
     expect(parseSchedule('@every 70s')).toBe(1);
+    // same total duration must coerce to the same schedule regardless of unit
+    expect(parseSchedule('@every 1m59s')).toBe(parseSchedule('@every 119s'));
+    expect(parseSchedule('@every 119s')).toBe(2);
     expect(parseSchedule('@every 121s')).toBe(2);
     expect(parseSchedule('@every 1m')).toBe(1);
     expect(parseSchedule('@every 2m30s')).toBe(2);
