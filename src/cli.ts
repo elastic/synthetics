@@ -142,6 +142,10 @@ program
     'Turns off default network throttling.',
     parseThrottling
   )
+  .option(
+    '--outputDir <outputDir>',
+    'output directory for screenshots and videos'
+  )
   .addOption(playwrightOpts)
   .version(version)
   .description('Run synthetic tests')

@@ -34,7 +34,7 @@ export type TraceOptions = {
 };
 
 /**
- * Custom Tracer that listenes for events from specified categories
+ * Custom Tracer that listens for events from specified categories
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  */
 export class Tracing {

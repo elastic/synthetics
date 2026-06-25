@@ -3,10 +3,10 @@
 exports[`base reporter render hook errors without steps 1`] = `
 "
 Journey: j1
-   
+
    Error: before hook failed
 
-No tests found! (0 ms) 
+No tests found! (0 ms)
 
 "
 `;
@@ -15,11 +15,11 @@ exports[`base reporter writes each step to the FD 1`] = `
 "
 Journey: j1
    ✖  Step: 's1' failed (1000 ms)
-   
+
    Error: step failed
 
 
- 1 failed (0 ms) 
+ 1 failed (0 ms)
 
 "
 `;

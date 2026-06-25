@@ -39,6 +39,7 @@ export type ReporterOptions = {
   fd?: number;
   colors?: boolean;
   dryRun?: boolean;
+  outputDir?: string;
 };
 export type BuiltInReporterName =
   | 'default'

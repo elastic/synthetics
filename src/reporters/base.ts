@@ -34,6 +34,8 @@ import {
   JourneyStartResult,
   StepResult,
 } from '../common_types';
+import path, { join } from 'path';
+import fs from 'fs';
 
 export function renderDuration(durationMs) {
   return parseInt(durationMs);
@@ -42,6 +44,7 @@ export function renderDuration(durationMs) {
 export default class BaseReporter implements Reporter {
   stream: SonicBoom;
   fd: number;
+  outputDir: string;
   dryRun: boolean;
   metrics = {
     succeeded: 0,
@@ -53,6 +56,7 @@ export default class BaseReporter implements Reporter {
   constructor(options: ReporterOptions = {}) {
     this.fd = options.fd || process.stdout.fd;
     this.dryRun = options.dryRun ?? false;
+    this.outputDir = options.outputDir;
     /**
      * minLength is set to 1 byte to make sure we flush the
      * content even if its the last byte on the stream buffer
@@ -70,8 +74,9 @@ export default class BaseReporter implements Reporter {
     this.write(`\nJourney: ${journey.name}`);
   }
 
-  onStepEnd(_: Journey, step: Step, {}: StepResult) {
+  onStepEnd(journey: Journey, step: Step, {}: StepResult) {
     const { status, error } = step;
+    const monitor = journey._getMonitor();
     const message = `${symbols[status]}  Step: '${step.name}' ${status} ${gray(
       '(' + renderDuration(step.duration * 1000) + ' ms)'
     )}`;
@@ -80,11 +85,26 @@ export default class BaseReporter implements Reporter {
       const message = renderError(serializeError(error));
       this.write(indent(message) + '\n');
     }
+    const screenshotOpt = monitor.config.screenshot ?? 'on';
+
+    const whenFailed =
+      screenshotOpt === 'only-on-failure' && status === 'failed';
+
+    const pth = this.outputDir
+      ? `${this.outputDir}/${journey.name}`
+      : `.screenshots/${journey.name}/`;
+    const filePath = path.resolve(`${pth}/${step.name}.jpg`);
+
+    const encodedPath = filePath.replace(/ /g, '%20'); // Encode spaces
+    const formattedPath = `\x1b]8;;file://${encodedPath}\x1b\\${filePath}\x1b]8;;\x1b\\`;
+
+    if (screenshotOpt === 'on' || whenFailed) {
+      this.write(indent(cyan(`  Screenshot: (${formattedPath})`)));
+    }
     this.metrics[status]++;
   }
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  onJourneyEnd(journey: Journey, {}: JourneyEndResult) {
+  async onJourneyEnd(journey: Journey, { attachments }: JourneyEndResult) {
     const { failed, succeeded, skipped } = this.metrics;
     const total = failed + succeeded + skipped;
     /**
@@ -94,6 +114,20 @@ export default class BaseReporter implements Reporter {
     if (total === 0 && journey.error) {
       const message = renderError(serializeError(journey.error));
       this.write(indent(message) + '\n');
+    }
+
+    if (this.outputDir) {
+      const basePath = `${this.outputDir}/${journey.name}`;
+      await fs.promises.mkdir(basePath, {
+        recursive: true,
+      });
+
+      for (const attachment of attachments) {
+        const { name, body } = attachment;
+        await fs.promises.writeFile(join(basePath, `${name}.jpg`), body, {
+          encoding: 'base64',
+        });
+      }
     }
   }
 
