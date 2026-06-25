@@ -32,6 +32,7 @@ import {
 } from 'playwright-core';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
+import { getSpkiFingerprints } from './certs';
 import { Driver, NetworkConditions, RunOptions } from '../common_types';
 
 // Default timeout for Playwright actions and Navigations
@@ -56,10 +57,32 @@ export class Gatherer {
       log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
       Gatherer.browser = await chromium.connect(wsEndpoint);
     } else {
+      /**
+       * Chromium on Linux trusts its own NSS store rather than the system CA
+       * store, so internal/private CAs are rejected even when present on the
+       * host. Pin the SPKI fingerprints of the user provided CAs so Chromium
+       * trusts certificates issued by them without disabling validation for
+       * every other endpoint (unlike `ignoreHTTPSErrors`).
+       */
+      const spkiFingerprints = getSpkiFingerprints(
+        options.certificateAuthorities
+      );
+      if (spkiFingerprints.length > 0) {
+        log(
+          `Gatherer: trusting ${spkiFingerprints.length} custom certificate authority public key(s)`
+        );
+      }
       Gatherer.browser = await chromium.launch({
         ...playwrightOptions,
         args: [
           ...(playwrightOptions?.headless ? ['--disable-gpu'] : []),
+          ...(spkiFingerprints.length > 0
+            ? [
+                `--ignore-certificate-errors-spki-list=${spkiFingerprints.join(
+                  ','
+                )}`,
+              ]
+            : []),
           ...(playwrightOptions?.args ?? []),
         ],
       });

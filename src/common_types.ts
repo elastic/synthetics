@@ -208,6 +208,14 @@ type GrepOptions = {
   match?: string;
 };
 
+/**
+ * Custom certificate authorities (PEM content or Buffer, optionally an array)
+ * that browser monitors and the CLI should trust in addition to the public
+ * roots. Used to support internal / private CAs without rebuilding the agent
+ * image.
+ */
+export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
@@ -217,6 +225,7 @@ type BaseArgs = {
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
+  certificateAuthorities?: CertificateAuthorities;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: MonitorConfig['throttling'];
@@ -289,6 +298,7 @@ export type SyntheticsConfig = {
   monitor?: MonitorConfig;
   project?: ProjectSettings;
   proxy?: ProxySettings;
+  certificateAuthorities?: CertificateAuthorities;
 };
 
 /** Runner Payload types */
