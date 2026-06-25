@@ -30,7 +30,7 @@ import { join } from 'path';
 import { generateTempPath } from '../../src/helpers';
 import { Bundler } from '../../src/push/bundler';
 
-const PROJECT_DIR = join(__dirname, 'test-bundler');
+const PROJECT_DIR = join(__dirname, 'test-bundler-zip');
 const journeyFile = join(PROJECT_DIR, 'bundle.journey.ts');
 
 const setup = async () => {
@@ -66,7 +66,7 @@ async function validateZip(content) {
   const partialPath = join(
     '__tests__',
     'push',
-    'test-bundler',
+    'test-bundler-zip',
     'bundle.journey.ts'
   );
   const decoded = Buffer.from(content, 'base64');
