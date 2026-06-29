@@ -4,6 +4,10 @@ export default env => {
   const config: SyntheticsConfig = {
     params: {
       url: 'https://elastic.github.io/synthetics-demo/',
+      // Used by the API journey examples. jsonplaceholder is a free,
+      // stable public test API — replace with your own service when
+      // adapting these examples.
+      apiUrl: 'https://jsonplaceholder.typicode.com',
     },
     playwrightOptions: {
       ignoreHTTPSErrors: false,
