@@ -27,7 +27,7 @@ import { APIRequestContext, APIResponse } from 'playwright-core';
 import { NetworkInfo, APIDriver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
+import { getTimestamp, now } from '../helpers';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -40,11 +40,8 @@ function epochTimeInSeconds() {
 
 const roundMilliSecs = (ms: number): number => Math.floor(ms * 1000) / 1000;
 
-/**
- * Playwright's `APIRequestContext.get/post/put/delete/patch/head` are
- * thin wrappers that funnel into `fetch(urlOrRequest, options)`, so we
- * only need to intercept `fetch` to capture every request exactly once.
- */
+// All `APIRequestContext` verbs funnel into `fetch`, so patching `fetch`
+// alone captures every request exactly once.
 type RequestLike = string | { url(): string };
 
 function normalizeUrl(urlOrRequest: RequestLike): string {
@@ -56,12 +53,7 @@ function normalizeUrl(urlOrRequest: RequestLike): string {
   }
 }
 
-/**
- * Best-effort byte size for a request body. Playwright accepts
- * `data` (string/Buffer/object), `form` (record), `multipart` (record)
- * and `postData` (Buffer/string). For unknown shapes we return 0 rather
- * than guess.
- */
+// Best-effort request body size; returns 0 for shapes we can't measure.
 function bodyBytes(body: unknown): number {
   if (body == null) return 0;
   if (typeof body === 'string') return Buffer.byteLength(body);
@@ -77,10 +69,7 @@ function bodyBytes(body: unknown): number {
   return 0;
 }
 
-/**
- * Sum of `name: value\r\n` lengths for ECS `request/response.bytes`
- * which includes headers plus body.
- */
+// Wire size of headers (`name: value\r\n`) for ECS `*.bytes`.
 function headersBytes(headers: Record<string, string>): number {
   let total = 0;
   for (const [k, v] of Object.entries(headers ?? {})) {
@@ -159,21 +148,17 @@ export class APINetworkManager {
     };
     this.results.push(entry);
 
-    const wallStart = Date.now();
+    const startTime = now();
     try {
       const response = (await this._originalFetch(
         urlOrRequest as any,
         options
       )) as APIResponse;
-      const wallEnd = Date.now();
+      const endTime = now();
       const headers = response.headers();
 
-      /**
-       * Determine response body size. Prefer the server-advertised
-       * `Content-Length` when present (cheap, zero-copy); fall back to
-       * the actual body buffer length only when the header is missing
-       * (typical for chunked responses).
-       */
+      // Prefer `Content-Length`; fall back to the body buffer (chunked
+      // responses omit the header).
       const contentLength = parseContentLength(headers['content-length']);
       let responseBodyBytes = contentLength;
       if (responseBodyBytes < 0) {
@@ -199,19 +184,13 @@ export class APINetworkManager {
       entry.resourceSize = responseBodyBytes;
       entry.responseReceivedTime = epochTimeInSeconds();
       entry.loadEndTime = entry.responseReceivedTime;
-      const wait = roundMilliSecs(wallEnd - wallStart);
+      const wait = roundMilliSecs(endTime - startTime);
       entry.timings.wait = wait;
       entry.timings.receive = 0;
       entry.timings.total = wait;
 
-      /**
-       * Read TLS and remote-socket info straight off the response.
-       * `securityDetails()`/`serverAddr()` (Playwright >= 1.61) capture
-       * these from the connection used by the actual request — following
-       * redirects to the final hop — and resolve to `null` for non-HTTPS
-       * or when the address is unavailable. The JSON reporter already
-       * tolerates `securityDetails` being undefined.
-       */
+      // Native (Playwright >= 1.61) TLS/socket info for the final hop;
+      // both resolve to `null` for non-HTTPS or unknown addresses.
       const [serverAddr, securityDetails] = await Promise.all([
         response.serverAddr(),
         response.securityDetails(),
@@ -230,16 +209,13 @@ export class APINetworkManager {
     } catch (error) {
       entry.responseReceivedTime = epochTimeInSeconds();
       entry.loadEndTime = entry.responseReceivedTime;
-      entry.timings.total = roundMilliSecs(Date.now() - wallStart);
+      entry.timings.total = roundMilliSecs(now() - startTime);
       throw error;
     }
   }
 
-  /**
-   * Drop the own-property `fetch` so the prototype method becomes
-   * reachable again. This keeps the `APIRequestContext` usable after the
-   * plugin stops, e.g. when external code retains a reference.
-   */
+  // Drop the own-property `fetch` so the prototype method is reachable
+  // again, keeping the context usable after the plugin stops.
   private _restore() {
     if (!this._patched) return;
     delete (this.driver.request as any).fetch;
@@ -261,15 +237,11 @@ function parseContentLength(raw: string | undefined): number {
 }
 
 /**
- * `APIResponse.securityDetails()` reports the protocol as Node does, e.g.
- * `"TLSv1.3"`, whereas the browser path and the JSON reporter expect the
- * space-separated `"TLS 1.3"` shape (the reporter splits on the space to
- * derive `tls.version_protocol` / `tls.version`). Normalize so both
- * journey types emit consistent ECS fields.
+ * `securityDetails()` reports `"TLSv1.3"` but the reporter splits on a
+ * space to derive `tls.version_protocol`/`tls.version`. Normalize to the
+ * spaced `"TLS 1.3"` shape so both journey types emit consistent fields.
  */
 function normalizeTLSProtocol(raw?: string): string | undefined {
   if (!raw) return undefined;
-  // "TLSv1.3" -> "TLS 1.3", "SSLv3" -> "SSL 3"; an already-spaced
-  // "TLS 1.3" is left untouched (no `v` precedes the version digits).
   return raw.replace(/\s*v(?=\d)/i, ' ');
 }

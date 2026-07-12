@@ -43,15 +43,15 @@ describe('APIJourney', () => {
     expect(j.tags).toEqual(['foo']);
   });
 
-  it("defaults monitor type to 'http' (not browser)", () => {
+  it("defaults monitor type to 'api' (not browser)", () => {
     const j = new APIJourney({ name: 'api' }, noop);
-    expect(j.monitor.config.type).toBe('http');
+    expect(j.monitor.config.type).toBe('api');
   });
 
-  it('preserves http monitor type across config updates', () => {
+  it('preserves api monitor type across config updates', () => {
     const j = new APIJourney({ name: 'api' }, noop);
     j._updateMonitor({ schedule: 10 });
-    expect(j.monitor.config.type).toBe('http');
+    expect(j.monitor.config.type).toBe('api');
     expect(j.monitor.config.schedule).toBe(10);
   });
 

@@ -73,7 +73,7 @@ apiJourney('orders API health', ({ request, params }) => {
 
 API journeys share most of the regular `journey()` surface — `step()`, `expect`,
 `params`, `monitor.use()`, `apiJourney.skip` / `apiJourney.only` — and integrate
-with the same `push` command. They are pushed to Kibana as HTTP-type monitors.
+with the same `push` command. They are pushed to Kibana as `api`-type monitors.
 
 Each API journey gets its own isolated `APIRequestContext` with an independent
 cookie jar; cookies set in one journey are not visible in another. All

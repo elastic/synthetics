@@ -49,14 +49,9 @@ type APIJourneyType = (
 ) => APIJourney;
 
 /**
- * API journeys reuse the same step-based execution model as browser
- * journeys but never spin up a Chromium context. The only structural
- * differences from a browser `Journey` are:
- *
- *  - `type === 'api'`, used by the runner/gatherer/plugin-manager to skip
- *    browser-only setup,
- *  - the default monitor type is `http` so `push` registers the right
- *    Kibana monitor.
+ * Same step-based model as a browser `Journey` but without a Chromium
+ * context. `type === 'api'` lets the runner/gatherer/plugin-manager skip
+ * browser-only setup.
  */
 export class APIJourney extends Journey {
   constructor(
@@ -68,24 +63,17 @@ export class APIJourney extends Journey {
       typeof options === 'string'
         ? { name: options, id: options }
         : { ...options };
-    /**
-     * `Journey` expects a `JourneyCallback` whose argument is the full
-     * browser driver shape. The runner narrows the callback args based on
-     * `journey.type` before invoking it, so the cast here is sound.
-     */
+    // Runner narrows callback args by `journey.type`, so the cast is sound.
     super({ ...opts, type: 'api' }, cb as any, location);
   }
 
-  /**
-   * Override default monitor type so `synthetics push` registers this
-   * journey as an HTTP monitor rather than a browser monitor.
-   */
+  // Register as an `api` project monitor on `synthetics push`.
   override _updateMonitor(config: MonitorConfig) {
     this._setMonitor(
       new Monitor({
         name: this.name,
         id: this.id,
-        type: 'http',
+        type: 'api',
         tags: this.tags ?? [],
         ...config,
       })

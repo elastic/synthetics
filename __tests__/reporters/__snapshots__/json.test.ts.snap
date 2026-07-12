@@ -42,10 +42,6 @@ exports[`json reporter formats network fields in ECS format 1`] = `
         "url": "http://localhost:56899/index",
       },
     },
-    "server": {
-      "ip": "[::1]",
-      "port": 56899,
-    },
     "tls": undefined,
     "url": "http://localhost:56899/index",
     "user_agent": {
@@ -102,7 +98,6 @@ exports[`json reporter formats network fields in ECS format 2`] = `
         "status": -1,
       },
     },
-    "server": undefined,
     "tls": undefined,
     "url": "http://localhost:56899/delay100",
     "user_agent": {

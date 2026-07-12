@@ -38,7 +38,11 @@ import {
   MonitorConfig,
 } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
-import { isParamOptionSupported, normalizeMonitorName } from './utils';
+import {
+  isBundledMonitorType,
+  isParamOptionSupported,
+  normalizeMonitorName,
+} from './utils';
 
 // Allowed extensions for lightweight monitor files
 const ALLOWED_LW_EXTENSIONS = ['.yml', '.yaml'];
@@ -143,7 +147,7 @@ export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
       locations: translateLocation(config.locations),
     };
 
-    if (type === 'browser') {
+    if (isBundledMonitorType(type)) {
       const outPath = join(
         bundlePath,
         normalizeMonitorName(config.name) + '.zip'

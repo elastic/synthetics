@@ -87,19 +87,10 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
 }
 
 /**
- * Detects whether the inline source is a full ES/CJS module — typical of
- * scripts authored against the public DSL (e.g. `apiJourney`/`journey` with
- * an explicit `import { ... } from '@elastic/synthetics'`) — versus the
- * legacy inline form, which is a bare set of statements that rely on
- * `step`, `page`, `params`, `expect`, `request`, and `mfa` being injected as
- * locals inside an implicit `journey('inline', ...)` wrapper.
- *
- * We deliberately key off `import`/`export` only. A naive `journey(`/
- * `apiJourney(` regex picks up matches inside string literals and
- * comments and silently routes legacy scripts through the module loader,
- * stripping the implicit injection. Users who want module semantics opt
- * in by adding the `import` line — that's the contract documented in
- * the README.
+ * A leading `import`/`export` opts the inline source into module loading;
+ * anything else is treated as legacy statements with injected locals.
+ * Keying off `import`/`export` (not a `journey(` regex) avoids false
+ * matches inside strings/comments that would strip the implicit injection.
  */
 const isModuleInlineSource = (source: string): boolean => {
   return /^\s*(?:import|export)\b/m.test(source);
@@ -139,13 +130,9 @@ const SYNTHETICS_PKG_ROOT = resolve(__dirname, '..');
 let syntheticsAliasInstalled = false;
 
 /**
- * Make `require('@elastic/synthetics')` (and subpath requires) resolvable
- * from any file path on disk. The inline module is materialised in a
- * temp directory whose ancestors may not contain a `node_modules` entry
- * for `@elastic/synthetics` (e.g. an OS `tmpdir`, a `npm link`ed dev
- * checkout, or a globally installed CLI). Patching `_resolveFilename`
- * once aliases the bare specifier and its subpaths to this package on
- * disk so the temp module loads the same code that is currently running.
+ * Alias `@elastic/synthetics` (and subpaths) to this package so an inline
+ * module materialised in a temp dir — whose ancestors may lack a
+ * `node_modules` entry — resolves to the currently running code.
  */
 const installSyntheticsRequireAlias = () => {
   if (syntheticsAliasInstalled) return;
@@ -178,28 +165,19 @@ const installSyntheticsRequireAlias = () => {
 };
 
 /**
- * Load a self-contained inline module by materialising it as a TypeScript
- * file and `require`ing it. The transform hook installed by
- * `installTransform()` (esbuild, `format: 'cjs'`) takes care of ESM → CJS
- * rewriting, so `import { apiJourney } from '@elastic/synthetics'`
- * resolves through the normal `require` chain and the script registers
- * its `apiJourney`/`journey` via the DSL on import, without being wrapped
- * in an implicit browser journey.
+ * Materialise a self-contained inline module to disk and `require` it. The
+ * esbuild transform hook rewrites ESM → CJS, so the script registers its
+ * journeys on import instead of being wrapped in an implicit journey.
  */
 const loadInlineModule = (source: string) => {
   installSyntheticsRequireAlias();
   const dir = mkdtempSync(join(tmpdir(), 'synthetics-inline-'));
-  /**
-   * Best-effort cleanup of the materialised module on process exit.
-   * Heartbeat invokes `elastic-synthetics --inline` once per process, so
-   * the directory normally lives for the lifetime of a single run; this
-   * keeps long-lived hosts from accumulating tmp dirs.
-   */
+  // Best-effort cleanup so long-lived hosts don't accumulate temp dirs.
   process.once('exit', () => {
     try {
       rmSync(dir, { recursive: true, force: true });
     } catch {
-      /* swallow — best-effort cleanup */
+      /* best-effort */
     }
   });
   const file = join(dir, 'inline.journey.ts');

@@ -169,11 +169,8 @@ export class Gatherer {
       metrics &&
         plugins.push(await Gatherer.pluginManager.start('performance'));
     } else {
-      /**
-       * API journeys only produce network traffic. Network capture is the
-       * only data source for the reporter, so it is always enabled
-       * regardless of `options.network`.
-       */
+      // Network is the only data source for API journeys, so always capture
+      // it regardless of `options.network`.
       plugins.push(await Gatherer.pluginManager.start('network'));
     }
     await Promise.all(plugins);

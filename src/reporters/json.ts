@@ -138,11 +138,8 @@ function getMetadata() {
   };
 }
 
-/**
- * ECS `server.ip` / `server.port` — destination address of the
- * request. Currently only populated for API journeys (via TLS probe);
- * browser journeys don't surface this through CDP today.
- */
+// ECS `server.ip`/`server.port`. Emitted for API journeys only; browser
+// output keeps the address under `http.response` to preserve its shape.
 function formatServer(response: NetworkInfo['response']) {
   if (!response?.remoteIPAddress && !response?.remotePort) return undefined;
   return {
@@ -151,14 +148,9 @@ function formatServer(response: NetworkInfo['response']) {
   };
 }
 
-/**
- * Convert a numeric epoch in seconds to an ISO-8601 string, tolerating
- * `undefined` and other non-finite inputs. The TLS probe can return a
- * `SecurityDetails` with `protocol` set but cert dates missing (e.g.
- * malformed `valid_from` / `valid_to`); without this guard
- * `new Date(undefined * 1000).toISOString()` throws `RangeError` and
- * sinks the entire `journey/end` document.
- */
+// Epoch seconds -> ISO-8601, tolerating missing/non-finite input. A
+// malformed cert date would otherwise throw `RangeError` and sink the
+// whole `journey/end` document (see json.test.ts regression).
 function epochToIso(epochSeconds: number | undefined): string | undefined {
   if (epochSeconds == null || !Number.isFinite(epochSeconds)) return undefined;
   const date = new Date(epochSeconds * 1000);
@@ -236,7 +228,7 @@ export function formatNetworkFields(network: NetworkInfo) {
       response,
     },
     tls: formatTLS(response?.securityDetails),
-    server: formatServer(response),
+    ...(browser?.name === 'api' && { server: formatServer(response) }),
   };
 
   const pickItems: Array<keyof NetworkInfo> = [
@@ -286,11 +278,8 @@ function journeyInfo(journey: Partial<Journey>, type: OutputFields['type']) {
   if (!journey) {
     return;
   }
-  /**
-   * Surface the journey type for non-default journeys (currently only
-   * `api`) so downstream consumers (Heartbeat, Kibana) can route to the
-   * right document type. Browser journey output stays byte-compatible.
-   */
+  // Surface non-default journey types (e.g. `api`) for downstream routing;
+  // browser output omits the field to stay byte-compatible.
   const journeyType =
     journey.type && journey.type !== 'browser' ? journey.type : undefined;
   const info: JourneyInfo = {
@@ -480,11 +469,7 @@ export default class JSONReporter extends BaseReporter {
   ) {
     const { timestamp, networkinfo, options } = result;
     const isAPIJourney = journey.type === 'api';
-    /**
-     * Browser-only fields. The runner omits these for API journeys and
-     * the discriminated union does too, so default them to `undefined`
-     * when missing.
-     */
+    // Browser-only fields; absent for API journeys.
     const browserDelay = (result as JourneyEndResult).browserDelay;
     const browserconsole = (result as JourneyEndResult).browserconsole;
 
@@ -547,15 +532,10 @@ export default class JSONReporter extends BaseReporter {
       });
     }
 
-    /**
-     * Keep `browser_delay_us` in the payload for browser journeys to
-     * preserve the existing on-the-wire shape, but omit it entirely for
-     * API journeys where the field has no meaning. The key order
-     * matches the previous output to stay backward-compatible with
-     * Heartbeat ingestion snapshots.
-     */
     const endPayload: Payload = {
       status: journey.status,
+      // Omit `browser_delay_us` for API journeys where it has no meaning;
+      // key order preserves the existing browser wire shape.
       ...(isAPIJourney
         ? {}
         : { browser_delay_us: getDurationInUs(browserDelay) }),

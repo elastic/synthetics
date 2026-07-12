@@ -36,11 +36,8 @@ import { APINetworkManager } from './api-network';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
 
-/**
- * Minimal contract every network-style plugin must satisfy so the manager
- * can stay transparent to the driver type. Both the browser
- * `NetworkManager` and the `APINetworkManager` implement this shape.
- */
+// Shared shape for `NetworkManager` and `APINetworkManager` so the manager
+// stays agnostic to the driver type.
 export type NetworkPlugin = {
   results: Array<NetworkInfo>;
   _currentStep: Partial<Step> | null;
@@ -97,10 +94,7 @@ export class PluginManager {
           break;
       }
     } else {
-      /**
-       * API journeys can only meaningfully record network traffic, so
-       * skip browser-only plugins (trace, performance, browserconsole).
-       */
+      // API journeys only record network; skip browser-only plugins.
       if (type === 'network') {
         instance = new APINetworkManager(this.driver);
       }
@@ -139,10 +133,7 @@ export class PluginManager {
     return this.plugins.get(type);
   }
 
-  /**
-   * Propagate the currently active step to plugins that record step-scoped
-   * data. Browser-only plugins are no-ops when absent.
-   */
+  // Propagate the active step to step-scoped plugins (no-op when absent).
   onStep(step: Step) {
     const browserConsole = this.plugins.get('browserconsole') as
       | BrowserConsole
