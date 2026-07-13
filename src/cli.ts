@@ -42,21 +42,15 @@ import { globalSetup } from './loader';
 import { run } from './';
 import { runner } from './core/globals';
 import { SyntheticsLocations } from './dsl/monitor';
-import { push, loadSettings, validatePush, warnIfThrottled } from './push';
-import {
-  formatLocations,
-  getLocations,
-  renderLocations,
-  LocationCmdOptions,
-} from './locations';
-import { Generator } from './generator';
+import type { LocationCmdOptions } from './locations';
 import { error, write } from './helpers';
-import { LocationsMap } from './locations/public-locations';
-import { createLightweightMonitors } from './push/monitor';
-import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
 import { setGlobalProxy } from './helpers';
+
+// `push`, `init`, and `locations` pull in heavy, command-specific deps
+// (archiver, yaml, semver, enquirer, unzip-stream). Import them lazily inside
+// each action so `run` — the hot path, incl. Heartbeat — never loads them.
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -235,6 +229,11 @@ program
   .addOption(configOpt)
   .addOption(maintenanceWindows)
   .action(async cmdOpts => {
+    const { push, loadSettings, validatePush, warnIfThrottled } = await import(
+      './push'
+    );
+    const { createLightweightMonitors } = await import('./push/monitor');
+    const { getVersion } = await import('./push/kibana_api');
     cmdOpts = { ...cmdOpts, ...program.opts() };
     const workDir = cwd();
     const tearDown = await globalSetup({ inline: false, ...cmdOpts }, [
@@ -254,7 +253,7 @@ program
       )) as PushOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      await setGlobalProxy(options.proxy ?? {});
 
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
@@ -278,6 +277,7 @@ program
   .description('Initialize Elastic synthetics project')
   .action(async (dir = '') => {
     try {
+      const { Generator } = await import('./generator');
       const generator = await new Generator(resolve(process.cwd(), dir));
       await generator.setup();
     } catch (e) {
@@ -321,6 +321,11 @@ program
     false
   )
   .action(async (cmdOpts: LocationCmdOptions) => {
+    const { loadSettings } = await import('./push');
+    const { formatLocations, getLocations, renderLocations } = await import(
+      './locations'
+    );
+    const { LocationsMap } = await import('./locations/public-locations');
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
     try {
@@ -334,7 +339,7 @@ program
       })) as RunOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      await setGlobalProxy(options.proxy ?? {});
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,

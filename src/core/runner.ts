@@ -48,8 +48,7 @@ import {
 import { PerformanceManager, filterBrowserMessages } from '../plugins';
 import { Gatherer } from './gatherer';
 import { log } from './logger';
-import { Monitor, MonitorConfig } from '../dsl/monitor';
-import { parseSpaces } from '../push/monitor';
+import { Monitor, MonitorConfig, parseSpaces } from '../dsl/monitor';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
