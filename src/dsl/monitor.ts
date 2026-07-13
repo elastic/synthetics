@@ -33,6 +33,7 @@ import {
   Params,
   PlaywrightOptions,
   CertificateErrorSpkiAllowlist,
+  PushOptions,
 } from '../common_types';
 import { indent, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
@@ -191,3 +192,24 @@ export class Monitor {
     throw red(outer);
   }
 }
+
+// Lives here (not push/monitor) so the runner can resolve monitor spaces
+// without dragging the push subsystem's heavy deps (archiver, yaml) into
+// every `run`.
+export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
+  const baseSpaces = [...(config.spaces ?? []), ...(options.spaces ?? [])];
+  if (!baseSpaces.length) {
+    return {};
+  }
+
+  const spaces = Array.from(
+    options.space
+      ? new Set([options.space, ...baseSpaces])
+      : new Set(baseSpaces)
+  );
+
+  if (spaces.includes('*')) {
+    return { spaces: ['*'] };
+  }
+  return { spaces };
+};
