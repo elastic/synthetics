@@ -23,7 +23,7 @@
  *
  */
 
-import { PluginOutput, Driver } from '../common_types';
+import { PluginOutput, Driver, APIDriver, NetworkInfo } from '../common_types';
 import {
   BrowserConsole,
   NetworkManager,
@@ -32,10 +32,38 @@ import {
   TraceOptions,
 } from './';
 import { Step } from '../dsl';
+import { APINetworkManager } from './api-network';
 
 type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
-type Plugin = NetworkManager | Tracing | PerformanceManager | BrowserConsole;
+
+// Shared shape for `NetworkManager` and `APINetworkManager` so the manager
+// stays agnostic to the driver type.
+export type NetworkPlugin = {
+  results: Array<NetworkInfo>;
+  _currentStep: Partial<Step> | null;
+  start(): Promise<void>;
+  stop(): Promise<Array<NetworkInfo>>;
+};
+
+type Plugin =
+  | NetworkManager
+  | Tracing
+  | PerformanceManager
+  | BrowserConsole
+  | APINetworkManager;
 type PluginOptions = TraceOptions;
+
+function isBrowserDriver(driver: Driver | APIDriver): driver is Driver {
+  return 'context' in driver;
+}
+
+function isNetworkPlugin(
+  plugin: Plugin
+): plugin is NetworkManager | APINetworkManager {
+  return (
+    plugin instanceof NetworkManager || plugin instanceof APINetworkManager
+  );
+}
 
 export class PluginManager {
   protected plugins = new Map<PluginType, Plugin>();
@@ -45,23 +73,31 @@ export class PluginManager {
     'performance',
     'browserconsole',
   ];
-  constructor(private driver: Driver) {}
+  constructor(private driver: Driver | APIDriver) {}
 
   register(type: PluginType, options: PluginOptions) {
     let instance: Plugin;
-    switch (type) {
-      case 'network':
-        instance = new NetworkManager(this.driver);
-        break;
-      case 'trace':
-        instance = new Tracing(this.driver, options);
-        break;
-      case 'performance':
-        instance = new PerformanceManager(this.driver);
-        break;
-      case 'browserconsole':
-        instance = new BrowserConsole(this.driver);
-        break;
+
+    if (isBrowserDriver(this.driver)) {
+      switch (type) {
+        case 'network':
+          instance = new NetworkManager(this.driver);
+          break;
+        case 'trace':
+          instance = new Tracing(this.driver, options);
+          break;
+        case 'performance':
+          instance = new PerformanceManager(this.driver);
+          break;
+        case 'browserconsole':
+          instance = new BrowserConsole(this.driver);
+          break;
+      }
+    } else {
+      // API journeys only record network; skip browser-only plugins.
+      if (type === 'network') {
+        instance = new APINetworkManager(this.driver);
+      }
     }
     instance && this.plugins.set(type, instance);
     return instance;
@@ -97,15 +133,20 @@ export class PluginManager {
     return this.plugins.get(type);
   }
 
+  // Propagate the active step to step-scoped plugins (no-op when absent).
   onStep(step: Step) {
-    (this.get('browserconsole') as BrowserConsole)._currentStep = step;
-    (this.get('network') as NetworkManager)._currentStep = step;
+    const browserConsole = this.plugins.get('browserconsole') as
+      | BrowserConsole
+      | undefined;
+    if (browserConsole) browserConsole._currentStep = step;
+    const network = this.plugins.get('network');
+    if (network && isNetworkPlugin(network)) network._currentStep = step;
   }
 
   async output() {
     const data: PluginOutput = {};
     for (const [, plugin] of this.plugins) {
-      if (plugin instanceof NetworkManager) {
+      if (isNetworkPlugin(plugin)) {
         data.networkinfo = await plugin.stop();
       } else if (plugin instanceof BrowserConsole) {
         data.browserconsole = plugin.stop();

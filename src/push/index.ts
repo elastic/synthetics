@@ -56,10 +56,12 @@ import {
 import {
   getBatches,
   getSizedBatches,
+  isAPIMonitorSupported,
   isBulkAPISupported,
   isLightweightMonitorSupported,
   logDiff,
   logGroups,
+  MIN_API_MONITOR_VERSION,
   printBytes,
 } from './utils';
 import { runLocal } from './run-local';
@@ -74,6 +76,15 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const duplicates = trackDuplicates(monitors);
   if (duplicates.size > 0) {
     throw error(formatDuplicateError(duplicates));
+  }
+
+  if (
+    monitors.some(m => m.type === 'api') &&
+    !isAPIMonitorSupported(options.kibanaVersion)
+  ) {
+    throw error(
+      `Aborted: API journey monitors are only supported in Kibana ${MIN_API_MONITOR_VERSION} or above (current: ${options.kibanaVersion}). Please upgrade Kibana or remove API journeys before pushing.`
+    );
   }
 
   progress(

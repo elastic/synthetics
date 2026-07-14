@@ -51,6 +51,7 @@ import {
   JourneyStartResult,
   StepEndResult,
   JourneyEndResult,
+  APIJourneyEndResult,
   PageMetrics,
 } from '../common_types';
 import { inspect } from 'util';
@@ -137,6 +138,25 @@ function getMetadata() {
   };
 }
 
+// ECS `server.ip`/`server.port`. Emitted for API journeys only; browser
+// output keeps the address under `http.response` to preserve its shape.
+function formatServer(response: NetworkInfo['response']) {
+  if (!response?.remoteIPAddress && !response?.remotePort) return undefined;
+  return {
+    ip: response.remoteIPAddress,
+    port: response.remotePort,
+  };
+}
+
+// Epoch seconds -> ISO-8601, tolerating missing/non-finite input. A
+// malformed cert date would otherwise throw `RangeError` and sink the
+// whole `journey/end` document (see json.test.ts regression).
+function epochToIso(epochSeconds: number | undefined): string | undefined {
+  if (epochSeconds == null || !Number.isFinite(epochSeconds)) return undefined;
+  const date = new Date(epochSeconds * 1000);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function formatTLS(tls: SecurityDetails) {
   if (!tls || !tls.protocol) {
     return;
@@ -151,8 +171,8 @@ function formatTLS(tls: SecurityDetails) {
         subject: {
           common_name: tls.subjectName,
         },
-        not_after: new Date(tls.validTo * 1000).toISOString(),
-        not_before: new Date(tls.validFrom * 1000).toISOString(),
+        not_after: epochToIso(tls.validTo),
+        not_before: epochToIso(tls.validFrom),
       },
     },
     version_protocol: name,
@@ -208,6 +228,7 @@ export function formatNetworkFields(network: NetworkInfo) {
       response,
     },
     tls: formatTLS(response?.securityDetails),
+    ...(browser?.name === 'api' && { server: formatServer(response) }),
   };
 
   const pickItems: Array<keyof NetworkInfo> = [
@@ -257,10 +278,15 @@ function journeyInfo(journey: Partial<Journey>, type: OutputFields['type']) {
   if (!journey) {
     return;
   }
+  // Surface non-default journey types (e.g. `api`) for downstream routing;
+  // browser output omits the field to stay byte-compatible.
+  const journeyType =
+    journey.type && journey.type !== 'browser' ? journey.type : undefined;
   const info: JourneyInfo = {
     name: journey.name,
     id: journey.id,
     tags: journey.tags,
+    ...(journeyType ? { type: journeyType } : {}),
   };
   const isEnd = type === 'journey/end';
   if (isEnd) {
@@ -439,40 +465,42 @@ export default class JSONReporter extends BaseReporter {
 
   override async onJourneyEnd(
     journey: Journey,
-    {
-      timestamp,
-      browserDelay,
-      networkinfo,
-      browserconsole,
-      options,
-    }: JourneyEndResult
+    result: JourneyEndResult | APIJourneyEndResult
   ) {
-    const { ssblocks, screenshots } = options;
-    const writeScreenshots =
-      screenshots === 'on' ||
-      (screenshots === 'only-on-failure' && journey.status === 'failed');
-    if (writeScreenshots) {
-      await gatherScreenshots(
-        join(CACHE_PATH, 'screenshots'),
-        async screenshot => {
-          const { data, timestamp, step } = screenshot;
-          if (!data) {
-            return;
+    const { timestamp, networkinfo, options } = result;
+    const isAPIJourney = journey.type === 'api';
+    // Browser-only fields; absent for API journeys.
+    const browserDelay = (result as JourneyEndResult).browserDelay;
+    const browserconsole = (result as JourneyEndResult).browserconsole;
+
+    if (!isAPIJourney) {
+      const { ssblocks, screenshots } = options;
+      const writeScreenshots =
+        screenshots === 'on' ||
+        (screenshots === 'only-on-failure' && journey.status === 'failed');
+      if (writeScreenshots) {
+        await gatherScreenshots(
+          join(CACHE_PATH, 'screenshots'),
+          async screenshot => {
+            const { data, timestamp, step } = screenshot;
+            if (!data) {
+              return;
+            }
+            if (ssblocks) {
+              await this.writeScreenshotBlocks(journey, screenshot);
+            } else {
+              this.writeJSON({
+                type: 'step/screenshot',
+                timestamp,
+                journey,
+                step,
+                blob: data,
+                blob_mime: 'image/jpeg',
+              });
+            }
           }
-          if (ssblocks) {
-            await this.writeScreenshotBlocks(journey, screenshot);
-          } else {
-            this.writeJSON({
-              type: 'step/screenshot',
-              timestamp,
-              journey,
-              step,
-              blob: data,
-              blob_mime: 'image/jpeg',
-            });
-          }
-        }
-      );
+        );
+      }
     }
 
     if (networkinfo) {
@@ -504,18 +532,23 @@ export default class JSONReporter extends BaseReporter {
       });
     }
 
+    const endPayload: Payload = {
+      status: journey.status,
+      // Omit `browser_delay_us` for API journeys where it has no meaning;
+      // key order preserves the existing browser wire shape.
+      ...(isAPIJourney
+        ? {}
+        : { browser_delay_us: getDurationInUs(browserDelay) }),
+      // timestamp in microseconds at which the current node process began, measured in Unix time.
+      process_startup_epoch_us: Math.trunc(processStart * 1000),
+    };
+
     this.writeJSON({
       type: 'journey/end',
       journey,
       timestamp,
       error: journey.error,
-      payload: {
-        status: journey.status,
-        // convert from monotonic seconds time to microseconds
-        browser_delay_us: getDurationInUs(browserDelay),
-        // timestamp in microseconds at which the current node process began, measured in Unix time.
-        process_startup_epoch_us: Math.trunc(processStart * 1000),
-      },
+      payload: endPayload,
     });
   }
 

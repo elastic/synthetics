@@ -185,6 +185,21 @@ export function isParamOptionSupported(version: string) {
   return semver.satisfies(version, '>=8.7.2');
 }
 
+// API journey monitors are supported only from 9.6.0 and above.
+// Coerce so pre-release/SNAPSHOT builds (e.g. `9.6.0-SNAPSHOT`) count as 9.6.0.
+export const MIN_API_MONITOR_VERSION = '9.6.0';
+export function isAPIMonitorSupported(version: string) {
+  const coerced = semver.coerce(version);
+  return coerced ? semver.gte(coerced, MIN_API_MONITOR_VERSION) : false;
+}
+
+/**
+ * Project monitors ship bundled journey code (browser + api), unlike
+ * lightweight YAML monitors (http/tcp/icmp).
+ */
+export const isBundledMonitorType = (type?: string) =>
+  type === 'browser' || type === 'api';
+
 /**
  * Helper that replaces url paths traversal issues when bundling
  */
