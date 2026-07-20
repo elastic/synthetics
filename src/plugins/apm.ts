@@ -25,7 +25,7 @@
 
 import { Request, Route } from 'playwright-core';
 import { ApmOptions, Driver } from '../common_types';
-import { runner } from '../core';
+import { runner } from '../core/globals';
 import { Journey } from '../dsl';
 
 /**
