@@ -61,7 +61,7 @@ describe('apm', () => {
     await Gatherer.stop();
 
     expect(htmlReq.request.headers[BAGGAGE_HEADER]).toBe(
-      `synthetics.monitor.id=j1;`
+      `synthetics.monitor.id=j1`
     );
     expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBe(`es=s:1`);
   });
@@ -69,17 +69,22 @@ describe('apm', () => {
   it('baggage generation', () => {
     const j1 = journey('j1', () => {});
     monitor.use({ id: 'foo' });
-    expect(generateBaggageHeader(j1)).toBe(`synthetics.monitor.id=foo;`);
+    expect(generateBaggageHeader(j1)).toBe(`synthetics.monitor.id=foo`);
 
     // Set Checkgroup
     process.env['ELASTIC_SYNTHETICS_TRACE_ID'] = 'x-trace';
     process.env['ELASTIC_SYNTHETICS_MONITOR_ID'] = 'global-foo';
+    process.env['ELASTIC_SYNTHETICS_MONITOR_TYPE'] = 'browser';
+    process.env['ELASTIC_SYNTHETICS_MONITOR_LOCATION'] = 'us-east';
+    // W3C baggage: comma-separated members, values percent-encoded
     expect(generateBaggageHeader(j1)).toBe(
-      `synthetics.trace.id=x-trace;synthetics.monitor.id=global-foo;`
+      `synthetics.trace.id=x-trace,synthetics.monitor.id=global-foo,synthetics.monitor.type=browser,synthetics.monitor.location=us-east`
     );
 
     delete process.env['ELASTIC_SYNTHETICS_TRACE_ID'];
     delete process.env['ELASTIC_SYNTHETICS_MONITOR_ID'];
+    delete process.env['ELASTIC_SYNTHETICS_MONITOR_TYPE'];
+    delete process.env['ELASTIC_SYNTHETICS_MONITOR_LOCATION'];
   });
 
   it('tracestate generation', () => {

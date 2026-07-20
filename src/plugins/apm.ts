@@ -40,6 +40,10 @@ export const BAGGAGE_HEADER = 'baggage';
 export const TRACE_STATE_HEADER = 'tracestate';
 const NAMESPACE = 'es';
 const PROPERTY_SEPARATOR = '=';
+// W3C baggage separates list members with ',' (';' is reserved for per-member
+// properties), so a single member with ';'-joined pairs would collapse to the
+// first key on spec-compliant parsers. https://www.w3.org/TR/baggage/
+const MEMBER_SEPARATOR = ',';
 
 function getValueFromEnv(key: string) {
   return process.env?.[key];
@@ -89,14 +93,15 @@ export function generateBaggageHeader(journey: Journey) {
     ),
   };
 
-  let baggage = '';
+  const members: Array<string> = [];
   for (const key of Object.keys(baggageObj)) {
-    if (baggageObj[key]) {
-      baggage += `${key}${PROPERTY_SEPARATOR}${baggageObj[key]};`;
+    const value = baggageObj[key];
+    if (value) {
+      members.push(`${key}${PROPERTY_SEPARATOR}${encodeURIComponent(value)}`);
     }
   }
 
-  return baggage;
+  return members.join(MEMBER_SEPARATOR);
 }
 
 export class Apm {
