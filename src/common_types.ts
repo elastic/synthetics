@@ -257,6 +257,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  apm?: ApmOptions;
   grepOpts?: GrepOptions;
 };
 
@@ -287,6 +288,11 @@ export type ProjectSettings = {
   space: string;
 };
 
+export type ApmOptions = {
+  traceUrls: Array<string | RegExp>;
+  sampleRate?: number;
+};
+
 export type PlaywrightOptions = LaunchOptions &
   BrowserContextOptions & {
     testIdAttribute?: string;
@@ -299,6 +305,7 @@ export type SyntheticsConfig = {
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  apm?: ApmOptions;
   proxy?: ProxySettings;
 };
 

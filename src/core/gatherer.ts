@@ -159,7 +159,7 @@ export class Gatherer {
    */
   static async beginRecording(driver: Driver | APIDriver, options: RunOptions) {
     log('Gatherer: started recording');
-    const { network, metrics } = options;
+    const { network, metrics, apm } = options;
     Gatherer.pluginManager = new PluginManager(driver);
     Gatherer.pluginManager.registerAll(options);
     const plugins = [];
@@ -168,6 +168,7 @@ export class Gatherer {
       network && plugins.push(await Gatherer.pluginManager.start('network'));
       metrics &&
         plugins.push(await Gatherer.pluginManager.start('performance'));
+      apm && plugins.push(await Gatherer.pluginManager.start('apm'));
     } else {
       // Network is the only data source for API journeys, so always capture
       // it regardless of `options.network`.
