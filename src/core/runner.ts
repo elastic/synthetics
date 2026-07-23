@@ -51,6 +51,7 @@ import { Gatherer } from './gatherer';
 import { log } from './logger';
 import { Monitor, MonitorConfig } from '../dsl/monitor';
 import { parseSpaces } from '../push/monitor';
+import { OTelPlugin } from '../plugins/otel';
 
 type HookType = 'beforeAll' | 'afterAll';
 export type SuiteHooks = Record<HookType, Array<HooksCallback>>;
@@ -180,12 +181,17 @@ export default class Runner implements RunnerInfo {
      * Set up the corresponding reporter and fallback
      * to default reporter if not provided
      */
-    const { reporter, outfd, dryRun } = options;
+    const { reporter, outfd, dryRun, otel, distributedTracing } = options;
     const Reporter =
       typeof reporter === 'function'
         ? reporter
         : reporters[reporter] || reporters['default'];
-    this.#reporter = new Reporter({ fd: outfd, dryRun });
+    this.#reporter = new Reporter({
+      fd: outfd,
+      dryRun,
+      otel,
+      distributedTracing,
+    });
   }
 
   async #runBeforeAllHook(args: HooksArgs) {
@@ -609,6 +615,11 @@ export default class Runner implements RunnerInfo {
      */
     await rm(CACHE_PATH, { recursive: true, force: true });
     await this.#reporter?.onEnd?.();
+    // Shutdown OTEL plugin
+    const otelPlugin = Gatherer.pluginManager?.get('otel');
+    if (otelPlugin && otelPlugin instanceof OTelPlugin) {
+      await otelPlugin.shutdown();
+    }
   }
 
   /**

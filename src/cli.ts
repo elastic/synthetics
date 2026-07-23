@@ -101,6 +101,15 @@ program
     '--capability <features...>',
     'Enable capabilities through feature flags'
   )
+  .option('--otel', 'enable OpenTelemetry span export (OTEL_* env driven)')
+  .option(
+    '--distributed-tracing',
+    'inject and correlate W3C trace headers for browser journeys'
+  )
+  .option(
+    '--distributed-tracing-origins <hosts...>',
+    'allowlist of hostnames for distributed tracing header injection (e.g. example.com *.example.com)'
+  )
   .addOption(
     new Option(
       '--screenshots [flag]',

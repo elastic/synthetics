@@ -63,6 +63,7 @@ describe('json reporter', () => {
   let reporter: JSONReporter;
   const timestamp = 1600300800000000;
   const originalProcess = global.process;
+  const originalOTelSDKDisabled = process.env['OTEL_SDK_DISABLED'];
   const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
   beforeAll(() => {
@@ -86,6 +87,7 @@ describe('json reporter', () => {
 
   afterEach(() => {
     fs.unlinkSync(dest);
+    process.env['OTEL_SDK_DISABLED'] = originalOTelSDKDisabled;
   });
 
   const readAndCloseStream = async () => {
@@ -180,6 +182,31 @@ describe('json reporter', () => {
     });
     reporter.onEnd();
     expect((await readAndCloseStream()).toString()).toMatchSnapshot();
+  });
+
+  it('supports otel option without breaking json output', async () => {
+    process.env['OTEL_SDK_DISABLED'] = 'true';
+    reporter = new JSONReporter({ fd: fs.openSync(dest, 'w'), otel: true });
+    stream = reporter.stream;
+
+    const j1 = tJourney('succeeded', 1);
+    const s1 = tStep('succeeded', 1, undefined, 'https://example.test');
+    reporter.onJourneyStart(j1, { timestamp });
+    reporter.onStepStart?.(j1, s1);
+    reporter.onStepEnd(j1, s1, {});
+    await reporter.onJourneyEnd(j1, {
+      timestamp,
+      browserDelay: 1,
+      options: {},
+      networkinfo: [],
+      browserconsole: [],
+    });
+    await reporter.onEnd();
+
+    const docs = await readAndCloseStreamJson();
+    expect(docs.some(d => d.type === 'journey/start')).toBe(true);
+    expect(docs.some(d => d.type === 'step/end')).toBe(true);
+    expect(docs.some(d => d.type === 'journey/end')).toBe(true);
   });
 
   it('formats network fields in ECS format', async () => {

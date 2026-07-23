@@ -28,6 +28,7 @@ import { join } from 'path';
 import sharp from 'sharp';
 import { createHash } from 'crypto';
 import BaseReporter from './base';
+import { ReporterOptions } from './';
 import { renderError, serializeError, stripAnsiCodes } from './reporter-util';
 import {
   getTimestamp,
@@ -55,6 +56,8 @@ import {
   PageMetrics,
 } from '../common_types';
 import { inspect } from 'util';
+import { Gatherer } from '../core/gatherer';
+import { OTelPlugin } from '../plugins/otel';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { version, name } = require('../../package.json');
@@ -390,6 +393,18 @@ export async function gatherScreenshots(
 }
 
 export default class JSONReporter extends BaseReporter {
+  constructor(options: ReporterOptions = {}) {
+    super(options);
+  }
+
+  private journeyKey(journey: Journey) {
+    return journey.id || journey.name;
+  }
+
+  private getOTelPlugin(): OTelPlugin | undefined {
+    return Gatherer.pluginManager?.get('otel') as OTelPlugin | undefined;
+  }
+
   onStart(event: StartEvent) {
     /**
      * report the number of journeys that exists on a suite which
@@ -416,12 +431,19 @@ export default class JSONReporter extends BaseReporter {
   }
 
   override onJourneyStart(journey: Journey, { timestamp }: JourneyStartResult) {
+    const plugin = this.getOTelPlugin();
+    plugin?.onJourneyStart(journey);
     this.writeJSON({
       type: 'journey/start',
       journey,
       timestamp,
       payload: { source: journey.cb.toString() },
     });
+  }
+
+  onStepStart(journey: Journey, step: Step): void {
+    const plugin = this.getOTelPlugin();
+    plugin?.startStepSpanLifecycle?.(journey, step);
   }
 
   override onStepEnd(
@@ -431,6 +453,18 @@ export default class JSONReporter extends BaseReporter {
   ) {
     this.writeMetrics(journey, step, 'relative_trace', traces);
     this.writeMetrics(journey, step, 'experience', metrics);
+
+    const plugin = this.getOTelPlugin();
+
+    plugin?.setStepSpanAttributes(journey, step.index, {
+      'synthetics.step.status': step.status,
+      'synthetics.step.error': !!step.error,
+      'synthetics.step.has_metrics': !!metrics,
+      'synthetics.step.has_trace': !!traces,
+      'synthetics.step.has_filmstrips': !!filmstrips,
+      'synthetics.step.has_pagemetrics': !!pagemetrics,
+    });
+
     if (filmstrips) {
       // Write each filmstrip separately so that we don't get documents that are too large
       filmstrips.forEach((strip, index) => {
@@ -461,6 +495,8 @@ export default class JSONReporter extends BaseReporter {
         pagemetrics,
       },
     });
+
+    plugin?.endStepSpanWithError(journey, step, step.error);
   }
 
   override async onJourneyEnd(
@@ -503,8 +539,12 @@ export default class JSONReporter extends BaseReporter {
       }
     }
 
+    const plugin = this.getOTelPlugin();
+
     if (networkinfo) {
       networkinfo.forEach(ni => {
+        plugin?.recordNetworkSpan(journey, ni);
+
         const { ecs, payload } = formatNetworkFields(ni);
         this.writeJSON({
           type: 'journey/network_info',
@@ -550,9 +590,12 @@ export default class JSONReporter extends BaseReporter {
       error: journey.error,
       payload: endPayload,
     });
+
+    plugin?.onJourneyEnd(journey, journey.error);
+    await plugin?.flush();
   }
 
-  override onEnd() {
+  override async onEnd() {
     this.stream.flushSync();
   }
 

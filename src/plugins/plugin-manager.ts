@@ -31,10 +31,16 @@ import {
   Tracing,
   TraceOptions,
 } from './';
-import { Step } from '../dsl';
+import { Step, Journey } from '../dsl';
 import { APINetworkManager } from './api-network';
+import { OTelPlugin, SyntheticPlugin } from './otel';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
+type PluginType =
+  | 'network'
+  | 'trace'
+  | 'performance'
+  | 'browserconsole'
+  | 'otel';
 
 // Shared shape for `NetworkManager` and `APINetworkManager` so the manager
 // stays agnostic to the driver type.
@@ -50,8 +56,12 @@ type Plugin =
   | Tracing
   | PerformanceManager
   | BrowserConsole
-  | APINetworkManager;
-type PluginOptions = TraceOptions;
+  | APINetworkManager
+  | OTelPlugin;
+type PluginOptions = TraceOptions & {
+  otel?: boolean;
+  distributedTracing?: boolean;
+};
 
 function isBrowserDriver(driver: Driver | APIDriver): driver is Driver {
   return 'context' in driver;
@@ -72,13 +82,19 @@ export class PluginManager {
     'trace',
     'performance',
     'browserconsole',
+    'otel',
   ];
   constructor(private driver: Driver | APIDriver) {}
 
   register(type: PluginType, options: PluginOptions) {
     let instance: Plugin;
 
-    if (isBrowserDriver(this.driver)) {
+    if (type === 'otel') {
+      instance = new OTelPlugin(
+        options.otel ?? false,
+        options.distributedTracing ?? false
+      );
+    } else if (isBrowserDriver(this.driver)) {
       switch (type) {
         case 'network':
           instance = new NetworkManager(this.driver);
@@ -141,6 +157,23 @@ export class PluginManager {
     if (browserConsole) browserConsole._currentStep = step;
     const network = this.plugins.get('network');
     if (network && isNetworkPlugin(network)) network._currentStep = step;
+  }
+
+  // Dispatch journey lifecycle events to all plugins that support them.
+  onJourneyStart(journey: Journey) {
+    for (const [, plugin] of this.plugins) {
+      if (plugin instanceof OTelPlugin || 'onJourneyStart' in plugin) {
+        (plugin as SyntheticPlugin).onJourneyStart?.(journey);
+      }
+    }
+  }
+
+  onJourneyEnd(journey: Journey, error?: Error | null) {
+    for (const [, plugin] of this.plugins) {
+      if (plugin instanceof OTelPlugin || 'onJourneyEnd' in plugin) {
+        (plugin as SyntheticPlugin).onJourneyEnd?.(journey, error);
+      }
+    }
   }
 
   async output() {

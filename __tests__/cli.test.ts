@@ -217,6 +217,38 @@ journey('inline browser', ({ page, params }) => {
     expect(await cli.exitCode).toBe(0);
   });
 
+  it('accepts --otel flag for run command', async () => {
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'fake.journey.ts'), '--otel'])
+      .run({
+        env: {
+          ...process.env,
+          OTEL_SDK_DISABLED: 'true',
+        },
+      });
+    await cli.waitFor('Journey: fake journey');
+    expect(await cli.exitCode).toBe(0);
+  });
+
+  it('accepts distributed tracing flags for run command', async () => {
+    const cli = new CLIMock()
+      .args([
+        join(FIXTURES_DIR, 'fake.journey.ts'),
+        '--otel',
+        '--distributed-tracing',
+        '--distributed-tracing-origins',
+        'example.com',
+      ])
+      .run({
+        env: {
+          ...process.env,
+          OTEL_SDK_DISABLED: 'true',
+        },
+      });
+    await cli.waitFor('Journey: fake journey');
+    expect(await cli.exitCode).toBe(0);
+  });
+
   it('produce json with reporter=json flag', async () => {
     const cli = new CLIMock()
       .args([join(FIXTURES_DIR, 'fake.journey.ts'), '--reporter', 'json'])

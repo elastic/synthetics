@@ -40,6 +40,8 @@ export type ReporterOptions = {
   fd?: number;
   colors?: boolean;
   dryRun?: boolean;
+  otel?: boolean;
+  distributedTracing?: boolean;
 };
 export type BuiltInReporterName =
   | 'default'

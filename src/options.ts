@@ -149,6 +149,41 @@ export async function normalizeOptions(
         options.quietExitCode = true;
       }
 
+      options.otel = cliArgs.otel ?? config.otel ?? false;
+      if (options.otel) {
+        if (!options.reporter) {
+          // OTEL export currently hooks into the JSON reporter lifecycle.
+          options.reporter = 'json';
+        } else if (options.reporter !== 'json') {
+          warn(
+            `OpenTelemetry export is currently supported with the json reporter. Current reporter is "${options.reporter}".`
+          );
+        }
+      }
+
+      options.distributedTracing =
+        cliArgs.distributedTracing ?? config.distributedTracing ?? false;
+      options.distributedTracingOrigins =
+        cliArgs.distributedTracingOrigins ??
+        config.distributedTracingOrigins ??
+        [];
+
+      if (options.distributedTracing && !options.otel) {
+        warn(
+          'Distributed tracing requires --otel so step/journey span context exists. Disabling distributed tracing.'
+        );
+        options.distributedTracing = false;
+      }
+
+      if (
+        options.distributedTracing &&
+        (options.distributedTracingOrigins?.length ?? 0) === 0
+      ) {
+        warn(
+          'Distributed tracing is enabled but no --distributed-tracing-origins were provided. Disabling distributed tracing.'
+        );
+        options.distributedTracing = false;
+      }
       options.screenshots = cliArgs.screenshots ?? 'on';
       break;
     case 'push':

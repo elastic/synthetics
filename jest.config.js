@@ -30,7 +30,7 @@ module.exports = {
   clearMocks: true,
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
-  testPathIgnorePatterns: ['dist'],
+  testPathIgnorePatterns: ['/dist/'],
   modulePathIgnorePatterns: ['/e2e/', '/utils/', '/common/', '/fixtures/'],
   globalSetup: `${__dirname}/__tests__/utils/jest-global-setup.ts`,
   globalTeardown: `${__dirname}/__tests__/utils/jest-global-teardown.ts`,
