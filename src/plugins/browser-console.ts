@@ -47,6 +47,10 @@ export class BrowserConsole {
     const type = msg.type();
     if (allowedTypes.includes(type)) {
       const { name, index } = this._currentStep;
+      this._currentStep._getSpan()?.addEvent('browser.console', {
+        'console.type': type,
+        'console.text': msg.text(),
+      });
       this.messages.push({
         timestamp: getTimestamp(),
         text: msg.text(),

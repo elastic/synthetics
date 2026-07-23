@@ -26,10 +26,9 @@
 import { bold, red, yellow } from 'kleur/colors';
 import type { Dispatcher } from 'undici';
 import { request } from 'undici';
-import { indent, symbols } from '../helpers';
+import { getPackageInfo, indent, symbols } from '../helpers';
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { version } = require('../../package.json');
+const { version } = getPackageInfo();
 
 export type APIRequestOptions = {
   url: string;

@@ -50,7 +50,7 @@ import {
   LocationCmdOptions,
 } from './locations';
 import { Generator } from './generator';
-import { error, write } from './helpers';
+import { error, getPackageInfo, write } from './helpers';
 import { LocationsMap } from './locations/public-locations';
 import { createLightweightMonitors } from './push/monitor';
 import { getVersion } from './push/kibana_api';
@@ -58,8 +58,7 @@ import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
 import { setGlobalProxy } from './helpers';
 
-/* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const { name, version } = require('../package.json');
+const { name, version } = getPackageInfo();
 
 const proxySettings = {};
 
@@ -95,6 +94,10 @@ program
   .option(
     '--rich-events',
     'preset flag used when running monitors directly via Heartbeat'
+  )
+  .option(
+    '--otel',
+    'enable OpenTelemetry instrumentation for synthetics journeys'
   )
   .option('--no-headless', 'run with the browser in headful mode')
   .option(

@@ -44,6 +44,7 @@ describe('options', () => {
       sandbox: false,
       screenshots: 'on',
       dryRun: true,
+      otel: true,
       match: 'check*',
       pauseOnError: true,
       config: join(__dirname, 'fixtures', 'synthetics.config.ts'),
@@ -52,9 +53,11 @@ describe('options', () => {
       environment: 'test',
       params: {},
       screenshots: 'on',
+      otel: false,
     });
     expect(await normalizeOptions(cliArgs)).toMatchObject({
       dryRun: true,
+      otel: true,
       environment: 'test',
       grepOpts: { match: 'check*' },
       params: {

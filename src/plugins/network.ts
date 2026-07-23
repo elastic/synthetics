@@ -24,10 +24,19 @@
  */
 
 import { Frame, Page, Request, Response } from 'playwright-core';
+import { Span, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import {
+  ATTR_URL_FULL,
+  ATTR_URL_PATH,
+  ATTR_URL_QUERY,
+  ATTR_URL_SCHEME,
+  ATTR_HTTP_REQUEST_METHOD,
+  ATTR_HTTP_RESPONSE_STATUS_CODE,
+} from '@opentelemetry/semantic-conventions';
 import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
-import { getTimestamp } from '../helpers';
+import { getPackageInfo, getTimestamp, maskCredentialsInURL } from '../helpers';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -67,6 +76,7 @@ type RequestWithEntry = Request & {
 export class NetworkManager {
   private _browser: BrowserInfo;
   private _barrierPromises = new Set<Promise<void>>();
+  private _requestSpans = new Map<Request, Span>();
   results: Array<NetworkInfo> = [];
   _currentStep: Partial<Step> = null;
 
@@ -134,6 +144,7 @@ export class NetworkManager {
       return;
     }
 
+    this.startSpan(request);
     const timestamp = getTimestamp();
     const networkEntry: NetworkInfo = {
       browser: this._browser,
@@ -184,6 +195,7 @@ export class NetworkManager {
 
   private async _onResponse(response: Response) {
     const request = response.request();
+    this.updateSpan(response);
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
@@ -272,6 +284,7 @@ export class NetworkManager {
   }
 
   private async _onRequestCompleted(request: Request) {
+    this.completeSpan(request);
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
@@ -357,4 +370,61 @@ export class NetworkManager {
     log(`Plugins: stopped collecting network events`);
     return this.results;
   }
+
+  private startSpan(request: Request) {
+    if (!this._currentStep) {
+      return;
+    }
+    const url = new URL(request.url());
+    const { name, version } = getPackageInfo();
+    const tracer = trace.getTracer(name, version);
+    const span = tracer.startSpan(
+      `HTTP ${request.method()} ${url.hostname}`,
+      {
+        kind: SpanKind.CLIENT,
+        attributes: {
+          [ATTR_URL_FULL]: maskCredentialsInURL(url.href),
+          [ATTR_URL_SCHEME]: url.protocol.replace(':', ''),
+          [ATTR_URL_PATH]: url.pathname,
+          [ATTR_URL_QUERY]: url.search,
+          [ATTR_HTTP_REQUEST_METHOD]: request.method(),
+        },
+      },
+      this._currentStep._getContext()
+    );
+    this._requestSpans.set(request, span);
+  }
+
+  private updateSpan(response: Response) {
+    const request = response.request();
+    const status = response.status();
+    const span = this._requestSpans.get(request);
+    if (span) {
+      span.setAttributes({
+        [ATTR_HTTP_RESPONSE_STATUS_CODE]: status,
+      });
+      // https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+      if (status >= 400) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: response.statusText(),
+        });
+      }
+    }
+  }
+
+  private completeSpan = (request: Request) => {
+    const failure = request.failure();
+    const span = this._requestSpans.get(request);
+    if (span) {
+      if (failure !== null) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: failure.errorText,
+        });
+      }
+      span.end();
+    }
+    this._requestSpans.delete(request);
+  };
 }
