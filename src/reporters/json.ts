@@ -25,7 +25,6 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import sharp from 'sharp';
 import { createHash } from 'crypto';
 import BaseReporter from './base';
 import { renderError, serializeError, stripAnsiCodes } from './reporter-util';
@@ -313,6 +312,9 @@ function stepInfo(
 }
 
 export async function getScreenshotBlocks(screenshot: Buffer) {
+  // Lazy-load: sharp pulls in native libvips (~25MB RSS). Only browser
+  // journeys produce screenshots, so API journeys never pay this cost.
+  const { default: sharp } = await import('sharp');
   const { width, height } = await sharp(screenshot).metadata();
   /**
    * Chop the screenshot image (1280*720) which is the default
