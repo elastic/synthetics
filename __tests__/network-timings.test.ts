@@ -23,12 +23,12 @@
  *
  */
 
-import { NetworkInfo } from '../../src/common_types';
+import { NetworkInfo } from '../src/common_types';
 import {
   ResourceTiming,
   calcTotalTime,
   getResourceTimings,
-} from '../../src/plugins/network-timings';
+} from '../src/network-timings';
 
 const entryWith = (
   timings: NetworkInfo['timings'],
@@ -67,9 +67,8 @@ describe('network-timings', () => {
       total: -1, // filled by calcTotalTime
     });
 
-    calcTotalTime(entryWith(timings), rtiming);
     // sum of positive blocked + dns + connect + wait + receive (ssl/send excluded)
-    expect(timings.total).toBe(30);
+    expect(calcTotalTime(entryWith(timings), rtiming)).toBe(30);
   });
 
   it('reports -1 for phases skipped on a reused socket / cached DNS', () => {
@@ -92,8 +91,7 @@ describe('network-timings', () => {
     expect(timings.wait).toBe(4.5);
     expect(timings.receive).toBe(3);
 
-    calcTotalTime(entryWith(timings), rtiming);
-    expect(timings.total).toBe(8);
+    expect(calcTotalTime(entryWith(timings), rtiming)).toBe(8);
   });
 
   it('falls back to the wall-clock span when resource timing is unavailable', () => {
@@ -120,10 +118,10 @@ describe('network-timings', () => {
     });
 
     // requestSentTime/loadEndTime are epoch seconds; span -> ms.
-    calcTotalTime(
+    const total = calcTotalTime(
       entryWith(timings, { requestSentTime: 100, loadEndTime: 100.5 }),
       rtiming
     );
-    expect(timings.total).toBe(500);
+    expect(total).toBe(500);
   });
 });

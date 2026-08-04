@@ -24,7 +24,7 @@
  */
 
 import { Request } from 'playwright-core';
-import { NetworkInfo } from '../common_types';
+import { NetworkInfo } from './common_types';
 
 /**
  * Resource Timing shape shared by `Request.timing()` and (>= 1.62)
@@ -103,27 +103,28 @@ export function getResourceTimings(
 }
 
 /**
- * Sums the positive phases into `total`. Falls back to the wall-clock span
- * between `requestSentTime` and `loadEndTime` when Resource Timing data is
- * unavailable (`startTime <= 0`, e.g. HAR replay or aborted requests).
+ * Returns the `total` phase by summing the positive phases. Falls back to the
+ * wall-clock span between `requestSentTime` and `loadEndTime` when Resource
+ * Timing data is unavailable (`startTime <= 0`, e.g. HAR replay or aborted
+ * requests). Pure — the caller assigns the result onto `timings.total`.
  */
 export function calcTotalTime(
   entry: NetworkInfo,
   rtiming: ResourceTiming
-): void {
+): number {
+  if (rtiming.startTime <= 0) {
+    const end =
+      entry.loadEndTime || entry.responseReceivedTime || entry.requestSentTime;
+    const total = roundMilliSecs((end - entry.requestSentTime) * 1000);
+    return total <= 0 ? -1 : total;
+  }
+
   const { timings } = entry;
-  timings.total = [
+  return [
     timings.blocked,
     timings.dns,
     timings.connect,
     timings.wait,
     timings.receive,
   ].reduce((pre, cur) => ((cur || -1) > 0 ? cur + pre : pre), 0);
-
-  if (rtiming.startTime <= 0) {
-    const end =
-      entry.loadEndTime || entry.responseReceivedTime || entry.requestSentTime;
-    const total = roundMilliSecs((end - entry.requestSentTime) * 1000);
-    timings.total = total <= 0 ? -1 : total;
-  }
 }

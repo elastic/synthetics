@@ -28,7 +28,7 @@ import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
-import { calcTotalTime, getResourceTimings } from './network-timings';
+import { calcTotalTime, getResourceTimings } from '../network-timings';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -182,10 +182,11 @@ export class NetworkManager {
       redirectURL: networkEntry.response.redirectURL,
     };
 
-    // Resource timing up to TTFB; `receive` fills in on `requestfinished`.
+    // Gather all resource timing information up until the
+    // TTFB(Time to first byte) is received
     const timing = request.timing();
     networkEntry.timings = getResourceTimings(timing);
-    calcTotalTime(networkEntry, timing);
+    networkEntry.timings.total = calcTotalTime(networkEntry, timing);
 
     const frame = this._nullableFrameBarrier(request);
     const page = frame?.page();
@@ -226,10 +227,10 @@ export class NetworkManager {
     if (!networkEntry) return;
 
     networkEntry.loadEndTime = epochTimeInSeconds();
-    // Full timing (incl. `receive`) is available once the response completes.
+    // responseEnd is fired after the last byte of the response is received.
     const timing = request.timing();
     networkEntry.timings = getResourceTimings(timing);
-    calcTotalTime(networkEntry, timing);
+    networkEntry.timings.total = calcTotalTime(networkEntry, timing);
 
     // For aborted/failed requests sizes will not be present
     if (timing.startTime <= 0) {

@@ -32,7 +32,7 @@ import {
   calcTotalTime,
   getResourceTimings,
   roundMilliSecs,
-} from './network-timings';
+} from '../network-timings';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -192,7 +192,7 @@ export class APINetworkManager {
       // back as `-1`; `calcTotalTime` then falls back to the wall-clock span.
       const timing = response.timing();
       entry.timings = getResourceTimings(timing);
-      calcTotalTime(entry, timing);
+      entry.timings.total = calcTotalTime(entry, timing);
 
       // Native (Playwright >= 1.61) TLS/socket info for the final hop;
       // both resolve to `null` for non-HTTPS or unknown addresses.
