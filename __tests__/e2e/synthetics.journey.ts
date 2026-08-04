@@ -114,64 +114,69 @@ async function checkForSyntheticsData({ page, journeyName }) {
   console.info(`Data for ${journeyName} indexed successfully`);
 }
 
-journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
-  const journeyName = 'Sample http integration policy';
+// The Synthetics private-locations API (used by synthetics_api.journey.ts)
+// only exists from Kibana 8.7.0 onward, so older stacks still go through
+// this UI-driven flow via Fleet's "Add integration" form.
+if (semver.satisfies(stackVersion, '<8.7.0')) {
+  journey(`${stackVersion} e2e test synthetics - http`, async ({ page }) => {
+    const journeyName = 'Sample http integration policy';
 
-  step('Go to synthetics integration page', async () => {
-    await goToSyntheticsIntegrationPage(page);
+    step('Go to synthetics integration page', async () => {
+      await goToSyntheticsIntegrationPage(page);
+    });
+
+    step('create an http monitor', async () => {
+      await createIntegrationPolicyName({ page, policyName: journeyName });
+      await page.fill(
+        '[data-test-subj="syntheticsUrlField"]',
+        'https://elastic.co'
+      );
+      await selectAgentPolicy({ page });
+      await page.click('[data-test-subj="syntheticsUrlField"]');
+      await confirmAndSavePolicy(page);
+      console.info(`Monitor for ${journeyName} created successfully`);
+    });
+
+    step('go to uptime', async () => {
+      await goToUptime(page);
+    });
+
+    step('wait for synthetics data', async () => {
+      await checkForSyntheticsData({ page, journeyName });
+    });
   });
 
-  step('create an http monitor', async () => {
-    await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.fill(
-      '[data-test-subj="syntheticsUrlField"]',
-      'https://elastic.co'
-    );
-    await selectAgentPolicy({ page });
-    await page.click('[data-test-subj="syntheticsUrlField"]');
-    await confirmAndSavePolicy(page);
-    console.info(`Monitor for ${journeyName} created successfully`);
-  });
+  journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
+    const journeyName = 'Sample tcp integration policy';
 
-  step('go to uptime', async () => {
-    await goToUptime(page);
-  });
+    step('Go to synthetics integration page', async () => {
+      await goToSyntheticsIntegrationPage(page);
+    });
 
-  step('wait for synthetics data', async () => {
-    await checkForSyntheticsData({ page, journeyName });
-  });
-});
+    step('create an tcp monitor', async () => {
+      await createIntegrationPolicyName({ page, policyName: journeyName });
+      await page.selectOption(
+        '[data-test-subj="syntheticsMonitorTypeField"]',
+        'tcp'
+      );
+      await page.fill(
+        '[data-test-subj="syntheticsTCPHostField"]',
+        'smtp.gmail.com:587'
+      );
+      await selectAgentPolicy({ page });
+      await confirmAndSavePolicy(page);
+      console.info(`Monitor for ${journeyName} created successfully`);
+    });
 
-journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
-  const journeyName = 'Sample tcp integration policy';
+    step('go to uptime', async () => {
+      await goToUptime(page);
+    });
 
-  step('Go to synthetics integration page', async () => {
-    await goToSyntheticsIntegrationPage(page);
+    step('wait for synthetics data', async () => {
+      await checkForSyntheticsData({ page, journeyName });
+    });
   });
-
-  step('create an tcp monitor', async () => {
-    await createIntegrationPolicyName({ page, policyName: journeyName });
-    await page.selectOption(
-      '[data-test-subj="syntheticsMonitorTypeField"]',
-      'tcp'
-    );
-    await page.fill(
-      '[data-test-subj="syntheticsTCPHostField"]',
-      'smtp.gmail.com:587'
-    );
-    await selectAgentPolicy({ page });
-    await confirmAndSavePolicy(page);
-    console.info(`Monitor for ${journeyName} created successfully`);
-  });
-
-  step('go to uptime', async () => {
-    await goToUptime(page);
-  });
-
-  step('wait for synthetics data', async () => {
-    await checkForSyntheticsData({ page, journeyName });
-  });
-});
+}
 
 // journey('E2e test synthetics - icmp', async ({ page }) => {
 //   const journeyName = 'Sample icmp integration policy';
@@ -196,7 +201,7 @@ journey(`${stackVersion} e2e test synthetics - tcp`, async ({ page }) => {
 //   });
 // });
 
-if (semver.satisfies(stackVersion, '>=8.0.1')) {
+if (semver.satisfies(stackVersion, '>=8.0.1 <8.7.0')) {
   journey(
     `${stackVersion} e2e test synthetics - browser - inline`,
     async ({ page }) => {
