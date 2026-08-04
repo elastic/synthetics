@@ -171,6 +171,22 @@ if (semver.satisfies(stackVersion, '>=8.7.0')) {
     });
   });
 
+  journey(`${stackVersion} e2e test synthetics api - icmp`, async () => {
+    let monitorId;
+
+    step('create an icmp monitor via API', async () => {
+      monitorId = await createMonitor({
+        type: 'icmp',
+        name: 'Sample icmp monitor (api)',
+        host: '1.1.1.1',
+      });
+    });
+
+    step('wait for synthetics data', async () => {
+      await waitForMonitorData(monitorId);
+    });
+  });
+
   journey(`${stackVersion} e2e test synthetics api - browser`, async () => {
     let monitorId;
 
