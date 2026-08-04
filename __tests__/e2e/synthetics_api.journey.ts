@@ -83,6 +83,8 @@ if (semver.satisfies(stackVersion, '>=8.7.0')) {
     });
   });
 
+  class MonitorCheckFailedError extends Error {}
+
   async function createMonitor(monitor) {
     const { data } = await kbn.post('/api/synthetics/monitors', {
       ...monitor,
@@ -109,13 +111,26 @@ if (semver.satisfies(stackVersion, '>=8.7.0')) {
               ],
             },
           },
+          sort: [{ '@timestamp': 'desc' }],
+          size: 1,
         });
-        if (data?.hits.total.value >= 1) {
+        const hit = data?.hits?.hits?.[0]?._source;
+        if (hit?.summary?.up >= 1) {
           console.info(`Data for monitor ${monitorId} indexed successfully`);
           return;
         }
+        // A down result means the check ran and failed -- that's a real
+        // failure (e.g. a broken agent), not something more polling fixes.
+        if (hit?.summary?.down >= 1) {
+          throw new MonitorCheckFailedError(
+            `Monitor ${monitorId} check failed: ${
+              hit.error?.message ?? JSON.stringify(hit.summary)
+            }`
+          );
+        }
       } catch (e) {
-        // keep polling until the timeout
+        if (e instanceof MonitorCheckFailedError) throw e;
+        // keep polling on transient/network errors until the timeout
       }
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
