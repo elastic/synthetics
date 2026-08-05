@@ -23,11 +23,10 @@
  *
  */
 
-// API-driven equivalent of synthetics.journey.ts's http/tcp/browser journeys,
-// for stacks new enough to have the Synthetics private-locations API
-// (Kibana >= 8.7.0). Creates a private location against the Fleet agent
-// policy elastic-package provisions, creates monitors against it, and
-// verifies results directly in Elasticsearch -- no Kibana UI involved.
+// Creates a Synthetics private location against the Fleet agent policy
+// elastic-package provisions, creates http/tcp/browser monitors against it,
+// and verifies results directly in Elasticsearch -- no Kibana UI involved.
+// Requires the Synthetics private-locations API (Kibana >= 8.7.0).
 
 import { journey, step, beforeAll } from '@elastic/synthetics';
 import axios from 'axios';
