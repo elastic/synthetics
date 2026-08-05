@@ -31,6 +31,12 @@
 // release (skipped for "main", which has none) and the current dev snapshot,
 // sourced live from artifacts-api. There's nothing to go stale here -- the
 // matrix always reflects upstream's current state.
+//
+// A branch line may also name a fixed floor version, e.g. "8.19 8.19.19":
+// a permanently pinned known-good release, included in every run regardless
+// of what's currently live. This keeps at least one leg passing as a canary
+// that the test harness itself works, even if every current GA/snapshot for
+// that branch is broken upstream.
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const https = require('https');
@@ -39,6 +45,9 @@ const path = require('path');
 
 const SNAPSHOTS_BASE = 'https://storage.googleapis.com/artifacts-api/snapshots';
 const VERSIONS_API = 'https://artifacts-api.elastic.co/v1/versions';
+const DOCKER_REGISTRY = 'https://docker.elastic.co';
+const ES_REPO = 'elasticsearch/elasticsearch';
+const MANIFEST_ACCEPT = 'application/vnd.docker.distribution.manifest.v2+json';
 const BRANCHES_FILE = path.join(__dirname, '..', 'branches');
 const MAIN_BRANCH = 'main';
 
@@ -68,29 +77,70 @@ function fetchJSON(url) {
   });
 }
 
-function latestGAForBranch(branch, allVersions) {
-  const patchRe = new RegExp(`^${branch.replace('.', '\\.')}\\.(\\d+)$`);
-  let latest = null;
-  let latestPatch = -1;
-  for (const version of allVersions) {
-    const match = version.match(patchRe);
-    if (match && Number(match[1]) > latestPatch) {
-      latest = version;
-      latestPatch = Number(match[1]);
-    }
-  }
-  return latest;
+function requestHead(url, headers) {
+  return new Promise((resolve, reject) => {
+    https
+      .request(url, { method: 'HEAD', headers, timeout: 10000 }, res => {
+        res.resume();
+        resolve(res);
+      })
+      .on('error', reject)
+      .on('timeout', function () {
+        this.destroy(new Error(`Timed out fetching ${url}`));
+      })
+      .end();
+  });
 }
 
-async function resolveBranch(branch, allVersions) {
+// The artifacts-api version list includes versions whose Docker images
+// haven't published yet (release automation registers the version before
+// every artifact type finishes building) -- confirmed the hard way, when a
+// "latest GA" pick 404'd on every image in the stack. Check the registry
+// itself instead of trusting that list.
+async function dockerImageExists(tag) {
+  const manifestUrl = `${DOCKER_REGISTRY}/v2/${ES_REPO}/manifests/${tag}`;
+  const challenge = await requestHead(manifestUrl, { Accept: MANIFEST_ACCEPT });
+  if (challenge.statusCode === 200) return true;
+  const authHeader = challenge.headers['www-authenticate'];
+  const realm = authHeader && authHeader.match(/realm="([^"]+)"/);
+  const service = authHeader && authHeader.match(/service="([^"]+)"/);
+  if (!realm || !service) return false;
+
+  const tokenUrl = `${realm[1]}?service=${encodeURIComponent(
+    service[1]
+  )}&scope=repository:${ES_REPO}:pull`;
+  const { token } = await fetchJSON(tokenUrl);
+  if (!token) return false;
+
+  const verified = await requestHead(manifestUrl, {
+    Accept: MANIFEST_ACCEPT,
+    Authorization: `Bearer ${token}`,
+  });
+  return verified.statusCode === 200;
+}
+
+async function latestGAForBranch(branch, allVersions) {
+  const patchRe = new RegExp(`^${branch.replace('.', '\\.')}\\.(\\d+)$`);
+  const candidates = allVersions
+    .filter(version => patchRe.test(version))
+    .sort((a, b) => Number(b.match(patchRe)[1]) - Number(a.match(patchRe)[1]));
+
+  for (const candidate of candidates) {
+    if (await dockerImageExists(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function resolveBranch({ branch, floor }, allVersions) {
   const { version: snapshot } = await fetchJSON(
     `${SNAPSHOTS_BASE}/${branch}.json`
   );
   const resolved = [snapshot];
   if (branch !== MAIN_BRANCH) {
-    const ga = latestGAForBranch(branch, allVersions);
+    const ga = await latestGAForBranch(branch, allVersions);
     if (ga) resolved.push(ga);
   }
+  if (floor && !resolved.includes(floor)) resolved.push(floor);
   return resolved;
 }
 
@@ -99,12 +149,16 @@ async function resolveBranch(branch, allVersions) {
     .readFileSync(BRANCHES_FILE, 'utf8')
     .split('\n')
     .map(line => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(line => {
+      const [branch, floor] = line.split(/\s+/);
+      return { branch, floor };
+    });
 
   const { versions: allVersions } = await fetchJSON(VERSIONS_API);
 
   const resolved = await Promise.all(
-    branches.map(branch => resolveBranch(branch, allVersions))
+    branches.map(entry => resolveBranch(entry, allVersions))
   );
   const versions = resolved.flat();
 
