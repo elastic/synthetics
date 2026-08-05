@@ -9,8 +9,7 @@
     "test:integration": "npm i && npm run setup:integration && bash scripts/test_integration.sh",
     "test:integration_all": "npm i && bash scripts/test_versions.sh test",
     "test:ci_integration": "npm i && npm run setup:integration && bash scripts/ci.sh",
-    "test:ci_integration_all": "npm i && bash scripts/test_versions.sh ci",
-    "check:new-snapshot": "node scripts/check_new_snapshot.js"
+    "test:ci_integration_all": "npm i && bash scripts/test_versions.sh ci"
   },
   "devDependencies": {
     "@elastic/synthetics": "file:../../",

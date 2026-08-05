@@ -13,26 +13,19 @@ permissions:
   contents: read
 
 jobs:
-  check-latest-snapshot:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-      - run: npm run check:new-snapshot
-        working-directory: __tests__/e2e
-
   prepare:
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.set.outputs.versions }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - id: set
         working-directory: __tests__/e2e
         run: |
-          versions=$(jq -R -s -c 'split("\n") | map(select(length > 0))' versions)
+          versions=$(node scripts/resolve_versions.js --json)
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
 
   test:
