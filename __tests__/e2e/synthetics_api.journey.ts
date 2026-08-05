@@ -171,21 +171,10 @@ if (semver.satisfies(stackVersion, '>=8.7.0')) {
     });
   });
 
-  journey(`${stackVersion} e2e test synthetics api - icmp`, async () => {
-    let monitorId;
-
-    step('create an icmp monitor via API', async () => {
-      monitorId = await createMonitor({
-        type: 'icmp',
-        name: 'Sample icmp monitor (api)',
-        host: '1.1.1.1',
-      });
-    });
-
-    step('wait for synthetics data', async () => {
-      await waitForMonitorData(monitorId);
-    });
-  });
+  // icmp isn't tested here: it requires a raw-socket capability the
+  // elastic-package-provisioned agent container doesn't grant, causing
+  // every check to fail with "could not write to conn: write udp
+  // 0.0.0.0:1->x.x.x.x: invalid argument" regardless of stack version.
 
   journey(`${stackVersion} e2e test synthetics api - browser`, async () => {
     let monitorId;
