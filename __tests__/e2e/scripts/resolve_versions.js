@@ -171,6 +171,14 @@ async function nextSnapshotForBranch(branch, releases) {
     : `${branch}.${latestPatch + 1}-SNAPSHOT`;
 }
 
+function snapshotHasReleasedVersion(snapshot, releases) {
+  const tagName = `v${snapshot.replace(/-SNAPSHOT$/, '')}`;
+  return releases.some(
+    release =>
+      release.tag_name === tagName && !release.draft && !release.prerelease
+  );
+}
+
 async function resolveBranch(
   { branch, floor },
   allVersions,
@@ -185,11 +193,14 @@ async function resolveBranch(
   const { version: snapshot } = await fetchJSONFn(
     `${SNAPSHOTS_BASE}/${branch}.json`
   );
-  const resolved = [snapshot];
+  let resolved = [snapshot];
   if (branch !== MAIN_BRANCH) {
     const nextSnapshot = await nextSnapshotForBranchFn(branch, releases);
     if (nextSnapshot && !resolved.includes(nextSnapshot)) {
-      if (await stackImagesExistFn(nextSnapshot)) resolved.push(nextSnapshot);
+      if (await stackImagesExistFn(nextSnapshot)) {
+        if (snapshotHasReleasedVersion(snapshot, releases)) resolved = [];
+        resolved.push(nextSnapshot);
+      }
     }
 
     const ga = await latestGAForBranchFn(branch, allVersions);

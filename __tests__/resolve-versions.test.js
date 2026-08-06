@@ -42,7 +42,7 @@ describe('E2E version resolver', () => {
     ).resolves.toBe('9.5.2-SNAPSHOT');
   });
 
-  it('adds an inferred snapshot only after every required image is available', async () => {
+  it('replaces a released snapshot with an inferred snapshot when every image is available', async () => {
     const stackImagesExistFn = jest.fn().mockResolvedValue(true);
 
     await expect(
@@ -58,7 +58,7 @@ describe('E2E version resolver', () => {
           stackImagesExistFn,
         }
       )
-    ).resolves.toEqual(['9.5.0-SNAPSHOT', '9.5.1-SNAPSHOT', '9.5.0']);
+    ).resolves.toEqual(['9.5.1-SNAPSHOT', '9.5.0']);
     expect(stackImagesExistFn).toHaveBeenCalledWith('9.5.1-SNAPSHOT');
   });
 
