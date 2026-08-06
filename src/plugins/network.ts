@@ -28,6 +28,7 @@ import { NetworkInfo, BrowserInfo, Driver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp } from '../helpers';
+import { calcTotalTime, getResourceTimings } from '../network-timings';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -37,22 +38,6 @@ import { getTimestamp } from '../helpers';
 function epochTimeInSeconds() {
   return getTimestamp() / 1e6;
 }
-
-/**
- * Find the first positive number in an array for Resource timing data
- */
-const firstPositive = (numbers: number[]) => {
-  for (let i = 0; i < numbers.length; ++i) {
-    if (numbers[i] > 0) {
-      return numbers[i];
-    }
-  }
-  return null;
-};
-
-const roundMilliSecs = (value: number): number => {
-  return Math.floor(value * 1000) / 1000;
-};
 
 /**
  * Used as a key in each Network Request to identify the
@@ -200,42 +185,8 @@ export class NetworkManager {
     // Gather all resource timing information up until the
     // TTFB(Time to first byte) is received
     const timing = request.timing();
-    const blocked =
-      roundMilliSecs(
-        firstPositive([
-          timing.domainLookupStart,
-          timing.connectStart,
-          timing.requestStart,
-        ])
-      ) || -1;
-    const dns =
-      timing.domainLookupEnd !== -1
-        ? roundMilliSecs(timing.domainLookupEnd - timing.domainLookupStart)
-        : -1;
-    const connect =
-      timing.connectEnd !== -1
-        ? roundMilliSecs(timing.connectEnd - timing.connectStart)
-        : -1;
-    const ssl =
-      timing.secureConnectionStart !== -1
-        ? roundMilliSecs(timing.connectEnd - timing.secureConnectionStart)
-        : -1;
-    const wait =
-      timing.responseStart !== -1
-        ? roundMilliSecs(timing.responseStart - timing.requestStart)
-        : -1;
-
-    networkEntry.timings = {
-      blocked,
-      dns,
-      ssl,
-      connect,
-      send: 0, // not exposed via RT api
-      wait,
-      receive: -1, // will be available after full response is received
-      total: -1,
-    };
-    this._calcTotalTime(networkEntry, timing);
+    networkEntry.timings = getResourceTimings(timing);
+    networkEntry.timings.total = calcTotalTime(networkEntry, timing);
 
     const frame = this._nullableFrameBarrier(request);
     const page = frame?.page();
@@ -278,12 +229,8 @@ export class NetworkManager {
     networkEntry.loadEndTime = epochTimeInSeconds();
     // responseEnd is fired after the last byte of the response is received.
     const timing = request.timing();
-    const receive =
-      timing.responseEnd !== -1
-        ? roundMilliSecs(timing.responseEnd - timing.responseStart)
-        : -1;
-    networkEntry.timings.receive = receive;
-    this._calcTotalTime(networkEntry, timing);
+    networkEntry.timings = getResourceTimings(timing);
+    networkEntry.timings.total = calcTotalTime(networkEntry, timing);
 
     // For aborted/failed requests sizes will not be present
     if (timing.startTime <= 0) {
@@ -308,35 +255,6 @@ export class NetworkManager {
         };
       })
     );
-  }
-
-  /**
-   * Calculates the total time for the network request based on the ResourceTiming
-   * data from Playwright. Fallbacks to the event timings if ResourceTiming data
-   * is not available.
-   */
-  private _calcTotalTime(
-    entry: NetworkInfo,
-    rtiming: ReturnType<Request['timing']>
-  ) {
-    const timings = entry.timings;
-    entry.timings.total = [
-      timings.blocked,
-      timings.dns,
-      timings.connect,
-      timings.wait,
-      timings.receive,
-    ].reduce((pre, cur) => ((cur || -1) > 0 ? cur + pre : pre), 0);
-
-    // fallback when ResourceTiming data is not available
-    if (rtiming.startTime <= 0) {
-      const end =
-        entry.loadEndTime ||
-        entry.responseReceivedTime ||
-        entry.requestSentTime;
-      const total = roundMilliSecs((end - entry.requestSentTime) * 1000);
-      entry.timings.total = total <= 0 ? -1 : total;
-    }
   }
 
   async stop() {

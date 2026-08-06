@@ -7,13 +7,34 @@ on:
   push:
     branches:
       - main
+  pull_request: ~
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.set.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - id: set
+        working-directory: __tests__/e2e
+        run: |
+          versions=$(node scripts/resolve_versions.js --json)
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJson(needs.prepare.outputs.versions) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,18 +48,23 @@ jobs:
       - run: npm run build
       - run: npm install
         working-directory: __tests__/e2e
-      - run: npm run test:ci_integration_all
+      - run: bash scripts/setup_integration.sh ${{ matrix.version }} && bash scripts/ci_integration.sh ${{ matrix.version }}
         working-directory: __tests__/e2e
         env:
           TERM: xterm # this is needed for tput
       - if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.version }}
           path: "**/junit_*.xml"
           if-no-files-found: error
-      - if: always()
-        uses: elastic/oblt-actions/slack/notify-result@v1
+
+  notify:
+    needs: test
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: elastic/oblt-actions/slack/notify-result@v1
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: "#synthetics-notify"

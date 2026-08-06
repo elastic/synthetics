@@ -28,6 +28,11 @@ import { NetworkInfo, APIDriver } from '../common_types';
 import { log } from '../core/logger';
 import { Step } from '../dsl';
 import { getTimestamp, now } from '../helpers';
+import {
+  calcTotalTime,
+  getResourceTimings,
+  roundMilliSecs,
+} from '../network-timings';
 
 /**
  * Kibana UI expects the requestStartTime and loadEndTime to be baseline
@@ -37,8 +42,6 @@ import { getTimestamp, now } from '../helpers';
 function epochTimeInSeconds() {
   return getTimestamp() / 1e6;
 }
-
-const roundMilliSecs = (ms: number): number => Math.floor(ms * 1000) / 1000;
 
 // All `APIRequestContext` verbs funnel into `fetch`, so patching `fetch`
 // alone captures every request exactly once.
@@ -154,7 +157,6 @@ export class APINetworkManager {
         urlOrRequest as any,
         options
       )) as APIResponse;
-      const endTime = now();
       const headers = response.headers();
 
       // Prefer `Content-Length`; fall back to the body buffer (chunked
@@ -184,10 +186,13 @@ export class APINetworkManager {
       entry.resourceSize = responseBodyBytes;
       entry.responseReceivedTime = epochTimeInSeconds();
       entry.loadEndTime = entry.responseReceivedTime;
-      const wait = roundMilliSecs(endTime - startTime);
-      entry.timings.wait = wait;
-      entry.timings.receive = 0;
-      entry.timings.total = wait;
+
+      // Per-phase Resource Timing (Playwright >= 1.62). Phases that did not
+      // happen (reused keep-alive socket) or are unknown (HAR replay) come
+      // back as `-1`; `calcTotalTime` then falls back to the wall-clock span.
+      const timing = response.timing();
+      entry.timings = getResourceTimings(timing);
+      entry.timings.total = calcTotalTime(entry, timing);
 
       // Native (Playwright >= 1.61) TLS/socket info for the final hop;
       // both resolve to `null` for non-HTTPS or unknown addresses.
