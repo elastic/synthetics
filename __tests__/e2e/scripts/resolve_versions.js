@@ -32,6 +32,11 @@
 // sourced live from artifacts-api. There's nothing to go stale here -- the
 // matrix always reflects upstream's current state.
 //
+// artifacts-api can lag the next patch snapshot after a release. To cover that
+// window, non-main branches also derive the next patch from Elasticsearch's
+// latest completed GitHub release and include it once every image used by the
+// E2E stack has been published.
+//
 // A branch line may also name a fixed floor version, e.g. "8.19 8.19.19":
 // a permanently pinned known-good release, included in every run regardless
 // of what's currently live. This keeps at least one leg passing as a canary
@@ -45,8 +50,15 @@ const path = require('path');
 
 const SNAPSHOTS_BASE = 'https://storage.googleapis.com/artifacts-api/snapshots';
 const VERSIONS_API = 'https://artifacts-api.elastic.co/v1/versions';
+const ELASTICSEARCH_RELEASES_API =
+  'https://api.github.com/repos/elastic/elasticsearch/releases?per_page=100';
 const DOCKER_REGISTRY = 'https://docker.elastic.co';
 const ES_REPO = 'elasticsearch/elasticsearch';
+const STACK_IMAGE_REPOS = [
+  ES_REPO,
+  'kibana/kibana',
+  'elastic-agent/elastic-agent-complete',
+];
 const MANIFEST_ACCEPT = 'application/vnd.docker.distribution.manifest.v2+json';
 const BRANCHES_FILE = path.join(__dirname, '..', 'branches');
 const MAIN_BRANCH = 'main';
@@ -54,22 +66,29 @@ const MAIN_BRANCH = 'main';
 function fetchJSON(url) {
   return new Promise((resolve, reject) => {
     https
-      .get(url, { timeout: 10000 }, res => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`${url} responded with ${res.statusCode}`));
-          res.resume();
-          return;
-        }
-        let data = '';
-        res.on('data', chunk => (data += chunk));
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (err) {
-            reject(err);
+      .get(
+        url,
+        {
+          timeout: 10000,
+          headers: { 'User-Agent': 'synthetics-e2e-version-resolver' },
+        },
+        res => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`${url} responded with ${res.statusCode}`));
+            res.resume();
+            return;
           }
-        });
-      })
+          let data = '';
+          res.on('data', chunk => (data += chunk));
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (err) {
+              reject(err);
+            }
+          });
+        }
+      )
       .on('error', reject)
       .on('timeout', function () {
         this.destroy(new Error(`Timed out fetching ${url}`));
@@ -97,8 +116,8 @@ function requestHead(url, headers) {
 // every artifact type finishes building) -- confirmed the hard way, when a
 // "latest GA" pick 404'd on every image in the stack. Check the registry
 // itself instead of trusting that list.
-async function dockerImageExists(tag) {
-  const manifestUrl = `${DOCKER_REGISTRY}/v2/${ES_REPO}/manifests/${tag}`;
+async function dockerImageExists(repository, tag) {
+  const manifestUrl = `${DOCKER_REGISTRY}/v2/${repository}/manifests/${tag}`;
   const challenge = await requestHead(manifestUrl, { Accept: MANIFEST_ACCEPT });
   if (challenge.statusCode === 200) return true;
   const authHeader = challenge.headers['www-authenticate'];
@@ -108,7 +127,7 @@ async function dockerImageExists(tag) {
 
   const tokenUrl = `${realm[1]}?service=${encodeURIComponent(
     service[1]
-  )}&scope=repository:${ES_REPO}:pull`;
+  )}&scope=repository:${repository}:pull`;
   const { token } = await fetchJSON(tokenUrl);
   if (!token) return false;
 
@@ -119,6 +138,13 @@ async function dockerImageExists(tag) {
   return verified.statusCode === 200;
 }
 
+async function stackImagesExist(tag) {
+  const availability = await Promise.all(
+    STACK_IMAGE_REPOS.map(repository => dockerImageExists(repository, tag))
+  );
+  return availability.every(Boolean);
+}
+
 async function latestGAForBranch(branch, allVersions) {
   const patchRe = new RegExp(`^${branch.replace('.', '\\.')}\\.(\\d+)$`);
   const candidates = allVersions
@@ -126,17 +152,36 @@ async function latestGAForBranch(branch, allVersions) {
     .sort((a, b) => Number(b.match(patchRe)[1]) - Number(a.match(patchRe)[1]));
 
   for (const candidate of candidates) {
-    if (await dockerImageExists(candidate)) return candidate;
+    if (await dockerImageExists(ES_REPO, candidate)) return candidate;
   }
   return null;
 }
 
-async function resolveBranch({ branch, floor }, allVersions) {
+async function nextSnapshotForBranch(branch, releases) {
+  const patchRe = new RegExp(`^v${branch.replace('.', '\\.')}\\.(\\d+)$`);
+  const latestPatch = releases
+    .filter(release => !release.draft && !release.prerelease)
+    .map(release => release.tag_name.match(patchRe))
+    .filter(Boolean)
+    .map(match => Number(match[1]))
+    .sort((a, b) => b - a)[0];
+
+  return latestPatch === undefined
+    ? null
+    : `${branch}.${latestPatch + 1}-SNAPSHOT`;
+}
+
+async function resolveBranch({ branch, floor }, allVersions, releases) {
   const { version: snapshot } = await fetchJSON(
     `${SNAPSHOTS_BASE}/${branch}.json`
   );
   const resolved = [snapshot];
   if (branch !== MAIN_BRANCH) {
+    const nextSnapshot = await nextSnapshotForBranch(branch, releases);
+    if (nextSnapshot && !resolved.includes(nextSnapshot)) {
+      if (await stackImagesExist(nextSnapshot)) resolved.push(nextSnapshot);
+    }
+
     const ga = await latestGAForBranch(branch, allVersions);
     if (ga) resolved.push(ga);
   }
@@ -155,10 +200,13 @@ async function resolveBranch({ branch, floor }, allVersions) {
       return { branch, floor };
     });
 
-  const { versions: allVersions } = await fetchJSON(VERSIONS_API);
+  const [{ versions: allVersions }, releases] = await Promise.all([
+    fetchJSON(VERSIONS_API),
+    fetchJSON(ELASTICSEARCH_RELEASES_API),
+  ]);
 
   const resolved = await Promise.all(
-    branches.map(entry => resolveBranch(entry, allVersions))
+    branches.map(entry => resolveBranch(entry, allVersions, releases))
   );
   const versions = resolved.flat();
 
