@@ -171,25 +171,35 @@ async function nextSnapshotForBranch(branch, releases) {
     : `${branch}.${latestPatch + 1}-SNAPSHOT`;
 }
 
-async function resolveBranch({ branch, floor }, allVersions, releases) {
-  const { version: snapshot } = await fetchJSON(
+async function resolveBranch(
+  { branch, floor },
+  allVersions,
+  releases,
+  {
+    fetchJSONFn = fetchJSON,
+    latestGAForBranchFn = latestGAForBranch,
+    nextSnapshotForBranchFn = nextSnapshotForBranch,
+    stackImagesExistFn = stackImagesExist,
+  } = {}
+) {
+  const { version: snapshot } = await fetchJSONFn(
     `${SNAPSHOTS_BASE}/${branch}.json`
   );
   const resolved = [snapshot];
   if (branch !== MAIN_BRANCH) {
-    const nextSnapshot = await nextSnapshotForBranch(branch, releases);
+    const nextSnapshot = await nextSnapshotForBranchFn(branch, releases);
     if (nextSnapshot && !resolved.includes(nextSnapshot)) {
-      if (await stackImagesExist(nextSnapshot)) resolved.push(nextSnapshot);
+      if (await stackImagesExistFn(nextSnapshot)) resolved.push(nextSnapshot);
     }
 
-    const ga = await latestGAForBranch(branch, allVersions);
+    const ga = await latestGAForBranchFn(branch, allVersions);
     if (ga) resolved.push(ga);
   }
   if (floor && !resolved.includes(floor)) resolved.push(floor);
   return resolved;
 }
 
-(async () => {
+async function main() {
   const branches = fs
     .readFileSync(BRANCHES_FILE, 'utf8')
     .split('\n')
@@ -215,7 +225,13 @@ async function resolveBranch({ branch, floor }, allVersions, releases) {
   } else {
     process.stdout.write(versions.join('\n') + '\n');
   }
-})().catch(err => {
-  console.error('Failed to resolve stack versions:', err);
-  process.exit(1);
-});
+}
+
+if (require.main === module) {
+  main().catch(err => {
+    console.error('Failed to resolve stack versions:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { nextSnapshotForBranch, resolveBranch };
