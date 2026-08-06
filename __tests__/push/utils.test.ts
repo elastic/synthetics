@@ -23,9 +23,22 @@
  *
  */
 
-import { getSizedBatches, normalizeMonitorName } from '../../src/push/utils';
+import {
+  getSizedBatches,
+  isAPIMonitorSupported,
+  normalizeMonitorName,
+} from '../../src/push/utils';
 
 describe('Push Utils', () => {
+  it('API monitors require Kibana >= 9.6.0', () => {
+    expect(isAPIMonitorSupported('9.6.0')).toBe(true);
+    expect(isAPIMonitorSupported('9.6.1')).toBe(true);
+    expect(isAPIMonitorSupported('10.0.0')).toBe(true);
+    expect(isAPIMonitorSupported('9.6.0-SNAPSHOT')).toBe(true);
+    expect(isAPIMonitorSupported('9.5.0')).toBe(false);
+    expect(isAPIMonitorSupported('8.18.0')).toBe(false);
+  });
+
   it("normalize monitor's name", () => {
     expect(normalizeMonitorName('test monitor-name')).toBe('test monitor-name');
     expect(normalizeMonitorName('https://example.com')).toBe(

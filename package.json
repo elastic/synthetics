@@ -61,16 +61,16 @@
     "micromatch": "^4.0.8",
     "otpauth": "^9.3.2",
     "pirates": "^4.0.5",
-    "playwright": "=1.58.2",
-    "playwright-chromium": "=1.58.2",
-    "playwright-core": "=1.58.2",
+    "playwright": "=1.62.0",
+    "playwright-chromium": "=1.62.0",
+    "playwright-core": "=1.62.0",
     "semver": "^7.5.4",
-    "sharp": "^0.34.2",
+    "sharp": "^0.35.3",
     "snakecase-keys": "^4.0.1",
     "sonic-boom": "^3.3.0",
     "source-map-support": "^0.5.21",
     "stack-utils": "^2.0.6",
-    "undici": "^7.24.0",
+    "undici": "^7.28.0",
     "unzip-stream": "^0.3.4",
     "yaml": "^2.8.3"
   },
@@ -102,7 +102,7 @@
     "cross-spawn": "^7.0.5",
     "brace-expansion@1": "^1.1.13",
     "brace-expansion@2": "^2.0.3",
-    "brace-expansion@5": "^5.0.6",
+    "brace-expansion@5": "^5.0.7",
     "archiver": {
       "archiver-utils": {
         "lodash": "^4.18.0"

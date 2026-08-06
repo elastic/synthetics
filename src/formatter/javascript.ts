@@ -23,10 +23,7 @@
  *
  */
 
-import {
-  JavaScriptLanguageGenerator,
-  JavaScriptFormatter,
-} from 'playwright-core/lib/server/codegen/javascript';
+import { JavaScriptLanguageGenerator, JavaScriptFormatter } from './codegen';
 
 export type Step = {
   actions: ActionInContext[];

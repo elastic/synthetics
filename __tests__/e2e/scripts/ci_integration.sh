@@ -14,7 +14,7 @@ fi
 
 # run e2e tests journey
 ##################################################
-STACK_VERSION=$1 SYNTHETICS_JUNIT_FILE="junit_$1.xml" npx @elastic/synthetics synthetics.journey.ts --reporter junit $SYNTHETICS_E2E_ARGS
+STACK_VERSION=$1 SYNTHETICS_JUNIT_FILE="junit_$1.xml" npx @elastic/synthetics synthetics_api.journey.ts --reporter junit $SYNTHETICS_E2E_ARGS
 
 # Take the stack down
 elastic-package stack down

@@ -123,6 +123,41 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('runs inline apiJourney module with ESM imports', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `import { apiJourney, step, expect } from '@elastic/synthetics';
+apiJourney('inline api', ({ request, params }) => {
+  step('fetch', async () => {
+    const r = await request.get(params.url);
+    expect(r.status()).toBe(200);
+  });
+});`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline api');
+      expect(await cli.exitCode).toBe(0);
+    });
+
+    it('runs inline journey module with ESM imports', async () => {
+      const cli = new CLIMock()
+        .stdin(
+          `import { journey, step, expect } from '@elastic/synthetics';
+journey('inline browser', ({ page, params }) => {
+  step('check h2', async () => {
+    await page.goto(params.url, { timeout: 1500 });
+    const sel = await page.waitForSelector('h2.synthetics', { timeout: 1500 });
+    expect(await sel.textContent()).toBe('Synthetics test page');
+  });
+});`
+        )
+        .args(['--inline', '--params', JSON.stringify(serverParams)])
+        .run();
+      await cli.waitFor('Journey: inline browser');
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('does not load a configuration file without a config param', async () => {
       const output = async () => {
         const cli = new CLIMock()
@@ -183,15 +218,30 @@ describe('CLI', () => {
   });
 
   it('produce json with reporter=json flag', async () => {
-    const output = async args => {
-      const cli = new CLIMock()
-        .args([join(FIXTURES_DIR, 'fake.journey.ts'), ...args])
-        .run();
-      await cli.waitFor('fake journey');
-      expect(await cli.exitCode).toBe(0);
-      return JSON.parse(cli.output());
+    const cli = new CLIMock()
+      .args([join(FIXTURES_DIR, 'fake.journey.ts'), '--reporter', 'json'])
+      .run();
+    await cli.waitFor('fake journey');
+    expect(await cli.exitCode).toBe(0);
+    /**
+     * The json reporter writes one event per line, but the OS may
+     * deliver multiple events in a single `data` chunk on stdout. Parse
+     * each captured line independently and look for `journey/start`
+     * rather than calling `JSON.parse` on the last raw chunk, which is
+     * order-and-flush-dependent and flakes on Linux CI.
+     */
+    const tryParse = (line: string) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
     };
-    expect((await output(['--reporter', 'json'])).journey).toEqual({
+    const journeyStart = cli
+      .buffer()
+      .map(tryParse)
+      .find(e => e?.type === 'journey/start');
+    expect(journeyStart?.journey).toEqual({
       id: 'fake journey',
       name: 'fake journey',
     });

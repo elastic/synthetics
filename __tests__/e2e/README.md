@@ -46,4 +46,4 @@ $ npm install
 $ npm run test:ci_integration_all
 ```
 
-Results are outputted to multiple junit files in the root of this directory. Each junit file is named `junit_[version].xml` corresponding to the individual stack version tested. For example `junit_8.0.0-SNAPSHOT.xml`. Failures should be reported if any junit file contains errors. A list of versions currently being tested is available in this directory in the `versions` file
+Results are outputted to multiple junit files in the root of this directory. Each junit file is named `junit_[version].xml` corresponding to the individual stack version tested. For example `junit_8.0.0-SNAPSHOT.xml`. Failures should be reported if any junit file contains errors. Stack versions are resolved at run time (see `scripts/resolve_versions.js`) from the branches listed in the `branches` file -- the latest GA release and current dev snapshot for each.

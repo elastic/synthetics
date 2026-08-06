@@ -32,6 +32,7 @@ import { red } from 'kleur/colors';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { MonitorSchema } from './monitor';
+import { isBundledMonitorType } from './utils';
 
 async function unzipFile(zipPath, destination) {
   return new Promise<void>((resolve, reject) => {
@@ -118,7 +119,7 @@ async function extract(
   zipPath: string,
   unzipPath: string
 ) {
-  if (schema.type !== 'browser') {
+  if (!isBundledMonitorType(schema.type)) {
     return;
   }
   const content = schema.content;

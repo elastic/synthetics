@@ -24,12 +24,14 @@
  */
 
 import { NetworkManager } from '../../src/plugins/network';
+import { APINetworkManager } from '../../src/plugins/api-network';
 import { PluginManager } from '../../src/plugins';
 
 jest.mock('../../src/plugins/network');
+jest.mock('../../src/plugins/api-network');
 
-describe('plugin manager', () => {
-  const pluginManager = new PluginManager({} as any);
+describe('plugin manager (browser driver)', () => {
+  const pluginManager = new PluginManager({ context: {} } as any);
 
   it('register plugin by type', async () => {
     await pluginManager.register('network', {});
@@ -56,5 +58,44 @@ describe('plugin manager', () => {
     await pluginManager.stop('network');
     expect(instance?.start).toHaveBeenCalled();
     expect(instance?.stop).toHaveBeenCalled();
+  });
+});
+
+describe('plugin manager (API driver)', () => {
+  const apiPluginManager = new PluginManager({ request: {} } as any);
+
+  it('registers APINetworkManager for the network plugin', async () => {
+    apiPluginManager.register('network', {});
+    expect(apiPluginManager.get('network')).toBeInstanceOf(APINetworkManager);
+  });
+
+  it('skips browser-only plugins for API drivers', async () => {
+    apiPluginManager.registerAll({});
+    expect(apiPluginManager.get('network')).toBeDefined();
+    expect(apiPluginManager.get('browserconsole')).toBeUndefined();
+    expect(apiPluginManager.get('performance')).toBeUndefined();
+    expect(apiPluginManager.get('trace')).toBeUndefined();
+  });
+
+  it('output() surfaces network results from APINetworkManager', async () => {
+    apiPluginManager.registerAll({});
+    const network = apiPluginManager.get('network') as APINetworkManager;
+    (network.stop as jest.Mock).mockResolvedValue([
+      { url: 'http://x', request: { method: 'GET' } } as any,
+    ]);
+    const out = await apiPluginManager.output();
+    expect(network.stop).toHaveBeenCalled();
+    expect(out.networkinfo).toEqual([
+      { url: 'http://x', request: { method: 'GET' } },
+    ]);
+    expect(out.browserconsole).toBeUndefined();
+  });
+
+  it('onStep does not throw when only network plugin is registered', () => {
+    apiPluginManager.registerAll({});
+    const step = { name: 'step1' } as any;
+    expect(() => apiPluginManager.onStep(step)).not.toThrow();
+    const network = apiPluginManager.get('network') as APINetworkManager;
+    expect(network._currentStep).toBe(step);
   });
 });

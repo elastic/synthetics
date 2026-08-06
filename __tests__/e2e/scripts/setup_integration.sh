@@ -9,7 +9,24 @@ eval "$(elastic-package stack shellinit)"
 elastic-package stack down
 
 # start elastic-package
-env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elasticsearch"
+# elastic-package always resolves the plain (non-"complete") elastic-agent-wolfi
+# image for stack up on modern versions, which can't run browser monitors
+# ("cannot be created outside the official elastic docker image"). Force the
+# complete image via the one override elastic-package actually honors for
+# this command -- ELASTIC_AGENT_IMAGE_REF alone is ignored here. The
+# "complete" image moved from the "beats" to the "elastic-agent" registry
+# namespace at 8.2.0, so pick the namespace that actually has a manifest.
+version_core="${1%%-*}"
+major="${version_core%%.*}"
+minor="${version_core#*.}"
+minor="${minor%%.*}"
+if [ "$major" -lt 8 ] || { [ "$major" -eq 8 ] && [ "$minor" -lt 2 ]; }; then
+  agent_complete_image="docker.elastic.co/beats/elastic-agent-complete:$1"
+else
+  agent_complete_image="docker.elastic.co/elastic-agent/elastic-agent-complete:$1"
+fi
+
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF_OVERRIDE="$agent_complete_image" KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elasticsearch"
 
 curl -k -X PUT "https://elastic:changeme@localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d'
 {
@@ -19,7 +36,7 @@ curl -k -X PUT "https://elastic:changeme@localhost:9200/_cluster/settings?pretty
 }
 '
 
-env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF=$1 KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elastic-agent"
+env ELASTICSEARCH_IMAGE_REF=$1 ELASTIC_AGENT_IMAGE_REF_OVERRIDE="$agent_complete_image" KIBANA_IMAGE_REF=$1 elastic-package stack up -d -v --version $1 --services "elastic-agent"
 
 status=$?
 

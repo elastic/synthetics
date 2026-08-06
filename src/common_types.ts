@@ -64,6 +64,10 @@ export type NetworkConditions = {
   latency: number;
 };
 
+export type APIDriver = {
+  request: APIRequestContext;
+};
+
 export type Driver = {
   browser: ChromiumBrowser;
   context: ChromiumBrowserContext;
@@ -265,6 +269,13 @@ export type RunOptions = BaseArgs & {
   grepOpts?: GrepOptions;
 };
 
+export type APIRunOptions = BaseArgs & {
+  network?: boolean;
+  environment?: string;
+  reporter?: BuiltInReporterName | ReporterInstance;
+  grepOpts?: GrepOptions;
+};
+
 export type PushOptions = Partial<ProjectSettings> &
   Partial<BaseArgs> & {
     auth: string;
@@ -299,6 +310,12 @@ export type SyntheticsConfig = {
   project?: ProjectSettings;
   proxy?: ProxySettings;
   certificateAuthorities?: CertificateAuthorities;
+};
+
+/** Runner Payload types */
+export type APIJourneyResult = Partial<Journey> & {
+  networkinfo?: PluginOutput['networkinfo'];
+  stepsresults?: Array<StepResult>;
 };
 
 /** Runner Payload types */
@@ -337,6 +354,11 @@ export type JourneyStartResult = {
 export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
     browserDelay: number;
+    options: RunOptions;
+  };
+
+export type APIJourneyEndResult = JourneyStartResult &
+  APIJourneyResult & {
     options: RunOptions;
   };
 
