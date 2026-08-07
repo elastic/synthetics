@@ -25,6 +25,7 @@
 
 import { X509Certificate, createHash } from 'crypto';
 import { CertificateAuthorities } from '../common_types';
+import { warn } from '../helpers';
 
 const PEM_CERTIFICATE_RE =
   /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g;
@@ -69,10 +70,30 @@ export function getSpkiFingerprint(pem: string): string {
 }
 
 /**
+ * Describe an entry that failed to parse as a certificate for use in a
+ * warning message. A raw file path (e.g. from a typo'd `certificateAuthorities`
+ * entry that didn't match an existing file) is shown as-is since that's the
+ * actionable detail; inline PEM content is not, to avoid dumping key material
+ * to the console.
+ */
+function describeInvalidCertificateEntry(candidate: string): string {
+  if (candidate.includes('-----BEGIN CERTIFICATE-----')) {
+    return 'an inline PEM certificate';
+  }
+  const preview =
+    candidate.length > 80 ? `${candidate.slice(0, 80)}...` : candidate;
+  return `"${preview}"`;
+}
+
+/**
  * Build the list of SPKI fingerprints for all supplied certificates. Chromium
  * uses this list to bypass certificate errors for matching presented
  * certificates; it does not establish CA trust. Invalid certificates are
- * skipped so a single bad entry never aborts the whole run.
+ * skipped, with a warning, so a single bad entry never aborts the whole run
+ * but also never fails silently - a `certificateAuthorities` entry that
+ * doesn't resolve to a real file and isn't valid PEM (e.g. a typo'd path)
+ * would otherwise never be allowlisted, and matching endpoints would keep
+ * failing certificate validation with no indication why.
  */
 export function getSpkiFingerprints(ca?: CertificateAuthorities): string[] {
   const fingerprints = new Set<string>();
@@ -84,8 +105,14 @@ export function getSpkiFingerprints(ca?: CertificateAuthorities): string[] {
     for (const certificate of candidates) {
       try {
         fingerprints.add(getSpkiFingerprint(certificate));
-      } catch {
-        // Skip invalid entries so a single bad certificate never aborts a run.
+      } catch (e) {
+        warn(
+          `certificateAuthorities: could not parse ${describeInvalidCertificateEntry(
+            certificate
+          )} as a certificate - it will not be allowlisted and matching endpoints may still fail certificate validation (${
+            e.message
+          })`
+        );
       }
     }
   }

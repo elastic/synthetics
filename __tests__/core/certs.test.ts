@@ -122,5 +122,40 @@ describe('certs', () => {
         )
       ).toEqual([]);
     });
+
+    it('warns when an entry cannot be parsed as a certificate', () => {
+      const stderrSpy = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+
+      // Mirrors a `certificateAuthorities` entry that didn't resolve to an
+      // existing file and isn't valid PEM either, e.g. a typo'd path.
+      expect(getSpkiFingerprints('./certs/does-not-exist.crt')).toEqual([]);
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('./certs/does-not-exist.crt')
+      );
+
+      stderrSpy.mockRestore();
+    });
+
+    it('does not print certificate content in the invalid entry warning', () => {
+      const stderrSpy = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+
+      expect(
+        getSpkiFingerprints(
+          '-----BEGIN CERTIFICATE-----\nnope\n-----END CERTIFICATE-----'
+        )
+      ).toEqual([]);
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('an inline PEM certificate')
+      );
+      expect(stderrSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('nope')
+      );
+
+      stderrSpy.mockRestore();
+    });
   });
 });
