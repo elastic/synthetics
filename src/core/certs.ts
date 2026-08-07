@@ -30,9 +30,9 @@ const PEM_CERTIFICATE_RE =
   /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g;
 
 /**
- * Normalize the user provided certificate authorities (string, Buffer or an
- * array of either) into a flat list of PEM strings. Each entry may itself be a
- * bundle that contains more than one certificate.
+ * Normalize user-provided PEM certificates (string, Buffer, or an array of
+ * either) into a flat list of PEM strings. Each entry may itself be a bundle
+ * that contains more than one certificate.
  */
 export function normalizeCertificateAuthorities(
   ca?: CertificateAuthorities
@@ -69,9 +69,10 @@ export function getSpkiFingerprint(pem: string): string {
 }
 
 /**
- * Build the list of SPKI fingerprints for all certificates contained in the
- * provided certificate authorities. Invalid certificates are skipped with a
- * warning so a single bad entry never aborts the whole run.
+ * Build the list of SPKI fingerprints for all supplied certificates. Chromium
+ * uses this list to bypass certificate errors for matching presented
+ * certificates; it does not establish CA trust. Invalid certificates are
+ * skipped so a single bad entry never aborts the whole run.
  */
 export function getSpkiFingerprints(ca?: CertificateAuthorities): string[] {
   const fingerprints = new Set<string>();

@@ -105,9 +105,9 @@ export async function normalizeOptions(
   );
 
   /**
-   * Merge custom certificate authorities from the Synthetics config and the
-   * CLI. Each entry can be inline PEM content or a path to a PEM file that we
-   * resolve here so downstream consumers only ever deal with PEM strings.
+   * Merge PEM certificates from the Synthetics config and the CLI. Each entry
+   * can be inline PEM content or a path to a PEM file that we resolve here so
+   * downstream consumers only ever deal with PEM strings.
    */
   const certificateAuthorities = [
     ...normalizeCertificateAuthorities(config.certificateAuthorities),
@@ -281,7 +281,7 @@ export function getCommonCommandOpts() {
 
   const certificateAuthorities = createOption(
     '--certificate-authorities <pathOrPem...>',
-    'One or more trusted CA certificates, each provided as inline PEM content or a path to a PEM file. Lets browser monitors and the CLI trust internal/private CAs without rebuilding the agent image.'
+    "One or more PEM certificates, each provided as inline content or a path to a PEM file. Their SPKI hashes are used to bypass Chromium certificate errors for matching presented certificates; this does not add a CA to Chromium's trust store."
   );
 
   return {

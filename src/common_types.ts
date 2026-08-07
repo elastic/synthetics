@@ -213,10 +213,9 @@ type GrepOptions = {
 };
 
 /**
- * Custom certificate authorities (PEM content or Buffer, optionally an array)
- * that browser monitors and the CLI should trust in addition to the public
- * roots. Used to support internal / private CAs without rebuilding the agent
- * image.
+ * PEM certificates (or Buffers) used to build Chromium's SPKI certificate-error
+ * allowlist. This does not add a CA to Chromium's trust store: matching
+ * certificates bypass certificate validation errors.
  */
 export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
 

@@ -63,18 +63,17 @@ export class Gatherer {
       Gatherer.browser = await chromium.connect(wsEndpoint);
     } else {
       /**
-       * Chromium on Linux trusts its own NSS store rather than the system CA
-       * store, so internal/private CAs are rejected even when present on the
-       * host. Pin the SPKI fingerprints of the user provided CAs so Chromium
-       * trusts certificates issued by them without disabling validation for
-       * every other endpoint (unlike `ignoreHTTPSErrors`).
+       * Chromium on Linux has its own NSS trust store. This flag does not add
+       * a CA to that store: it bypasses certificate errors only when a
+       * presented certificate's SPKI matches one of the supplied fingerprints.
+       * It is narrower than `ignoreHTTPSErrors`, but is not CA trust.
        */
       const spkiFingerprints = getSpkiFingerprints(
         options.certificateAuthorities
       );
       if (spkiFingerprints.length > 0) {
         log(
-          `Gatherer: trusting ${spkiFingerprints.length} custom certificate authority public key(s)`
+          `Gatherer: bypassing certificate errors for ${spkiFingerprints.length} allowlisted SPKI fingerprint(s)`
         );
       }
       Gatherer.browser = await chromium.launch({
