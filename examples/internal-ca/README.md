@@ -123,7 +123,7 @@ browser process command line.
 ## Security notes & limitations
 
 - **Targeted, not blanket.** Only certificates chaining to the SPKI hashes you
-  provide are trusted; every other endpoint is validated normally. This is much
+  provide are ignored; every other endpoint is validated normally. This is much
   safer than `ignoreHTTPSErrors: true`.
 - **SPKI pinning bypasses *all* cert errors for the pinned keys** — including
   expiry and hostname mismatch — because it matches on the public key. Trust
