@@ -36,6 +36,7 @@ import {
   ALLOWED_SCHEDULES,
   Monitor,
   MonitorConfig,
+  validateTimeout,
 } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import {
@@ -293,6 +294,8 @@ export function buildMonitorFromYaml(
     (config['maintenance_windows'] || config.maintenanceWindows) ??
     options.maintenanceWindows;
   const alertConfig = parseAlertConfig(config, options.alert);
+  const timeout = config.timeout ?? options.timeout;
+  validateTimeout(timeout);
 
   const mon = new Monitor({
     namespace: config.namespace ?? options.namespace,
@@ -308,6 +311,7 @@ export function buildMonitorFromYaml(
       (schedule as typeof ALLOWED_SCHEDULES[number]) || options.schedule,
     alert: alertConfig,
     maintenanceWindows,
+    timeout,
   });
 
   /**

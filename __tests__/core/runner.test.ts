@@ -753,6 +753,7 @@ describe('runner', () => {
         throttling: { latency: 1000 },
         schedule: 1,
         alert: { status: { enabled: false } },
+        timeout: '30s',
       });
       runner._addJourney(j1);
       runner._addJourney(j2);
@@ -774,6 +775,7 @@ describe('runner', () => {
         schedule: 1,
         alert: { status: { enabled: false } },
         tags: [],
+        timeout: '30s',
       });
     });
 
@@ -790,6 +792,7 @@ describe('runner', () => {
         playwrightOptions: { ignoreHTTPSErrors: true },
         fields: { area: 'website' },
         namespace: 'test',
+        timeout: '10s',
       });
 
       const j1 = new Journey({ name: 'j1', tags: ['foo*'] }, noop);
@@ -831,6 +834,7 @@ describe('runner', () => {
         spaces: [],
         namespace: 'test',
         maintenanceWindows: ['daily', 'weekly'],
+        timeout: '10s',
       });
       expect(monitors[1].config).toMatchObject({
         locations: ['us_east'],
