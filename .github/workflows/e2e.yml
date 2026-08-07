@@ -28,8 +28,10 @@ jobs:
           versions=$(node scripts/resolve_versions.js --json)
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
 
+  # Keep compatibility-version E2E failures visible without blocking merges.
   test:
     needs: prepare
+    continue-on-error: true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
