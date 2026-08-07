@@ -23,7 +23,7 @@ set `ignoreHTTPSErrors: true` — which turns off validation for **every** reque
 
 Configure the CA(s) you trust and the Synthetics runner computes each CA's
 SHA-256 **SPKI fingerprint** and passes them to Chromium via
-`--ignore-certificate-errors-spki-list`. Chromium then trusts certificates
+`--ignore-certificate-errors-spki-list`. Chromium then ignores certificate errors
 chaining to those public keys and nothing else:
 
 ```ts
