@@ -24,16 +24,16 @@
  */
 process.env.NO_COLOR = '1';
 
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { AddressInfo } from 'net';
+import Straightforward from 'straightforward';
 import { Monitor } from '../../src/dsl/monitor';
 import { formatDuplicateError } from '../../src/push';
+import { THROTTLING_WARNING_MSG } from '../../src/helpers';
 import { createKibanaTestServer } from '../utils/kibana-test-server';
 import { Server } from '../utils/server';
 import { CLIMock } from '../utils/test-config';
-import { THROTTLING_WARNING_MSG } from '../../src/helpers';
-import Straightforward from 'straightforward';
-import { AddressInfo } from 'net';
 import { IncomingMessage } from 'http';
 
 describe('Push', () => {
@@ -307,6 +307,37 @@ heartbeat.monitors:
     expect(monitors).toHaveLength(2);
     monitors.forEach(m => {
       expect(m).toHaveProperty('maintenanceWindows', ['123', '456']);
+    });
+  });
+
+  it('forwards certificateErrorSpkiAllowlist on push', async () => {
+    const pem = await readFile(
+      join(__dirname, '../fixtures/ca/localhost-ca.crt'),
+      'utf-8'
+    );
+    await fakeProjectSetup(
+      {
+        project: { id: 'test-project', space: 'dummy', url: server.PREFIX },
+        certificateErrorSpkiAllowlist: [pem],
+      },
+      { locations: ['test-loc'], schedule: 3 }
+    );
+    const testJourney = join(PROJECT_DIR, 'spki.journey.ts');
+    await writeFile(
+      testJourney,
+      `import {journey, monitor} from '../../../';
+    journey('spki', () => monitor.use({ tags: ['spki'] }));`
+    );
+    const output = await runPush([...DEFAULT_ARGS, '--tags', 'spki']);
+    await rm(testJourney, { force: true });
+    expect(output).toContain('✓ Pushed:');
+
+    const monitors = requests
+      .filter(r => r.req?.url?.includes('_bulk_update'))
+      .flatMap(r => r.body?.monitors);
+    expect(monitors.length).toBeGreaterThan(0);
+    monitors.forEach(m => {
+      expect(m).toHaveProperty('certificateErrorSpkiAllowlist', [pem]);
     });
   });
 
