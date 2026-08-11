@@ -472,11 +472,11 @@ journey('inline browser', ({ page, params }) => {
       );
     });
 
-    it('succeeds with --certificate-authorities', async () => {
+    it('succeeds with --certificate-error-spki-allowlist', async () => {
       const cli = new CLIMock()
         .args(
           cliArgs.concat(
-            '--certificate-authorities',
+            '--certificate-error-spki-allowlist',
             join(FIXTURES_DIR, 'ca', 'selfsigned.cert')
           )
         )

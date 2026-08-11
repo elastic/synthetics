@@ -194,28 +194,28 @@ describe('options', () => {
     });
   });
 
-  describe('certificateAuthorities', () => {
+  describe('certificateErrorSpkiAllowlist', () => {
     const caPath = join(__dirname, 'fixtures', 'ca', 'localhost-ca.crt');
 
     it('is undefined when not provided', async () => {
       const options = await normalizeOptions({});
-      expect(options.certificateAuthorities).toBeUndefined();
+      expect(options.certificateErrorSpkiAllowlist).toBeUndefined();
     });
 
     it('keeps inline PEM content as-is', async () => {
       const pem = readFileSync(caPath, 'utf-8');
       const options = await normalizeOptions({
-        certificateAuthorities: pem,
+        certificateErrorSpkiAllowlist: pem,
       } as CliArgs);
-      expect(options.certificateAuthorities).toEqual([pem]);
+      expect(options.certificateErrorSpkiAllowlist).toEqual([pem]);
     });
 
     it('resolves file paths to PEM content', async () => {
       const options = await normalizeOptions({
         // CLI variadic option yields an array of paths/strings
-        certificateAuthorities: [caPath],
+        certificateErrorSpkiAllowlist: [caPath],
       } as CliArgs);
-      expect(options.certificateAuthorities).toEqual([
+      expect(options.certificateErrorSpkiAllowlist).toEqual([
         readFileSync(caPath, 'utf-8'),
       ]);
     });

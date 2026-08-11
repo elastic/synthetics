@@ -74,7 +74,7 @@ const {
   match,
   fields,
   maintenanceWindows,
-  certificateAuthorities,
+  certificateErrorSpkiAllowlist,
 } = getCommonCommandOpts();
 
 program
@@ -129,7 +129,7 @@ program
     '--ignore-https-errors',
     'ignores any HTTPS errors in sites being tested, including ones related to unrecognized certs or signatures. This can be insecure!'
   )
-  .addOption(certificateAuthorities)
+  .addOption(certificateErrorSpkiAllowlist)
   .option(
     '--quiet-exit-code',
     'always return 0 as an exit code status, regardless of test pass / fail. Only return > 0 exit codes on internal errors where the suite could not be run'
@@ -234,7 +234,7 @@ program
   .addOption(match)
   .addOption(params)
   .addOption(playwrightOpts)
-  .addOption(certificateAuthorities)
+  .addOption(certificateErrorSpkiAllowlist)
   .addOption(configOpt)
   .addOption(maintenanceWindows)
   .action(async cmdOpts => {

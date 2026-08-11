@@ -4,13 +4,13 @@ import { journey, step, expect } from '@elastic/synthetics';
  * Journey that loads an internal HTTPS site served with a certificate issued
  * by a private / internal CA.
  *
- * With `certificateAuthorities` configured (see synthetics.config.ts), the
+ * With `certificateErrorSpkiAllowlist` configured (see synthetics.config.ts), the
  * Synthetics runner allowlists the server certificate's SPKI fingerprint via
  * `--ignore-certificate-errors-spki-list`, so Chromium bypasses its
  * certificate errors and `page.goto` resolves instead of failing with
  * `net::ERR_CERT_AUTHORITY_INVALID`.
  *
- * Remove the `certificateAuthorities` setting (or point it at the wrong
+ * Remove the `certificateErrorSpkiAllowlist` setting (or point it at the wrong
  * certificate) and this journey fails. This is a targeted error bypass, not
  * CA trust.
  */

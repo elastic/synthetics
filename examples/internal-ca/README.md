@@ -19,14 +19,13 @@ net::ERR_CERT_AUTHORITY_INVALID
 Historically the only options were to bake the CA into a custom agent image, or
 set `ignoreHTTPSErrors: true` — which turns off validation for **every** request.
 
-## The workaround: `certificateAuthorities`
+## The workaround: `certificateErrorSpkiAllowlist`
 
-The option name is retained for compatibility, but it does **not** add a CA to
-Chromium's trust store. Instead, configure the PEM certificate presented by the
-internal server. The Synthetics runner computes its SHA-256 **SPKI fingerprint**
-and passes it to Chromium via `--ignore-certificate-errors-spki-list`. Chromium
-then ignores certificate errors only for a presented certificate with that
-public key:
+This option does **not** add a CA to Chromium's trust store. Configure the PEM
+certificate presented by the internal server. The Synthetics runner computes
+its SHA-256 **SPKI fingerprint** and passes it to Chromium via
+`--ignore-certificate-errors-spki-list`. Chromium then ignores certificate
+errors only for a presented certificate with that public key:
 
 ```ts
 // synthetics.config.ts
@@ -34,14 +33,14 @@ import type { SyntheticsConfig } from '@elastic/synthetics';
 
 export default (): SyntheticsConfig => ({
   // Path to a PEM file, inline PEM, a Buffer, or an array of any of these.
-  certificateAuthorities: ['./certs/server.crt'],
+  certificateErrorSpkiAllowlist: ['./certs/server.crt'],
 });
 ```
 
 Or per-run from the CLI (variadic — pass more than one):
 
 ```sh
-npx @elastic/synthetics . --certificate-authorities ./certs/server.crt
+npx @elastic/synthetics . --certificate-error-spki-allowlist ./certs/server.crt
 ```
 
 Unlike the Kerberos example, this works from **both** Elastic's managed global
@@ -60,7 +59,7 @@ does not touch the host trust store.
 ```sh
 npm install
 npx @elastic/synthetics . \
-  --certificate-authorities ./certs/server.crt \
+  --certificate-error-spki-allowlist ./certs/server.crt \
   --params '{"url":"https://internal.corp.local/"}'
 ```
 
@@ -106,7 +105,7 @@ npx @elastic/synthetics . --params '{"url":"https://localhost:8443/"}'
 
 ```sh
 npx @elastic/synthetics . \
-  --certificate-authorities ./certs/server.crt \
+  --certificate-error-spki-allowlist ./certs/server.crt \
   --params '{"url":"https://localhost:8443/"}'
 # -> journey succeeds
 ```
@@ -131,7 +130,7 @@ browser process command line.
   against it. A matching certificate bypasses *all* certificate errors,
   including expiry and hostname mismatch.
 - **Rotate carefully.** When the server certificate's key pair changes, update
-  `certificateAuthorities` with the new presented certificate so its SPKI hash
+  `certificateErrorSpkiAllowlist` with the new presented certificate so its SPKI hash
   is allowlisted.
 - **Lightweight (HTTP/TCP/ICMP) monitors and CLI connections** are unaffected
   by this setting; it only affects the Chromium process used by browser

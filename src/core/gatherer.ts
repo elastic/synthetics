@@ -69,7 +69,7 @@ export class Gatherer {
        * It is narrower than `ignoreHTTPSErrors`, but is not CA trust.
        */
       const spkiFingerprints = getSpkiFingerprints(
-        options.certificateAuthorities
+        options.certificateErrorSpkiAllowlist
       );
       if (spkiFingerprints.length > 0) {
         log(

@@ -217,7 +217,10 @@ type GrepOptions = {
  * allowlist. This does not add a CA to Chromium's trust store: matching
  * certificates bypass certificate validation errors.
  */
-export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
+export type CertificateErrorSpkiAllowlist =
+  | string
+  | Buffer
+  | Array<string | Buffer>;
 
 type BaseArgs = {
   params?: Params;
@@ -228,7 +231,7 @@ type BaseArgs = {
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
-  certificateAuthorities?: CertificateAuthorities;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: MonitorConfig['throttling'];
@@ -308,7 +311,7 @@ export type SyntheticsConfig = {
   monitor?: MonitorConfig;
   project?: ProjectSettings;
   proxy?: ProxySettings;
-  certificateAuthorities?: CertificateAuthorities;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
 };
 
 /** Runner Payload types */

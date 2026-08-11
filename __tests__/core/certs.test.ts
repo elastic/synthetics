@@ -28,7 +28,7 @@ import { join } from 'path';
 import {
   getSpkiFingerprint,
   getSpkiFingerprints,
-  normalizeCertificateAuthorities,
+  normalizeCertificateErrorSpkiAllowlist,
   splitPemCertificates,
 } from '../../src/core/certs';
 
@@ -43,27 +43,27 @@ const LOCALHOST_CA_SPKI = 'i5ldWK8mZc2VpuB/HbP4QqNvC9izca4MRl+tWlgevP4=';
 const SELF_SIGNED_SPKI = 'lKbtU5NxDdWZVzUHjMAVxT3j71kHJmv04kPyf3D0Khc=';
 
 describe('certs', () => {
-  describe('normalizeCertificateAuthorities', () => {
+  describe('normalizeCertificateErrorSpkiAllowlist', () => {
     it('returns an empty list when nothing is provided', () => {
-      expect(normalizeCertificateAuthorities(undefined)).toEqual([]);
-      expect(normalizeCertificateAuthorities('')).toEqual([]);
-      expect(normalizeCertificateAuthorities('   ')).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist(undefined)).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist('')).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist('   ')).toEqual([]);
     });
 
     it('wraps a single string entry', () => {
-      expect(normalizeCertificateAuthorities(localhostCA)).toEqual([
+      expect(normalizeCertificateErrorSpkiAllowlist(localhostCA)).toEqual([
         localhostCA,
       ]);
     });
 
     it('converts Buffers to strings', () => {
-      expect(normalizeCertificateAuthorities(Buffer.from(localhostCA))).toEqual(
-        [localhostCA]
-      );
+      expect(
+        normalizeCertificateErrorSpkiAllowlist(Buffer.from(localhostCA))
+      ).toEqual([localhostCA]);
     });
 
     it('flattens arrays of strings and Buffers', () => {
-      const result = normalizeCertificateAuthorities([
+      const result = normalizeCertificateErrorSpkiAllowlist([
         localhostCA,
         Buffer.from(selfSigned),
       ]);
@@ -128,7 +128,7 @@ describe('certs', () => {
         .spyOn(process.stderr, 'write')
         .mockImplementation(() => true);
 
-      // Mirrors a `certificateAuthorities` entry that didn't resolve to an
+      // Mirrors a `certificateErrorSpkiAllowlist` entry that didn't resolve to an
       // existing file and isn't valid PEM either, e.g. a typo'd path.
       expect(getSpkiFingerprints('./certs/does-not-exist.crt')).toEqual([]);
       expect(stderrSpy).toHaveBeenCalledWith(
