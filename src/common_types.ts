@@ -212,6 +212,16 @@ type GrepOptions = {
   match?: string;
 };
 
+/**
+ * PEM certificates (or Buffers) used to build Chromium's SPKI certificate-error
+ * allowlist. This does not add a CA to Chromium's trust store: matching
+ * certificates bypass certificate validation errors.
+ */
+export type CertificateErrorSpkiAllowlist =
+  | string
+  | Buffer
+  | Array<string | Buffer>;
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
@@ -221,6 +231,7 @@ type BaseArgs = {
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: MonitorConfig['throttling'];
@@ -300,6 +311,7 @@ export type SyntheticsConfig = {
   monitor?: MonitorConfig;
   project?: ProjectSettings;
   proxy?: ProxySettings;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
 };
 
 /** Runner Payload types */

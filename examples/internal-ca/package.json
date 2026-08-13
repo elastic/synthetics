@@ -1,0 +1,12 @@
+{
+  "name": "synthetics-internal-ca-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example: Elastic Synthetics browser monitor against an internal HTTPS site signed by a private CA",
+  "scripts": {
+    "test": "npx @elastic/synthetics ."
+  },
+  "dependencies": {
+    "@elastic/synthetics": "*"
+  }
+}

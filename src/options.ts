@@ -28,6 +28,7 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
+import { normalizeCertificateErrorSpkiAllowlist } from './core/certs';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -102,6 +103,24 @@ export async function normalizeOptions(
   options.proxy = Object.freeze(
     merge(config?.proxy ?? {}, cliArgs?.proxy || {})
   );
+
+  /**
+   * Merge PEM certificates from the Synthetics config and the CLI. Each entry
+   * can be inline PEM content or a path to a PEM file that we resolve here so
+   * downstream consumers only ever deal with PEM strings used to build the
+   * Chromium SPKI certificate-error allowlist.
+   */
+  const certificateErrorSpkiAllowlist = [
+    ...normalizeCertificateErrorSpkiAllowlist(
+      config.certificateErrorSpkiAllowlist
+    ),
+    ...normalizeCertificateErrorSpkiAllowlist(
+      cliArgs.certificateErrorSpkiAllowlist
+    ),
+  ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
+  options.certificateErrorSpkiAllowlist = certificateErrorSpkiAllowlist.length
+    ? certificateErrorSpkiAllowlist
+    : undefined;
 
   /**
    * Merge default options based on the mode of operation whether we are running tests locally
@@ -265,6 +284,11 @@ export function getCommonCommandOpts() {
     "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
   );
 
+  const certificateErrorSpkiAllowlist = createOption(
+    '--certificate-error-spki-allowlist <pathOrPem...>',
+    "One or more PEM certificates, each provided as inline content or a path to a PEM file. Their SPKI hashes are used to bypass Chromium certificate errors for matching presented certificates; this does not add a CA to Chromium's trust store."
+  );
+
   return {
     auth,
     authMandatory,
@@ -276,6 +300,7 @@ export function getCommonCommandOpts() {
     match,
     fields,
     maintenanceWindows,
+    certificateErrorSpkiAllowlist,
   };
 }
 
