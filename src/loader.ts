@@ -24,7 +24,10 @@
  */
 
 import { stdin, cwd } from 'process';
-import { extname, resolve } from 'path';
+import { extname, resolve, join } from 'path';
+import { tmpdir } from 'os';
+import { mkdtempSync, writeFileSync, rmSync } from 'fs';
+import Module from 'module';
 import { CliArgs } from './common_types';
 import { step, journey } from './core';
 import { log } from './core/logger';
@@ -83,7 +86,21 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
   requireSuites(suites);
 }
 
-const loadInlineScript = source => {
+/**
+ * A leading `import`/`export` opts the inline source into module loading;
+ * anything else is treated as legacy statements with injected locals.
+ * Keying off `import`/`export` (not a `journey(` regex) avoids false
+ * matches inside strings/comments that would strip the implicit injection.
+ */
+const isModuleInlineSource = (source: string): boolean => {
+  return /^\s*(?:import|export)\b/m.test(source);
+};
+
+const loadInlineScript = (source: string) => {
+  if (isModuleInlineSource(source)) {
+    loadInlineModule(source);
+    return;
+  }
   const scriptFn = new Function(
     'step',
     'page',
@@ -107,6 +124,65 @@ const loadInlineScript = source => {
       mfa,
     ]);
   });
+};
+
+const SYNTHETICS_PKG_ROOT = resolve(__dirname, '..');
+let syntheticsAliasInstalled = false;
+
+/**
+ * Alias `@elastic/synthetics` (and subpaths) to this package so an inline
+ * module materialised in a temp dir — whose ancestors may lack a
+ * `node_modules` entry — resolves to the currently running code.
+ */
+const installSyntheticsRequireAlias = () => {
+  if (syntheticsAliasInstalled) return;
+  syntheticsAliasInstalled = true;
+  const PKG = '@elastic/synthetics';
+  const ModuleInternal = Module as unknown as {
+    _resolveFilename: (
+      request: string,
+      parent: NodeModule,
+      isMain?: boolean,
+      options?: Record<string, unknown>
+    ) => string;
+  };
+  const originalResolve = ModuleInternal._resolveFilename;
+  ModuleInternal._resolveFilename = function (
+    request,
+    parent,
+    isMain,
+    options
+  ) {
+    if (request === PKG || request.startsWith(`${PKG}/`)) {
+      const subpath = request === PKG ? '' : request.slice(PKG.length + 1);
+      const aliased = subpath
+        ? join(SYNTHETICS_PKG_ROOT, subpath)
+        : SYNTHETICS_PKG_ROOT;
+      return originalResolve.call(this, aliased, parent, isMain, options);
+    }
+    return originalResolve.call(this, request, parent, isMain, options);
+  };
+};
+
+/**
+ * Materialise a self-contained inline module to disk and `require` it. The
+ * esbuild transform hook rewrites ESM → CJS, so the script registers its
+ * journeys on import instead of being wrapped in an implicit journey.
+ */
+const loadInlineModule = (source: string) => {
+  installSyntheticsRequireAlias();
+  const dir = mkdtempSync(join(tmpdir(), 'synthetics-inline-'));
+  // Best-effort cleanup so long-lived hosts don't accumulate temp dirs.
+  process.once('exit', () => {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+  });
+  const file = join(dir, 'inline.journey.ts');
+  writeFileSync(file, source);
+  require(file);
 };
 
 /**

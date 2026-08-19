@@ -24,6 +24,7 @@
  */
 
 import fs from 'fs';
+import { join } from 'path';
 import { Gatherer } from '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
 import { step, journey, before, after } from '../../src/core';
@@ -841,6 +842,25 @@ describe('runner', () => {
         throttling: { latency: 1000 },
         alert: { tls: { enabled: true } },
       });
+    });
+
+    it('runner - forwards certificateErrorSpkiAllowlist into monitor schema', async () => {
+      const pem = fs.readFileSync(
+        join(__dirname, '../fixtures/ca/localhost-ca.crt'),
+        'utf-8'
+      );
+      const j1 = new Journey({ name: 'j1' }, noop);
+      j1._updateMonitor({ id: 'test-j1', schedule: 3, locations: ['us_east'] });
+      runner._addJourney(j1);
+
+      const monitors = runner._buildMonitors({
+        ...options,
+        schedule: 3,
+        locations: ['us_east'],
+        certificateErrorSpkiAllowlist: [pem],
+      });
+      expect(monitors).toHaveLength(1);
+      expect(monitors[0].config.certificateErrorSpkiAllowlist).toEqual([pem]);
     });
 
     it('runner - build monitors filtered via "match"', async () => {

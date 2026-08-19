@@ -3,7 +3,7 @@ import type { SyntheticsConfig } from '@elastic/synthetics';
 /**
  * Example configuration that lets a browser monitor reach an internal HTTPS
  * site whose certificate is issued by a private / internal Certificate
- * Authority (CA).
+ * Authority (CA) by allowlisting the server certificate's SPKI.
  *
  * Why this is needed:
  *
@@ -14,13 +14,14 @@ import type { SyntheticsConfig } from '@elastic/synthetics';
  *   the only workarounds were rebuilding the agent image with the CA baked in
  *   or turning off validation entirely with `ignoreHTTPSErrors`.
  *
- * What `certificateAuthorities` does:
+ * What `certificateErrorSpkiAllowlist` does:
  *
- *   The Synthetics runner computes the SHA-256 SPKI fingerprint of each CA you
- *   pass here and forwards them to Chromium via
- *   `--ignore-certificate-errors-spki-list`. Chromium then trusts certificates
- *   chaining to those public keys WITHOUT disabling validation for any other
- *   endpoint (unlike `ignoreHTTPSErrors`, which blindly accepts every cert).
+ *   This option does not add a CA to Chromium's trust store. The Synthetics
+ *   runner computes the SHA-256 SPKI fingerprint of each certificate you pass
+ *   here and forwards it to Chromium via
+ *   `--ignore-certificate-errors-spki-list`. Chromium then bypasses certificate
+ *   errors only when a presented certificate has a matching public key. This is
+ *   narrower than `ignoreHTTPSErrors`, but it is not CA trust.
  *
  * Each entry can be either:
  *   - a path to a PEM file (resolved relative to where you run the CLI), or
@@ -37,10 +38,12 @@ export default () => {
       // Override with the real internal URL signed by your private CA.
       url: 'https://internal.corp.local/',
     },
-    // Trust an internal CA. Each entry is a path to a PEM file or inline PEM.
+    // Allowlist the presented server certificate. Each entry is a PEM path or
+    // inline PEM; supplying a CA certificate does not add it to Chromium's
+    // trust store.
     // To inline the content instead of a path:
-    //   certificateAuthorities: [readFileSync('./certs/internal-ca.crt', 'utf-8')]
-    certificateAuthorities: ['./certs/internal-ca.crt'],
+    //   certificateErrorSpkiAllowlist: [readFileSync('./certs/server.crt', 'utf-8')]
+    certificateErrorSpkiAllowlist: ['./certs/server.crt'],
 
     monitor: {
       schedule: 10,

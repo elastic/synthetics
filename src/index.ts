@@ -35,6 +35,7 @@ export async function run(options: RunOptions) {
  */
 export {
   journey,
+  apiJourney,
   step,
   monitor,
   beforeAll,
@@ -82,6 +83,11 @@ export type {
   JourneyWithAnnotations,
   JourneyOptions,
   StepWithAnnotations,
+  APIJourney,
+  APIJourneyCallback,
+  APIJourneyCallbackOpts,
+  APIJourneyOptions,
+  APIJourneyWithAnnotations,
 } from './dsl';
 
 export type {

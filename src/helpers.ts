@@ -416,9 +416,9 @@ export function setGlobalProxy(
 ) {
   /**
    * Trust the user provided CAs (in addition to the public roots) when talking
-   * to the end server e.g. a Kibana instance behind an internal CA. The
-   * `NODE_EXTRA_CA_CERTS` environment variable is honored by undici out of the
-   * box and keeps working alongside this.
+   * to the end server e.g. a Kibana instance behind an internal CA. Passing
+   * `ca` replaces Node's default store, so `buildCABundle` also folds in
+   * `NODE_EXTRA_CA_CERTS`.
    */
   const ca = buildCABundle(certificateAuthorities);
 

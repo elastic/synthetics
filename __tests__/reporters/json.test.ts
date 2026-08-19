@@ -27,7 +27,7 @@ import fs, { mkdirSync } from 'fs';
 import { join } from 'path';
 import snakeCaseKeys from 'snakecase-keys';
 import SonicBoom from 'sonic-boom';
-import { journey } from '../../src/core';
+import { apiJourney, journey } from '../../src/core';
 import JSONReporter, {
   formatNetworkFields,
   gatherScreenshots,
@@ -194,6 +194,150 @@ describe('json reporter', () => {
     }
   });
 
+  it('emits TLS cert info and server.ip/port when response has them', () => {
+    const event = formatNetworkFields({
+      browser: { name: 'api', version: '' },
+      url: 'https://api.example.com/foo',
+      type: 'fetch',
+      isNavigationRequest: false,
+      timestamp: 0,
+      request: {
+        url: 'https://api.example.com/foo',
+        method: 'GET',
+        headers: {},
+      },
+      response: {
+        url: 'https://api.example.com/foo',
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        mimeType: 'application/json',
+        remoteIPAddress: '93.184.216.34',
+        remotePort: 443,
+        securityDetails: {
+          issuer: 'Test CA',
+          subjectName: 'api.example.com',
+          protocol: 'TLS 1.3',
+          validFrom: 1700000000,
+          validTo: 1800000000,
+        },
+      },
+      requestSentTime: 0,
+      loadEndTime: 0,
+      responseReceivedTime: 0,
+      resourceSize: 0,
+      transferSize: 0,
+      timings: {
+        blocked: -1,
+        dns: 10,
+        ssl: 20,
+        connect: 5,
+        send: -1,
+        wait: 100,
+        receive: 0,
+        total: 100,
+      },
+    } as any);
+    expect(event.ecs.server).toEqual({ ip: '93.184.216.34', port: 443 });
+    expect(event.ecs.tls).toMatchObject({
+      version_protocol: 'tls',
+      version: '1.3',
+      server: {
+        x509: expect.objectContaining({
+          issuer: { common_name: 'Test CA' },
+          subject: { common_name: 'api.example.com' },
+        }),
+      },
+    });
+  });
+
+  it('omits server when response has no remote info', () => {
+    const event = formatNetworkFields({
+      browser: { name: 'api', version: '' },
+      url: 'http://example.com/foo',
+      type: 'fetch',
+      isNavigationRequest: false,
+      timestamp: 0,
+      request: { url: 'http://example.com/foo', method: 'GET', headers: {} },
+      response: {
+        url: 'http://example.com/foo',
+        status: 200,
+        headers: {},
+        mimeType: 'text/plain',
+      },
+      requestSentTime: 0,
+      loadEndTime: 0,
+      responseReceivedTime: 0,
+      resourceSize: 0,
+      transferSize: 0,
+      timings: {
+        blocked: -1,
+        dns: -1,
+        ssl: -1,
+        connect: -1,
+        send: -1,
+        wait: -1,
+        receive: -1,
+        total: -1,
+      },
+    } as any);
+    expect(event.ecs.server).toBeUndefined();
+    expect(event.ecs.tls).toBeUndefined();
+  });
+
+  /**
+   * Regression: a TLS probe can resolve with `protocol` set but cert
+   * dates missing (malformed `valid_from` / `valid_to`). Previously
+   * `formatTLS` invoked `new Date(undefined * 1000).toISOString()` which
+   * throws `RangeError: Invalid time value`, sinking the entire
+   * `journey/end` document for the affected journey.
+   */
+  it('does not throw when TLS cert dates are missing', () => {
+    expect(() =>
+      formatNetworkFields({
+        browser: { name: 'api', version: '' },
+        url: 'https://api.example.com/foo',
+        type: 'fetch',
+        isNavigationRequest: false,
+        timestamp: 0,
+        request: {
+          url: 'https://api.example.com/foo',
+          method: 'GET',
+          headers: {},
+        },
+        response: {
+          url: 'https://api.example.com/foo',
+          status: 200,
+          headers: {},
+          mimeType: 'application/json',
+          remoteIPAddress: '1.2.3.4',
+          remotePort: 443,
+          securityDetails: {
+            issuer: 'X',
+            subjectName: 'Y',
+            protocol: 'TLS 1.3',
+            // validFrom / validTo intentionally missing
+          },
+        },
+        requestSentTime: 0,
+        loadEndTime: 0,
+        responseReceivedTime: 0,
+        resourceSize: 0,
+        transferSize: 0,
+        timings: {
+          blocked: -1,
+          dns: -1,
+          ssl: -1,
+          connect: -1,
+          send: -1,
+          wait: -1,
+          receive: -1,
+          total: -1,
+        },
+      } as any)
+    ).not.toThrow();
+  });
+
   it('redact sensitive req/response headers', async () => {
     expect(
       redactKeys({
@@ -301,6 +445,116 @@ describe('json reporter', () => {
     const screenshot1 = await collectScreenshots();
     const screenshot2 = await collectScreenshots();
     expect(screenshot1).toEqual(screenshot2);
+  });
+
+  describe('api journeys', () => {
+    it("includes journey type 'api' on register, start, and end", async () => {
+      const jj = apiJourney({ name: 'api-j', id: 'api-j' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+
+      reporter.onJourneyRegister(jj);
+      reporter.onJourneyStart(jj, { timestamp });
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+        networkinfo: [],
+      });
+
+      const events = await readAndCloseStreamJson();
+      const register = events.find(e => e.type === 'journey/register');
+      const start = events.find(e => e.type === 'journey/start');
+      const end = events.find(e => e.type === 'journey/end');
+      expect(register.journey).toMatchObject({ name: 'api-j', type: 'api' });
+      expect(start.journey).toMatchObject({ name: 'api-j', type: 'api' });
+      expect(end.journey).toMatchObject({ name: 'api-j', type: 'api' });
+    });
+
+    it('omits browser_delay_us from journey/end payload for API journeys', async () => {
+      const jj = apiJourney({ name: 'api-delay', id: 'api-delay' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+      });
+
+      const end = (await readAndCloseStreamJson()).find(
+        e => e.type === 'journey/end'
+      );
+      expect(end.payload).not.toHaveProperty('browser_delay_us');
+      expect(end.payload).toMatchObject({
+        status: 'succeeded',
+        process_startup_epoch_us: expect.any(Number),
+      });
+    });
+
+    it('emits network_info events captured by APINetworkManager', async () => {
+      const jj = apiJourney({ name: 'api-net', id: 'api-net' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: {},
+        networkinfo: [
+          {
+            url: 'http://api.example.com/v1/things',
+            timestamp,
+            type: 'fetch',
+            isNavigationRequest: false,
+            browser: { name: 'api', version: '' },
+            request: {
+              url: 'http://api.example.com/v1/things',
+              method: 'GET',
+              headers: { authorization: 'Bearer x' },
+            },
+            response: {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+              mimeType: 'application/json',
+            },
+            requestSentTime: 1,
+            responseReceivedTime: 1.1,
+            loadEndTime: 1.1,
+            timings: {
+              blocked: -1,
+              dns: -1,
+              ssl: -1,
+              connect: -1,
+              send: -1,
+              wait: 0.1,
+              receive: 0,
+              total: 0.1,
+            },
+          } as any,
+        ],
+      });
+
+      const events = await readAndCloseStreamJson();
+      const ni = events.find(e => e.type === 'journey/network_info');
+      expect(ni).toBeDefined();
+      expect(ni.root_fields.url).toBe('http://api.example.com/v1/things');
+      expect(ni.root_fields.http.request.method).toBe('GET');
+      // Authorization header must be redacted
+      expect(ni.root_fields.http.request.headers.authorization).toBe(
+        '[REDACTED]'
+      );
+      expect(ni.payload.type).toBe('fetch');
+    });
+
+    it('does not emit step/screenshot for API journeys', async () => {
+      const jj = apiJourney({ name: 'api-noss', id: 'api-noss' }, () => {});
+      jj.status = 'succeeded';
+      jj.duration = 0;
+      // screenshots=on should still not produce screenshot docs for API journeys
+      reporter.onJourneyEnd(jj, {
+        timestamp,
+        options: { screenshots: 'on' } as any,
+      });
+      const events = await readAndCloseStreamJson();
+      expect(events.find(e => e.type === 'step/screenshot')).toBeUndefined();
+      expect(events.find(e => e.type === 'screenshot/block')).toBeUndefined();
+    });
   });
 
   describe('screenshots', () => {

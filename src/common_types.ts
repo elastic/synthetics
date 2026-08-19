@@ -64,6 +64,10 @@ export type NetworkConditions = {
   latency: number;
 };
 
+export type APIDriver = {
+  request: APIRequestContext;
+};
+
 export type Driver = {
   browser: ChromiumBrowser;
   context: ChromiumBrowserContext;
@@ -209,10 +213,20 @@ type GrepOptions = {
 };
 
 /**
- * Custom certificate authorities (PEM content or Buffer, optionally an array)
- * that browser monitors and the CLI should trust in addition to the public
- * roots. Used to support internal / private CAs without rebuilding the agent
- * image.
+ * PEM certificates (or Buffers) used to build Chromium's SPKI certificate-error
+ * allowlist. This does not add a CA to Chromium's trust store: matching
+ * certificates bypass certificate validation errors.
+ */
+export type CertificateErrorSpkiAllowlist =
+  | string
+  | Buffer
+  | Array<string | Buffer>;
+
+/**
+ * Extra CAs (PEM content or Buffer, optionally an array) that Node/undici
+ * should trust in addition to the public roots. Used by `push` / `locations`
+ * when Kibana is fronted by an internal CA. Distinct from
+ * `certificateErrorSpkiAllowlist`, which only affects Chromium.
  */
 export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
 
@@ -225,6 +239,7 @@ type BaseArgs = {
   outfd?: number;
   wsEndpoint?: string;
   pauseOnError?: boolean;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   certificateAuthorities?: CertificateAuthorities;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
@@ -265,6 +280,13 @@ export type RunOptions = BaseArgs & {
   grepOpts?: GrepOptions;
 };
 
+export type APIRunOptions = BaseArgs & {
+  network?: boolean;
+  environment?: string;
+  reporter?: BuiltInReporterName | ReporterInstance;
+  grepOpts?: GrepOptions;
+};
+
 export type PushOptions = Partial<ProjectSettings> &
   Partial<BaseArgs> & {
     auth: string;
@@ -298,7 +320,14 @@ export type SyntheticsConfig = {
   monitor?: MonitorConfig;
   project?: ProjectSettings;
   proxy?: ProxySettings;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   certificateAuthorities?: CertificateAuthorities;
+};
+
+/** Runner Payload types */
+export type APIJourneyResult = Partial<Journey> & {
+  networkinfo?: PluginOutput['networkinfo'];
+  stepsresults?: Array<StepResult>;
 };
 
 /** Runner Payload types */
@@ -337,6 +366,11 @@ export type JourneyStartResult = {
 export type JourneyEndResult = JourneyStartResult &
   JourneyResult & {
     browserDelay: number;
+    options: RunOptions;
+  };
+
+export type APIJourneyEndResult = JourneyStartResult &
+  APIJourneyResult & {
     options: RunOptions;
   };
 

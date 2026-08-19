@@ -26,7 +26,7 @@
 import Runner from './runner';
 
 /**
- * Use a gloabl Runner which would be accessed by the runtime and
+ * Use a global Runner which would be accessed by the runtime and
  * required to handle the local vs global invocation through CLI
  */
 const SYNTHETICS_RUNNER = Symbol.for('SYNTHETICS_RUNNER');

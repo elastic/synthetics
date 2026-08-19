@@ -32,6 +32,7 @@ import {
   ScreenshotOptions,
   Params,
   PlaywrightOptions,
+  CertificateErrorSpkiAllowlist,
 } from '../common_types';
 import { indent, isMatch } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
@@ -72,6 +73,7 @@ export type MonitorConfig = {
   screenshot?: ScreenshotOptions;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
+  certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   alert?: AlertConfig;
   /**
    * By default, the monitor will be retested on failure

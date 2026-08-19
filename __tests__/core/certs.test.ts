@@ -30,7 +30,7 @@ import {
   buildCABundle,
   getSpkiFingerprint,
   getSpkiFingerprints,
-  normalizeCertificateAuthorities,
+  normalizeCertificateErrorSpkiAllowlist,
   splitPemCertificates,
 } from '../../src/core/certs';
 
@@ -45,27 +45,27 @@ const LOCALHOST_CA_SPKI = 'i5ldWK8mZc2VpuB/HbP4QqNvC9izca4MRl+tWlgevP4=';
 const SELF_SIGNED_SPKI = 'lKbtU5NxDdWZVzUHjMAVxT3j71kHJmv04kPyf3D0Khc=';
 
 describe('certs', () => {
-  describe('normalizeCertificateAuthorities', () => {
+  describe('normalizeCertificateErrorSpkiAllowlist', () => {
     it('returns an empty list when nothing is provided', () => {
-      expect(normalizeCertificateAuthorities(undefined)).toEqual([]);
-      expect(normalizeCertificateAuthorities('')).toEqual([]);
-      expect(normalizeCertificateAuthorities('   ')).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist(undefined)).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist('')).toEqual([]);
+      expect(normalizeCertificateErrorSpkiAllowlist('   ')).toEqual([]);
     });
 
     it('wraps a single string entry', () => {
-      expect(normalizeCertificateAuthorities(localhostCA)).toEqual([
+      expect(normalizeCertificateErrorSpkiAllowlist(localhostCA)).toEqual([
         localhostCA,
       ]);
     });
 
     it('converts Buffers to strings', () => {
-      expect(normalizeCertificateAuthorities(Buffer.from(localhostCA))).toEqual(
-        [localhostCA]
-      );
+      expect(
+        normalizeCertificateErrorSpkiAllowlist(Buffer.from(localhostCA))
+      ).toEqual([localhostCA]);
     });
 
     it('flattens arrays of strings and Buffers', () => {
-      const result = normalizeCertificateAuthorities([
+      const result = normalizeCertificateErrorSpkiAllowlist([
         localhostCA,
         Buffer.from(selfSigned),
       ]);
@@ -124,9 +124,59 @@ describe('certs', () => {
         )
       ).toEqual([]);
     });
+
+    it('warns when an entry cannot be parsed as a certificate', () => {
+      const stderrSpy = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+
+      // Mirrors a `certificateErrorSpkiAllowlist` entry that didn't resolve to an
+      // existing file and isn't valid PEM either, e.g. a typo'd path.
+      expect(getSpkiFingerprints('./certs/does-not-exist.crt')).toEqual([]);
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('./certs/does-not-exist.crt')
+      );
+
+      stderrSpy.mockRestore();
+    });
+
+    it('does not print certificate content in the invalid entry warning', () => {
+      const stderrSpy = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+
+      expect(
+        getSpkiFingerprints(
+          '-----BEGIN CERTIFICATE-----\nnope\n-----END CERTIFICATE-----'
+        )
+      ).toEqual([]);
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('an inline PEM certificate')
+      );
+      expect(stderrSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('nope')
+      );
+
+      stderrSpy.mockRestore();
+    });
   });
 
   describe('buildCABundle', () => {
+    const extraCertsEnv = 'NODE_EXTRA_CA_CERTS';
+    const originalExtraCaCerts = process.env[extraCertsEnv];
+
+    beforeEach(() => {
+      delete process.env[extraCertsEnv];
+    });
+
+    afterEach(() => {
+      if (originalExtraCaCerts === undefined) {
+        delete process.env[extraCertsEnv];
+      } else {
+        process.env[extraCertsEnv] = originalExtraCaCerts;
+      }
+    });
+
     it('returns undefined when no CA is provided', () => {
       expect(buildCABundle(undefined)).toBeUndefined();
       expect(buildCABundle([])).toBeUndefined();
@@ -136,6 +186,14 @@ describe('certs', () => {
       const bundle = buildCABundle(localhostCA);
       expect(bundle).toHaveLength(rootCertificates.length + 1);
       expect(bundle).toContain(localhostCA);
+    });
+
+    it('includes NODE_EXTRA_CA_CERTS when an explicit CA is also set', () => {
+      process.env[extraCertsEnv] = join(CA_DIR, 'selfsigned.cert');
+      const bundle = buildCABundle(localhostCA);
+      expect(bundle).toContain(localhostCA);
+      expect(bundle).toContain(selfSigned);
+      expect(bundle).toHaveLength(rootCertificates.length + 2);
     });
   });
 });

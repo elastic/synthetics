@@ -1,9 +1,9 @@
-# Internal / private CA example
+# Internal HTTPS certificate-error bypass example
 
 This example shows how to run an Elastic Synthetics **browser monitor** against
 an internal HTTPS site whose certificate is signed by a **private / internal
-Certificate Authority (CA)** — without rebuilding the agent image and without
-disabling TLS validation.
+Certificate Authority (CA)** — without rebuilding the agent image or disabling
+certificate checks for every endpoint.
 
 ## The problem
 
@@ -19,12 +19,13 @@ net::ERR_CERT_AUTHORITY_INVALID
 Historically the only options were to bake the CA into a custom agent image, or
 set `ignoreHTTPSErrors: true` — which turns off validation for **every** request.
 
-## The fix: `certificateAuthorities`
+## The workaround: `certificateErrorSpkiAllowlist`
 
-Configure the CA(s) you trust and the Synthetics runner computes each CA's
-SHA-256 **SPKI fingerprint** and passes them to Chromium via
-`--ignore-certificate-errors-spki-list`. Chromium then trusts certificates
-chaining to those public keys and nothing else:
+This option does **not** add a CA to Chromium's trust store. Configure the PEM
+certificate presented by the internal server. The Synthetics runner computes
+its SHA-256 **SPKI fingerprint** and passes it to Chromium via
+`--ignore-certificate-errors-spki-list`. Chromium then ignores certificate
+errors only for a presented certificate with that public key:
 
 ```ts
 // synthetics.config.ts
@@ -32,14 +33,14 @@ import type { SyntheticsConfig } from '@elastic/synthetics';
 
 export default (): SyntheticsConfig => ({
   // Path to a PEM file, inline PEM, a Buffer, or an array of any of these.
-  certificateAuthorities: ['./certs/internal-ca.crt'],
+  certificateErrorSpkiAllowlist: ['./certs/server.crt'],
 });
 ```
 
 Or per-run from the CLI (variadic — pass more than one):
 
 ```sh
-npx @elastic/synthetics . --certificate-authorities ./certs/internal-ca.crt
+npx @elastic/synthetics . --certificate-error-spki-allowlist ./certs/server.crt
 ```
 
 Unlike the Kerberos example, this works from **both** Elastic's managed global
@@ -50,7 +51,7 @@ does not touch the host trust store.
 
 | File | Purpose |
 |---|---|
-| `synthetics.config.ts` | Declares the trusted internal CA. |
+| `synthetics.config.ts` | Allowlists the internal server certificate's SPKI. |
 | `internal-site.journey.ts` | Navigates to the internal HTTPS URL and asserts a successful response. |
 
 ## Running
@@ -58,7 +59,7 @@ does not touch the host trust store.
 ```sh
 npm install
 npx @elastic/synthetics . \
-  --certificate-authorities ./certs/internal-ca.crt \
+  --certificate-error-spki-allowlist ./certs/server.crt \
   --params '{"url":"https://internal.corp.local/"}'
 ```
 
@@ -93,18 +94,18 @@ cd ..
 node -e "require('https').createServer({key:require('fs').readFileSync('certs/server.key'),cert:require('fs').readFileSync('certs/server.crt')},(_,res)=>res.end('<h1>internal ok</h1>')).listen(8443,()=>console.log('https://localhost:8443'))"
 ```
 
-3. **Run the journey against it.** First WITHOUT the CA to see it fail:
+3. **Run the journey against it.** First WITHOUT the SPKI allowlist to see it fail:
 
 ```sh
 npx @elastic/synthetics . --params '{"url":"https://localhost:8443/"}'
 # -> step fails with net::ERR_CERT_AUTHORITY_INVALID
 ```
 
-   Now WITH the CA — it passes:
+   Now WITH the server certificate's SPKI allowlisted — it passes:
 
 ```sh
 npx @elastic/synthetics . \
-  --certificate-authorities ./certs/internal-ca.crt \
+  --certificate-error-spki-allowlist ./certs/server.crt \
   --params '{"url":"https://localhost:8443/"}'
 # -> journey succeeds
 ```
@@ -122,14 +123,30 @@ browser process command line.
 
 ## Security notes & limitations
 
-- **Targeted, not blanket.** Only certificates chaining to the SPKI hashes you
-  provide are trusted; every other endpoint is validated normally. This is much
-  safer than `ignoreHTTPSErrors: true`.
-- **SPKI pinning bypasses *all* cert errors for the pinned keys** — including
-  expiry and hostname mismatch — because it matches on the public key. Trust
-  only CAs you control.
-- **Rotate carefully.** If the CA's key pair changes, update
-  `certificateAuthorities` with the new CA so the new SPKI hash is pinned.
+- **Targeted, not blanket.** Chromium ignores certificate errors only when a
+  presented certificate's SPKI matches the allowlist. Other endpoints still
+  undergo normal validation, making this narrower than `ignoreHTTPSErrors: true`.
+- **This is not CA trust.** The option does not install a CA or validate a chain
+  against it. A matching certificate bypasses *all* certificate errors,
+  including expiry and hostname mismatch.
+- **Rotate carefully.** When the server certificate's key pair changes, update
+  `certificateErrorSpkiAllowlist` with the new presented certificate so its SPKI hash
+  is allowlisted.
 - **Lightweight (HTTP/TCP/ICMP) monitors** are unaffected by this setting; it
-  applies to browser monitors. The CLI side (e.g. `push` talking to a
-  Kibana fronted by an internal CA) is covered separately.
+  only affects the Chromium process used by browser monitors.
+- **CLI connections to Kibana** (`push`, `locations`) use a separate
+  `certificateAuthorities` option. That one *does* establish CA trust in Node
+  (public roots + the extra CAs) so the CLI can talk to a Kibana instance
+  signed by an internal CA:
+
+  ```ts
+  export default (): SyntheticsConfig => ({
+    certificateAuthorities: ['./certs/internal-ca.crt'],
+  });
+  ```
+
+  ```sh
+  npx @elastic/synthetics push \
+    --certificate-authorities ./certs/internal-ca.crt \
+    --url https://kibana.internal.corp.local --id my-project
+  ```

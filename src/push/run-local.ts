@@ -32,6 +32,7 @@ import { red } from 'kleur/colors';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { MonitorSchema } from './monitor';
+import { isBundledMonitorType } from './utils';
 
 async function unzipFile(zipPath, destination) {
   return new Promise<void>((resolve, reject) => {
@@ -73,21 +74,30 @@ async function runNpmInstall(directory) {
 
 async function runTest(directory, schema: MonitorSchema) {
   return new Promise<void>((resolve, reject) => {
-    const runTest = spawn(
-      'npx',
-      [
-        '@elastic/synthetics',
-        '.',
-        '--playwright-options',
-        JSON.stringify(schema.playwrightOptions),
-        '--params',
-        JSON.stringify(schema.params),
-      ],
-      {
-        cwd: directory,
-        stdio: 'inherit',
+    const args = [
+      '@elastic/synthetics',
+      '.',
+      '--playwright-options',
+      JSON.stringify(schema.playwrightOptions),
+      '--params',
+      JSON.stringify(schema.params),
+    ];
+    const allowlist = schema.certificateErrorSpkiAllowlist;
+    if (allowlist != null) {
+      const entries = Array.isArray(allowlist) ? allowlist : [allowlist];
+      const pemEntries = entries
+        .map(entry =>
+          Buffer.isBuffer(entry) ? entry.toString('utf-8') : entry
+        )
+        .filter((entry): entry is string => Boolean(entry));
+      if (pemEntries.length > 0) {
+        args.push('--certificate-error-spki-allowlist', ...pemEntries);
       }
-    );
+    }
+    const runTest = spawn('npx', args, {
+      cwd: directory,
+      stdio: 'inherit',
+    });
 
     runTest.on('close', resolve);
     runTest.on('error', err => {
@@ -118,7 +128,7 @@ async function extract(
   zipPath: string,
   unzipPath: string
 ) {
-  if (schema.type !== 'browser') {
+  if (!isBundledMonitorType(schema.type)) {
     return;
   }
   const content = schema.content;

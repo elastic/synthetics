@@ -28,7 +28,10 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
-import { normalizeCertificateAuthorities } from './core/certs';
+import {
+  normalizeCertificateErrorSpkiAllowlist,
+  normalizePemCertificates,
+} from './core/certs';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -105,13 +108,31 @@ export async function normalizeOptions(
   );
 
   /**
-   * Merge custom certificate authorities from the Synthetics config and the
-   * CLI. Each entry can be inline PEM content or a path to a PEM file that we
-   * resolve here so downstream consumers only ever deal with PEM strings.
+   * Merge PEM certificates from the Synthetics config and the CLI. Each entry
+   * can be inline PEM content or a path to a PEM file that we resolve here so
+   * downstream consumers only ever deal with PEM strings used to build the
+   * Chromium SPKI certificate-error allowlist.
+   */
+  const certificateErrorSpkiAllowlist = [
+    ...normalizeCertificateErrorSpkiAllowlist(
+      config.certificateErrorSpkiAllowlist
+    ),
+    ...normalizeCertificateErrorSpkiAllowlist(
+      cliArgs.certificateErrorSpkiAllowlist
+    ),
+  ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
+  options.certificateErrorSpkiAllowlist = certificateErrorSpkiAllowlist.length
+    ? certificateErrorSpkiAllowlist
+    : undefined;
+
+  /**
+   * Merge extra CAs from the Synthetics config and the CLI. Each entry can be
+   * inline PEM or a path to a PEM file; resolve paths here so undici only
+   * ever sees PEM strings.
    */
   const certificateAuthorities = [
-    ...normalizeCertificateAuthorities(config.certificateAuthorities),
-    ...normalizeCertificateAuthorities(cliArgs.certificateAuthorities),
+    ...normalizePemCertificates(config.certificateAuthorities),
+    ...normalizePemCertificates(cliArgs.certificateAuthorities),
   ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
   options.certificateAuthorities = certificateAuthorities.length
     ? certificateAuthorities
@@ -279,9 +300,14 @@ export function getCommonCommandOpts() {
     "List of Kibana's Maintenance Windows IDs assigned by default. More information on https://www.elastic.co/docs/explore-analyze/alerts-cases/alerts/maintenance-windows."
   );
 
+  const certificateErrorSpkiAllowlist = createOption(
+    '--certificate-error-spki-allowlist <pathOrPem...>',
+    "One or more PEM certificates, each provided as inline content or a path to a PEM file. Their SPKI hashes are used to bypass Chromium certificate errors for matching presented certificates; this does not add a CA to Chromium's trust store."
+  );
+
   const certificateAuthorities = createOption(
     '--certificate-authorities <pathOrPem...>',
-    'One or more trusted CA certificates, each provided as inline PEM content or a path to a PEM file. Lets browser monitors and the CLI trust internal/private CAs without rebuilding the agent image.'
+    'One or more trusted CA certificates, each provided as inline PEM content or a path to a PEM file. Used by push/locations to trust Kibana (or other endpoints) signed by an internal CA, in addition to Node public roots.'
   );
 
   return {
@@ -295,6 +321,7 @@ export function getCommonCommandOpts() {
     match,
     fields,
     maintenanceWindows,
+    certificateErrorSpkiAllowlist,
     certificateAuthorities,
   };
 }
