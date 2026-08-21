@@ -50,6 +50,7 @@ describe('network', () => {
       )
     );
 
+    // allow the event loop time to process the promise callbacks
     await delay(0);
 
     expect((network as any)._barrierPromises.size).toBe(0);

@@ -65,7 +65,9 @@ export class NetworkManager {
    */
   private _addBarrier(page: Page, promise: Promise<void>) {
     if (!page) {
-      promise.catch(() => {}); // Ignore failures from optional network metadata collection
+      promise.catch(error => {
+        log(`Plugins: failed to collect network metadata: ${error}`);
+      });
       return;
     }
     const race = Promise.race([
@@ -79,8 +81,8 @@ export class NetworkManager {
     ]);
     this._barrierPromises.add(race);
     race
-      .catch(() => {
-        // Ignore failures from optional network metadta collection
+      .catch(error => {
+        log(`Plugins: failed to collect network metadata: ${error}`);
       })
       .then(() => this._barrierPromises.delete(race));
   }
