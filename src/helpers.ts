@@ -43,7 +43,46 @@ import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import { EnvHttpProxyAgent } from 'undici';
 
 const SEPARATOR = '\n';
+/**
+ * Read environment variables into a parameters object.
+ *
+ * Array entries are required. Object entries are required unless
+ * explicitly marked as optional.
+ */
+export function paramsFromEnv(
+  variables: string[] | Record<string, { required?: boolean }>
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  const missingVariables: string[] = [];
 
+  const entries: Array<[string, { required?: boolean }]> = Array.isArray(
+    variables
+  )
+    ? variables.map(name => [name, { required: true }])
+    : Object.entries(variables);
+
+  for (const [name, options] of entries) {
+    const value = process.env[name];
+
+    if (value === undefined) {
+      if (options.required !== false) {
+        missingVariables.push(name);
+      }
+
+      continue;
+    }
+
+    params[name] = value;
+  }
+
+  if (missingVariables.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingVariables.join(', ')}`
+    );
+  }
+
+  return params;
+}
 export function noop() {}
 
 export function indent(lines: string, tab = '   ') {

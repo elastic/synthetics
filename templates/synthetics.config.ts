@@ -1,4 +1,4 @@
-import type { SyntheticsConfig } from '@elastic/synthetics';
+import { paramsFromEnv, type SyntheticsConfig } from '@elastic/synthetics';
 
 export default env => {
   const config: SyntheticsConfig = {
@@ -6,6 +6,10 @@ export default env => {
       url: 'https://elastic.github.io/synthetics-demo/',
       // Base URL for the API journey examples; replace with your service.
       apiUrl: 'https://jsonplaceholder.typicode.com',
+      // Load optional environment-backed parameters when available.
+      ...paramsFromEnv({
+        SYNTHETICS_API_URL: { required: false },
+      }),
     },
     playwrightOptions: {
       ignoreHTTPSErrors: false,
@@ -27,11 +31,13 @@ export default env => {
       space: '{{space}}',
     },
   };
+
   if (env !== 'development') {
     /**
      * Override configuration specific to environment
      * Ex: config.params.url = ""
      */
   }
+
   return config;
 };
