@@ -39,6 +39,22 @@ describe('network', () => {
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  it('handles failures from optional network metadata collection', async () => {
+    const network = new NetworkManager({} as any);
+    const page = { on: jest.fn() };
+
+    (network as any)._addBarrier(
+      page,
+      Promise.reject(
+        new Error('Target page, context or browser has been closed')
+      )
+    );
+
+    await delay(0);
+
+    expect((network as any)._barrierPromises.size).toBe(0);
+  });
+
   it('should capture network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);

@@ -64,7 +64,10 @@ export class NetworkManager {
    * to not result in exception
    */
   private _addBarrier(page: Page, promise: Promise<void>) {
-    if (!page) return;
+    if (!page) {
+      promise.catch(() => {}); // Ignore failures from optional network metadata collection
+      return;
+    }
     const race = Promise.race([
       new Promise<void>(resolve =>
         page.on('close', () => {
@@ -75,7 +78,11 @@ export class NetworkManager {
       promise,
     ]);
     this._barrierPromises.add(race);
-    race.then(() => this._barrierPromises.delete(race));
+    race
+      .catch(() => {
+        // Ignore failures from optional network metadta collection
+      })
+      .then(() => this._barrierPromises.delete(race));
   }
 
   private _nullableFrameBarrier(req: Request): Frame | null {
