@@ -24,6 +24,7 @@
  */
 
 import { cwd } from 'process';
+import { paramsFromEnv } from '../src/index';
 import {
   indent,
   monotonicTimeInSeconds,
@@ -145,4 +146,87 @@ it('match tags and names', () => {
   // match both name and tags
   expect(isMatch(['bar'], 'foo', undefined, 'ba*')).toBe(true);
   expect(isMatch(['bar'], 'foo', undefined, 'test*')).toBe(false);
+});
+describe('paramsFromEnv', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+
+    delete process.env.SYNTHETICS_REQUIRED_ONE;
+    delete process.env.SYNTHETICS_REQUIRED_TWO;
+    delete process.env.SYNTHETICS_OPTIONAL;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('returns required environment variables from an array', () => {
+    process.env.SYNTHETICS_REQUIRED_ONE = 'first-value';
+    process.env.SYNTHETICS_REQUIRED_TWO = 'second-value';
+
+    expect(
+      paramsFromEnv(['SYNTHETICS_REQUIRED_ONE', 'SYNTHETICS_REQUIRED_TWO'])
+    ).toEqual({
+      SYNTHETICS_REQUIRED_ONE: 'first-value',
+      SYNTHETICS_REQUIRED_TWO: 'second-value',
+    });
+  });
+
+  it('reports all missing required environment variables', () => {
+    expect(() =>
+      paramsFromEnv(['SYNTHETICS_REQUIRED_ONE', 'SYNTHETICS_REQUIRED_TWO'])
+    ).toThrow(
+      'Missing required environment variables: SYNTHETICS_REQUIRED_ONE, SYNTHETICS_REQUIRED_TWO'
+    );
+  });
+
+  it('treats object entries as required by default', () => {
+    expect(() =>
+      paramsFromEnv({
+        SYNTHETICS_REQUIRED_ONE: {},
+      })
+    ).toThrow(
+      'Missing required environment variables: SYNTHETICS_REQUIRED_ONE'
+    );
+  });
+
+  it('omits missing optional environment variables', () => {
+    process.env.SYNTHETICS_REQUIRED_ONE = 'first-value';
+
+    expect(
+      paramsFromEnv({
+        SYNTHETICS_REQUIRED_ONE: {},
+        SYNTHETICS_OPTIONAL: { required: false },
+      })
+    ).toEqual({
+      SYNTHETICS_REQUIRED_ONE: 'first-value',
+    });
+  });
+
+  it('includes optional environment variables when present', () => {
+    process.env.SYNTHETICS_OPTIONAL = 'optional-value';
+
+    expect(
+      paramsFromEnv({
+        SYNTHETICS_OPTIONAL: { required: false },
+      })
+    ).toEqual({
+      SYNTHETICS_OPTIONAL: 'optional-value',
+    });
+  });
+
+  it('preserves defined empty environment variable values', () => {
+    process.env.SYNTHETICS_REQUIRED_ONE = '';
+
+    expect(paramsFromEnv(['SYNTHETICS_REQUIRED_ONE'])).toEqual({
+      SYNTHETICS_REQUIRED_ONE: '',
+    });
+  });
+
+  it('returns an empty object when no variables are requested', () => {
+    expect(paramsFromEnv([])).toEqual({});
+    expect(paramsFromEnv({})).toEqual({});
+  });
 });
