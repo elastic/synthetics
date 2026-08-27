@@ -56,6 +56,21 @@ describe('network', () => {
     expect((network as any)._barrierPromises.size).toBe(0);
   });
 
+  it('stops recording network events on stop', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager(driver);
+    await network.start();
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+    const netinfo = await network.stop();
+    const recorded = netinfo.length;
+    expect(recorded).toBeGreaterThan(0);
+
+    // Ensure no more network data was collected after calling `network.stop()`
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+    expect(network.results.length).toBe(recorded);
+    await Gatherer.stop();
+  });
+
   it('should capture network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);

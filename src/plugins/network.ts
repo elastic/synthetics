@@ -107,10 +107,10 @@ export class NetworkManager {
     /**
      * Listen for all network events from PW context
      */
-    context.on('request', this._onRequest.bind(this));
-    context.on('response', this._onResponse.bind(this));
-    context.on('requestfinished', this._onRequestCompleted.bind(this));
-    context.on('requestfailed', this._onRequestCompleted.bind(this));
+    context.on('request', this._onRequest);
+    context.on('response', this._onResponse);
+    context.on('requestfinished', this._onRequestCompleted);
+    context.on('requestfailed', this._onRequestCompleted);
   }
 
   private _findNetworkEntry(
@@ -119,7 +119,7 @@ export class NetworkManager {
     return request[NETWORK_ENTRY_SUMBOL];
   }
 
-  private _onRequest(request: Request) {
+  private _onRequest = (request: Request) => {
     const url = request.url();
     /**
      * Data URI should not show up as network requests
@@ -174,9 +174,9 @@ export class NetworkManager {
 
     request[NETWORK_ENTRY_SUMBOL] = networkEntry;
     this.results.push(networkEntry);
-  }
+  };
 
-  private async _onResponse(response: Response) {
+  private _onResponse = async (response: Response) => {
     const request = response.request();
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
@@ -229,9 +229,9 @@ export class NetworkManager {
         if (details) networkEntry.response.securityDetails = details;
       })
     );
-  }
+  };
 
-  private async _onRequestCompleted(request: Request) {
+  private _onRequestCompleted = async (request: Request) => {
     const networkEntry = this._findNetworkEntry(request);
     if (!networkEntry) return;
 
@@ -264,9 +264,18 @@ export class NetworkManager {
         };
       })
     );
-  }
+  };
 
   async stop() {
+    /**
+     * First detach the listeners so that no new network events are recorded
+     */
+    const context = this.driver.context;
+    context.off('request', this._onRequest);
+    context.off('response', this._onResponse);
+    context.off('requestfinished', this._onRequestCompleted);
+    context.off('requestfailed', this._onRequestCompleted);
+
     /**
      * Waiting for all network events is error prone and might hang the tests
      * from getting closed forever when there are upstream bugs in browsers or
@@ -275,11 +284,6 @@ export class NetworkManager {
     if (this._barrierPromises.size > 0) {
       log(`Plugins: dropping ${this._barrierPromises.size} network events`);
     }
-    const context = this.driver.context;
-    context.off('request', this._onRequest.bind(this));
-    context.off('response', this._onResponse.bind(this));
-    context.off('requestfinished', this._onRequestCompleted.bind(this));
-    context.off('requestfailed', this._onRequestCompleted.bind(this));
     this._barrierPromises.clear();
     log(`Plugins: stopped collecting network events`);
     return this.results;
