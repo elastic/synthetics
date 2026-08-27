@@ -71,12 +71,7 @@ export class NetworkManager {
       return;
     }
     const race = Promise.race([
-      new Promise<void>(resolve =>
-        page.on('close', () => {
-          this._barrierPromises.delete(race);
-          resolve();
-        })
-      ),
+      new Promise<void>(resolve => page.once('close', () => resolve())),
       promise,
     ]);
     this._barrierPromises.add(race);
@@ -84,7 +79,7 @@ export class NetworkManager {
       .catch(error => {
         log(`Plugins: failed to collect network metadata: ${error}`);
       })
-      .then(() => this._barrierPromises.delete(race));
+      .finally(() => this._barrierPromises.delete(race));
   }
 
   private _nullableFrameBarrier(req: Request): Frame | null {

@@ -41,7 +41,7 @@ describe('network', () => {
 
   it('handles failures from optional network metadata collection', async () => {
     const network = new NetworkManager({} as any);
-    const page = { on: jest.fn() };
+    const page = { once: jest.fn() };
 
     (network as any)._addBarrier(
       page,
