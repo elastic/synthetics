@@ -39,6 +39,38 @@ describe('network', () => {
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  it('handles failures from optional network metadata collection', async () => {
+    const network = new NetworkManager({} as any);
+    const page = { once: jest.fn() };
+
+    (network as any)._addBarrier(
+      page,
+      Promise.reject(
+        new Error('Target page, context or browser has been closed')
+      )
+    );
+
+    // allow the event loop time to process the promise callbacks
+    await delay(0);
+
+    expect((network as any)._barrierPromises.size).toBe(0);
+  });
+
+  it('stops recording network events on stop', async () => {
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    const network = new NetworkManager(driver);
+    await network.start();
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+    const netinfo = await network.stop();
+    const recorded = netinfo.length;
+    expect(recorded).toBeGreaterThan(0);
+
+    // Ensure no more network data was collected after calling `network.stop()`
+    await driver.page.goto(server.TEST_PAGE, { waitUntil: 'networkidle' });
+    expect(network.results.length).toBe(recorded);
+    await Gatherer.stop();
+  });
+
   it('should capture network info', async () => {
     const driver = await Gatherer.setupDriver({ wsEndpoint });
     const network = new NetworkManager(driver);
