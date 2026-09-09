@@ -457,6 +457,7 @@ export default class Runner implements RunnerInfo {
       privateLocations: options.privateLocations,
       params: options.params,
       playwrightOptions: options.playwrightOptions,
+      certificateErrorSpkiAllowlist: options.certificateErrorSpkiAllowlist,
       screenshot: options.screenshots,
       tags: options.tags,
       alert: options.alert,

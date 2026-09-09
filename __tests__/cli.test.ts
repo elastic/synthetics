@@ -471,6 +471,26 @@ journey('inline browser', ({ page, params }) => {
         expect.objectContaining({ status: 'succeeded' })
       );
     });
+
+    it('succeeds with --certificate-error-spki-allowlist', async () => {
+      const cli = new CLIMock()
+        .args(
+          cliArgs.concat(
+            '--certificate-error-spki-allowlist',
+            join(FIXTURES_DIR, 'ca', 'selfsigned.cert')
+          )
+        )
+        .run();
+      expect(await cli.exitCode).toBe(0);
+
+      const journeyEnd = safeNDJSONParse(cli.buffer()).find(
+        ({ type }) => type === 'journey/end'
+      );
+
+      expect(journeyEnd.journey).toEqual(
+        expect.objectContaining({ status: 'succeeded' })
+      );
+    });
   });
 
   describe('Throttling', () => {

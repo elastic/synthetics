@@ -98,16 +98,32 @@ npm run watch
 npm run test
 ```
 
-### pre-commit
+### Before committing
 
-This project uses [pre-commit](https://pre-commit.com/) so, after installing it, please install the already configured pre-commit hooks we support, to enable pre-commit in your local git repository:
+CI verifies that the code passes the lint and formatting checks. Run the
+following commands before committing to apply any automatic fixes locally:
 
 ```shell
-$ pre-commit install
-pre-commit installed at .git/hooks/pre-commit
+npm run lint:fix
+npm run format:fix
 ```
 
-To understand more about the hooks we use, please take a look at pre-commit's [configuration file](./.pre-commit-config.yml).
+The repository also provides optional checks through
+[pre-commit](https://pre-commit.com/). If you previously used Husky in this
+repository, first remove its Git hooks path configuration:
+
+```shell
+git config --unset-all core.hooksPath
+```
+
+After installing `pre-commit`, enable its checks in your local repository with:
+
+```shell
+pre-commit install
+```
+
+For details about these checks, see the
+[pre-commit configuration](./.pre-commit-config.yaml).
 
 ### Testing
 

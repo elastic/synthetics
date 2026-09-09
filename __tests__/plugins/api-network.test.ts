@@ -82,6 +82,25 @@ describe('APINetworkManager', () => {
     expect(entry.resourceSize).toBe(entry.response.body?.bytes);
   });
 
+  it('populates per-phase Resource Timing from APIResponse.timing()', async () => {
+    await mgr.start();
+    await request.get(`${server.PREFIX}/hello`);
+    const [{ timings }] = await mgr.stop();
+
+    // send is always 0 (not exposed via the Resource Timing API).
+    expect(timings.send).toBe(0);
+    // Plain HTTP has no TLS handshake.
+    expect(timings.ssl).toBe(-1);
+    // TTFB (`wait`) and download (`receive`) are always measured; `receive`
+    // is no longer hard-coded to 0 like the old wall-clock path. `blocked`
+    // derives from `requestStart`, which is present on every real request.
+    // (`dns`/`connect` may be -1 when the socket/DNS lookup is reused.)
+    expect(timings.blocked).toBeGreaterThanOrEqual(0);
+    expect(timings.wait).toBeGreaterThanOrEqual(0);
+    expect(timings.receive).toBeGreaterThanOrEqual(0);
+    expect(timings.total).toBeGreaterThanOrEqual(0);
+  });
+
   it('records request body bytes for POST', async () => {
     await mgr.start();
     server.route('/post', (req, res) => {

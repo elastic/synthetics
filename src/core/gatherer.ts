@@ -32,6 +32,7 @@ import {
 } from 'playwright-core';
 import { PluginManager } from '../plugins';
 import { log } from './logger';
+import { getSpkiFingerprints } from './certs';
 import {
   APIDriver,
   Driver,
@@ -61,10 +62,31 @@ export class Gatherer {
       log(`Gatherer: connecting to WS endpoint: ${wsEndpoint}`);
       Gatherer.browser = await chromium.connect(wsEndpoint);
     } else {
+      /**
+       * Chromium on Linux has its own NSS trust store. This flag does not add
+       * a CA to that store: it bypasses certificate errors only when a
+       * presented certificate's SPKI matches one of the supplied fingerprints.
+       * It is narrower than `ignoreHTTPSErrors`, but is not CA trust.
+       */
+      const spkiFingerprints = getSpkiFingerprints(
+        options.certificateErrorSpkiAllowlist
+      );
+      if (spkiFingerprints.length > 0) {
+        log(
+          `Gatherer: bypassing certificate errors for ${spkiFingerprints.length} allowlisted SPKI fingerprint(s)`
+        );
+      }
       Gatherer.browser = await chromium.launch({
         ...playwrightOptions,
         args: [
           ...(playwrightOptions?.headless ? ['--disable-gpu'] : []),
+          ...(spkiFingerprints.length > 0
+            ? [
+                `--ignore-certificate-errors-spki-list=${spkiFingerprints.join(
+                  ','
+                )}`,
+              ]
+            : []),
           ...(playwrightOptions?.args ?? []),
         ],
       });

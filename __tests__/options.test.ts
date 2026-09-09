@@ -31,6 +31,7 @@ import {
   parsePlaywrightOptions,
 } from '../src/options';
 import { join } from 'path';
+import { readFileSync } from 'fs';
 
 describe('options', () => {
   it('normalize', async () => {
@@ -71,7 +72,7 @@ describe('options', () => {
         ignoreHTTPSErrors: undefined,
         isMobile: true,
         userAgent:
-          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Mobile Safari/537.36',
+          'Mozilla/5.0 (Linux; Android 8.0.0; SM-G965U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.7922.34 Mobile Safari/537.36',
         viewport: {
           height: 658,
           width: 320,
@@ -190,6 +191,33 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
       expect(Buffer.isBuffer(t.origin)).toBeFalsy();
       expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
+    });
+  });
+
+  describe('certificateErrorSpkiAllowlist', () => {
+    const caPath = join(__dirname, 'fixtures', 'ca', 'localhost-ca.crt');
+
+    it('is undefined when not provided', async () => {
+      const options = await normalizeOptions({});
+      expect(options.certificateErrorSpkiAllowlist).toBeUndefined();
+    });
+
+    it('keeps inline PEM content as-is', async () => {
+      const pem = readFileSync(caPath, 'utf-8');
+      const options = await normalizeOptions({
+        certificateErrorSpkiAllowlist: pem,
+      } as CliArgs);
+      expect(options.certificateErrorSpkiAllowlist).toEqual([pem]);
+    });
+
+    it('resolves file paths to PEM content', async () => {
+      const options = await normalizeOptions({
+        // CLI variadic option yields an array of paths/strings
+        certificateErrorSpkiAllowlist: [caPath],
+      } as CliArgs);
+      expect(options.certificateErrorSpkiAllowlist).toEqual([
+        readFileSync(caPath, 'utf-8'),
+      ]);
     });
   });
 
