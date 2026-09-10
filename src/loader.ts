@@ -29,7 +29,7 @@ import { tmpdir } from 'os';
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import Module from 'module';
 import { CliArgs } from './common_types';
-import { step, journey } from './core';
+import { step, journey, apiJourney } from './core';
 import { log } from './core/logger';
 import { expect } from './core/expect';
 import * as mfa from './core/mfa';
@@ -96,6 +96,14 @@ const isModuleInlineSource = (source: string): boolean => {
   return /^\s*(?:import|export)\b/m.test(source);
 };
 
+/**
+ * Heartbeat sets this for `api` monitors so the runner knows to build an
+ * `APIDriver` (no Chromium) instead of the default browser `Driver`. See
+ * `ELASTIC_SYNTHETICS_MONITOR_TYPE` in x-pack/heartbeat/monitors/browser/synthexec.
+ */
+const isInlineAPIMonitor = (): boolean =>
+  process.env.ELASTIC_SYNTHETICS_MONITOR_TYPE === 'api';
+
 const loadInlineScript = (source: string) => {
   if (isModuleInlineSource(source)) {
     loadInlineModule(source);
@@ -112,6 +120,21 @@ const loadInlineScript = (source: string) => {
     'mfa',
     source
   );
+  if (isInlineAPIMonitor()) {
+    apiJourney('inline', ({ params, request }) => {
+      scriptFn.apply(null, [
+        step,
+        undefined,
+        undefined,
+        undefined,
+        params,
+        expect,
+        request,
+        mfa,
+      ]);
+    });
+    return;
+  }
   journey('inline', ({ page, context, browser, params, request }) => {
     scriptFn.apply(null, [
       step,
