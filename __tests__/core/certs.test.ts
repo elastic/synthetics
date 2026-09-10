@@ -25,7 +25,9 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { rootCertificates } from 'tls';
 import {
+  buildCABundle,
   getSpkiFingerprint,
   getSpkiFingerprints,
   normalizeCertificateErrorSpkiAllowlist,
@@ -156,6 +158,42 @@ describe('certs', () => {
       );
 
       stderrSpy.mockRestore();
+    });
+  });
+
+  describe('buildCABundle', () => {
+    const extraCertsEnv = 'NODE_EXTRA_CA_CERTS';
+    const originalExtraCaCerts = process.env[extraCertsEnv];
+
+    beforeEach(() => {
+      delete process.env[extraCertsEnv];
+    });
+
+    afterEach(() => {
+      if (originalExtraCaCerts === undefined) {
+        delete process.env[extraCertsEnv];
+      } else {
+        process.env[extraCertsEnv] = originalExtraCaCerts;
+      }
+    });
+
+    it('returns undefined when no CA is provided', () => {
+      expect(buildCABundle(undefined)).toBeUndefined();
+      expect(buildCABundle([])).toBeUndefined();
+    });
+
+    it('appends the provided CA to the built-in roots', () => {
+      const bundle = buildCABundle(localhostCA);
+      expect(bundle).toHaveLength(rootCertificates.length + 1);
+      expect(bundle).toContain(localhostCA);
+    });
+
+    it('includes NODE_EXTRA_CA_CERTS when an explicit CA is also set', () => {
+      process.env[extraCertsEnv] = join(CA_DIR, 'selfsigned.cert');
+      const bundle = buildCABundle(localhostCA);
+      expect(bundle).toContain(localhostCA);
+      expect(bundle).toContain(selfSigned);
+      expect(bundle).toHaveLength(rootCertificates.length + 2);
     });
   });
 });

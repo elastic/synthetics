@@ -28,7 +28,10 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
-import { normalizeCertificateErrorSpkiAllowlist } from './core/certs';
+import {
+  normalizeCertificateErrorSpkiAllowlist,
+  normalizePemCertificates,
+} from './core/certs';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -120,6 +123,19 @@ export async function normalizeOptions(
   ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
   options.certificateErrorSpkiAllowlist = certificateErrorSpkiAllowlist.length
     ? certificateErrorSpkiAllowlist
+    : undefined;
+
+  /**
+   * Merge extra CAs from the Synthetics config and the CLI. Each entry can be
+   * inline PEM or a path to a PEM file; resolve paths here so undici only
+   * ever sees PEM strings.
+   */
+  const certificateAuthorities = [
+    ...normalizePemCertificates(config.certificateAuthorities),
+    ...normalizePemCertificates(cliArgs.certificateAuthorities),
+  ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
+  options.certificateAuthorities = certificateAuthorities.length
+    ? certificateAuthorities
     : undefined;
 
   /**
@@ -289,6 +305,11 @@ export function getCommonCommandOpts() {
     "One or more PEM certificates, each provided as inline content or a path to a PEM file. Their SPKI hashes are used to bypass Chromium certificate errors for matching presented certificates; this does not add a CA to Chromium's trust store."
   );
 
+  const certificateAuthorities = createOption(
+    '--certificate-authorities <pathOrPem...>',
+    'One or more trusted CA certificates, each provided as inline PEM content or a path to a PEM file. Used by push/locations to trust Kibana (or other endpoints) signed by an internal CA, in addition to Node public roots.'
+  );
+
   return {
     auth,
     authMandatory,
@@ -301,6 +322,7 @@ export function getCommonCommandOpts() {
     fields,
     maintenanceWindows,
     certificateErrorSpkiAllowlist,
+    certificateAuthorities,
   };
 }
 

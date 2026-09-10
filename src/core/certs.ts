@@ -24,19 +24,24 @@
  */
 
 import { X509Certificate, createHash } from 'crypto';
-import { CertificateErrorSpkiAllowlist } from '../common_types';
+import { readFileSync } from 'fs';
+import { rootCertificates } from 'tls';
+import {
+  CertificateAuthorities,
+  CertificateErrorSpkiAllowlist,
+} from '../common_types';
 import { warn } from '../helpers';
 
 const PEM_CERTIFICATE_RE =
   /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g;
 
 /**
- * Normalize user-provided PEM certificates (string, Buffer, or an array of
- * either) into a flat list of PEM strings. Each entry may itself be a bundle
- * that contains more than one certificate.
+ * Flatten user-provided PEM certificates (string, Buffer, or an array of
+ * either) into a list of PEM strings. Each entry may itself be a bundle that
+ * contains more than one certificate.
  */
-export function normalizeCertificateErrorSpkiAllowlist(
-  certificates?: CertificateErrorSpkiAllowlist
+export function normalizePemCertificates(
+  certificates?: CertificateErrorSpkiAllowlist | CertificateAuthorities
 ): string[] {
   if (certificates == null) {
     return [];
@@ -45,6 +50,12 @@ export function normalizeCertificateErrorSpkiAllowlist(
   return entries
     .map(entry => (Buffer.isBuffer(entry) ? entry.toString('utf-8') : entry))
     .filter((entry): entry is string => Boolean(entry && entry.trim()));
+}
+
+export function normalizeCertificateErrorSpkiAllowlist(
+  certificates?: CertificateErrorSpkiAllowlist
+): string[] {
+  return normalizePemCertificates(certificates);
 }
 
 /**
@@ -119,4 +130,37 @@ export function getSpkiFingerprints(
     }
   }
   return [...fingerprints];
+}
+
+/**
+ * NODE_EXTRA_CA_CERTS is only applied when Node uses its default trust store.
+ * Passing an explicit `ca` to undici replaces that store, so we have to fold
+ * the extra file in ourselves whenever we build a bundle.
+ */
+function readNodeExtraCaCerts(): string[] {
+  const extraPath = process.env.NODE_EXTRA_CA_CERTS;
+  if (!extraPath) {
+    return [];
+  }
+  try {
+    return [readFileSync(extraPath, 'utf-8')];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Produce a CA bundle suitable for Node/undici TLS clients. User-supplied
+ * authorities are appended to Node's built-in roots (and NODE_EXTRA_CA_CERTS)
+ * so trusting an internal CA never silently drops trust for publicly signed
+ * endpoints.
+ */
+export function buildCABundle(
+  ca?: CertificateAuthorities
+): string[] | undefined {
+  const extra = normalizePemCertificates(ca);
+  if (extra.length === 0) {
+    return undefined;
+  }
+  return [...rootCertificates, ...readNodeExtraCaCerts(), ...extra];
 }
