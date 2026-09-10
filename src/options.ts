@@ -186,6 +186,8 @@ export async function normalizeOptions(
       }
       break;
   }
+  options.apm = config.apm;
+
   return options;
 }
 
