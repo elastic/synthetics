@@ -92,6 +92,60 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('runs inline api monitor (legacy step statements) without a browser', async () => {
+      // Mirrors how Heartbeat actually invokes the CLI for Fleet/Kibana `api`
+      // monitors: legacy `step()` statements (no `import`/`apiJourney(...)`),
+      // with ELASTIC_SYNTHETICS_MONITOR_TYPE=api as the only signal that this
+      // is an API journey, not a browser one.
+      const cli = new CLIMock()
+        .stdin(
+          `step('check body', async () => {
+          const resp = await request.get(params.url);
+          expect((await resp.body()).toString()).toMatch(/Synthetics/);
+        })`
+        )
+        .args([
+          '--inline',
+          '--rich-events',
+          '--params',
+          JSON.stringify(serverParams),
+        ])
+        .run({
+          env: { ...process.env, ELASTIC_SYNTHETICS_MONITOR_TYPE: 'api' },
+        });
+      await cli.waitFor('journey/end');
+      const output = cli.buffer().join('\n');
+      expect(getEvent(output, 'journey/network_info')).toBeTruthy();
+      expect(getEvent(output, 'screenshot/block')).toBeFalsy();
+      expect(await cli.exitCode).toBe(0);
+    });
+
+    it('runs inline api monitor via --inline-api without a browser', async () => {
+      // Same as above, but opting in with a flag instead of the
+      // Heartbeat-only ELASTIC_SYNTHETICS_MONITOR_TYPE env var, for callers
+      // invoking the CLI by hand.
+      const cli = new CLIMock()
+        .stdin(
+          `step('check body', async () => {
+          const resp = await request.get(params.url);
+          expect((await resp.body()).toString()).toMatch(/Synthetics/);
+        })`
+        )
+        .args([
+          '--inline',
+          '--inline-api',
+          '--rich-events',
+          '--params',
+          JSON.stringify(serverParams),
+        ])
+        .run();
+      await cli.waitFor('journey/end');
+      const output = cli.buffer().join('\n');
+      expect(getEvent(output, 'journey/network_info')).toBeTruthy();
+      expect(getEvent(output, 'screenshot/block')).toBeFalsy();
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('generate mfa totp token', async () => {
       const cli = new CLIMock()
         .stdin(
