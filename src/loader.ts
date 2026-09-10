@@ -73,7 +73,7 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
 
   if (options.inline) {
     const source = await readStdin();
-    loadInlineScript(source);
+    loadInlineScript(source, options.inlineApi);
     return;
   }
   /**
@@ -97,14 +97,16 @@ const isModuleInlineSource = (source: string): boolean => {
 };
 
 /**
- * Heartbeat sets this for `api` monitors so the runner knows to build an
- * `APIDriver` (no Chromium) instead of the default browser `Driver`. See
- * `ELASTIC_SYNTHETICS_MONITOR_TYPE` in x-pack/heartbeat/monitors/browser/synthexec.
+ * Heartbeat sets ELASTIC_SYNTHETICS_MONITOR_TYPE=api for `api` monitors so
+ * the runner knows to build an `APIDriver` (no Chromium) instead of the
+ * default browser `Driver`. See that env var in
+ * x-pack/heartbeat/monitors/browser/synthexec. `--inline-api` is the CLI
+ * equivalent for running the same piped script by hand.
  */
-const isInlineAPIMonitor = (): boolean =>
-  process.env.ELASTIC_SYNTHETICS_MONITOR_TYPE === 'api';
+const isInlineAPIMonitor = (forceApi?: boolean): boolean =>
+  forceApi === true || process.env.ELASTIC_SYNTHETICS_MONITOR_TYPE === 'api';
 
-const loadInlineScript = (source: string) => {
+const loadInlineScript = (source: string, forceApi?: boolean) => {
   if (isModuleInlineSource(source)) {
     loadInlineModule(source);
     return;
@@ -120,7 +122,7 @@ const loadInlineScript = (source: string) => {
     'mfa',
     source
   );
-  if (isInlineAPIMonitor()) {
+  if (isInlineAPIMonitor(forceApi)) {
     apiJourney('inline', ({ params, request }) => {
       scriptFn.apply(null, [
         step,

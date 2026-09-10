@@ -120,6 +120,32 @@ describe('CLI', () => {
       expect(await cli.exitCode).toBe(0);
     });
 
+    it('runs inline api monitor via --inline-api without a browser', async () => {
+      // Same as above, but opting in with a flag instead of the
+      // Heartbeat-only ELASTIC_SYNTHETICS_MONITOR_TYPE env var, for callers
+      // invoking the CLI by hand.
+      const cli = new CLIMock()
+        .stdin(
+          `step('check body', async () => {
+          const resp = await request.get(params.url);
+          expect((await resp.body()).toString()).toMatch(/Synthetics/);
+        })`
+        )
+        .args([
+          '--inline',
+          '--inline-api',
+          '--rich-events',
+          '--params',
+          JSON.stringify(serverParams),
+        ])
+        .run();
+      await cli.waitFor('journey/end');
+      const output = cli.buffer().join('\n');
+      expect(getEvent(output, 'journey/network_info')).toBeTruthy();
+      expect(getEvent(output, 'screenshot/block')).toBeFalsy();
+      expect(await cli.exitCode).toBe(0);
+    });
+
     it('generate mfa totp token', async () => {
       const cli = new CLIMock()
         .stdin(

@@ -251,6 +251,7 @@ export type CliArgs = BaseArgs & {
   tags?: Array<string>;
   reporter?: BuiltInReporterName;
   inline?: boolean;
+  inlineApi?: boolean;
   require?: Array<string>;
   sandbox?: boolean;
   richEvents?: boolean;
