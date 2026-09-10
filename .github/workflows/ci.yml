@@ -48,6 +48,7 @@ jobs:
           cache: npm
           node-version-file: .nvmrc
       - run: npm ci
+      - run: node --test .github/scripts/summarize_e2e_jobs.test.js
       - run: npm run test:unit -- --ci --reporters=default --reporters=jest-junit
       - uses: actions/upload-artifact@v4
         with:
