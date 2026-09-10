@@ -104,7 +104,12 @@ describe('CLI', () => {
           expect((await resp.body()).toString()).toMatch(/Synthetics/);
         })`
         )
-        .args(['--inline', '--rich-events', '--params', JSON.stringify(serverParams)])
+        .args([
+          '--inline',
+          '--rich-events',
+          '--params',
+          JSON.stringify(serverParams),
+        ])
         .run({
           env: { ...process.env, ELASTIC_SYNTHETICS_MONITOR_TYPE: 'api' },
         });
