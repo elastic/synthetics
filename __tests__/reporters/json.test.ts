@@ -62,19 +62,22 @@ describe('json reporter', () => {
   let stream: SonicBoom;
   let reporter: JSONReporter;
   const timestamp = 1600300800000000;
-  const originalProcess = global.process;
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
   const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
   beforeAll(() => {
-    // Mocking the process in node environment
-    global.process = {
-      ...originalProcess,
-      platform: 'darwin',
-    };
+    // Pin `process.platform` for deterministic snapshots across OSes.
+    // Overriding just this property (rather than replacing `global.process`
+    // with a `{...process}` copy) keeps `process` a real EventEmitter, which
+    // lazy-loaded native modules (e.g. sharp's WASM fallback) rely on.
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      configurable: true,
+    });
   });
 
   afterAll(() => {
-    global.process = originalProcess;
+    Object.defineProperty(process, 'platform', originalPlatform);
   });
 
   beforeEach(() => {
