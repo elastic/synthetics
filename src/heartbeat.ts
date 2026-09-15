@@ -27,13 +27,14 @@ import { writeSync } from 'fs';
 import { resolve, sep } from 'path';
 import { createInterface } from 'readline';
 import { stdin } from 'process';
+import { Worker } from 'worker_threads';
 import { CliArgs, RunOptions } from './common_types';
 import { runner } from './core/globals';
 import { globalSetup } from './loader';
 
 const eventFD = 3;
 const controlFD = Number(process.env.ELASTIC_SYNTHETICS_CONTROL_FD ?? 4);
-const protocolVersion = 1;
+const protocolVersion = 2;
 
 type HeartbeatRunSource =
   | { type: 'inline'; script: string }
@@ -67,6 +68,12 @@ type HeartbeatControlMessage =
   | { id: string; type: 'completed' }
   | { id: string; type: 'error'; error: { message: string } };
 
+type HeartbeatEventMessage = {
+  id: string;
+  type: 'heartbeat/event';
+  event: unknown;
+};
+
 const crosslinkEnv = {
   traceID: 'ELASTIC_SYNTHETICS_TRACE_ID',
   monitorID: 'ELASTIC_SYNTHETICS_MONITOR_ID',
@@ -83,6 +90,10 @@ function writeCompletion(id: string, fd = eventFD) {
   // completion marker after JSONReporter has synchronously flushed all journey
   // events so Heartbeat can close the corresponding event stream safely.
   writeSync(fd, `${JSON.stringify({ type: 'heartbeat/complete', id })}\n`);
+}
+
+function writeEvent(message: HeartbeatEventMessage, fd = eventFD) {
+  writeSync(fd, `${JSON.stringify(message)}\n`);
 }
 
 function requestError(message: string): Error {
@@ -118,11 +129,12 @@ export function parseHeartbeatRunRequest(value: unknown): HeartbeatRunRequest {
 
 function runOptions(
   request: HeartbeatRunRequest,
-  eventsOutputFD: number
+  eventsOutputFD: number,
+  reporter: RunOptions['reporter'] = 'json'
 ): RunOptions {
   const options = request.options ?? {};
   return {
-    reporter: 'json',
+    reporter,
     outfd: eventsOutputFD,
     quietExitCode: true,
     ssblocks: true,
@@ -190,7 +202,8 @@ function unloadProjectModules(projectPath: string) {
 
 export async function runHeartbeatRequest(
   request: HeartbeatRunRequest,
-  eventsOutputFD = eventFD
+  eventsOutputFD = eventFD,
+  reporter?: RunOptions['reporter']
 ) {
   const restoreEnv = setCrosslinkEnv(request.context);
   const sourceArgs =
@@ -203,7 +216,7 @@ export async function runHeartbeatRequest(
       sourceArgs,
       request.source.type === 'inline' ? request.source.script : undefined
     );
-    return await runner._run(runOptions(request, eventsOutputFD));
+    return await runner._run(runOptions(request, eventsOutputFD, reporter));
   } finally {
     teardown?.();
     if (request.source.type === 'project') {
@@ -247,4 +260,214 @@ export async function serveHeartbeat(
       );
     }
   }
+}
+
+type HeartbeatWorkerMessage =
+  | { type: 'ready' }
+  | { id: string; type: 'event'; event: unknown }
+  | { id: string; type: 'completed' }
+  | { id: string; type: 'error'; error: { message: string } };
+
+type HeartbeatWorkerState = {
+  worker: Worker;
+  ready: boolean;
+  request?: HeartbeatRunRequest;
+};
+
+function workerLimit() {
+  const configured = Number(
+    process.env.ELASTIC_SYNTHETICS_HEARTBEAT_WORKERS ??
+      process.env.SYNTHETICS_LIMIT_API ??
+      4
+  );
+  return Number.isInteger(configured) && configured > 0 ? configured : 4;
+}
+
+class HeartbeatWorkerPool {
+  private readonly workers: HeartbeatWorkerState[] = [];
+  private readonly queued: HeartbeatRunRequest[] = [];
+  private readonly idleWaiters: Array<() => void> = [];
+
+  constructor(
+    private readonly maxWorkers: number,
+    private readonly controlOutputFD: number,
+    private readonly eventsOutputFD: number,
+    private readonly workerPath: string
+  ) {}
+
+  enqueue(request: HeartbeatRunRequest) {
+    this.queued.push(request);
+    this.dispatch();
+  }
+
+  async waitUntilIdle() {
+    if (this.isIdle()) {
+      return;
+    }
+    await new Promise<void>(resolve => this.idleWaiters.push(resolve));
+  }
+
+  async close() {
+    await Promise.all(this.workers.map(({ worker }) => worker.terminate()));
+  }
+
+  private dispatch() {
+    while (this.queued.length > 0) {
+      const worker = this.workers.find(
+        candidate => candidate.ready && !candidate.request
+      );
+      if (!worker) {
+        if (this.workers.length < this.maxWorkers) {
+          this.startWorker();
+        }
+        return;
+      }
+
+      const request = this.queued.shift();
+      if (!request) {
+        return;
+      }
+      worker.request = request;
+      worker.worker.postMessage(request);
+    }
+    this.notifyIdle();
+  }
+
+  private startWorker() {
+    const worker = new Worker(this.workerPath, {
+      stderr: true,
+    });
+    const state: HeartbeatWorkerState = { worker, ready: false };
+    this.workers.push(state);
+
+    const errors = worker.stderr;
+    if (errors) {
+      errors.pipe(process.stderr, { end: false });
+    }
+
+    worker.on('message', message =>
+      this.handleWorkerMessage(state, message as HeartbeatWorkerMessage)
+    );
+    worker.on('error', error => this.failWorker(state, error));
+    worker.on('exit', code => {
+      if (code !== 0) {
+        this.failWorker(state, new Error(`worker exited with code ${code}`));
+      }
+      this.removeWorker(state);
+      this.dispatch();
+    });
+  }
+
+  private handleWorkerMessage(
+    worker: HeartbeatWorkerState,
+    message: HeartbeatWorkerMessage
+  ) {
+    if (message.type === 'ready') {
+      worker.ready = true;
+      this.dispatch();
+      return;
+    }
+
+    const request = worker.request;
+    if (!request || request.id !== message.id) {
+      return;
+    }
+    if (message.type === 'event') {
+      writeEvent(
+        {
+          id: request.id,
+          type: 'heartbeat/event',
+          event: message.event,
+        },
+        this.eventsOutputFD
+      );
+      return;
+    }
+    worker.request = undefined;
+    if (message.type === 'completed') {
+      writeCompletion(request.id, this.eventsOutputFD);
+      writeControl({ id: request.id, type: 'completed' }, this.controlOutputFD);
+    } else {
+      writeControl(message, this.controlOutputFD);
+    }
+    this.dispatch();
+  }
+
+  private failWorker(worker: HeartbeatWorkerState, error: Error) {
+    const request = worker.request;
+    worker.request = undefined;
+    if (request) {
+      writeControl(
+        {
+          id: request.id,
+          type: 'error',
+          error: { message: error.message },
+        },
+        this.controlOutputFD
+      );
+    }
+    this.removeWorker(worker);
+    this.dispatch();
+  }
+
+  private removeWorker(worker: HeartbeatWorkerState) {
+    const index = this.workers.indexOf(worker);
+    if (index >= 0) {
+      this.workers.splice(index, 1);
+    }
+    this.notifyIdle();
+  }
+
+  private isIdle() {
+    return (
+      this.queued.length === 0 &&
+      this.workers.every(worker => worker.request === undefined)
+    );
+  }
+
+  private notifyIdle() {
+    if (!this.isIdle()) {
+      return;
+    }
+    while (this.idleWaiters.length > 0) {
+      this.idleWaiters.shift()?.();
+    }
+  }
+}
+
+// serveHeartbeatPool accepts concurrent Heartbeat requests and runs each in an
+// isolated worker. Its capacity follows the existing API concurrency setting,
+// while workers are created only when the workload needs them.
+export async function serveHeartbeatPool(
+  input: NodeJS.ReadableStream = stdin,
+  controlOutputFD = controlFD,
+  eventsOutputFD = eventFD,
+  workerPath = resolve(__dirname, 'heartbeat_worker.js')
+) {
+  writeControl({ type: 'ready', version: protocolVersion }, controlOutputFD);
+  const pool = new HeartbeatWorkerPool(
+    workerLimit(),
+    controlOutputFD,
+    eventsOutputFD,
+    workerPath
+  );
+  const lines = createInterface({ input, crlfDelay: Infinity });
+
+  for await (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
+    try {
+      pool.enqueue(parseHeartbeatRunRequest(JSON.parse(line)));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      writeControl(
+        { id: 'unknown', type: 'error', error: { message } },
+        controlOutputFD
+      );
+    }
+  }
+
+  await pool.waitUntilIdle();
+  await pool.close();
 }
