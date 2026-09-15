@@ -57,6 +57,7 @@ import { getVersion } from './push/kibana_api';
 import { installTransform } from './core/transform';
 import { totp, TOTPCmdOptions } from './core/mfa';
 import { setGlobalProxy } from './helpers';
+import { serveHeartbeat } from './heartbeat';
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const { name, version } = require('../package.json');
@@ -175,6 +176,13 @@ program
     } finally {
       tearDown();
     }
+  });
+
+program
+  .command('heartbeat')
+  .description('run the internal persistent Heartbeat API-journey protocol')
+  .action(async () => {
+    await serveHeartbeat();
   });
 
 // Push command
