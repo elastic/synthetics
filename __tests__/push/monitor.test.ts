@@ -71,6 +71,13 @@ describe('Monitors', () => {
     expect(Array.from(result.unchangedIDs)).toEqual(['j1']);
   });
 
+  it('includes locked on the pushed schema', async () => {
+    const monitor = createTestMonitor('heartbeat.yml', 'http');
+    monitor.update({ locked: true });
+    const { schemas } = await buildMonitorSchema([monitor], true);
+    expect(schemas[0].locked).toBe(true);
+  });
+
   it('build lightweight monitor schema', async () => {
     const { schemas } = await buildMonitorSchema(
       [createTestMonitor('heartbeat.yml', 'http')],
@@ -333,6 +340,7 @@ heartbeat.monitors:
     - ltag2
   retest_on_failure: true
   maintenance_windows: ["daily", "weekly"]
+  locked: true
       `);
 
       const [mon] = await createLightweightMonitors(PROJECT_DIR, {
@@ -358,6 +366,7 @@ heartbeat.monitors:
         tags: ['ltag1', 'ltag2'],
         retestOnFailure: true,
         maintenanceWindows: ['daily', 'weekly'],
+        locked: true,
       });
     });
 
@@ -375,6 +384,7 @@ heartbeat.monitors:
         privateLocations: ['gbaz'],
         schedule: 10,
         retestOnFailure: false,
+        locked: true,
       });
 
       expect(mon.config).toEqual({
@@ -385,6 +395,7 @@ heartbeat.monitors:
         schedule: 10,
         tags: ['gtag1', 'gtag2'],
         retestOnFailure: false,
+        locked: true,
       });
     });
 
