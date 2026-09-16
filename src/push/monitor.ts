@@ -297,6 +297,7 @@ export function buildMonitorFromYaml(
   const mon = new Monitor({
     namespace: config.namespace ?? options.namespace,
     enabled: config.enabled ?? options.enabled,
+    locked: config.locked ?? options.locked,
     locations: options.locations,
     tags: options.tags,
     fields: parseFields(config, options.fields),

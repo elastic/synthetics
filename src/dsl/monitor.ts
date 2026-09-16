@@ -62,6 +62,11 @@ export type MonitorConfig = {
   fields?: Record<string, string>;
   schedule?: typeof ALLOWED_SCHEDULES[number];
   enabled?: boolean;
+  /**
+   * When true, Kibana rejects enable/disable and other UI/API edits.
+   * Change the monitor in source and push again. Delete is still allowed.
+   */
+  locked?: boolean;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
   /**
