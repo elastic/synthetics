@@ -54,6 +54,17 @@ export interface AlertConfig {
   };
 }
 
+const TIMEOUT_DURATION_RE = /^-?\d+(\.\d+)?(ns|us|µs|μs|ms|s|m|h)$/;
+
+export function assertValidTimeout(timeout: unknown) {
+  if (typeof timeout === 'string' && TIMEOUT_DURATION_RE.test(timeout)) {
+    return;
+  }
+  throw `Invalid timeout: ${JSON.stringify(
+    timeout
+  )}. timeout must be a duration string with a unit (examples: 15s, 500ms)`;
+}
+
 export type MonitorConfig = {
   id?: string;
   name?: string;
@@ -62,6 +73,7 @@ export type MonitorConfig = {
   fields?: Record<string, string>;
   schedule?: typeof ALLOWED_SCHEDULES[number];
   enabled?: boolean;
+  timeout?: string;
   locations?: SyntheticsLocationsType[];
   privateLocations?: string[];
   /**
@@ -174,6 +186,9 @@ export class Monitor {
   }
 
   validate() {
+    if (this.config.timeout != null) {
+      assertValidTimeout(this.config.timeout);
+    }
     const schedule = this.config.schedule;
     if (ALLOWED_SCHEDULES.includes(schedule)) {
       return;

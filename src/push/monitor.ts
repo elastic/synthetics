@@ -36,6 +36,7 @@ import {
   ALLOWED_SCHEDULES,
   Monitor,
   MonitorConfig,
+  assertValidTimeout,
 } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import {
@@ -281,6 +282,9 @@ export function buildMonitorFromYaml(
     if (!config[field]) {
       throw `Monitor ${field} is required`;
     }
+  }
+  if (config.timeout != null) {
+    assertValidTimeout(config.timeout);
   }
   const schedule = config.schedule && parseSchedule(String(config.schedule));
   const privateLocations =
