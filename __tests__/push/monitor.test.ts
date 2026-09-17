@@ -251,6 +251,24 @@ heartbeat.monitors:
       ]);
     });
 
+    it('accepts compound timeout durations', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo-m-s"
+  name: "foo-m-s"
+  timeout: 1m30s
+- type: http
+  schedule: "@every 1m"
+  id: "foo-h-m"
+  name: "foo-h-m"
+  timeout: 1h2m
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.map(m => m.config.timeout)).toEqual(['1m30s', '1h2m']);
+    });
+
     it('rejects invalid timeout from monitor.use', () => {
       const monitor = new Monitor({
         id: 'foo',
