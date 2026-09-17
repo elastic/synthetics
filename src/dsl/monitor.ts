@@ -54,7 +54,7 @@ export interface AlertConfig {
   };
 }
 
-const TIMEOUT_DURATION_RE = /^-?(\d+(\.\d+)?(ns|us|µs|μs|ms|s|m|h))+$/;
+const TIMEOUT_DURATION_RE = /^(\d+(\.\d+)?(ns|us|µs|μs|ms|s|m|h))+$/;
 
 export function assertValidTimeout(timeout: unknown) {
   if (typeof timeout === 'string' && TIMEOUT_DURATION_RE.test(timeout)) {

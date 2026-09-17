@@ -224,6 +224,22 @@ heartbeat.monitors:
       );
     });
 
+    it('rejects negative timeout', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+  timeout: -15s
+      `);
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(
+        'Invalid timeout: "-15s". timeout must be a duration string with a unit (examples: 15s, 500ms)'
+      );
+    });
+
     it('accepts timeout duration strings with supported units', async () => {
       await writeHBFile(`
 heartbeat.monitors:
