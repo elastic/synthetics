@@ -563,6 +563,42 @@ heartbeat.monitors:
         ).rejects.toContain(`Aborted: ${KERBEROS_PATH_ERROR}`);
       });
 
+      it('accepts case-insensitive kerberos auth_type', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-case"
+  name: "kerberos-case"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: KeyTab
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    keytab: /etc/elastic.keytab
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.auth_type).toBe('keytab');
+      });
+
+      it('rejects non-object kerberos value', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-bool"
+  name: "kerberos-bool"
+  urls: ["https://intranet.corp.local/"]
+  kerberos: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(
+          'Aborted: Invalid authentication: kerberos must be an object'
+        );
+      });
+
       it('does not inject disabled auth defaults when unset', async () => {
         await writeHBFile(`
 heartbeat.monitors:

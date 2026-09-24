@@ -321,7 +321,10 @@ function collectAuthBlock(
   prefix: 'kerberos' | 'ntlm'
 ): Record<string, unknown> | undefined {
   const nested = config[prefix];
-  const fromNested = isPlainObject(nested) ? { ...nested } : undefined;
+  if (nested !== undefined && !isPlainObject(nested)) {
+    throw `Invalid authentication: ${prefix} must be an object`;
+  }
+  const fromNested = nested ? { ...nested } : undefined;
   const fromDotted: Record<string, unknown> = {};
   const dottedPrefix = `${prefix}.`;
   for (const key of Object.keys(config)) {
@@ -353,12 +356,16 @@ export function normalizeHttpAuthPayload(config: MonitorConfig) {
 
   const kerberos = collectAuthBlock(config, 'kerberos');
   if (kerberos) {
+    const authType =
+      typeof kerberos.auth_type === 'string'
+        ? kerberos.auth_type.toLowerCase()
+        : undefined;
     config.kerberos = {
       ...DEFAULT_KERBEROS_CONFIG,
       ...kerberos,
       auth_type:
-        kerberos.auth_type === 'keytab' || kerberos.auth_type === 'password'
-          ? kerberos.auth_type
+        authType === 'keytab' || authType === 'password'
+          ? authType
           : DEFAULT_KERBEROS_CONFIG.auth_type,
       enabled: Boolean(kerberos.enabled),
       enable_krb5_fast: Boolean(kerberos.enable_krb5_fast),
