@@ -54,6 +54,26 @@ export interface AlertConfig {
   };
 }
 
+/** Nested Kerberos block pushed to Kibana (matches Heartbeat / ConfigKey.KERBEROS). */
+export type KerberosConfig = {
+  enabled: boolean;
+  auth_type: 'password' | 'keytab';
+  username: string;
+  password: string;
+  keytab: string;
+  config_path: string;
+  realm: string;
+  service_name: string;
+};
+
+/** Nested NTLM block pushed to Kibana (matches Heartbeat / ConfigKey.NTLM). */
+export type NtlmConfig = {
+  enabled: boolean;
+  username: string;
+  password: string;
+  domain: string;
+};
+
 export type MonitorConfig = {
   id?: string;
   name?: string;
@@ -85,6 +105,13 @@ export type MonitorConfig = {
   spaces?: string[];
   namespace?: string;
   maintenanceWindows?: string[];
+  /** HTTP basic auth (mutually exclusive with kerberos / ntlm). */
+  username?: string;
+  password?: string;
+  /** HTTP Kerberos/SPNEGO auth block (Kibana nested ConfigKey). */
+  kerberos?: KerberosConfig;
+  /** HTTP NTLM auth block (Kibana nested ConfigKey). */
+  ntlm?: NtlmConfig;
 };
 
 type MonitorFilter = {

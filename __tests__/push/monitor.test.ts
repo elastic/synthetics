@@ -388,6 +388,117 @@ heartbeat.monitors:
       });
     });
 
+    describe('HTTP auth Kibana payload shape', () => {
+      it('fills kerberos defaults for Kibana nested ConfigKey', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos"
+  name: "kerberos"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toEqual({
+          enabled: true,
+          auth_type: 'password',
+          username: 'svc',
+          password: 'secret',
+          keytab: '',
+          config_path: '',
+          realm: 'CORP.LOCAL',
+          service_name: '',
+        });
+        expect(mon.config.ntlm).toBeUndefined();
+      });
+
+      it('fills ntlm defaults for Kibana nested ConfigKey', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "ntlm"
+  name: "ntlm"
+  urls: ["https://iis.corp.local/"]
+  ntlm:
+    enabled: true
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.ntlm).toEqual({
+          enabled: true,
+          username: 'svc',
+          password: 'secret',
+          domain: '',
+        });
+      });
+
+      it('nests dotted kerberos.* keys into the Kibana object', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-dotted"
+  name: "kerberos-dotted"
+  urls: ["https://intranet.corp.local/"]
+  kerberos.enabled: true
+  kerberos.auth_type: keytab
+  kerberos.keytab: /etc/elastic.keytab
+  kerberos.realm: CORP.LOCAL
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toEqual({
+          enabled: true,
+          auth_type: 'keytab',
+          username: '',
+          password: '',
+          keytab: '/etc/elastic.keytab',
+          config_path: '',
+          realm: 'CORP.LOCAL',
+          service_name: '',
+        });
+        expect(mon.config['kerberos.enabled']).toBeUndefined();
+        expect(mon.config['kerberos.keytab']).toBeUndefined();
+      });
+
+      it('treats a present kerberos block without enabled as enabled', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-implicit"
+  name: "kerberos-implicit"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.enabled).toBe(true);
+      });
+
+      it('does not inject disabled auth defaults when unset', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "plain"
+  name: "plain"
+  urls: ["https://example.com"]
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toBeUndefined();
+        expect(mon.config.ntlm).toBeUndefined();
+      });
+    });
+
     it('validate name check', async () => {
       await writeHBFile(`
 heartbeat.monitors:
