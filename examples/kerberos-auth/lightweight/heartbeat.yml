@@ -1,0 +1,40 @@
+# Lightweight HTTP monitors with Kerberos / NTLM (Private Locations only).
+# Mirrors Heartbeat's nested kerberos / ntlm blocks — see
+# https://www.elastic.co/docs/reference/beats/heartbeat/heartbeat-reference-yml
+#
+# Only one auth method may be enabled per monitor (basic, kerberos, or ntlm).
+# Kerberos and NTLM are unavailable in FIPS agent builds.
+
+heartbeat.monitors:
+  # Prefer this path for Negotiate/SPNEGO endpoints.
+  - type: http
+    id: intranet-kerberos
+    name: Intranet (Kerberos)
+    urls: ['https://intranet.corp.local/']
+    schedule: '@every 3m'
+    private_locations:
+      - my-private-location
+    kerberos:
+      enabled: true
+      auth_type: password
+      realm: CORP.LOCAL
+      config_path: /etc/krb5.conf
+      username: svc-heartbeat
+      password: '${KRB_PASSWORD}'
+      # auth_type: keytab
+      # keytab: /etc/elastic.keytab
+      # service_name: HTTP/intranet.corp.local
+
+  # Use NTLM when the server challenges with NTLM (not Negotiate/Kerberos).
+  - type: http
+    id: intranet-ntlm
+    name: Intranet (NTLM)
+    urls: ['https://iis.corp.local/']
+    schedule: '@every 3m'
+    private_locations:
+      - my-private-location
+    ntlm:
+      enabled: true
+      username: svc-heartbeat
+      password: '${NTLM_PASSWORD}'
+      domain: CORP

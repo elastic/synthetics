@@ -272,6 +272,46 @@ export async function createLightweightMonitors(
 }
 
 const REQUIRED_MONITOR_FIELDS = ['id', 'name'];
+
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function isAuthBlockEnabled(block: unknown): boolean {
+  return (
+    block != null &&
+    typeof block === 'object' &&
+    (block as { enabled?: unknown }).enabled === true
+  );
+}
+
+/**
+ * Heartbeat allows only one of basic / kerberos / ntlm per HTTP monitor.
+ * Reject at push time so the failure includes the YAML file:line.
+ */
+export function assertValidHttpAuth(config: MonitorConfig) {
+  if (config.type !== 'http') {
+    return;
+  }
+
+  let methods = 0;
+  if (
+    isNonEmptyString(config['username']) ||
+    isNonEmptyString(config['password'])
+  ) {
+    methods++;
+  }
+  if (isAuthBlockEnabled(config['kerberos'])) {
+    methods++;
+  }
+  if (isAuthBlockEnabled(config['ntlm'])) {
+    methods++;
+  }
+  if (methods > 1) {
+    throw `Invalid authentication: only one of basic (username/password), kerberos, or ntlm may be configured`;
+  }
+}
+
 export function buildMonitorFromYaml(
   config: MonitorConfig,
   options: PushOptions
@@ -282,6 +322,7 @@ export function buildMonitorFromYaml(
       throw `Monitor ${field} is required`;
     }
   }
+  assertValidHttpAuth(config);
   const schedule = config.schedule && parseSchedule(String(config.schedule));
   const privateLocations =
     config['private_locations'] ||

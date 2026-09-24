@@ -1,12 +1,49 @@
 # Kerberos / NTLM (Integrated Windows Authentication) example
 
-This example shows how to monitor an internal site that is protected by
-**Negotiate (SPNEGO/Kerberos)** or **NTLM** using an Elastic Synthetics
-browser monitor.
+Monitor an internal site protected by **Negotiate (SPNEGO/Kerberos)** or
+**NTLM** from a **Private Location**.
 
-Elastic Synthetics drives Chromium through Playwright, and Chromium
-already has first-class support for Integrated Windows Authentication.
-All we need to do is pass it the usual command-line flags through
+There are two paths:
+
+| Path | When to use |
+| --- | --- |
+| **Lightweight HTTP** (`lightweight/`) | Preferred. Native Heartbeat `kerberos` / `ntlm` blocks (same shape as the Beats reference). |
+| **Browser** (Chromium flags) | Optional alternate when you need a full browser journey rather than an HTTP check. |
+
+Both require a Private Location that can reach your realm/KDC. Managed global
+locations are not supported. Kerberos and NTLM are **unavailable in FIPS**
+agent builds.
+
+## 1. Lightweight HTTP (preferred)
+
+Uses Heartbeat’s nested auth blocks. Credentials and realm config live on the
+Private Location agent host (or are supplied via the monitor YAML).
+
+```sh
+# From this example directory — push only the lightweight monitors
+npx @elastic/synthetics push ./lightweight \
+  --auth $KIBANA_API_KEY \
+  --url $KIBANA_URL \
+  --project kerberos-auth-example
+```
+
+See [`lightweight/heartbeat.yml`](./lightweight/heartbeat.yml) for Kerberos
+(password or keytab) and NTLM samples. Only **one** of basic
+(`username`/`password`), `kerberos.enabled`, or `ntlm.enabled` may be set per
+monitor — `synthetics push` rejects combinations.
+
+### Agent host requirements (lightweight)
+
+1. Private Location agent can reach the KDC / domain controllers.
+2. **Kerberos:** `/etc/krb5.conf` (or `kerberos.krb5_conf` / `config_path`) and
+   either a password principal or a keytab on the agent.
+3. **NTLM:** username/password (optional `domain` / `workstation`).
+4. Pin monitors with `private_locations` (see the YAML sample).
+
+## 2. Browser (optional alternate)
+
+Elastic Synthetics drives Chromium through Playwright. Chromium already
+supports Integrated Windows Authentication when you pass the usual flags via
 `playwrightOptions.args`:
 
 ```ts
@@ -18,73 +55,52 @@ playwrightOptions: {
 }
 ```
 
-The Synthetics runner forwards `playwrightOptions.args` verbatim into
-`chromium.launch({ args })`, so the flags land on the real Chromium
-process.
+The runner forwards `playwrightOptions.args` into `chromium.launch({ args })`.
 
-## Requirements
-
-This workaround works with **Private Locations only**. It will not work
-from Elastic's managed global locations.
-
-On the host running the Private Location agent:
-
-1. **Kerberos credentials must be available to the agent process.**
-   - Linux: a keytab for the service account plus a `kinit`'d ticket
-     cache (`KRB5CCNAME`). Keep it fresh with a cron job or
-     `systemd` timer (e.g. `kinit -R` every few hours, `kinit -kt` on
-     failure).
-   - Windows: run the agent on a domain-joined host as a domain user;
-     the OS will supply tickets automatically.
-2. **`/etc/krb5.conf`** (Linux) must be configured for your realm.
-3. **The SPN** (e.g. `HTTP/intranet.corp.local@CORP.LOCAL`) must be
-   registered against the service account that fronts the protected URL.
-4. **The target hostname** must match an entry in
-   `--auth-server-allowlist`. The matcher is hostname-only and supports
-   shell-style wildcards — `*.corp.local` will NOT match the bare
-   `corp.local`.
-
-## Files
+### Files
 
 | File | Purpose |
-|---|---|
-| `synthetics.config.ts` | Enables the Chromium auth flags and pins the monitor to a Private Location. |
-| `protected-site.journey.ts` | Example journey that navigates to the protected URL and asserts a successful authenticated response. |
+| --- | --- |
+| `lightweight/heartbeat.yml` | HTTP monitors with nested `kerberos` / `ntlm`. |
+| `synthetics.config.ts` | Browser: Chromium auth flags + Private Location. |
+| `protected-site.journey.ts` | Browser journey against the protected URL. |
 
-## Running
+### Running the browser journey locally
 
 ```sh
 npm install
 npx @elastic/synthetics . --params '{"url":"https://intranet.corp.local/"}'
 ```
 
-### Verifying the flags are applied
+### Agent host requirements (browser)
 
-If you want to confirm Chromium actually received the flags, run any
-journey in non-headless mode and inspect the process from another shell:
+1. Kerberos credentials available to the agent process.
+   - Linux: keytab + `kinit`’d ticket cache (`KRB5CCNAME`); keep fresh via cron /
+     systemd.
+   - Windows: domain-joined host running as a domain user.
+2. `/etc/krb5.conf` configured for your realm (Linux).
+3. SPN registered (e.g. `HTTP/intranet.corp.local@CORP.LOCAL`).
+4. Target hostname matches `--auth-server-allowlist` (hostname-only; `*.corp.local`
+   does not match bare `corp.local`).
+
+### Verifying Chromium flags
 
 ```sh
 ps -ef | grep -E 'chrome|headless_shell' | grep -- '--auth-server-allowlist'
 ```
 
-You should see both `--auth-server-allowlist=...` and
-`--auth-negotiate-delegate-allowlist=...` in the command line of the main
-browser process.
-
-### Troubleshooting
+### Browser troubleshooting
 
 | Symptom | Likely cause |
-|---|---|
-| 401 on every request, no `Authorization` header sent | Host does not match the allowlist pattern, or the agent process has no Kerberos ticket. Check with `klist` as the agent user. |
-| 401 with `Authorization: Negotiate ...` sent but still rejected | SPN mismatch, clock skew > 5 min, or the ticket cache is for the wrong principal. |
-| Works interactively but fails under the agent | The agent service is running as a different user than your shell. Set `KRB5CCNAME` in the service unit or mount a shared ccache. |
-| Delegation errors on downstream hops | Add the downstream host to `--auth-negotiate-delegate-allowlist` and make sure its SPN is marked *Trusted for Delegation* in AD. |
+| --- | --- |
+| 401, no `Authorization` header | Host not on allowlist, or no Kerberos ticket (`klist` as the agent user). |
+| 401 with `Authorization: Negotiate ...` | SPN mismatch, clock skew > 5 min, or wrong principal in the cache. |
+| Works interactively, fails under the agent | Agent runs as a different user — set `KRB5CCNAME` in the service unit. |
+| Delegation errors | Add host to `--auth-negotiate-delegate-allowlist`; SPN trusted for delegation. |
 
 ## Limitations
 
-- **Lightweight HTTP monitors are not supported.** Heartbeat's Go HTTP
-  client has no native Negotiate/NTLM transport, so this approach cannot
-  be extended to `http` monitors today. Use a browser monitor for
-  Kerberos-protected endpoints until native support lands.
-- **Managed/global locations are not supported.** The flags are only
-  useful if the host executing Chromium has access to the realm.
+- **Managed/global locations are not supported.** The host must participate in
+  (or reach) your Kerberos/AD realm.
+- **FIPS builds:** Heartbeat’s Kerberos/NTLM HTTP auth is not available when the
+  agent is built with FIPS.

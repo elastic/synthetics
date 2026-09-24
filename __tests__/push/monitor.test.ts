@@ -202,6 +202,192 @@ heartbeat.monitors:
       ).rejects.toContain(`Aborted: Monitor id is required`);
     });
 
+    describe('HTTP authentication mutual exclusivity', () => {
+      const AUTH_ERROR =
+        'Invalid authentication: only one of basic (username/password), kerberos, or ntlm may be configured';
+
+      it('accepts basic auth alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "basic"
+  name: "basic"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          username: 'user',
+          password: 'secret',
+        });
+      });
+
+      it('accepts kerberos alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos"
+  name: "kerberos"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: password
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          kerberos: {
+            enabled: true,
+            auth_type: 'password',
+            realm: 'CORP.LOCAL',
+          },
+        });
+      });
+
+      it('accepts ntlm alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "ntlm"
+  name: "ntlm"
+  urls: ["https://iis.corp.local/"]
+  ntlm:
+    enabled: true
+    username: svc
+    password: secret
+    domain: CORP
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          ntlm: {
+            enabled: true,
+            username: 'svc',
+            domain: 'CORP',
+          },
+        });
+      });
+
+      it('ignores disabled kerberos/ntlm blocks with basic auth', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "basic-disabled-blocks"
+  name: "basic-disabled-blocks"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: false
+  ntlm:
+    enabled: false
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+      });
+
+      it('rejects basic + kerberos', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects basic + ntlm', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects kerberos + ntlm', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  kerberos:
+    enabled: true
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects all three auth methods', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('does not apply auth exclusivity to non-http monitors', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: tcp
+  schedule: "@every 1m"
+  id: "tcp"
+  name: "tcp"
+  hosts: ["example.com:443"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config.type).toBe('tcp');
+      });
+    });
+
     it('validate name check', async () => {
       await writeHBFile(`
 heartbeat.monitors:
