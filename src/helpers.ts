@@ -470,7 +470,7 @@ export function paramsFromEnv(
       }))
     : Object.entries(spec).map(([name, config]) => ({
         name,
-        required: config?.required !== false,
+        required: config?.required ?? !optional.has(name),
         param: config?.param,
       }));
 

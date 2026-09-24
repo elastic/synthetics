@@ -204,6 +204,25 @@ describe('paramsFromEnv', () => {
     });
   });
 
+  it('omits optional variables passed in the options for the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(
+      paramsFromEnv({ USER_EMAIL: {}, API_URL: {} }, { optional: ['API_URL'] })
+    ).toEqual({
+      USER_EMAIL: 'user@example.com',
+    });
+  });
+
+  it('lets an explicit required flag override the options list in the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(() =>
+      paramsFromEnv(
+        { USER_EMAIL: {}, API_URL: { required: true } },
+        { optional: ['API_URL'] }
+      )
+    ).toThrow('Missing required environment variable: API_URL');
+  });
+
   it('treats empty variables as missing', () => {
     process.env.API_URL = '';
     expect(() => paramsFromEnv(['API_URL'])).toThrow(
