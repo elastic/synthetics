@@ -281,8 +281,10 @@ export const DEFAULT_KERBEROS_CONFIG = {
   password: '',
   keytab: '',
   config_path: '',
+  krb5_conf: '',
   realm: '',
   service_name: '',
+  enable_krb5_fast: false,
 };
 
 /** Kibana DEFAULT_HTTP_ADVANCED_FIELDS[ntlm] — required by NtlmConfigCodec. */
@@ -291,10 +293,15 @@ export const DEFAULT_NTLM_CONFIG = {
   username: '',
   password: '',
   domain: '',
+  workstation: '',
 };
 
 function isNonEmptyString(value: unknown): boolean {
   return typeof value === 'string' && value.length > 0;
+}
+
+function isNonEmptyTrimmedString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -354,6 +361,7 @@ export function normalizeHttpAuthPayload(config: MonitorConfig) {
           ? kerberos.auth_type
           : DEFAULT_KERBEROS_CONFIG.auth_type,
       enabled: Boolean(kerberos.enabled),
+      enable_krb5_fast: Boolean(kerberos.enable_krb5_fast),
     };
   }
 
@@ -388,6 +396,15 @@ export function assertValidHttpAuth(config: MonitorConfig) {
   }
   if (methods > 1) {
     throw `Invalid authentication: only one of basic (username/password), kerberos, or ntlm may be configured`;
+  }
+
+  // Heartbeat: exactly one of config_path / krb5_conf when Kerberos is enabled.
+  if (isAuthBlockEnabled(config.kerberos)) {
+    const hasPath = isNonEmptyTrimmedString(config.kerberos.config_path);
+    const hasInline = isNonEmptyTrimmedString(config.kerberos.krb5_conf);
+    if (hasPath === hasInline) {
+      throw `Invalid authentication: kerberos requires exactly one of config_path (file on the agent) or krb5_conf (inline krb5.conf body)`;
+    }
   }
 }
 

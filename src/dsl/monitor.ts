@@ -61,9 +61,13 @@ export type KerberosConfig = {
   username: string;
   password: string;
   keytab: string;
+  /** Path to krb5.conf on the agent. Mutually exclusive with krb5_conf when enabled. */
   config_path: string;
+  /** Inline krb5.conf body. Mutually exclusive with config_path when enabled. */
+  krb5_conf: string;
   realm: string;
   service_name: string;
+  enable_krb5_fast: boolean;
 };
 
 /** Nested NTLM block pushed to Kibana (matches Heartbeat / ConfigKey.NTLM). */
@@ -72,6 +76,7 @@ export type NtlmConfig = {
   username: string;
   password: string;
   domain: string;
+  workstation: string;
 };
 
 export type MonitorConfig = {

@@ -237,6 +237,7 @@ heartbeat.monitors:
     enabled: true
     auth_type: password
     realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
     username: svc
     password: secret
         `);
@@ -247,6 +248,7 @@ heartbeat.monitors:
             enabled: true,
             auth_type: 'password',
             realm: 'CORP.LOCAL',
+            config_path: '/etc/krb5.conf',
           },
         });
       });
@@ -389,6 +391,9 @@ heartbeat.monitors:
     });
 
     describe('HTTP auth Kibana payload shape', () => {
+      const KERBEROS_PATH_ERROR =
+        'Invalid authentication: kerberos requires exactly one of config_path (file on the agent) or krb5_conf (inline krb5.conf body)';
+
       it('fills kerberos defaults for Kibana nested ConfigKey', async () => {
         await writeHBFile(`
 heartbeat.monitors:
@@ -400,6 +405,7 @@ heartbeat.monitors:
   kerberos:
     enabled: true
     realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
     username: svc
     password: secret
         `);
@@ -410,9 +416,11 @@ heartbeat.monitors:
           username: 'svc',
           password: 'secret',
           keytab: '',
-          config_path: '',
+          config_path: '/etc/krb5.conf',
+          krb5_conf: '',
           realm: 'CORP.LOCAL',
           service_name: '',
+          enable_krb5_fast: false,
         });
         expect(mon.config.ntlm).toBeUndefined();
       });
@@ -436,6 +444,7 @@ heartbeat.monitors:
           username: 'svc',
           password: 'secret',
           domain: '',
+          workstation: '',
         });
       });
 
@@ -450,6 +459,7 @@ heartbeat.monitors:
   kerberos.enabled: true
   kerberos.auth_type: keytab
   kerberos.keytab: /etc/elastic.keytab
+  kerberos.config_path: /etc/krb5.conf
   kerberos.realm: CORP.LOCAL
         `);
         const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
@@ -459,9 +469,11 @@ heartbeat.monitors:
           username: '',
           password: '',
           keytab: '/etc/elastic.keytab',
-          config_path: '',
+          config_path: '/etc/krb5.conf',
+          krb5_conf: '',
           realm: 'CORP.LOCAL',
           service_name: '',
+          enable_krb5_fast: false,
         });
         expect(mon.config['kerberos.enabled']).toBeUndefined();
         expect(mon.config['kerberos.keytab']).toBeUndefined();
@@ -477,11 +489,78 @@ heartbeat.monitors:
   urls: ["https://intranet.corp.local/"]
   kerberos:
     realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
     username: svc
     password: secret
         `);
         const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
         expect(mon.config.kerberos?.enabled).toBe(true);
+      });
+
+      it('accepts inline krb5_conf instead of config_path', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-inline"
+  name: "kerberos-inline"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+    krb5_conf: |
+      [libdefaults]
+      default_realm = CORP.LOCAL
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.config_path).toBe('');
+        expect(mon.config.kerberos?.krb5_conf).toContain(
+          'default_realm = CORP.LOCAL'
+        );
+      });
+
+      it('rejects kerberos with neither config_path nor krb5_conf', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-missing"
+  name: "kerberos-missing"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${KERBEROS_PATH_ERROR}`);
+      });
+
+      it('rejects kerberos with both config_path and krb5_conf', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-both"
+  name: "kerberos-both"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    krb5_conf: |
+      [libdefaults]
+      default_realm = CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${KERBEROS_PATH_ERROR}`);
       });
 
       it('does not inject disabled auth defaults when unset', async () => {

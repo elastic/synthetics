@@ -35,8 +35,9 @@ monitor — `synthetics push` rejects combinations.
 ### Agent host requirements (lightweight)
 
 1. Private Location agent can reach the KDC / domain controllers.
-2. **Kerberos:** `/etc/krb5.conf` (or `kerberos.krb5_conf` / `config_path`) and
-   either a password principal or a keytab on the agent.
+2. **Kerberos:** exactly one of `kerberos.config_path` (file on the agent) or
+   `kerberos.krb5_conf` (inline body), plus either a password principal or a
+   keytab on the agent.
 3. **NTLM:** username/password (optional `domain` / `workstation`).
 4. Pin monitors with `private_locations` (see the YAML sample).
 

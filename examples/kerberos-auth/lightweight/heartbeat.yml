@@ -4,6 +4,7 @@
 #
 # Only one auth method may be enabled per monitor (basic, kerberos, or ntlm).
 # Kerberos and NTLM are unavailable in FIPS agent builds.
+# When Kerberos is enabled, set exactly one of config_path or krb5_conf.
 
 heartbeat.monitors:
   # Prefer this path for Negotiate/SPNEGO endpoints.
@@ -19,11 +20,16 @@ heartbeat.monitors:
       auth_type: password
       realm: CORP.LOCAL
       config_path: /etc/krb5.conf
+      # Or inline instead of config_path (exactly one required):
+      # krb5_conf: |
+      #   [libdefaults]
+      #   default_realm = CORP.LOCAL
       username: svc-heartbeat
       password: '${KRB_PASSWORD}'
       # auth_type: keytab
       # keytab: /etc/elastic.keytab
       # service_name: HTTP/intranet.corp.local
+      # enable_krb5_fast: false
 
   # Use NTLM when the server challenges with NTLM (not Negotiate/Kerberos).
   - type: http
@@ -38,3 +44,4 @@ heartbeat.monitors:
       username: svc-heartbeat
       password: '${NTLM_PASSWORD}'
       domain: CORP
+      # workstation: heartbeat-agent
