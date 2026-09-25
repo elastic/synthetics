@@ -202,6 +202,456 @@ heartbeat.monitors:
       ).rejects.toContain(`Aborted: Monitor id is required`);
     });
 
+    describe('HTTP authentication mutual exclusivity', () => {
+      const AUTH_ERROR =
+        'Invalid authentication: only one of basic (username/password), kerberos, or ntlm may be configured';
+
+      it('accepts basic auth alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "basic"
+  name: "basic"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          username: 'user',
+          password: 'secret',
+        });
+      });
+
+      it('accepts kerberos alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos"
+  name: "kerberos"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: password
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    username: svc
+    password: secret
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          kerberos: {
+            enabled: true,
+            auth_type: 'password',
+            realm: 'CORP.LOCAL',
+            config_path: '/etc/krb5.conf',
+          },
+        });
+      });
+
+      it('accepts ntlm alone', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "ntlm"
+  name: "ntlm"
+  urls: ["https://iis.corp.local/"]
+  ntlm:
+    enabled: true
+    username: svc
+    password: secret
+    domain: CORP
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config).toMatchObject({
+          ntlm: {
+            enabled: true,
+            username: 'svc',
+            domain: 'CORP',
+          },
+        });
+      });
+
+      it('ignores disabled kerberos/ntlm blocks with basic auth', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "basic-disabled-blocks"
+  name: "basic-disabled-blocks"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: false
+  ntlm:
+    enabled: false
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+      });
+
+      it('rejects basic + kerberos', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects basic + ntlm', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects kerberos + ntlm', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  kerberos:
+    enabled: true
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('rejects all three auth methods', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "combo"
+  name: "combo"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+  ntlm:
+    enabled: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${AUTH_ERROR}`);
+      });
+
+      it('does not apply auth exclusivity to non-http monitors', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: tcp
+  schedule: "@every 1m"
+  id: "tcp"
+  name: "tcp"
+  hosts: ["example.com:443"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: true
+        `);
+        const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(monitors).toHaveLength(1);
+        expect(monitors[0].config.type).toBe('tcp');
+      });
+    });
+
+    describe('HTTP auth Kibana payload shape', () => {
+      const KERBEROS_PATH_ERROR =
+        'Invalid authentication: kerberos requires exactly one of config_path (file on the agent) or krb5_conf (inline krb5.conf body)';
+
+      it('fills kerberos defaults for Kibana nested ConfigKey', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos"
+  name: "kerberos"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toEqual({
+          enabled: true,
+          auth_type: 'password',
+          username: 'svc',
+          password: 'secret',
+          keytab: '',
+          config_path: '/etc/krb5.conf',
+          krb5_conf: '',
+          realm: 'CORP.LOCAL',
+          service_name: '',
+          enable_krb5_fast: false,
+        });
+        expect(mon.config.ntlm).toBeUndefined();
+      });
+
+      it('fills ntlm defaults for Kibana nested ConfigKey', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "ntlm"
+  name: "ntlm"
+  urls: ["https://iis.corp.local/"]
+  ntlm:
+    enabled: true
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.ntlm).toEqual({
+          enabled: true,
+          username: 'svc',
+          password: 'secret',
+          domain: '',
+          workstation: '',
+        });
+      });
+
+      it('nests dotted kerberos.* keys into the Kibana object', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-dotted"
+  name: "kerberos-dotted"
+  urls: ["https://intranet.corp.local/"]
+  kerberos.enabled: true
+  kerberos.auth_type: keytab
+  kerberos.keytab: /etc/elastic.keytab
+  kerberos.config_path: /etc/krb5.conf
+  kerberos.realm: CORP.LOCAL
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toEqual({
+          enabled: true,
+          auth_type: 'keytab',
+          username: '',
+          password: '',
+          keytab: '/etc/elastic.keytab',
+          config_path: '/etc/krb5.conf',
+          krb5_conf: '',
+          realm: 'CORP.LOCAL',
+          service_name: '',
+          enable_krb5_fast: false,
+        });
+        expect(mon.config['kerberos.enabled']).toBeUndefined();
+        expect(mon.config['kerberos.keytab']).toBeUndefined();
+      });
+
+      it('treats a present kerberos block without enabled as enabled', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-implicit"
+  name: "kerberos-implicit"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    username: svc
+    password: secret
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.enabled).toBe(true);
+      });
+
+      it('accepts inline krb5_conf instead of config_path', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-inline"
+  name: "kerberos-inline"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+    krb5_conf: |
+      [libdefaults]
+      default_realm = CORP.LOCAL
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.config_path).toBe('');
+        expect(mon.config.kerberos?.krb5_conf).toContain(
+          'default_realm = CORP.LOCAL'
+        );
+      });
+
+      it('rejects kerberos with neither config_path nor krb5_conf', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-missing"
+  name: "kerberos-missing"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${KERBEROS_PATH_ERROR}`);
+      });
+
+      it('rejects kerberos with both config_path and krb5_conf', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-both"
+  name: "kerberos-both"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    krb5_conf: |
+      [libdefaults]
+      default_realm = CORP.LOCAL
+    username: svc
+    password: secret
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(`Aborted: ${KERBEROS_PATH_ERROR}`);
+      });
+
+      it('accepts case-insensitive kerberos auth_type', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-case"
+  name: "kerberos-case"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: KeyTab
+    realm: CORP.LOCAL
+    config_path: /etc/krb5.conf
+    keytab: /etc/elastic.keytab
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.auth_type).toBe('keytab');
+      });
+
+      it('rejects invalid kerberos auth_type', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-bad-type"
+  name: "kerberos-bad-type"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: oauth
+    config_path: /etc/krb5.conf
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(
+          'Aborted: Invalid authentication: kerberos.auth_type must be "password" or "keytab"'
+        );
+      });
+
+      it('does not treat string "false" as enabled', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-str-false"
+  name: "kerberos-str-false"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: "false"
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.enabled).toBe(false);
+        expect(mon.config.username).toBe('user');
+      });
+
+      it('rejects non-object kerberos value', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-bool"
+  name: "kerberos-bool"
+  urls: ["https://intranet.corp.local/"]
+  kerberos: true
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(
+          'Aborted: Invalid authentication: kerberos must be an object'
+        );
+      });
+
+      it('does not inject disabled auth defaults when unset', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "plain"
+  name: "plain"
+  urls: ["https://example.com"]
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos).toBeUndefined();
+        expect(mon.config.ntlm).toBeUndefined();
+      });
+    });
+
     it('validate name check', async () => {
       await writeHBFile(`
 heartbeat.monitors:

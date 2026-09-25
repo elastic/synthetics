@@ -2,7 +2,7 @@
   "name": "synthetics-kerberos-auth-example",
   "version": "1.0.0",
   "private": true,
-  "description": "Example: Elastic Synthetics browser monitor against a Kerberos/NTLM protected site",
+  "description": "Example: Elastic Synthetics HTTP (kerberos/ntlm) and optional browser monitor against Integrated Windows Auth sites",
   "scripts": {
     "test": "npx @elastic/synthetics ."
   },

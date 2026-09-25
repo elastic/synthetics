@@ -272,6 +272,158 @@ export async function createLightweightMonitors(
 }
 
 const REQUIRED_MONITOR_FIELDS = ['id', 'name'];
+
+/** Kibana DEFAULT_HTTP_ADVANCED_FIELDS[kerberos] — required by KerberosConfigCodec. */
+export const DEFAULT_KERBEROS_CONFIG = {
+  enabled: false,
+  auth_type: 'password' as const,
+  username: '',
+  password: '',
+  keytab: '',
+  config_path: '',
+  krb5_conf: '',
+  realm: '',
+  service_name: '',
+  enable_krb5_fast: false,
+};
+
+/** Kibana DEFAULT_HTTP_ADVANCED_FIELDS[ntlm] — required by NtlmConfigCodec. */
+export const DEFAULT_NTLM_CONFIG = {
+  enabled: false,
+  username: '',
+  password: '',
+  domain: '',
+  workstation: '',
+};
+
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function isNonEmptyTrimmedString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isAuthBlockEnabled(block: unknown): boolean {
+  return isPlainObject(block) && block.enabled === true;
+}
+
+/**
+ * Collect nested + dotted (`kerberos.*` / `ntlm.*`) auth keys into one object.
+ * Heartbeat treats a present block with omitted `enabled` as on — mirror that.
+ */
+function collectAuthBlock(
+  config: MonitorConfig,
+  prefix: 'kerberos' | 'ntlm'
+): Record<string, unknown> | undefined {
+  const nested = config[prefix];
+  if (nested !== undefined && !isPlainObject(nested)) {
+    throw `Invalid authentication: ${prefix} must be an object`;
+  }
+  const fromNested = nested ? { ...nested } : undefined;
+  const fromDotted: Record<string, unknown> = {};
+  const dottedPrefix = `${prefix}.`;
+  for (const key of Object.keys(config)) {
+    if (key.startsWith(dottedPrefix)) {
+      fromDotted[key.slice(dottedPrefix.length)] = config[key];
+      delete config[key];
+    }
+  }
+  if (!fromNested && Object.keys(fromDotted).length === 0) {
+    return undefined;
+  }
+  const merged = { ...fromNested, ...fromDotted };
+  // Heartbeat: block present + enabled omitted ⇒ enabled
+  if (merged.enabled === undefined) {
+    merged.enabled = true;
+  }
+  return merged;
+}
+
+/**
+ * Shape HTTP auth for the Kibana project-monitor API: nested `kerberos` /
+ * `ntlm` objects with all codec fields filled (shallow defaults merge on the
+ * Kibana side would otherwise drop missing keys when a partial block is sent).
+ */
+export function normalizeHttpAuthPayload(config: MonitorConfig) {
+  if (config.type !== 'http') {
+    return;
+  }
+
+  const kerberos = collectAuthBlock(config, 'kerberos');
+  if (kerberos) {
+    const authType =
+      typeof kerberos.auth_type === 'string'
+        ? kerberos.auth_type.toLowerCase()
+        : undefined;
+    if (
+      authType !== undefined &&
+      authType !== 'keytab' &&
+      authType !== 'password'
+    ) {
+      throw `Invalid authentication: kerberos.auth_type must be "password" or "keytab"`;
+    }
+    const resolvedAuthType =
+      authType === 'keytab' || authType === 'password'
+        ? authType
+        : DEFAULT_KERBEROS_CONFIG.auth_type;
+    config.kerberos = {
+      ...DEFAULT_KERBEROS_CONFIG,
+      ...kerberos,
+      auth_type: resolvedAuthType,
+      // Strict boolean — Boolean("false") is true.
+      enabled: kerberos.enabled === true,
+      enable_krb5_fast: kerberos.enable_krb5_fast === true,
+    };
+  }
+
+  const ntlm = collectAuthBlock(config, 'ntlm');
+  if (ntlm) {
+    config.ntlm = {
+      ...DEFAULT_NTLM_CONFIG,
+      ...ntlm,
+      enabled: ntlm.enabled === true,
+    };
+  }
+}
+
+/**
+ * Heartbeat allows only one of basic / kerberos / ntlm per HTTP monitor.
+ * Reject at push time so the failure includes the YAML file:line.
+ */
+export function assertValidHttpAuth(config: MonitorConfig) {
+  if (config.type !== 'http') {
+    return;
+  }
+
+  let methods = 0;
+  if (isNonEmptyString(config.username) || isNonEmptyString(config.password)) {
+    methods++;
+  }
+  if (isAuthBlockEnabled(config.kerberos)) {
+    methods++;
+  }
+  if (isAuthBlockEnabled(config.ntlm)) {
+    methods++;
+  }
+  if (methods > 1) {
+    throw `Invalid authentication: only one of basic (username/password), kerberos, or ntlm may be configured`;
+  }
+
+  // Heartbeat: exactly one of config_path / krb5_conf when Kerberos is enabled.
+  if (isAuthBlockEnabled(config.kerberos)) {
+    const hasPath = isNonEmptyTrimmedString(config.kerberos.config_path);
+    const hasInline = isNonEmptyTrimmedString(config.kerberos.krb5_conf);
+    if (hasPath === hasInline) {
+      throw `Invalid authentication: kerberos requires exactly one of config_path (file on the agent) or krb5_conf (inline krb5.conf body)`;
+    }
+  }
+}
+
 export function buildMonitorFromYaml(
   config: MonitorConfig,
   options: PushOptions
@@ -282,6 +434,8 @@ export function buildMonitorFromYaml(
       throw `Monitor ${field} is required`;
     }
   }
+  normalizeHttpAuthPayload(config);
+  assertValidHttpAuth(config);
   const schedule = config.schedule && parseSchedule(String(config.schedule));
   const privateLocations =
     config['private_locations'] ||
