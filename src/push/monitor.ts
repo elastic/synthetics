@@ -360,15 +360,24 @@ export function normalizeHttpAuthPayload(config: MonitorConfig) {
       typeof kerberos.auth_type === 'string'
         ? kerberos.auth_type.toLowerCase()
         : undefined;
+    if (
+      authType !== undefined &&
+      authType !== 'keytab' &&
+      authType !== 'password'
+    ) {
+      throw `Invalid authentication: kerberos.auth_type must be "password" or "keytab"`;
+    }
+    const resolvedAuthType =
+      authType === 'keytab' || authType === 'password'
+        ? authType
+        : DEFAULT_KERBEROS_CONFIG.auth_type;
     config.kerberos = {
       ...DEFAULT_KERBEROS_CONFIG,
       ...kerberos,
-      auth_type:
-        authType === 'keytab' || authType === 'password'
-          ? authType
-          : DEFAULT_KERBEROS_CONFIG.auth_type,
-      enabled: Boolean(kerberos.enabled),
-      enable_krb5_fast: Boolean(kerberos.enable_krb5_fast),
+      auth_type: resolvedAuthType,
+      // Strict boolean — Boolean("false") is true.
+      enabled: kerberos.enabled === true,
+      enable_krb5_fast: kerberos.enable_krb5_fast === true,
     };
   }
 
@@ -377,7 +386,7 @@ export function normalizeHttpAuthPayload(config: MonitorConfig) {
     config.ntlm = {
       ...DEFAULT_NTLM_CONFIG,
       ...ntlm,
-      enabled: Boolean(ntlm.enabled),
+      enabled: ntlm.enabled === true,
     };
   }
 }

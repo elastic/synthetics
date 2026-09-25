@@ -582,6 +582,44 @@ heartbeat.monitors:
         expect(mon.config.kerberos?.auth_type).toBe('keytab');
       });
 
+      it('rejects invalid kerberos auth_type', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-bad-type"
+  name: "kerberos-bad-type"
+  urls: ["https://intranet.corp.local/"]
+  kerberos:
+    enabled: true
+    auth_type: oauth
+    config_path: /etc/krb5.conf
+        `);
+        await expect(
+          createLightweightMonitors(PROJECT_DIR, opts)
+        ).rejects.toContain(
+          'Aborted: Invalid authentication: kerberos.auth_type must be "password" or "keytab"'
+        );
+      });
+
+      it('does not treat string "false" as enabled', async () => {
+        await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "kerberos-str-false"
+  name: "kerberos-str-false"
+  urls: ["https://example.com"]
+  username: user
+  password: secret
+  kerberos:
+    enabled: "false"
+        `);
+        const [mon] = await createLightweightMonitors(PROJECT_DIR, opts);
+        expect(mon.config.kerberos?.enabled).toBe(false);
+        expect(mon.config.username).toBe('user');
+      });
+
       it('rejects non-object kerberos value', async () => {
         await writeHBFile(`
 heartbeat.monitors:
