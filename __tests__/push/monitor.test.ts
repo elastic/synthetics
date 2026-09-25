@@ -35,6 +35,7 @@ import {
   parseSchedule,
   parseSpaces,
 } from '../../src/push/monitor';
+import { Monitor } from '../../src/dsl/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 import { PushOptions } from '../../src/common_types';
@@ -188,6 +189,111 @@ heartbeat.monitors:
         createLightweightMonitors(PROJECT_DIR, opts)
       ).rejects.toContain(
         `Aborted: Monitor schedule format(* * * *) not supported: use '@every' syntax instead`
+      );
+    });
+
+    it('rejects numeric timeout without a unit', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+  timeout: 15
+      `);
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(
+        'Invalid timeout: 15. timeout must be a duration string with a unit (examples: 15s, 500ms)'
+      );
+    });
+
+    it('rejects timeout string missing a unit', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+  timeout: "15"
+      `);
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(
+        'Invalid timeout: "15". timeout must be a duration string with a unit (examples: 15s, 500ms)'
+      );
+    });
+
+    it('rejects negative timeout', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo"
+  name: "foo"
+  timeout: -15s
+      `);
+      await expect(
+        createLightweightMonitors(PROJECT_DIR, opts)
+      ).rejects.toContain(
+        'Invalid timeout: "-15s". timeout must be a duration string with a unit (examples: 15s, 500ms)'
+      );
+    });
+
+    it('accepts timeout duration strings with supported units', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo-s"
+  name: "foo-s"
+  timeout: 15s
+- type: http
+  schedule: "@every 1m"
+  id: "foo-ms"
+  name: "foo-ms"
+  timeout: 500ms
+- type: http
+  schedule: "@every 1m"
+  id: "foo-m"
+  name: "foo-m"
+  timeout: 1m
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.map(m => m.config.timeout)).toEqual([
+        '15s',
+        '500ms',
+        '1m',
+      ]);
+    });
+
+    it('accepts compound timeout durations', async () => {
+      await writeHBFile(`
+heartbeat.monitors:
+- type: http
+  schedule: "@every 1m"
+  id: "foo-m-s"
+  name: "foo-m-s"
+  timeout: 1m30s
+- type: http
+  schedule: "@every 1m"
+  id: "foo-h-m"
+  name: "foo-h-m"
+  timeout: 1h2m
+      `);
+      const monitors = await createLightweightMonitors(PROJECT_DIR, opts);
+      expect(monitors.map(m => m.config.timeout)).toEqual(['1m30s', '1h2m']);
+    });
+
+    it('rejects invalid timeout from monitor.use', () => {
+      const monitor = new Monitor({
+        id: 'foo',
+        name: 'foo',
+        schedule: 10,
+        timeout: 15 as unknown as string,
+      });
+      expect(() => monitor.validate()).toThrow(
+        'Invalid timeout: 15. timeout must be a duration string with a unit (examples: 15s, 500ms)'
       );
     });
 
