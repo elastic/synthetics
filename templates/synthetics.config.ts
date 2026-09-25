@@ -1,4 +1,5 @@
 import type { SyntheticsConfig } from '@elastic/synthetics';
+// import { paramsFromEnv } from '@elastic/synthetics';
 
 export default env => {
   const config: SyntheticsConfig = {
@@ -6,6 +7,11 @@ export default env => {
       url: 'https://elastic.github.io/synthetics-demo/',
       // Base URL for the API journey examples; replace with your service.
       apiUrl: 'https://jsonplaceholder.typicode.com',
+      // Params can also be read from environment variables. Missing required
+      // variables throw at config load; list optional ones in the options:
+      // ...paramsFromEnv(['USER_EMAIL', 'USER_PASSWORD'], {
+      //   optional: ['API_URL'],
+      // }),
     },
     playwrightOptions: {
       ignoreHTTPSErrors: false,

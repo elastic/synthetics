@@ -424,3 +424,83 @@ export function setGlobalProxy(opts: ProxySettings) {
 
   setGlobalDispatcher(proxyAgent);
 }
+
+/**
+ * Options for `paramsFromEnv`.
+ */
+export interface ParamsFromEnvOptions {
+  /**
+   * Environment variable names that are allowed to be absent. Missing
+   * optional variables are omitted from the returned params instead of
+   * throwing.
+   */
+  optional?: Array<string>;
+  /**
+   * Convert variable names to camelCase params, so `USER_EMAIL` becomes
+   * `userEmail`.
+   */
+  camelCase?: boolean;
+}
+
+/**
+ * Builds Synthetics params from environment variables.
+ *
+ * Every variable named in `spec` is required by default and a missing
+ * variable throws at config load with the names that are missing. Pass
+ * optional names in the second argument, or use the object form to mark
+ * individual variables as optional and/or rename the resulting param.
+ *
+ * Variables that are unset or empty are treated as missing.
+ *
+ * @example
+ * paramsFromEnv(['USER_EMAIL', 'USER_PASSWORD'])
+ * paramsFromEnv(['USER_EMAIL'], { optional: ['API_URL'], camelCase: true })
+ * paramsFromEnv({ USER_EMAIL: {}, API_URL: { required: false } })
+ */
+export function paramsFromEnv(
+  spec: Array<string> | Record<string, { required?: boolean; param?: string }>,
+  options: ParamsFromEnvOptions = {}
+): Record<string, string> {
+  const optional = new Set(options.optional || []);
+  const entries = Array.isArray(spec)
+    ? spec.map(name => ({
+        name,
+        required: !optional.has(name),
+        param: undefined as string | undefined,
+      }))
+    : Object.entries(spec).map(([name, config]) => ({
+        name,
+        required: config?.required ?? !optional.has(name),
+        param: config?.param,
+      }));
+
+  const params: Record<string, string> = {};
+  const missing: Array<string> = [];
+
+  for (const { name, required, param } of entries) {
+    const value = process.env[name];
+    if (value === undefined || value === '') {
+      if (required) {
+        missing.push(name);
+      }
+      continue;
+    }
+    params[param || (options.camelCase ? toCamelCase(name) : name)] = value;
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable${
+        missing.length === 1 ? '' : 's'
+      }: ${missing.join(', ')}`
+    );
+  }
+
+  return params;
+}
+
+function toCamelCase(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+([a-z0-9])/g, (_, chr: string) => chr.toUpperCase());
+}
