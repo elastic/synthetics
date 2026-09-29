@@ -39,8 +39,6 @@ import {
   ProxySettings,
 } from './common_types';
 import micromatch from 'micromatch';
-import { ProxyAgent, setGlobalDispatcher } from 'undici';
-import { EnvHttpProxyAgent } from 'undici';
 
 const SEPARATOR = '\n';
 
@@ -408,7 +406,12 @@ export function tagsMatch(tags, pattern) {
   return matchess.length > 0;
 }
 
-export function setGlobalProxy(opts: ProxySettings) {
+// undici (~22MB RSS) is only needed to configure the proxy dispatcher, which
+// only `push`/`locations` do. Import it lazily so `run` never loads it.
+export async function setGlobalProxy(opts: ProxySettings) {
+  const { ProxyAgent, EnvHttpProxyAgent, setGlobalDispatcher } = await import(
+    'undici'
+  );
   // Create proxy agent if options exist, if not attempt to load env proxy
   const proxyAgent = opts.uri
     ? new ProxyAgent({
