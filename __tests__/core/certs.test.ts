@@ -30,7 +30,7 @@ import {
   buildCABundle,
   getSpkiFingerprint,
   getSpkiFingerprints,
-  normalizeCertificateErrorSpkiAllowlist,
+  normalizePemCertificates,
   splitPemCertificates,
 } from '../../src/core/certs';
 
@@ -45,27 +45,25 @@ const LOCALHOST_CA_SPKI = 'i5ldWK8mZc2VpuB/HbP4QqNvC9izca4MRl+tWlgevP4=';
 const SELF_SIGNED_SPKI = 'lKbtU5NxDdWZVzUHjMAVxT3j71kHJmv04kPyf3D0Khc=';
 
 describe('certs', () => {
-  describe('normalizeCertificateErrorSpkiAllowlist', () => {
+  describe('normalizePemCertificates', () => {
     it('returns an empty list when nothing is provided', () => {
-      expect(normalizeCertificateErrorSpkiAllowlist(undefined)).toEqual([]);
-      expect(normalizeCertificateErrorSpkiAllowlist('')).toEqual([]);
-      expect(normalizeCertificateErrorSpkiAllowlist('   ')).toEqual([]);
+      expect(normalizePemCertificates(undefined)).toEqual([]);
+      expect(normalizePemCertificates('')).toEqual([]);
+      expect(normalizePemCertificates('   ')).toEqual([]);
     });
 
     it('wraps a single string entry', () => {
-      expect(normalizeCertificateErrorSpkiAllowlist(localhostCA)).toEqual([
+      expect(normalizePemCertificates(localhostCA)).toEqual([localhostCA]);
+    });
+
+    it('converts Buffers to strings', () => {
+      expect(normalizePemCertificates(Buffer.from(localhostCA))).toEqual([
         localhostCA,
       ]);
     });
 
-    it('converts Buffers to strings', () => {
-      expect(
-        normalizeCertificateErrorSpkiAllowlist(Buffer.from(localhostCA))
-      ).toEqual([localhostCA]);
-    });
-
     it('flattens arrays of strings and Buffers', () => {
-      const result = normalizeCertificateErrorSpkiAllowlist([
+      const result = normalizePemCertificates([
         localhostCA,
         Buffer.from(selfSigned),
       ]);

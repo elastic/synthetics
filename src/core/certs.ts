@@ -52,12 +52,6 @@ export function normalizePemCertificates(
     .filter((entry): entry is string => Boolean(entry && entry.trim()));
 }
 
-export function normalizeCertificateErrorSpkiAllowlist(
-  certificates?: CertificateErrorSpkiAllowlist
-): string[] {
-  return normalizePemCertificates(certificates);
-}
-
 /**
  * Split a PEM bundle into the individual certificates it contains. Node's
  * `X509Certificate` only parses the first certificate of a bundle, so we have
@@ -110,7 +104,7 @@ export function getSpkiFingerprints(
   certificates?: CertificateErrorSpkiAllowlist
 ): string[] {
   const fingerprints = new Set<string>();
-  for (const entry of normalizeCertificateErrorSpkiAllowlist(certificates)) {
+  for (const entry of normalizePemCertificates(certificates)) {
     const pemCertificates = splitPemCertificates(entry);
     // Fall back to treating the whole entry as a single certificate when no
     // PEM boundary markers are present.

@@ -28,10 +28,7 @@ import { createOption } from 'commander';
 import { readConfig } from './config';
 import type { CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
-import {
-  normalizeCertificateErrorSpkiAllowlist,
-  normalizePemCertificates,
-} from './core/certs';
+import { normalizePemCertificates } from './core/certs';
 import { readFileSync } from 'fs';
 
 type Mode = 'run' | 'push';
@@ -114,12 +111,8 @@ export async function normalizeOptions(
    * Chromium SPKI certificate-error allowlist.
    */
   const certificateErrorSpkiAllowlist = [
-    ...normalizeCertificateErrorSpkiAllowlist(
-      config.certificateErrorSpkiAllowlist
-    ),
-    ...normalizeCertificateErrorSpkiAllowlist(
-      cliArgs.certificateErrorSpkiAllowlist
-    ),
+    ...normalizePemCertificates(config.certificateErrorSpkiAllowlist),
+    ...normalizePemCertificates(cliArgs.certificateErrorSpkiAllowlist),
   ].map(entry => (isFile(entry) ? readFileSync(entry, 'utf-8') : entry));
   options.certificateErrorSpkiAllowlist = certificateErrorSpkiAllowlist.length
     ? certificateErrorSpkiAllowlist
