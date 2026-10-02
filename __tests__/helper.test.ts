@@ -34,6 +34,7 @@ import {
   microSecsToSeconds,
   wrapFnWithLocation,
   isMatch,
+  paramsFromEnv,
 } from '../src/helpers';
 
 it('indent message with seperator', () => {
@@ -145,4 +146,105 @@ it('match tags and names', () => {
   // match both name and tags
   expect(isMatch(['bar'], 'foo', undefined, 'ba*')).toBe(true);
   expect(isMatch(['bar'], 'foo', undefined, 'test*')).toBe(false);
+});
+
+describe('paramsFromEnv', () => {
+  const KEYS = ['USER_EMAIL', 'USER_PASSWORD', 'API_URL'];
+  const original = KEYS.map(key => [key, process.env[key]] as const);
+
+  beforeEach(() => {
+    KEYS.forEach(key => delete process.env[key]);
+  });
+
+  afterEach(() => {
+    original.forEach(([key, value]) => {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
+  });
+
+  it('reads required variables using their own names', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    process.env.USER_PASSWORD = 'secret';
+    expect(paramsFromEnv(['USER_EMAIL', 'USER_PASSWORD'])).toEqual({
+      USER_EMAIL: 'user@example.com',
+      USER_PASSWORD: 'secret',
+    });
+  });
+
+  it('throws with every missing variable name', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(() =>
+      paramsFromEnv(['USER_EMAIL', 'USER_PASSWORD', 'API_URL'])
+    ).toThrow('Missing required environment variables: USER_PASSWORD, API_URL');
+  });
+
+  it('uses the singular form for a single missing variable', () => {
+    expect(() => paramsFromEnv(['API_URL'])).toThrow(
+      'Missing required environment variable: API_URL'
+    );
+  });
+
+  it('omits optional variables passed in the options', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(
+      paramsFromEnv(['USER_EMAIL', 'API_URL'], { optional: ['API_URL'] })
+    ).toEqual({ USER_EMAIL: 'user@example.com' });
+  });
+
+  it('omits optional variables in the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(
+      paramsFromEnv({ USER_EMAIL: {}, API_URL: { required: false } })
+    ).toEqual({
+      USER_EMAIL: 'user@example.com',
+    });
+  });
+
+  it('omits optional variables passed in the options for the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(
+      paramsFromEnv({ USER_EMAIL: {}, API_URL: {} }, { optional: ['API_URL'] })
+    ).toEqual({
+      USER_EMAIL: 'user@example.com',
+    });
+  });
+
+  it('lets an explicit required flag override the options list in the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(() =>
+      paramsFromEnv(
+        { USER_EMAIL: {}, API_URL: { required: true } },
+        { optional: ['API_URL'] }
+      )
+    ).toThrow('Missing required environment variable: API_URL');
+  });
+
+  it('treats empty variables as missing', () => {
+    process.env.API_URL = '';
+    expect(() => paramsFromEnv(['API_URL'])).toThrow(
+      'Missing required environment variable: API_URL'
+    );
+  });
+
+  it('renames params in the object form', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    expect(paramsFromEnv({ USER_EMAIL: { param: 'userEmail' } })).toEqual({
+      userEmail: 'user@example.com',
+    });
+  });
+
+  it('camelCases params when requested', () => {
+    process.env.USER_EMAIL = 'user@example.com';
+    process.env.API_URL = 'https://example.com';
+    expect(
+      paramsFromEnv(['USER_EMAIL', 'API_URL'], { camelCase: true })
+    ).toEqual({
+      userEmail: 'user@example.com',
+      apiUrl: 'https://example.com',
+    });
+  });
 });
