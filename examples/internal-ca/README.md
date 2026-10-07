@@ -132,6 +132,21 @@ browser process command line.
 - **Rotate carefully.** When the server certificate's key pair changes, update
   `certificateErrorSpkiAllowlist` with the new presented certificate so its SPKI hash
   is allowlisted.
-- **Lightweight (HTTP/TCP/ICMP) monitors and CLI connections** are unaffected
-  by this setting; it only affects the Chromium process used by browser
-  monitors.
+- **Lightweight (HTTP/TCP/ICMP) monitors** are unaffected by this setting; it
+  only affects the Chromium process used by browser monitors.
+- **CLI connections to Kibana** (`push`, `locations`) use a separate
+  `certificateAuthorities` option. That one *does* establish CA trust in Node
+  (public roots + the extra CAs) so the CLI can talk to a Kibana instance
+  signed by an internal CA:
+
+  ```ts
+  export default (): SyntheticsConfig => ({
+    certificateAuthorities: ['./certs/internal-ca.crt'],
+  });
+  ```
+
+  ```sh
+  npx @elastic/synthetics push \
+    --certificate-authorities ./certs/internal-ca.crt \
+    --url https://kibana.internal.corp.local --id my-project
+  ```

@@ -221,6 +221,32 @@ describe('options', () => {
     });
   });
 
+  describe('certificateAuthorities', () => {
+    const caPath = join(__dirname, 'fixtures', 'ca', 'localhost-ca.crt');
+
+    it('is undefined when not provided', async () => {
+      const options = await normalizeOptions({});
+      expect(options.certificateAuthorities).toBeUndefined();
+    });
+
+    it('keeps inline PEM content as-is', async () => {
+      const pem = readFileSync(caPath, 'utf-8');
+      const options = await normalizeOptions({
+        certificateAuthorities: pem,
+      } as CliArgs);
+      expect(options.certificateAuthorities).toEqual([pem]);
+    });
+
+    it('resolves file paths to PEM content', async () => {
+      const options = await normalizeOptions({
+        certificateAuthorities: [caPath],
+      } as CliArgs);
+      expect(options.certificateAuthorities).toEqual([
+        readFileSync(caPath, 'utf-8'),
+      ]);
+    });
+  });
+
   describe('parseFileOption', () => {
     it('parses file', () => {
       expect(

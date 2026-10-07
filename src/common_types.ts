@@ -222,6 +222,14 @@ export type CertificateErrorSpkiAllowlist =
   | Buffer
   | Array<string | Buffer>;
 
+/**
+ * Extra CAs (PEM content or Buffer, optionally an array) that Node/undici
+ * should trust in addition to the public roots. Used by `push` / `locations`
+ * when Kibana is fronted by an internal CA. Distinct from
+ * `certificateErrorSpkiAllowlist`, which only affects Chromium.
+ */
+export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
+
 type BaseArgs = {
   params?: Params;
   screenshots?: ScreenshotOptions;
@@ -232,6 +240,7 @@ type BaseArgs = {
   wsEndpoint?: string;
   pauseOnError?: boolean;
   certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
+  certificateAuthorities?: CertificateAuthorities;
   playwrightOptions?: PlaywrightOptions;
   quietExitCode?: boolean;
   throttling?: MonitorConfig['throttling'];
@@ -313,6 +322,7 @@ export type SyntheticsConfig = {
   project?: ProjectSettings;
   proxy?: ProxySettings;
   certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
+  certificateAuthorities?: CertificateAuthorities;
 };
 
 /** Runner Payload types */

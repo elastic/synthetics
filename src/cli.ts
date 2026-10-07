@@ -75,6 +75,7 @@ const {
   fields,
   maintenanceWindows,
   certificateErrorSpkiAllowlist,
+  certificateAuthorities,
 } = getCommonCommandOpts();
 
 program
@@ -242,6 +243,7 @@ program
   .addOption(params)
   .addOption(playwrightOpts)
   .addOption(certificateErrorSpkiAllowlist)
+  .addOption(certificateAuthorities)
   .addOption(configOpt)
   .addOption(maintenanceWindows)
   .action(async cmdOpts => {
@@ -264,7 +266,7 @@ program
       )) as PushOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
 
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
@@ -330,6 +332,7 @@ program
     collectOpts('noVerify', proxySettings),
     false
   )
+  .addOption(certificateAuthorities)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
@@ -344,7 +347,7 @@ program
       })) as RunOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,
