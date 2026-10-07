@@ -50,15 +50,23 @@ const JOURNEY_EXTENSIONS = ['.js', '.ts', '.mjs', '.cjs'];
  * - Transpiling the TS/JS test files
  * - Loading these files for running test suites
  */
-export async function globalSetup(options: CliArgs, args: string[]) {
+export async function globalSetup(
+  options: CliArgs,
+  args: string[],
+  inlineSource?: string
+) {
   const revert = installTransform();
-  await loadTestFiles(options, args);
+  await loadTestFiles(options, args, inlineSource);
   return () => {
     revert();
   };
 }
 
-export async function loadTestFiles(options: CliArgs, args: string[]) {
+export async function loadTestFiles(
+  options: CliArgs,
+  args: string[],
+  inlineSource?: string
+) {
   /**
    * Preload modules before running the tests
    */
@@ -72,7 +80,7 @@ export async function loadTestFiles(options: CliArgs, args: string[]) {
   }
 
   if (options.inline) {
-    const source = await readStdin();
+    const source = inlineSource ?? (await readStdin());
     loadInlineScript(source, options.inlineApi);
     return;
   }
