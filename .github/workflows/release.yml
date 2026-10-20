@@ -61,10 +61,11 @@ jobs:
           echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
           echo "NPM_PACKAGE=$(jq -r '.name' package.json)" >> $GITHUB_ENV
 
-      - name: Configure NPMJS token and create 'stack_release' dist-tag
+      - name: Create 'stack_release' dist-tag
         if: ${{ github.event.inputs.dry-run == 'false' && github.event.inputs.is-stack-release == 'true' }}
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          npm install -g npm@11 # OIDC dist-tag requires npm >= 11.21.0
+          npm --version
           npm dist-tag add "${NPM_PACKAGE}@${VERSION}" stack_release
 
       - if: ${{ always() && github.event.inputs.dry-run == 'false' }}
