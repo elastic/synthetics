@@ -23,8 +23,9 @@
  *
  */
 
-import { mkdir, rm, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { mkdir, rm, writeFile, readFile, stat } from 'fs/promises';
+import { join, relative } from 'path';
+import { Bundler } from '../../src/push/bundler';
 import { generateTempPath } from '../../src/helpers';
 import {
   buildMonitorSchema,
@@ -89,6 +90,38 @@ describe('Monitors', () => {
       spaces: ['test'],
     });
   });
+
+  it.each([true, false])(
+    'builds bundles in a custom workdir (v2: %s)',
+    async isV2 => {
+      const workdir = generateTempPath();
+      const monitor = createTestMonitor('example.journey.ts');
+      const build = jest.spyOn(Bundler.prototype, 'build');
+      await mkdir(workdir, { recursive: true });
+      await writeFile(join(workdir, 'caller-owned'), 'keep');
+      try {
+        const { schemas } = await buildMonitorSchema(
+          [monitor],
+          isV2,
+          relative(process.cwd(), workdir)
+        );
+        expect(build).toHaveBeenCalledWith(
+          monitor.source.file,
+          join(workdir, 'bundles', 'test.zip')
+        );
+        expect(schemas[0].content).toEqual(expect.any(String));
+        await expect(stat(join(workdir, 'bundles'))).rejects.toMatchObject({
+          code: 'ENOENT',
+        });
+        expect(await readFile(join(workdir, 'caller-owned'), 'utf8')).toBe(
+          'keep'
+        );
+      } finally {
+        build.mockRestore();
+        await rm(workdir, { recursive: true, force: true });
+      }
+    }
+  );
 
   it('build browser monitor schema', async () => {
     const monitor = createTestMonitor('example.journey.ts');
