@@ -65,7 +65,11 @@ describe('json reporter', () => {
   const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
   const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    // sharp resolves its native binary from `process.platform` when first
+    // loaded, so load it before the platform is pinned below; otherwise it
+    // looks for a `darwin` binary on Linux and screenshot blocks are dropped.
+    await import('sharp');
     // Pin `process.platform` for deterministic snapshots across OSes.
     // Overriding just this property (rather than replacing `global.process`
     // with a `{...process}` copy) keeps `process` a real EventEmitter, which
