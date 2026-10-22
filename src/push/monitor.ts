@@ -29,7 +29,7 @@ import { LineCounter, parseDocument, Document, YAMLSeq, YAMLMap } from 'yaml';
 import { bold, red } from 'kleur/colors';
 import { Bundler } from './bundler';
 import NodeBuffer from 'node:buffer';
-import { SYNTHETICS_PATH, totalist, indent, warn } from '../helpers';
+import { getWorkDir, totalist, indent, warn } from '../helpers';
 import { LocationsMap } from '../locations/public-locations';
 import {
   AlertConfig,
@@ -129,12 +129,16 @@ export function getLocalMonitors(schemas: MonitorSchema[]) {
   return data;
 }
 
-export async function buildMonitorSchema(monitors: Monitor[], isV2: boolean) {
+export async function buildMonitorSchema(
+  monitors: Monitor[],
+  isV2: boolean,
+  workdir?: string
+) {
   /**
    * Set up the bundle artifacts path which can be used to
    * create the bundles required for uploading journeys
    */
-  const bundlePath = join(SYNTHETICS_PATH, 'bundles');
+  const bundlePath = join(getWorkDir(workdir), 'bundles');
   await mkdir(bundlePath, { recursive: true });
   const bundler = new Bundler();
   const schemas: MonitorSchema[] = [];

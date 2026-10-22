@@ -99,6 +99,10 @@ program
     'with --inline, run the piped script as an API journey (no browser) instead of a browser journey. Equivalent to setting ELASTIC_SYNTHETICS_MONITOR_TYPE=api'
   )
   .option('-r, --require <modules...>', 'module(s) to preload')
+  .option(
+    '--workdir <path>',
+    'directory for generated artifacts (default: .synthetics in the current directory)'
+  )
   .option('--sandbox', 'enable chromium sand-boxing')
   .option(
     '--rich-events',
@@ -182,6 +186,10 @@ program
   .command('push')
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
+  )
+  .option(
+    '--workdir <path>',
+    'directory for generated artifacts (default: .synthetics in the current directory)'
   )
   .addOption(authMandatory)
   .option(

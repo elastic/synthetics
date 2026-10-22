@@ -252,6 +252,16 @@ export const SYNTHETICS_PATH = join(cwd, '.synthetics');
  */
 export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
 
+/** Resolve the base directory for generated Synthetics artifacts. */
+export function getWorkDir(workdir?: string) {
+  return workdir === undefined ? SYNTHETICS_PATH : resolve(workdir);
+}
+
+/** Resolve the process-specific runtime cache. */
+export function getCachePath(workdir?: string) {
+  return join(getWorkDir(workdir), process.pid.toString());
+}
+
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
 }
