@@ -39,7 +39,8 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  test:
+  test-matrix:
+    name: test (${{ matrix.node-version }})
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -60,7 +61,8 @@ jobs:
           path: "**/junit.xml"
           if-no-files-found: error
 
-  e2e-test:
+  e2e-test-matrix:
+    name: e2e-test (${{ matrix.node-version }})
     needs:
       - build
     runs-on: ubuntu-22.04
@@ -90,3 +92,18 @@ jobs:
           name: test-results-e2e-test-node-${{ matrix.node-version }}
           path: "**/junit.xml"
           if-no-files-found: error
+
+  # Stable check names for branch protection, independent of the Node matrix.
+  test:
+    if: always()
+    needs: test-matrix
+    runs-on: ubuntu-22.04
+    steps:
+      - run: test "${{ needs.test-matrix.result }}" = success
+
+  e2e-test:
+    if: always()
+    needs: e2e-test-matrix
+    runs-on: ubuntu-22.04
+    steps:
+      - run: test "${{ needs.e2e-test-matrix.result }}" = success
