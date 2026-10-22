@@ -41,17 +41,22 @@ jobs:
 
   test:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # .nvmrc (release Node) plus the Node version shipped in the Wolfi Heartbeat / Agent images
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           cache: npm
-          node-version-file: .nvmrc
+          node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run test:unit -- --ci --reporters=default --reporters=jest-junit
       - uses: actions/upload-artifact@v4
         with:
-          name: test-results-test
+          name: test-results-test-node-${{ matrix.node-version }}
           path: "**/junit.xml"
           if-no-files-found: error
 
@@ -59,12 +64,17 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # .nvmrc (release Node) plus the Node version shipped in the Wolfi Heartbeat / Agent images
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           cache: npm
-          node-version-file: .nvmrc
+          node-version: ${{ matrix.node-version }}
       - run: npm ci
       - uses: actions/download-artifact@v4
         with:
@@ -77,6 +87,6 @@ jobs:
           TERM: xterm # this is needed for tput
       - uses: actions/upload-artifact@v4
         with:
-          name: test-results-e2e-test
+          name: test-results-e2e-test-node-${{ matrix.node-version }}
           path: "**/junit.xml"
           if-no-files-found: error
