@@ -29,7 +29,12 @@ import { spawnSync } from 'child_process';
 import { join, relative } from 'path';
 import '../../src/core/gatherer';
 import Runner from '../../src/core/runner';
-import { CACHE_PATH, getCachePath } from '../../src/helpers';
+import {
+  CACHE_PATH,
+  SYNTHETICS_PATH,
+  getCachePath,
+  getWorkDir,
+} from '../../src/helpers';
 
 describe('runtime workdir', () => {
   let workdir: string;
@@ -47,6 +52,12 @@ describe('runtime workdir', () => {
     expect(getCachePath(relative(process.cwd(), workdir))).toBe(
       join(workdir, process.pid.toString())
     );
+  });
+
+  it('uses the default for an empty workdir and preserves explicit cwd', () => {
+    expect(getWorkDir('')).toBe(SYNTHETICS_PATH);
+    expect(getCachePath('')).toBe(CACHE_PATH);
+    expect(getWorkDir('.')).toBe(process.cwd());
   });
 
   it('creates the selected cache before hooks and only removes its own cache', async () => {

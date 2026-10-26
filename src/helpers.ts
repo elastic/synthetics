@@ -254,7 +254,7 @@ export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
 
 /** Resolve the base directory for generated Synthetics artifacts. */
 export function getWorkDir(workdir?: string) {
-  return workdir === undefined ? SYNTHETICS_PATH : resolve(workdir);
+  return workdir ? resolve(workdir) : SYNTHETICS_PATH;
 }
 
 /** Resolve the process-specific runtime cache. */
