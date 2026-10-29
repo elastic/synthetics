@@ -62,19 +62,26 @@ describe('json reporter', () => {
   let stream: SonicBoom;
   let reporter: JSONReporter;
   const timestamp = 1600300800000000;
-  const originalProcess = global.process;
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
   const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
-  beforeAll(() => {
-    // Mocking the process in node environment
-    global.process = {
-      ...originalProcess,
-      platform: 'darwin',
-    };
+  beforeAll(async () => {
+    // sharp resolves its native binary from `process.platform` when first
+    // loaded, so load it before the platform is pinned below; otherwise it
+    // looks for a `darwin` binary on Linux and screenshot blocks are dropped.
+    await import('sharp');
+    // Pin `process.platform` for deterministic snapshots across OSes.
+    // Overriding just this property (rather than replacing `global.process`
+    // with a `{...process}` copy) keeps `process` a real EventEmitter, which
+    // lazy-loaded native modules (e.g. sharp's WASM fallback) rely on.
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      configurable: true,
+    });
   });
 
   afterAll(() => {
-    global.process = originalProcess;
+    Object.defineProperty(process, 'platform', originalPlatform);
   });
 
   beforeEach(() => {
@@ -559,7 +566,8 @@ describe('json reporter', () => {
 
   describe('screenshots', () => {
     const sourceDir = join(FIXTURES_DIR, 'screenshots');
-    const destDir = join(helpers.CACHE_PATH, 'screenshots');
+    const workdir = helpers.generateTempPath();
+    const destDir = join(helpers.getCachePath(workdir), 'screenshots');
     beforeAll(() => {
       mkdirSync(destDir, { recursive: true });
       fs.copyFileSync(
@@ -569,19 +577,19 @@ describe('json reporter', () => {
     });
 
     afterAll(() => {
-      fs.rmSync(destDir, { recursive: true, force: true });
+      fs.rmSync(workdir, { recursive: true, force: true });
     });
 
     const emitEnd = (options, status = 'failed' as StatusValue) => {
-      reporter.onJourneyEnd(tJourney(status, 2), {
+      return reporter.onJourneyEnd(tJourney(status, 2), {
         timestamp,
         browserDelay: 0,
-        options,
+        options: { ...options, workdir },
       });
     };
 
     it('write whole blobs data ', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'on',
         ssblocks: false,
       });
@@ -599,7 +607,7 @@ describe('json reporter', () => {
     });
 
     it('write block & reference docs', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'on',
         ssblocks: true,
       });
@@ -607,7 +615,7 @@ describe('json reporter', () => {
     });
 
     it('dont write on only-on-failure for successful journey', async () => {
-      emitEnd(
+      await emitEnd(
         {
           screenshots: 'only-on-failure',
         },
@@ -620,7 +628,7 @@ describe('json reporter', () => {
     });
 
     it('write on only-on-failure for failed journey', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'only-on-failure',
       });
       const screenshotJson = (await readAndCloseStreamJson()).find(

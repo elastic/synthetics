@@ -29,7 +29,7 @@ import { Journey, JourneyCallbackOpts } from '../dsl/journey';
 import { Step } from '../dsl/step';
 import { reporters, Reporter } from '../reporters';
 import {
-  CACHE_PATH,
+  getCachePath,
   monotonicTimeInSeconds,
   getTimestamp,
   runParallel,
@@ -78,7 +78,10 @@ export default class Runner implements RunnerInfo {
   #currentJourney?: Journey = null;
   #journeys: Journey[] = [];
   #hooks: SuiteHooks = { beforeAll: [], afterAll: [] };
-  #screenshotPath = join(CACHE_PATH, 'screenshots');
+  #cachePath = getCachePath();
+  get #screenshotPath() {
+    return join(this.#cachePath, 'screenshots');
+  }
   #driver?: Driver | APIDriver;
   #browserDelay = -1;
   #hookError: Error | undefined;
@@ -519,7 +522,7 @@ export default class Runner implements RunnerInfo {
     /**
      * Set up the directory for caching screenshots
      */
-    await mkdir(CACHE_PATH, { recursive: true });
+    await mkdir(this.#cachePath, { recursive: true });
   }
 
   async _run(options: RunOptions): Promise<RunResult> {
@@ -530,7 +533,13 @@ export default class Runner implements RunnerInfo {
     }
     this.#active = true;
     log(`Runner: run ${this.#journeys.length} journeys`);
-    this.#init(options);
+    this.#cachePath = getCachePath(options.workdir);
+    try {
+      await this.#init(options);
+    } catch (error) {
+      this.#active = false;
+      throw error;
+    }
     const hookArgs = this.buildHookArgs();
     await this.#runBeforeAllHook(hookArgs).catch(e => (this.#hookError = e));
     const { dryRun, grepOpts } = options;
@@ -608,7 +617,7 @@ export default class Runner implements RunnerInfo {
      * Clear all cache data stored for post-processing by
      * the current synthetic agent run
      */
-    await rm(CACHE_PATH, { recursive: true, force: true });
+    await rm(this.#cachePath, { recursive: true, force: true });
     await this.#reporter?.onEnd?.();
   }
 

@@ -54,6 +54,31 @@ export interface AlertConfig {
   };
 }
 
+/** Nested Kerberos block pushed to Kibana (matches Heartbeat / ConfigKey.KERBEROS). */
+export type KerberosConfig = {
+  enabled: boolean;
+  auth_type: 'password' | 'keytab';
+  username: string;
+  password: string;
+  keytab: string;
+  /** Path to krb5.conf on the agent. Mutually exclusive with krb5_conf when enabled. */
+  config_path: string;
+  /** Inline krb5.conf body. Mutually exclusive with config_path when enabled. */
+  krb5_conf: string;
+  realm: string;
+  service_name: string;
+  enable_krb5_fast: boolean;
+};
+
+/** Nested NTLM block pushed to Kibana (matches Heartbeat / ConfigKey.NTLM). */
+export type NtlmConfig = {
+  enabled: boolean;
+  username: string;
+  password: string;
+  domain: string;
+  workstation: string;
+};
+
 export type MonitorConfig = {
   id?: string;
   name?: string;
@@ -85,6 +110,13 @@ export type MonitorConfig = {
   spaces?: string[];
   namespace?: string;
   maintenanceWindows?: string[];
+  /** HTTP basic auth (mutually exclusive with kerberos / ntlm). */
+  username?: string;
+  password?: string;
+  /** HTTP Kerberos/SPNEGO auth block (Kibana nested ConfigKey). */
+  kerberos?: KerberosConfig;
+  /** HTTP NTLM auth block (Kibana nested ConfigKey). */
+  ntlm?: NtlmConfig;
 };
 
 type MonitorFilter = {

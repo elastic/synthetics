@@ -231,6 +231,8 @@ export type CertificateErrorSpkiAllowlist =
 export type CertificateAuthorities = string | Buffer | Array<string | Buffer>;
 
 type BaseArgs = {
+  /** Writable base directory for runtime cache and push bundles. Defaults to .synthetics in cwd. */
+  workdir?: string;
   params?: Params;
   screenshots?: ScreenshotOptions;
   dryRun?: boolean;
@@ -260,6 +262,7 @@ export type CliArgs = BaseArgs & {
   tags?: Array<string>;
   reporter?: BuiltInReporterName;
   inline?: boolean;
+  inlineApi?: boolean;
   require?: Array<string>;
   sandbox?: boolean;
   richEvents?: boolean;

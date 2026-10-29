@@ -44,6 +44,9 @@ export {
   after,
 } from './core';
 export { expect } from './core/expect';
+export { paramsFromEnv } from './helpers';
+export type { ParamsFromEnvOptions } from './helpers';
+
 export * as mfa from './core/mfa';
 
 /**

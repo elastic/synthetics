@@ -101,7 +101,11 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const { monitors: remote } = await bulkGetMonitors(options);
 
   progress(`preparing ${monitors.length} monitors`);
-  const { schemas, sizes } = await buildMonitorSchema(monitors, true);
+  const { schemas, sizes } = await buildMonitorSchema(
+    monitors,
+    true,
+    options.workdir
+  );
   const local = getLocalMonitors(schemas);
 
   const { newIDs, changedIDs, removedIDs, unchangedIDs } = diffMonitorHashIDs(
@@ -345,7 +349,11 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
   let sizes: Map<string, number> = new Map();
   if (monitors.length > 0) {
     progress(`preparing ${monitors.length} monitors`);
-    ({ schemas, sizes } = await buildMonitorSchema(monitors, false));
+    ({ schemas, sizes } = await buildMonitorSchema(
+      monitors,
+      false,
+      options.workdir
+    ));
     const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KB, 10);
     if (batches.length > 1) {
       progress(`Monitors will be pushed as ${batches.length} batches.`);
