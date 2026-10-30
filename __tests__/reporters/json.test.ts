@@ -566,7 +566,8 @@ describe('json reporter', () => {
 
   describe('screenshots', () => {
     const sourceDir = join(FIXTURES_DIR, 'screenshots');
-    const destDir = join(helpers.CACHE_PATH, 'screenshots');
+    const workdir = helpers.generateTempPath();
+    const destDir = join(helpers.getCachePath(workdir), 'screenshots');
     beforeAll(() => {
       mkdirSync(destDir, { recursive: true });
       fs.copyFileSync(
@@ -576,19 +577,19 @@ describe('json reporter', () => {
     });
 
     afterAll(() => {
-      fs.rmSync(destDir, { recursive: true, force: true });
+      fs.rmSync(workdir, { recursive: true, force: true });
     });
 
     const emitEnd = (options, status = 'failed' as StatusValue) => {
-      reporter.onJourneyEnd(tJourney(status, 2), {
+      return reporter.onJourneyEnd(tJourney(status, 2), {
         timestamp,
         browserDelay: 0,
-        options,
+        options: { ...options, workdir },
       });
     };
 
     it('write whole blobs data ', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'on',
         ssblocks: false,
       });
@@ -606,7 +607,7 @@ describe('json reporter', () => {
     });
 
     it('write block & reference docs', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'on',
         ssblocks: true,
       });
@@ -614,7 +615,7 @@ describe('json reporter', () => {
     });
 
     it('dont write on only-on-failure for successful journey', async () => {
-      emitEnd(
+      await emitEnd(
         {
           screenshots: 'only-on-failure',
         },
@@ -627,7 +628,7 @@ describe('json reporter', () => {
     });
 
     it('write on only-on-failure for failed journey', async () => {
-      emitEnd({
+      await emitEnd({
         screenshots: 'only-on-failure',
       });
       const screenshotJson = (await readAndCloseStreamJson()).find(

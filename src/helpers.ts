@@ -37,7 +37,9 @@ import {
   Location,
   ThrottlingOptions,
   ProxySettings,
+  CertificateAuthorities,
 } from './common_types';
+import { buildCABundle } from './core/certs';
 import micromatch from 'micromatch';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import { EnvHttpProxyAgent } from 'undici';
@@ -252,6 +254,16 @@ export const SYNTHETICS_PATH = join(cwd, '.synthetics');
  */
 export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
 
+/** Resolve the base directory for generated Synthetics artifacts. */
+export function getWorkDir(workdir?: string) {
+  return workdir ? resolve(workdir) : SYNTHETICS_PATH;
+}
+
+/** Resolve the process-specific runtime cache. */
+export function getCachePath(workdir?: string) {
+  return join(getWorkDir(workdir), process.pid.toString());
+}
+
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
 }
@@ -408,7 +420,18 @@ export function tagsMatch(tags, pattern) {
   return matchess.length > 0;
 }
 
-export function setGlobalProxy(opts: ProxySettings) {
+export function setGlobalProxy(
+  opts: ProxySettings,
+  certificateAuthorities?: CertificateAuthorities
+) {
+  /**
+   * Trust the user provided CAs (in addition to the public roots) when talking
+   * to the end server e.g. a Kibana instance behind an internal CA. Passing
+   * `ca` replaces Node's default store, so `buildCABundle` also folds in
+   * `NODE_EXTRA_CA_CERTS`.
+   */
+  const ca = buildCABundle(certificateAuthorities);
+
   // Create proxy agent if options exist, if not attempt to load env proxy
   const proxyAgent = opts.uri
     ? new ProxyAgent({
@@ -419,8 +442,10 @@ export function setGlobalProxy(opts: ProxySettings) {
           cert: opts.cert ?? null,
           rejectUnauthorized: !opts.noVerify,
         },
+        // TLS settings used for the request to the end server (through the proxy)
+        requestTls: ca ? { ca } : undefined,
       })
-    : new EnvHttpProxyAgent();
+    : new EnvHttpProxyAgent(ca ? { connect: { ca } } : undefined);
 
   setGlobalDispatcher(proxyAgent);
 }

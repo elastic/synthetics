@@ -75,6 +75,7 @@ const {
   fields,
   maintenanceWindows,
   certificateErrorSpkiAllowlist,
+  certificateAuthorities,
 } = getCommonCommandOpts();
 
 program
@@ -99,6 +100,10 @@ program
     'with --inline, run the piped script as an API journey (no browser) instead of a browser journey. Equivalent to setting ELASTIC_SYNTHETICS_MONITOR_TYPE=api'
   )
   .option('-r, --require <modules...>', 'module(s) to preload')
+  .option(
+    '--workdir <path>',
+    'directory for generated artifacts (default: .synthetics in the current directory)'
+  )
   .option('--sandbox', 'enable chromium sand-boxing')
   .option(
     '--rich-events',
@@ -183,6 +188,10 @@ program
   .description(
     'Push all journeys in the current directory to create monitors within the Kibana monitor management UI'
   )
+  .option(
+    '--workdir <path>',
+    'directory for generated artifacts (default: .synthetics in the current directory)'
+  )
   .addOption(authMandatory)
   .option(
     '--schedule <time-in-minutes>',
@@ -242,6 +251,7 @@ program
   .addOption(params)
   .addOption(playwrightOpts)
   .addOption(certificateErrorSpkiAllowlist)
+  .addOption(certificateAuthorities)
   .addOption(configOpt)
   .addOption(maintenanceWindows)
   .action(async cmdOpts => {
@@ -264,7 +274,7 @@ program
       )) as PushOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
 
       await validatePush(options, settings);
       const monitors = runner._buildMonitors(options);
@@ -330,6 +340,7 @@ program
     collectOpts('noVerify', proxySettings),
     false
   )
+  .addOption(certificateAuthorities)
   .action(async (cmdOpts: LocationCmdOptions) => {
     const revert = installTransform();
     const url = cmdOpts.url ?? (await loadSettings(null, true))?.url;
@@ -344,7 +355,7 @@ program
       })) as RunOptions;
 
       //Set up global proxy agent if any of the related options are set
-      setGlobalProxy(options.proxy ?? {});
+      setGlobalProxy(options.proxy ?? {}, options.certificateAuthorities);
       if (url && cmdOpts.auth) {
         const allLocations = await getLocations({
           url,
