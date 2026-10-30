@@ -300,6 +300,7 @@ export type PushOptions = Partial<ProjectSettings> &
     alert?: AlertConfig;
     retestOnFailure?: MonitorConfig['retestOnFailure'];
     enabled?: boolean;
+    locked?: boolean;
     grepOpts?: GrepOptions;
     spaces?: MonitorConfig['spaces'];
   };

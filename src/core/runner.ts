@@ -466,6 +466,7 @@ export default class Runner implements RunnerInfo {
       alert: options.alert,
       retestOnFailure: options.retestOnFailure,
       enabled: options.enabled,
+      locked: options.locked,
       fields: options.fields,
       spaces: Array.from(new Set([...(options.spaces ?? []), options.space])),
       namespace: options.namespace,
