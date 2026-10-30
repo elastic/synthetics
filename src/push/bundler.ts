@@ -28,7 +28,7 @@ import { unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
-import { commonOptions } from '../core/transform';
+import { commonOptions, validateLoaders } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
 import type { BundlerConfig } from '../common_types';
 
@@ -37,7 +37,9 @@ function relativeToCwd(entry: string) {
 }
 
 export class Bundler {
-  constructor(private config: BundlerConfig = {}) {}
+  constructor(private config: BundlerConfig = {}) {
+    validateLoaders(config.loader);
+  }
 
   async bundle(absPath: string) {
     const options: esbuild.BuildOptions = {

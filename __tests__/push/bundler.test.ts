@@ -160,6 +160,12 @@ journey('custom', () => { console.log(svg, custom); });`
       expect(code).toContain('MARKER_CUSTOM');
       expect(code).toContain('@elastic/synthetics');
     });
+
+    it('rejects loaders that emit extra output files', () => {
+      expect(() => new Bundler({ loader: { '.svg': 'file' as any } })).toThrow(
+        'Invalid bundler.loader entry'
+      );
+    });
   });
 
   it('throw errors on incorrect path', async () => {

@@ -42,4 +42,12 @@ describe('custom loaders', () => {
     installLoaders({ '.svg': 'text' })();
     expect(() => transform('<svg>MARKER_SVG</svg>', '/tmp/logo.svg')).toThrow();
   });
+
+  it('rejects loaders that emit extra files or invalid extensions', () => {
+    expect(() => installLoaders({ '.svg': 'file' })).toThrow(
+      'Invalid bundler.loader entry'
+    );
+    expect(() => installLoaders({ '.css': 'css' })).toThrow();
+    expect(() => installLoaders({ svg: 'text' })).toThrow();
+  });
 });

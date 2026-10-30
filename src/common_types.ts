@@ -32,7 +32,6 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
-import type { Loader } from 'esbuild';
 import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
@@ -319,8 +318,20 @@ export type PlaywrightOptions = LaunchOptions &
     navigationTimeout?: number;
   };
 
+/**
+ * Loaders that inline the file content into the journey bundle. Others like
+ * `file`, `copy` and `css` emit extra output files, which are not supported.
+ */
+export type InlineLoader =
+  | 'text'
+  | 'json'
+  | 'base64'
+  | 'dataurl'
+  | 'binary'
+  | 'empty';
+
 export type BundlerConfig = {
-  loader?: Record<string, Loader>;
+  loader?: Record<string, InlineLoader>;
 };
 
 export type SyntheticsConfig = {
