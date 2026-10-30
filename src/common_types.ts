@@ -32,6 +32,7 @@ import {
   Page,
   APIRequestContext,
 } from 'playwright-core';
+import type { Loader } from 'esbuild';
 import { Journey, Step } from './dsl';
 import { BuiltInReporterName, ReporterInstance } from './reporters';
 import { AlertConfig, MonitorConfig } from './dsl/monitor';
@@ -302,6 +303,7 @@ export type PushOptions = Partial<ProjectSettings> &
     enabled?: boolean;
     grepOpts?: GrepOptions;
     spaces?: MonitorConfig['spaces'];
+    bundler?: BundlerConfig;
   };
 
 export type ProjectSettings = {
@@ -317,7 +319,12 @@ export type PlaywrightOptions = LaunchOptions &
     navigationTimeout?: number;
   };
 
+export type BundlerConfig = {
+  loader?: Record<string, Loader>;
+};
+
 export type SyntheticsConfig = {
+  bundler?: BundlerConfig;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;

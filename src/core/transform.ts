@@ -69,9 +69,12 @@ const LOADERS: Record<string, Loader> = {
   '.cjs': 'js',
 };
 
+// User-defined loaders from `bundler.loader`, applied on top of LOADERS
+const customLoaders: Record<string, Loader> = {};
+
 const getLoader = (filename: string) => {
   const ext = path.extname(filename);
-  return LOADERS[ext] || 'default';
+  return customLoaders[ext] || LOADERS[ext] || 'default';
 };
 
 export function commonOptions(): CommonOptions {
@@ -153,5 +156,27 @@ export function installTransform() {
 
   return () => {
     revertPirates();
+  };
+}
+
+/**
+ * Register the loaders configured via `bundler.loader` so journeys importing
+ * those file types can be required locally the same way they are bundled.
+ */
+export function installLoaders(loaders: Record<string, Loader> = {}) {
+  Object.assign(customLoaders, loaders);
+  const exts = Object.keys(loaders).filter(ext => !(ext in LOADERS));
+  const revertPirates = exts.length
+    ? addHook(
+        (source: string, filename: string) => transform(source, filename).code,
+        { exts }
+      )
+    : () => {};
+
+  return () => {
+    revertPirates();
+    for (const ext of Object.keys(loaders)) {
+      delete customLoaders[ext];
+    }
   };
 }

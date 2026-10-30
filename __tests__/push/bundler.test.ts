@@ -133,6 +133,35 @@ describe('Bundler', () => {
     expect(content1).toEqual(content2);
   });
 
+  describe('custom bundler config', () => {
+    const customJourney = join(PROJECT_DIR, 'custom.journey.ts');
+
+    beforeAll(async () => {
+      await writeFile(join(PROJECT_DIR, 'logo.svg'), '<svg>MARKER_SVG</svg>');
+      await writeFile(join(PROJECT_DIR, 'data.custom'), 'MARKER_CUSTOM');
+      await writeFile(
+        customJourney,
+        `import {journey} from '@elastic/synthetics';
+import svg from './logo.svg';
+import custom from './data.custom';
+journey('custom', () => { console.log(svg, custom); });`
+      );
+    });
+
+    it('fails without a loader for unknown extensions', async () => {
+      await expect(new Bundler().bundle(customJourney)).rejects.toThrow();
+    });
+
+    it('supports custom loaders', async () => {
+      const code = await new Bundler({
+        loader: { '.svg': 'text', '.custom': 'text' },
+      }).bundle(customJourney);
+      expect(code).toContain('MARKER_SVG');
+      expect(code).toContain('MARKER_CUSTOM');
+      expect(code).toContain('@elastic/synthetics');
+    });
+  });
+
   it('throw errors on incorrect path', async () => {
     try {
       await bundler.build(join(PROJECT_DIR, 'blah.ts'), generateTempPath());
