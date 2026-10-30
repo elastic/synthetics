@@ -37,7 +37,7 @@ import {
   Monitor,
   MonitorConfig,
 } from '../dsl/monitor';
-import { PushOptions } from '../common_types';
+import { BundlerConfig, PushOptions } from '../common_types';
 import {
   isBundledMonitorType,
   isParamOptionSupported,
@@ -132,7 +132,8 @@ export function getLocalMonitors(schemas: MonitorSchema[]) {
 export async function buildMonitorSchema(
   monitors: Monitor[],
   isV2: boolean,
-  workdir?: string
+  workdir?: string,
+  bundlerConfig?: BundlerConfig
 ) {
   /**
    * Set up the bundle artifacts path which can be used to
@@ -140,7 +141,7 @@ export async function buildMonitorSchema(
    */
   const bundlePath = join(getWorkDir(workdir), 'bundles');
   await mkdir(bundlePath, { recursive: true });
-  const bundler = new Bundler();
+  const bundler = new Bundler(bundlerConfig);
   const schemas: MonitorSchema[] = [];
   const sizes: Map<string, number> = new Map();
 

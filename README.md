@@ -32,6 +32,25 @@ Project discovery and configuration resolution are unaffected. The caller must
 provide write access for the user running Synthetics;
 Synthetics does not change ownership or permissions on existing directories.
 
+## Custom bundle loaders
+
+When pushing, journeys are bundled with esbuild. To import file types esbuild
+doesn't handle by default (e.g. `.svg`, `.txt`), map their extensions to
+esbuild [loaders](https://esbuild.github.io/api/#loader) with `bundler.loader`
+in `synthetics.config.ts`. The loaders apply both when journeys are run locally
+and when they are bundled for `push`. Only loaders that inline the file content
+are supported: `text`, `json`, `base64`, `dataurl`, `binary` and `empty`.
+
+```ts
+import type { SyntheticsConfig } from '@elastic/synthetics';
+
+export default (): SyntheticsConfig => ({
+  bundler: {
+    loader: { '.svg': 'text' },
+  },
+});
+```
+
 ## Browser journeys
 
 The default `journey()` DSL launches a real Chromium browser via Playwright and

@@ -302,6 +302,7 @@ export type PushOptions = Partial<ProjectSettings> &
     enabled?: boolean;
     grepOpts?: GrepOptions;
     spaces?: MonitorConfig['spaces'];
+    bundler?: BundlerConfig;
   };
 
 export type ProjectSettings = {
@@ -317,7 +318,24 @@ export type PlaywrightOptions = LaunchOptions &
     navigationTimeout?: number;
   };
 
+/**
+ * Loaders that inline the file content into the journey bundle. Others like
+ * `file`, `copy` and `css` emit extra output files, which are not supported.
+ */
+export type InlineLoader =
+  | 'text'
+  | 'json'
+  | 'base64'
+  | 'dataurl'
+  | 'binary'
+  | 'empty';
+
+export type BundlerConfig = {
+  loader?: Record<string, InlineLoader>;
+};
+
 export type SyntheticsConfig = {
+  bundler?: BundlerConfig;
   params?: Params;
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
