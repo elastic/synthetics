@@ -505,9 +505,12 @@ export const parseAlertConfig = (
   return Object.keys(result).length > 0 ? result : undefined;
 };
 
-// Re-exported for backward compatibility; defined in dsl/monitor to keep it
-// off the push subsystem's heavy dependency graph.
-export { parseSpaces };
+/**
+ * @deprecated Import `parseSpaces` from `dsl/monitor` instead. Importing it
+ * from here loads the whole push subsystem and its heavy dependencies.
+ */
+const deprecatedParseSpaces = parseSpaces;
+export { deprecatedParseSpaces as parseSpaces };
 
 export const parseFields = (
   config: MonitorConfig,
