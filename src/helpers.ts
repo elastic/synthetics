@@ -37,7 +37,9 @@ import {
   Location,
   ThrottlingOptions,
   ProxySettings,
+  CertificateAuthorities,
 } from './common_types';
+import { buildCABundle } from './core/certs';
 import micromatch from 'micromatch';
 
 const SEPARATOR = '\n';
@@ -250,6 +252,16 @@ export const SYNTHETICS_PATH = join(cwd, '.synthetics');
  */
 export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
 
+/** Resolve the base directory for generated Synthetics artifacts. */
+export function getWorkDir(workdir?: string) {
+  return workdir ? resolve(workdir) : SYNTHETICS_PATH;
+}
+
+/** Resolve the process-specific runtime cache. */
+export function getCachePath(workdir?: string) {
+  return join(getWorkDir(workdir), process.pid.toString());
+}
+
 export function getDurationInUs(duration: number) {
   return Math.trunc(duration * 1e6);
 }
@@ -408,10 +420,21 @@ export function tagsMatch(tags, pattern) {
 
 // undici (~22MB RSS) is only needed to configure the proxy dispatcher, which
 // only `push`/`locations` do. Import it lazily so `run` never loads it.
-export async function setGlobalProxy(opts: ProxySettings) {
+export async function setGlobalProxy(
+  opts: ProxySettings,
+  certificateAuthorities?: CertificateAuthorities
+) {
   const { ProxyAgent, EnvHttpProxyAgent, setGlobalDispatcher } = await import(
     'undici'
   );
+  /**
+   * Trust the user provided CAs (in addition to the public roots) when talking
+   * to the end server e.g. a Kibana instance behind an internal CA. Passing
+   * `ca` replaces Node's default store, so `buildCABundle` also folds in
+   * `NODE_EXTRA_CA_CERTS`.
+   */
+  const ca = buildCABundle(certificateAuthorities);
+
   // Create proxy agent if options exist, if not attempt to load env proxy
   const proxyAgent = opts.uri
     ? new ProxyAgent({
@@ -422,8 +445,90 @@ export async function setGlobalProxy(opts: ProxySettings) {
           cert: opts.cert ?? null,
           rejectUnauthorized: !opts.noVerify,
         },
+        // TLS settings used for the request to the end server (through the proxy)
+        requestTls: ca ? { ca } : undefined,
       })
-    : new EnvHttpProxyAgent();
+    : new EnvHttpProxyAgent(ca ? { connect: { ca } } : undefined);
 
   setGlobalDispatcher(proxyAgent);
+}
+
+/**
+ * Options for `paramsFromEnv`.
+ */
+export interface ParamsFromEnvOptions {
+  /**
+   * Environment variable names that are allowed to be absent. Missing
+   * optional variables are omitted from the returned params instead of
+   * throwing.
+   */
+  optional?: Array<string>;
+  /**
+   * Convert variable names to camelCase params, so `USER_EMAIL` becomes
+   * `userEmail`.
+   */
+  camelCase?: boolean;
+}
+
+/**
+ * Builds Synthetics params from environment variables.
+ *
+ * Every variable named in `spec` is required by default and a missing
+ * variable throws at config load with the names that are missing. Pass
+ * optional names in the second argument, or use the object form to mark
+ * individual variables as optional and/or rename the resulting param.
+ *
+ * Variables that are unset or empty are treated as missing.
+ *
+ * @example
+ * paramsFromEnv(['USER_EMAIL', 'USER_PASSWORD'])
+ * paramsFromEnv(['USER_EMAIL'], { optional: ['API_URL'], camelCase: true })
+ * paramsFromEnv({ USER_EMAIL: {}, API_URL: { required: false } })
+ */
+export function paramsFromEnv(
+  spec: Array<string> | Record<string, { required?: boolean; param?: string }>,
+  options: ParamsFromEnvOptions = {}
+): Record<string, string> {
+  const optional = new Set(options.optional || []);
+  const entries = Array.isArray(spec)
+    ? spec.map(name => ({
+        name,
+        required: !optional.has(name),
+        param: undefined as string | undefined,
+      }))
+    : Object.entries(spec).map(([name, config]) => ({
+        name,
+        required: config?.required ?? !optional.has(name),
+        param: config?.param,
+      }));
+
+  const params: Record<string, string> = {};
+  const missing: Array<string> = [];
+
+  for (const { name, required, param } of entries) {
+    const value = process.env[name];
+    if (value === undefined || value === '') {
+      if (required) {
+        missing.push(name);
+      }
+      continue;
+    }
+    params[param || (options.camelCase ? toCamelCase(name) : name)] = value;
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable${
+        missing.length === 1 ? '' : 's'
+      }: ${missing.join(', ')}`
+    );
+  }
+
+  return params;
+}
+
+function toCamelCase(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+([a-z0-9])/g, (_, chr: string) => chr.toUpperCase());
 }

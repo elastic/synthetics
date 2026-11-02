@@ -30,7 +30,7 @@ import BaseReporter from './base';
 import { renderError, serializeError, stripAnsiCodes } from './reporter-util';
 import {
   getTimestamp,
-  CACHE_PATH,
+  getCachePath,
   totalist,
   isDirectory,
   getDurationInUs,
@@ -482,7 +482,7 @@ export default class JSONReporter extends BaseReporter {
         (screenshots === 'only-on-failure' && journey.status === 'failed');
       if (writeScreenshots) {
         await gatherScreenshots(
-          join(CACHE_PATH, 'screenshots'),
+          join(getCachePath(options.workdir), 'screenshots'),
           async screenshot => {
             const { data, timestamp, step } = screenshot;
             if (!data) {

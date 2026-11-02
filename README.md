@@ -19,6 +19,19 @@ Run the suites via CLI
 npx @elastic/synthetics [options] [dir] [files] file
 ```
 
+Use `--workdir /path/to/scratch` to select a writable directory for runtime cache
+files, including screenshots, and temporary push bundles. The programmatic
+equivalent is
+`run({ workdir: '/path/to/scratch' })`. Relative paths resolve against the current
+working directory. The default is `.synthetics` in the current working directory.
+Synthetics creates and removes a process-specific subdirectory (`<workdir>/<pid>`),
+leaving the work directory itself intact. For pushes, use
+`npx @elastic/synthetics push --workdir /path/to/scratch`; bundles are created under
+`<workdir>/bundles` and that subdirectory is removed after successful bundling.
+Project discovery and configuration resolution are unaffected. The caller must
+provide write access for the user running Synthetics;
+Synthetics does not change ownership or permissions on existing directories.
+
 ## Browser journeys
 
 The default `journey()` DSL launches a real Chromium browser via Playwright and
