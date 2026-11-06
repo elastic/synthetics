@@ -66,6 +66,28 @@ describe('apm', () => {
     expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBe(`es=s:1`);
   });
 
+  it('stops propagating headers once stopped', async () => {
+    runner.addJourney(journey('j1', () => {}));
+    const driver = await Gatherer.setupDriver({
+      wsEndpoint,
+    });
+    const network = new NetworkManager(driver);
+    const apm = new Apm(driver, { traceUrls: ['**/*'] });
+    await network.start();
+    await apm.start();
+    await apm.stop();
+    await driver.page.goto(server.TEST_PAGE);
+    const [htmlReq] = await network.stop();
+    await Gatherer.stop();
+
+    expect(htmlReq.request.headers[BAGGAGE_HEADER]).toBeUndefined();
+    expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBeUndefined();
+  });
+
+  it('skips the baggage header without synthetics context', () => {
+    expect(generateBaggageHeader(undefined)).toBe('');
+  });
+
   it('baggage generation', () => {
     const j1 = journey('j1', () => {});
     monitor.use({ id: 'foo' });

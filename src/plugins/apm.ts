@@ -76,7 +76,7 @@ export function genTraceStateHeader(rate = 1) {
  * 3. Location - location where the synthetics monitor is run from
  * 4. Type - type of the synthetics monitor (browser, http, tcp, etc)
  */
-export function generateBaggageHeader(journey: Journey) {
+export function generateBaggageHeader(journey?: Journey) {
   let monitorId = getValueFromEnv('ELASTIC_SYNTHETICS_MONITOR_ID');
   if (!monitorId) {
     monitorId = journey?.monitor.config.id;
@@ -105,28 +105,35 @@ export function generateBaggageHeader(journey: Journey) {
 }
 
 export class Apm {
+  // Playwright matches handlers by identity on `unroute`, so the bound handler
+  // has to be created once and reused for both `route` and `unroute`.
+  private handler = this.traceHandler.bind(this);
+
   constructor(private driver: Driver, private options: ApmOptions) {}
 
   async traceHandler(route: Route, request: Request) {
-    // Propagate baggae headers to the urls
-    route.continue({
-      headers: {
-        ...request.headers(),
-        [BAGGAGE_HEADER]: generateBaggageHeader(runner.currentJourney),
-        [TRACE_STATE_HEADER]: genTraceStateHeader(this.options.sampleRate),
-      },
-    });
+    const headers = {
+      ...request.headers(),
+      [TRACE_STATE_HEADER]: genTraceStateHeader(this.options.sampleRate),
+    };
+    // Propagate baggage headers to the urls, skipping the header entirely when
+    // there is no synthetics context to share
+    const baggage = generateBaggageHeader(runner.currentJourney);
+    if (baggage) {
+      headers[BAGGAGE_HEADER] = baggage;
+    }
+    route.continue({ headers });
   }
 
   async start() {
     for (const url of this.options.traceUrls) {
-      await this.driver.context.route(url, this.traceHandler.bind(this));
+      await this.driver.context.route(url, this.handler);
     }
   }
 
   async stop() {
     for (const url of this.options.traceUrls) {
-      await this.driver.context.unroute(url, this.traceHandler.bind(this));
+      await this.driver.context.unroute(url, this.handler);
     }
   }
 }
