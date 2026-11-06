@@ -1,8 +1,10 @@
 import type { SyntheticsConfig } from '@elastic/synthetics';
 
 /**
- * Example configuration that enables Chromium's built-in Negotiate (SPNEGO/
- * Kerberos) and NTLM authentication for browser monitors.
+ * Optional browser alternate: Chromium Negotiate/NTLM flags for when you need
+ * a full journey instead of a lightweight HTTP check.
+ *
+ * Prefer `lightweight/heartbeat.yml` for native Heartbeat kerberos/ntlm.
  *
  * Chromium natively supports Integrated Windows Authentication; it just needs
  * to be told which servers are allowed to initiate the handshake. Those

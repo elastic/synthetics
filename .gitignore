@@ -123,3 +123,6 @@ seccomp/build
 test-projects/
 
 .DS_Store
+
+# Codex local files
+.codex/

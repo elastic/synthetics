@@ -184,7 +184,14 @@ if (semver.satisfies(stackVersion, '>=8.7.0')) {
         name: 'Sample browser monitor (api)',
         inline_script: `
           step('load homepage', async () => {
-            await page.goto('https://www.elastic.co');
+            // 'domcontentloaded' instead of the 'load' default: waiting for
+            // every resource on the real elastic.co homepage (analytics,
+            // fonts, ads) to finish is what was intermittently blowing the
+            // 50s navigation timeout under CI resource contention, not a
+            // genuine monitor failure.
+            await page.goto('https://www.elastic.co', {
+              waitUntil: 'domcontentloaded',
+            });
           });
         `,
       });

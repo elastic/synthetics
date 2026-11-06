@@ -5,8 +5,10 @@ go install github.com/elastic/elastic-package@latest
 
 eval "$(elastic-package stack shellinit)"
 
-# Take the stack down
-elastic-package stack down
+# Take the stack down in case a previous run on this runner left one up.
+# On a fresh runner there's nothing to tear down and elastic-package errors
+# out (no docker-compose.yml yet) -- that's expected, not a real failure.
+elastic-package stack down || true
 
 # start elastic-package
 # elastic-package always resolves the plain (non-"complete") elastic-agent-wolfi
