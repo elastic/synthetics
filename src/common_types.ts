@@ -280,6 +280,7 @@ export type RunOptions = BaseArgs & {
   environment?: string;
   networkConditions?: NetworkConditions;
   reporter?: BuiltInReporterName | ReporterInstance;
+  apm?: ApmOptions;
   grepOpts?: GrepOptions;
 };
 
@@ -310,6 +311,21 @@ export type ProjectSettings = {
   space: string;
 };
 
+export type ApmOptions = {
+  /**
+   * URL globs or RegExps of the requests that get the `baggage` and
+   * `tracestate` headers. Only list the origins of the apps you trace:
+   * modified requests skip the browser HTTP cache, and cross-origin requests
+   * with these headers trigger a CORS preflight the server has to allow.
+   */
+  traceUrls: Array<string | RegExp>;
+  /**
+   * Sampling rate propagated to the traced app, from 0 to 1 with at most 4
+   * decimals. Defaults to 1.
+   */
+  sampleRate?: number;
+};
+
 export type PlaywrightOptions = LaunchOptions &
   BrowserContextOptions & {
     testIdAttribute?: string;
@@ -322,6 +338,7 @@ export type SyntheticsConfig = {
   playwrightOptions?: PlaywrightOptions;
   monitor?: MonitorConfig;
   project?: ProjectSettings;
+  apm?: ApmOptions;
   proxy?: ProxySettings;
   certificateErrorSpkiAllowlist?: CertificateErrorSpkiAllowlist;
   certificateAuthorities?: CertificateAuthorities;

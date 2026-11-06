@@ -26,7 +26,7 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import type { CliArgs, RunOptions } from './common_types';
+import type { ApmOptions, CliArgs, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
 import { normalizePemCertificates } from './core/certs';
 import { readFileSync } from 'fs';
@@ -178,6 +178,7 @@ export async function normalizeOptions(
       }
 
       options.screenshots = cliArgs.screenshots ?? 'on';
+      options.apm = normalizeApmOptions(config.apm);
       break;
     case 'push':
       /**
@@ -195,7 +196,41 @@ export async function normalizeOptions(
       }
       break;
   }
+
   return options;
+}
+
+/**
+ * Validate the `apm` block from the Synthetics config so a bad value fails
+ * with a clear message instead of a TypeError (or silently wrong routes) when
+ * the journey starts.
+ */
+export function normalizeApmOptions(apm?: ApmOptions): ApmOptions | undefined {
+  if (apm == null) {
+    return undefined;
+  }
+  if (typeof apm !== 'object' || Array.isArray(apm)) {
+    throw new Error('Invalid apm config: expected an object');
+  }
+  const { traceUrls, sampleRate } = apm;
+  if (
+    !Array.isArray(traceUrls) ||
+    !traceUrls.every(url => typeof url === 'string' || url instanceof RegExp)
+  ) {
+    throw new Error(
+      'Invalid apm config: traceUrls must be an array of URL globs or RegExp'
+    );
+  }
+  if (
+    sampleRate != null &&
+    (typeof sampleRate !== 'number' ||
+      !Number.isFinite(sampleRate) ||
+      sampleRate < 0 ||
+      sampleRate > 1)
+  ) {
+    throw new Error('Invalid apm config: sampleRate must be between 0 and 1');
+  }
+  return apm;
 }
 
 export function getHeadlessFlag(

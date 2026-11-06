@@ -23,9 +23,10 @@
  *
  */
 
-import { CliArgs } from '../src/common_types';
+import { ApmOptions, CliArgs } from '../src/common_types';
 import {
   collectOpts,
+  normalizeApmOptions,
   normalizeOptions,
   parseFileOption,
   parsePlaywrightOptions,
@@ -191,6 +192,75 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
       expect(Buffer.isBuffer(t.origin)).toBeFalsy();
       expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
+    });
+  });
+
+  describe('apm', () => {
+    it('is undefined when not configured', async () => {
+      const options = await normalizeOptions({});
+      expect(options.apm).toBeUndefined();
+    });
+
+    it('reads the apm block from the config file', async () => {
+      const options = await normalizeOptions({
+        config: join(__dirname, 'fixtures', 'apm.config.ts'),
+      });
+      expect(options.apm).toEqual({
+        traceUrls: ['**/api/**', /example\.com/],
+        sampleRate: 0.5,
+      });
+    });
+
+    it('rejects an invalid apm block from the config file', async () => {
+      await expect(
+        normalizeOptions({
+          config: join(__dirname, 'fixtures', 'apm-invalid.config.ts'),
+        })
+      ).rejects.toThrow('traceUrls must be an array');
+    });
+
+    it('is not applied when pushing monitors', async () => {
+      const options = await normalizeOptions(
+        { config: join(__dirname, 'fixtures', 'apm.config.ts') },
+        'push'
+      );
+      expect(options.apm).toBeUndefined();
+    });
+
+    describe('normalizeApmOptions', () => {
+      it('accepts valid options', () => {
+        expect(normalizeApmOptions(undefined)).toBeUndefined();
+        expect(normalizeApmOptions({ traceUrls: [] })).toEqual({
+          traceUrls: [],
+        });
+        expect(
+          normalizeApmOptions({ traceUrls: ['**/*', /foo/], sampleRate: 0 })
+        ).toEqual({ traceUrls: ['**/*', /foo/], sampleRate: 0 });
+      });
+
+      it.each([
+        ['not an object', 'yes'],
+        ['an array', []],
+        ['missing traceUrls', { sampleRate: 1 }],
+        ['a string traceUrls', { traceUrls: '**/*' }],
+        ['a non glob entry', { traceUrls: [42] }],
+      ])('rejects %s', (_, value) => {
+        expect(() =>
+          normalizeApmOptions(value as unknown as ApmOptions)
+        ).toThrow('Invalid apm config');
+      });
+
+      it.each([-0.1, 1.5, 50, NaN, Infinity, '0.5'])(
+        'rejects sampleRate %p',
+        sampleRate => {
+          expect(() =>
+            normalizeApmOptions({
+              traceUrls: ['**/*'],
+              sampleRate,
+            } as unknown as ApmOptions)
+          ).toThrow('sampleRate must be between 0 and 1');
+        }
+      );
     });
   });
 
