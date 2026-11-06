@@ -312,7 +312,17 @@ export type ProjectSettings = {
 };
 
 export type ApmOptions = {
+  /**
+   * URL globs or RegExps of the requests that get the `baggage` and
+   * `tracestate` headers. Only list the origins of the apps you trace:
+   * modified requests skip the browser HTTP cache, and cross-origin requests
+   * with these headers trigger a CORS preflight the server has to allow.
+   */
   traceUrls: Array<string | RegExp>;
+  /**
+   * Sampling rate propagated to the traced app, from 0 to 1 with at most 4
+   * decimals. Defaults to 1.
+   */
   sampleRate?: number;
 };
 

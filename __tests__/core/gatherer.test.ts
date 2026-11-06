@@ -24,7 +24,7 @@
  */
 
 import { Gatherer } from '../../src/core/gatherer';
-import { PluginManager } from '../../src/plugins';
+import { Apm, PluginManager } from '../../src/plugins';
 import { wsEndpoint } from '../utils/test-config';
 import { devices, chromium } from 'playwright-core';
 import { Server } from '../utils/server';
@@ -112,6 +112,20 @@ describe('Gatherer', () => {
     expect(pluginManager).toBeInstanceOf(PluginManager);
     const network = pluginManager.get('network');
     expect(network?.start).toHaveBeenCalled();
+    await Gatherer.stop();
+  });
+
+  it('starts the apm plugin only when apm options are set', async () => {
+    const start = jest.spyOn(Apm.prototype, 'start').mockResolvedValue();
+    const driver = await Gatherer.setupDriver({ wsEndpoint });
+    await Gatherer.beginRecording(driver, { network: true });
+    expect(start).not.toHaveBeenCalled();
+
+    await Gatherer.beginRecording(driver, {
+      network: true,
+      apm: { traceUrls: ['**/*'] },
+    });
+    expect(start).toHaveBeenCalledTimes(1);
     await Gatherer.stop();
   });
 

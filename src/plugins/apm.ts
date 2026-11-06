@@ -39,6 +39,7 @@ export const BAGGAGE_HEADER = 'baggage';
  */
 export const TRACE_STATE_HEADER = 'tracestate';
 const NAMESPACE = 'es';
+const MIN_SAMPLE_RATE = 0.0001;
 const PROPERTY_SEPARATOR = '=';
 // W3C baggage separates list members with ',' (';' is reserved for per-member
 // properties), so a single member with ';'-joined pairs would collapse to the
@@ -54,17 +55,55 @@ function getValueFromEnv(key: string) {
  * all of our apm agents
  * https://github.com/elastic/apm/blob/main/specs/agents/tracing-distributed-tracing.md#tracestate
  *
- * rate must be in the range [0,1] rounded up to 4 decimal precision (0.0001, 0.8122, )
+ * rate must be in the range [0,1] with a maximum precision of 4 decimals, and
+ * values above 0 but below 0.0001 are rounded up to 0.0001
+ * https://github.com/elastic/apm/blob/main/specs/agents/tracing-sampling.md
  */
 export function genTraceStateHeader(rate = 1) {
   if (isNaN(rate) || rate < 0 || rate > 1) {
     rate = 1;
-  } else if (rate > 0 && rate < 0.001) {
-    rate = 0.001;
+  } else if (rate > 0 && rate < MIN_SAMPLE_RATE) {
+    rate = MIN_SAMPLE_RATE;
   } else {
     rate = Math.round(rate * 10000) / 10000;
   }
   return `${NAMESPACE}${PROPERTY_SEPARATOR}s:${rate}`;
+}
+
+function parseMembers(header?: string) {
+  return (header ?? '')
+    .split(MEMBER_SEPARATOR)
+    .map(member => member.trim())
+    .filter(Boolean);
+}
+
+function memberKey(member: string) {
+  return member.split(PROPERTY_SEPARATOR, 1)[0].trim();
+}
+
+/**
+ * Add our baggage members to the ones the page already sends instead of
+ * replacing them. On duplicate keys our member wins.
+ */
+export function mergeBaggage(existing: string | undefined, ours: string) {
+  const ourMembers = parseMembers(ours);
+  const ourKeys = new Set(ourMembers.map(memberKey));
+  const kept = parseMembers(existing).filter(
+    member => !ourKeys.has(memberKey(member))
+  );
+  return [...kept, ...ourMembers].join(MEMBER_SEPARATOR);
+}
+
+/**
+ * Set our `es` entry and keep every other vendor's entry untouched. Per the W3C
+ * spec an updated entry moves to the front of the list.
+ * https://www.w3.org/TR/trace-context/#tracestate-header-field-values
+ */
+export function mergeTraceState(existing: string | undefined, ours: string) {
+  const kept = parseMembers(existing).filter(
+    member => memberKey(member) !== NAMESPACE
+  );
+  return [ours, ...kept].join(MEMBER_SEPARATOR);
 }
 
 /**
@@ -112,15 +151,20 @@ export class Apm {
   constructor(private driver: Driver, private options: ApmOptions) {}
 
   async traceHandler(route: Route, request: Request) {
+    const existing = request.headers();
+    // Merge into whatever the page already sends so the traced app keeps its
+    // own baggage and other vendors keep their tracestate entries
     const headers = {
-      ...request.headers(),
-      [TRACE_STATE_HEADER]: genTraceStateHeader(this.options.sampleRate),
+      ...existing,
+      [TRACE_STATE_HEADER]: mergeTraceState(
+        existing[TRACE_STATE_HEADER],
+        genTraceStateHeader(this.options.sampleRate)
+      ),
     };
-    // Propagate baggage headers to the urls, skipping the header entirely when
-    // there is no synthetics context to share
+    // Skip our baggage entirely when there is no synthetics context to share
     const baggage = generateBaggageHeader(runner.currentJourney);
     if (baggage) {
-      headers[BAGGAGE_HEADER] = baggage;
+      headers[BAGGAGE_HEADER] = mergeBaggage(existing[BAGGAGE_HEADER], baggage);
     }
     route.continue({ headers });
   }
