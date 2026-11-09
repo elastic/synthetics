@@ -178,9 +178,22 @@ export async function normalizeOptions(
       }
 
       options.screenshots = cliArgs.screenshots ?? 'on';
-      options.apm = normalizeApmOptions(config.apm);
+      /**
+       * Monitors run by Heartbeat never see synthetics.config.ts, so the CLI
+       * flag is the way to turn this on there and takes precedence
+       */
+      options.apm = normalizeApmOptions(
+        cliArgs.apmTraceUrls?.length
+          ? { traceUrls: cliArgs.apmTraceUrls }
+          : config.apm
+      );
       break;
     case 'push':
+      if (config.apm) {
+        warn(
+          'The apm config only applies to local runs. Project monitors do not carry it to the location that runs them yet, so pushed monitors will not propagate the synthetics baggage to your APM data.'
+        );
+      }
       /**
        * Merge the default monitor config from synthetics.config.ts file
        * with the CLI options passed via push command
@@ -212,7 +225,7 @@ export function normalizeApmOptions(apm?: ApmOptions): ApmOptions | undefined {
   if (typeof apm !== 'object' || Array.isArray(apm)) {
     throw new Error('Invalid apm config: expected an object');
   }
-  const { traceUrls, sampleRate } = apm;
+  const { traceUrls } = apm;
   if (
     !Array.isArray(traceUrls) ||
     !traceUrls.every(url => typeof url === 'string' || url instanceof RegExp)
@@ -220,15 +233,6 @@ export function normalizeApmOptions(apm?: ApmOptions): ApmOptions | undefined {
     throw new Error(
       'Invalid apm config: traceUrls must be an array of URL globs or RegExp'
     );
-  }
-  if (
-    sampleRate != null &&
-    (typeof sampleRate !== 'number' ||
-      !Number.isFinite(sampleRate) ||
-      sampleRate < 0 ||
-      sampleRate > 1)
-  ) {
-    throw new Error('Invalid apm config: sampleRate must be between 0 and 1');
   }
   return apm;
 }

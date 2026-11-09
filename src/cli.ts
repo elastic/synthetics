@@ -157,6 +157,10 @@ program
     parseThrottling
   )
   .addOption(playwrightOpts)
+  .option(
+    '--apm-trace-urls <urls...>',
+    'URL globs that receive the synthetics baggage header so the traced app can link its APM data to the monitor run. Overrides apm.traceUrls from the config file'
+  )
   .version(version)
   .description('Run synthetic tests')
   .action(async (cliArgs: CliArgs) => {

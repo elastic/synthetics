@@ -269,6 +269,7 @@ export type CliArgs = BaseArgs & {
   headless?: boolean;
   capability?: Array<string>;
   ignoreHttpsErrors?: boolean;
+  apmTraceUrls?: Array<string>;
 };
 
 export type RunOptions = BaseArgs & {
@@ -313,17 +314,16 @@ export type ProjectSettings = {
 
 export type ApmOptions = {
   /**
-   * URL globs or RegExps of the requests that get the `baggage` and
-   * `tracestate` headers. Only list the origins of the apps you trace:
-   * modified requests skip the browser HTTP cache, and cross-origin requests
-   * with these headers trigger a CORS preflight the server has to allow.
+   * URL globs or RegExps of the requests that get the synthetics `baggage`
+   * header. Only list the origins of the apps you trace: enabling request
+   * interception turns off the browser HTTP cache for the journey, and
+   * cross-origin requests carrying the header trigger a CORS preflight the
+   * server has to allow.
+   *
+   * Monitors run by Heartbeat don't read `synthetics.config.ts`, so pass the
+   * same list with the `--apm-trace-urls` CLI flag (`synthetics_args`).
    */
   traceUrls: Array<string | RegExp>;
-  /**
-   * Sampling rate propagated to the traced app, from 0 to 1 with at most 4
-   * decimals. Defaults to 1.
-   */
-  sampleRate?: number;
 };
 
 export type PlaywrightOptions = LaunchOptions &

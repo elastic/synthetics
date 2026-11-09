@@ -207,8 +207,18 @@ describe('options', () => {
       });
       expect(options.apm).toEqual({
         traceUrls: ['**/api/**', /example\.com/],
-        sampleRate: 0.5,
       });
+    });
+
+    it('takes traceUrls from the CLI flag, ahead of the config file', async () => {
+      const config = join(__dirname, 'fixtures', 'apm.config.ts');
+      // no config file at all, the way Heartbeat runs a monitor
+      expect(
+        (await normalizeOptions({ apmTraceUrls: ['https://app.test/**'] })).apm
+      ).toEqual({ traceUrls: ['https://app.test/**'] });
+      expect(
+        (await normalizeOptions({ config, apmTraceUrls: ['**/cli/**'] })).apm
+      ).toEqual({ traceUrls: ['**/cli/**'] });
     });
 
     it('rejects an invalid apm block from the config file', async () => {
@@ -219,12 +229,22 @@ describe('options', () => {
       ).rejects.toThrow('traceUrls must be an array');
     });
 
-    it('is not applied when pushing monitors', async () => {
-      const options = await normalizeOptions(
-        { config: join(__dirname, 'fixtures', 'apm.config.ts') },
-        'push'
-      );
-      expect(options.apm).toBeUndefined();
+    it('warns instead of applying it when pushing monitors', async () => {
+      const stderr = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+      try {
+        const options = await normalizeOptions(
+          { config: join(__dirname, 'fixtures', 'apm.config.ts') },
+          'push'
+        );
+        expect(options.apm).toBeUndefined();
+        expect(stderr).toHaveBeenCalledWith(
+          expect.stringContaining('apm config only applies to local runs')
+        );
+      } finally {
+        stderr.mockRestore();
+      }
     });
 
     describe('normalizeApmOptions', () => {
@@ -233,15 +253,15 @@ describe('options', () => {
         expect(normalizeApmOptions({ traceUrls: [] })).toEqual({
           traceUrls: [],
         });
-        expect(
-          normalizeApmOptions({ traceUrls: ['**/*', /foo/], sampleRate: 0 })
-        ).toEqual({ traceUrls: ['**/*', /foo/], sampleRate: 0 });
+        expect(normalizeApmOptions({ traceUrls: ['**/*', /foo/] })).toEqual({
+          traceUrls: ['**/*', /foo/],
+        });
       });
 
       it.each([
         ['not an object', 'yes'],
         ['an array', []],
-        ['missing traceUrls', { sampleRate: 1 }],
+        ['missing traceUrls', {}],
         ['a string traceUrls', { traceUrls: '**/*' }],
         ['a non glob entry', { traceUrls: [42] }],
       ])('rejects %s', (_, value) => {
@@ -249,18 +269,6 @@ describe('options', () => {
           normalizeApmOptions(value as unknown as ApmOptions)
         ).toThrow('Invalid apm config');
       });
-
-      it.each([-0.1, 1.5, 50, NaN, Infinity, '0.5'])(
-        'rejects sampleRate %p',
-        sampleRate => {
-          expect(() =>
-            normalizeApmOptions({
-              traceUrls: ['**/*'],
-              sampleRate,
-            } as unknown as ApmOptions)
-          ).toThrow('sampleRate must be between 0 and 1');
-        }
-      );
     });
   });
 

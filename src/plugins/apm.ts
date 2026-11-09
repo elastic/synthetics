@@ -33,13 +33,6 @@ import { Journey } from '../dsl';
  * https://www.w3.org/TR/baggage/
  */
 export const BAGGAGE_HEADER = 'baggage';
-/**
- * Tracestate header is used to provide vendor specific trace identification.
- * https://www.w3.org/TR/trace-context/#tracestate-header
- */
-export const TRACE_STATE_HEADER = 'tracestate';
-const NAMESPACE = 'es';
-const MIN_SAMPLE_RATE = 0.0001;
 const PROPERTY_SEPARATOR = '=';
 // W3C baggage separates list members with ',' (';' is reserved for per-member
 // properties), so a single member with ';'-joined pairs would collapse to the
@@ -48,26 +41,6 @@ const MEMBER_SEPARATOR = ',';
 
 function getValueFromEnv(key: string) {
   return process.env?.[key];
-}
-
-/**
- * Generate the tracestate header in the elastic namespace which is understood by
- * all of our apm agents
- * https://github.com/elastic/apm/blob/main/specs/agents/tracing-distributed-tracing.md#tracestate
- *
- * rate must be in the range [0,1] with a maximum precision of 4 decimals, and
- * values above 0 but below 0.0001 are rounded up to 0.0001
- * https://github.com/elastic/apm/blob/main/specs/agents/tracing-sampling.md
- */
-export function genTraceStateHeader(rate = 1) {
-  if (isNaN(rate) || rate < 0 || rate > 1) {
-    rate = 1;
-  } else if (rate > 0 && rate < MIN_SAMPLE_RATE) {
-    rate = MIN_SAMPLE_RATE;
-  } else {
-    rate = Math.round(rate * 10000) / 10000;
-  }
-  return `${NAMESPACE}${PROPERTY_SEPARATOR}s:${rate}`;
 }
 
 function parseMembers(header?: string) {
@@ -92,18 +65,6 @@ export function mergeBaggage(existing: string | undefined, ours: string) {
     member => !ourKeys.has(memberKey(member))
   );
   return [...kept, ...ourMembers].join(MEMBER_SEPARATOR);
-}
-
-/**
- * Set our `es` entry and keep every other vendor's entry untouched. Per the W3C
- * spec an updated entry moves to the front of the list.
- * https://www.w3.org/TR/trace-context/#tracestate-header-field-values
- */
-export function mergeTraceState(existing: string | undefined, ours: string) {
-  const kept = parseMembers(existing).filter(
-    member => memberKey(member) !== NAMESPACE
-  );
-  return [ours, ...kept].join(MEMBER_SEPARATOR);
 }
 
 /**
@@ -151,22 +112,24 @@ export class Apm {
   constructor(private driver: Driver, private options: ApmOptions) {}
 
   async traceHandler(route: Route, request: Request) {
-    const existing = request.headers();
-    // Merge into whatever the page already sends so the traced app keeps its
-    // own baggage and other vendors keep their tracestate entries
-    const headers = {
-      ...existing,
-      [TRACE_STATE_HEADER]: mergeTraceState(
-        existing[TRACE_STATE_HEADER],
-        genTraceStateHeader(this.options.sampleRate)
-      ),
-    };
-    // Skip our baggage entirely when there is no synthetics context to share
+    // Only baggage is propagated. The page's own `traceparent`/`tracestate`
+    // are left untouched so an instrumented page (for example one running the
+    // EDOT RUM SDK) stays the owner of the trace and its sampling decision.
     const baggage = generateBaggageHeader(runner.currentJourney);
-    if (baggage) {
-      headers[BAGGAGE_HEADER] = mergeBaggage(existing[BAGGAGE_HEADER], baggage);
+    if (!baggage) {
+      // no synthetics context to share
+      await route.continue();
+      return;
     }
-    route.continue({ headers });
+    // Merge into the baggage the page already sends so the traced app keeps
+    // its own members
+    const existing = request.headers();
+    await route.continue({
+      headers: {
+        ...existing,
+        [BAGGAGE_HEADER]: mergeBaggage(existing[BAGGAGE_HEADER], baggage),
+      },
+    });
   }
 
   async start() {

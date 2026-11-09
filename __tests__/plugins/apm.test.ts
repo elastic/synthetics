@@ -30,11 +30,8 @@ import { NetworkManager } from '../../src/plugins';
 import {
   Apm,
   BAGGAGE_HEADER,
-  TRACE_STATE_HEADER,
-  genTraceStateHeader,
   generateBaggageHeader,
   mergeBaggage,
-  mergeTraceState,
 } from '../../src/plugins/apm';
 import { Server } from '../utils/server';
 import { wsEndpoint } from '../utils/test-config';
@@ -66,7 +63,6 @@ describe('apm', () => {
     expect(htmlReq.request.headers[BAGGAGE_HEADER]).toBe(
       `synthetics.monitor.id=j1`
     );
-    expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBe(`es=s:1`);
   });
 
   it('stops propagating headers once stopped', async () => {
@@ -84,10 +80,9 @@ describe('apm', () => {
     await Gatherer.stop();
 
     expect(htmlReq.request.headers[BAGGAGE_HEADER]).toBeUndefined();
-    expect(htmlReq.request.headers[TRACE_STATE_HEADER]).toBeUndefined();
   });
 
-  it('keeps the baggage and tracestate the page already sends', async () => {
+  it('keeps the trace context the page already sends', async () => {
     runner.addJourney(journey('j1', () => {}));
     let received: IncomingHttpHeaders = {};
     server.route('/echo', (req, res) => {
@@ -100,23 +95,27 @@ describe('apm', () => {
     const apm = new Apm(driver, { traceUrls: ['**/echo'] });
     await apm.start();
     await driver.page.goto(server.TEST_PAGE);
+    // what an instrumented page (RUM / OTel SDK) sends on its own requests
+    const traceparent =
+      '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+    const tracestate = 'othervendor=opaque,es=s:0.1';
     await driver.page.evaluate(
-      url =>
+      ([url, traceparent, tracestate]) =>
         fetch(url, {
-          headers: {
-            baggage: 'app.user=42',
-            tracestate: 'othervendor=opaque,es=s:0.1',
-          },
+          headers: { baggage: 'app.user=42', traceparent, tracestate },
         }),
-      `${server.PREFIX}/echo`
+      [`${server.PREFIX}/echo`, traceparent, tracestate]
     );
     await apm.stop();
     await Gatherer.stop();
 
+    // our members are appended to the page's baggage...
     expect(received[BAGGAGE_HEADER]).toBe(
       'app.user=42,synthetics.monitor.id=j1'
     );
-    expect(received[TRACE_STATE_HEADER]).toBe('es=s:1,othervendor=opaque');
+    // ...and the page stays the owner of the trace and its sampling decision
+    expect(received['traceparent']).toBe(traceparent);
+    expect(received['tracestate']).toBe(tracestate);
   });
 
   it('skips the baggage header without synthetics context', () => {
@@ -133,15 +132,6 @@ describe('apm', () => {
     // our member wins on a duplicate key
     expect(mergeBaggage('synthetics.monitor.id=stale,app.user=42', ours)).toBe(
       `app.user=42,${ours}`
-    );
-  });
-
-  it('merges tracestate', () => {
-    expect(mergeTraceState(undefined, 'es=s:1')).toBe('es=s:1');
-    expect(mergeTraceState('a=1,b=2', 'es=s:0.5')).toBe('es=s:0.5,a=1,b=2');
-    // our entry replaces the existing es entry and moves to the front
-    expect(mergeTraceState('a=1,es=s:0.1,b=2', 'es=s:0.5')).toBe(
-      'es=s:0.5,a=1,b=2'
     );
   });
 
@@ -164,17 +154,5 @@ describe('apm', () => {
     delete process.env['ELASTIC_SYNTHETICS_MONITOR_ID'];
     delete process.env['ELASTIC_SYNTHETICS_MONITOR_TYPE'];
     delete process.env['ELASTIC_SYNTHETICS_MONITOR_LOCATION'];
-  });
-
-  it('tracestate generation', () => {
-    expect(genTraceStateHeader(0.5)).toBe(`es=s:0.5`);
-    expect(genTraceStateHeader(0.921132)).toBe(`es=s:0.9211`);
-    // 4 decimals of precision, rates above 0 but below 0.0001 round up to it
-    expect(genTraceStateHeader(0.0005)).toBe(`es=s:0.0005`);
-    expect(genTraceStateHeader(0.0001)).toBe(`es=s:0.0001`);
-    expect(genTraceStateHeader(0.00004)).toBe(`es=s:0.0001`);
-    expect(genTraceStateHeader(0)).toBe(`es=s:0`);
-    expect(genTraceStateHeader(-1)).toBe(`es=s:1`);
-    expect(genTraceStateHeader(20)).toBe(`es=s:1`);
   });
 });

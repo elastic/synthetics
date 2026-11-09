@@ -29,7 +29,6 @@ module.exports = () => {
   const config: SyntheticsConfig = {
     apm: {
       traceUrls: ['**/api/**', /example\.com/],
-      sampleRate: 0.5,
     },
   };
   return config;
