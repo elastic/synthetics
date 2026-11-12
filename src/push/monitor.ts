@@ -36,6 +36,7 @@ import {
   ALLOWED_SCHEDULES,
   Monitor,
   MonitorConfig,
+  parseSpaces,
 } from '../dsl/monitor';
 import { PushOptions } from '../common_types';
 import {
@@ -504,26 +505,12 @@ export const parseAlertConfig = (
   return Object.keys(result).length > 0 ? result : undefined;
 };
 
-export const parseSpaces = (config: MonitorConfig, options: PushOptions) => {
-  const baseSpaces = [...(config.spaces ?? []), ...(options.spaces ?? [])];
-  if (!baseSpaces.length) {
-    // If no spaces are defined, we return an empty object
-    return {};
-  }
-
-  // If the user has provided a global space, merge it with the monitor spaces
-  const spaces = Array.from(
-    options.space
-      ? new Set([options.space, ...baseSpaces])
-      : new Set(baseSpaces)
-  );
-
-  if (spaces.includes('*')) {
-    // If the user has provided a wildcard space, we should not override it with the global space
-    return { spaces: ['*'] };
-  }
-  return { spaces };
-};
+/**
+ * @deprecated Import `parseSpaces` from `dsl/monitor` instead. Importing it
+ * from here loads the whole push subsystem and its heavy dependencies.
+ */
+const deprecatedParseSpaces = parseSpaces;
+export { deprecatedParseSpaces as parseSpaces };
 
 export const parseFields = (
   config: MonitorConfig,

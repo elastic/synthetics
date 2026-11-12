@@ -34,8 +34,8 @@ import {
   parseAlertConfig,
   parseFields,
   parseSchedule,
-  parseSpaces,
 } from '../../src/push/monitor';
+import { parseSpaces } from '../../src/dsl/monitor';
 import { Server } from '../utils/server';
 import { createTestMonitor } from '../utils/test-config';
 import { PushOptions } from '../../src/common_types';
