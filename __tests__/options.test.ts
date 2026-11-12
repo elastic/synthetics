@@ -23,9 +23,10 @@
  *
  */
 
-import { CliArgs } from '../src/common_types';
+import { ApmOptions, CliArgs } from '../src/common_types';
 import {
   collectOpts,
+  normalizeApmOptions,
   normalizeOptions,
   parseFileOption,
   parsePlaywrightOptions,
@@ -191,6 +192,83 @@ describe('options', () => {
       expect(Buffer.isBuffer(t.pfx)).toBeTruthy();
       expect(Buffer.isBuffer(t.origin)).toBeFalsy();
       expect(Buffer.isBuffer(t.passphrase)).toBeFalsy();
+    });
+  });
+
+  describe('apm', () => {
+    it('is undefined when not configured', async () => {
+      const options = await normalizeOptions({});
+      expect(options.apm).toBeUndefined();
+    });
+
+    it('reads the apm block from the config file', async () => {
+      const options = await normalizeOptions({
+        config: join(__dirname, 'fixtures', 'apm.config.ts'),
+      });
+      expect(options.apm).toEqual({
+        traceUrls: ['**/api/**', /example\.com/],
+      });
+    });
+
+    it('takes traceUrls from the CLI flag, ahead of the config file', async () => {
+      const config = join(__dirname, 'fixtures', 'apm.config.ts');
+      // no config file at all, the way Heartbeat runs a monitor
+      expect(
+        (await normalizeOptions({ apmTraceUrls: ['https://app.test/**'] })).apm
+      ).toEqual({ traceUrls: ['https://app.test/**'] });
+      expect(
+        (await normalizeOptions({ config, apmTraceUrls: ['**/cli/**'] })).apm
+      ).toEqual({ traceUrls: ['**/cli/**'] });
+    });
+
+    it('rejects an invalid apm block from the config file', async () => {
+      await expect(
+        normalizeOptions({
+          config: join(__dirname, 'fixtures', 'apm-invalid.config.ts'),
+        })
+      ).rejects.toThrow('traceUrls must be an array');
+    });
+
+    it('warns instead of applying it when pushing monitors', async () => {
+      const stderr = jest
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
+      try {
+        const options = await normalizeOptions(
+          { config: join(__dirname, 'fixtures', 'apm.config.ts') },
+          'push'
+        );
+        expect(options.apm).toBeUndefined();
+        expect(stderr).toHaveBeenCalledWith(
+          expect.stringContaining('apm config only applies to local runs')
+        );
+      } finally {
+        stderr.mockRestore();
+      }
+    });
+
+    describe('normalizeApmOptions', () => {
+      it('accepts valid options', () => {
+        expect(normalizeApmOptions(undefined)).toBeUndefined();
+        expect(normalizeApmOptions({ traceUrls: [] })).toEqual({
+          traceUrls: [],
+        });
+        expect(normalizeApmOptions({ traceUrls: ['**/*', /foo/] })).toEqual({
+          traceUrls: ['**/*', /foo/],
+        });
+      });
+
+      it.each([
+        ['not an object', 'yes'],
+        ['an array', []],
+        ['missing traceUrls', {}],
+        ['a string traceUrls', { traceUrls: '**/*' }],
+        ['a non glob entry', { traceUrls: [42] }],
+      ])('rejects %s', (_, value) => {
+        expect(() =>
+          normalizeApmOptions(value as unknown as ApmOptions)
+        ).toThrow('Invalid apm config');
+      });
     });
   });
 
