@@ -39,7 +39,8 @@ import {
   totalist,
   findPkgJsonByTraversing,
 } from './helpers';
-import { installTransform } from './core/transform';
+import { installTransform, installLoaders } from './core/transform';
+import { readConfig } from './config';
 
 const resolvedCwd = cwd();
 const JOURNEY_EXTENSIONS = ['.js', '.ts', '.mjs', '.cjs'];
@@ -51,11 +52,32 @@ const JOURNEY_EXTENSIONS = ['.js', '.ts', '.mjs', '.cjs'];
  * - Loading these files for running test suites
  */
 export async function globalSetup(options: CliArgs, args: string[]) {
-  const revert = installTransform();
+  const revertTransform = installTransform();
+  const revertLoaders = installLoaders(await readBundlerLoaders(options));
   await loadTestFiles(options, args);
   return () => {
-    revert();
+    revertLoaders();
+    revertTransform();
   };
+}
+
+/**
+ * The config file is only fully normalized after the journeys are loaded, so
+ * read the custom loaders early. Errors are left for normalizeOptions to report.
+ */
+async function readBundlerLoaders(options: CliArgs) {
+  if (!options.config && options.inline) {
+    return undefined;
+  }
+  try {
+    const config = await readConfig(
+      process.env['NODE_ENV'] || 'development',
+      options.config
+    );
+    return config?.bundler?.loader;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function loadTestFiles(options: CliArgs, args: string[]) {

@@ -26,7 +26,7 @@
 import merge from 'deepmerge';
 import { createOption } from 'commander';
 import { readConfig } from './config';
-import type { CliArgs, RunOptions } from './common_types';
+import type { CliArgs, PushOptions, RunOptions } from './common_types';
 import { isFile, THROTTLING_WARNING_MSG, warn } from './helpers';
 import { normalizePemCertificates } from './core/certs';
 import { readFileSync } from 'fs';
@@ -180,6 +180,7 @@ export async function normalizeOptions(
       options.screenshots = cliArgs.screenshots ?? 'on';
       break;
     case 'push':
+      (options as PushOptions).bundler = config.bundler;
       /**
        * Merge the default monitor config from synthetics.config.ts file
        * with the CLI options passed via push command

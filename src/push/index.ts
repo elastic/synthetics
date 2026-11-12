@@ -104,7 +104,8 @@ export async function push(monitors: Monitor[], options: PushOptions) {
   const { schemas, sizes } = await buildMonitorSchema(
     monitors,
     true,
-    options.workdir
+    options.workdir,
+    options.bundler
   );
   const local = getLocalMonitors(schemas);
 
@@ -352,7 +353,8 @@ export async function pushLegacy(monitors: Monitor[], options: PushOptions) {
     ({ schemas, sizes } = await buildMonitorSchema(
       monitors,
       false,
-      options.workdir
+      options.workdir,
+      options.bundler
     ));
     const batches = getSizedBatches(schemas, sizes, MAX_PAYLOAD_SIZE_KB, 10);
     if (batches.length > 1) {
