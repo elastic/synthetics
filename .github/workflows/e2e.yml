@@ -65,8 +65,42 @@ jobs:
     needs: test
     if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
-      - uses: elastic/oblt-actions/slack/notify-result@v1
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        id: summary
+        with:
+          script: |
+            const path = require('path');
+            const {
+              summarizeTestJobs,
+              formatSlackMessage,
+            } = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.github/scripts/summarize_e2e_jobs.js'
+            ));
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                filter: 'latest',
+              }
+            );
+            const message = formatSlackMessage({
+              ...summarizeTestJobs(jobs),
+              ref: process.env.GITHUB_REF_NAME,
+              eventName: context.eventName,
+              runNumber: context.runNumber,
+              runUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`,
+            });
+            core.setOutput('message', encodeURIComponent(message));
+      - uses: elastic/oblt-actions/slack/send@v1
         with:
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: "#synthetics-notify"
+          message: ${{ steps.summary.outputs.message }}
