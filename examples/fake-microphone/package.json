@@ -1,0 +1,12 @@
+{
+  "name": "synthetics-fake-microphone-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example: fake microphone / getUserMedia mock for Elastic Synthetics browser monitors",
+  "scripts": {
+    "test": "npx @elastic/synthetics ."
+  },
+  "dependencies": {
+    "@elastic/synthetics": "*"
+  }
+}
