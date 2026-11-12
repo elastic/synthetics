@@ -29,6 +29,7 @@ import { resolve, join, dirname } from 'path';
 import fs from 'fs';
 import { lstat, readdir } from 'fs/promises';
 import { performance } from 'perf_hooks';
+import { isMainThread, threadId } from 'worker_threads';
 import sourceMapSupport from 'source-map-support';
 import {
   HooksArgs,
@@ -248,11 +249,13 @@ const cwd = process.cwd();
  */
 export const SYNTHETICS_PATH = join(cwd, '.synthetics');
 /**
- * Synthetics cache path that is based on the process id to make sure
- * each process does not modify the caching layer used by other process
- * once we move to executing journeys in parallel
+ * Synthetics cache path that is unique to the process or worker running a
+ * journey. Workers share a process id but must not share temporary artifacts.
  */
-export const CACHE_PATH = join(SYNTHETICS_PATH, process.pid.toString());
+const cacheID = isMainThread
+  ? process.pid.toString()
+  : `${process.pid}-${threadId}`;
+export const CACHE_PATH = join(SYNTHETICS_PATH, cacheID);
 
 /** Resolve the base directory for generated Synthetics artifacts. */
 export function getWorkDir(workdir?: string) {
