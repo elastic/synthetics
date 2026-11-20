@@ -157,12 +157,12 @@ describe('setGlobalProxy certificate authorities', () => {
   });
 
   it('rejects a server signed by an untrusted CA', async () => {
-    setGlobalProxy({});
+    await setGlobalProxy({});
     await expect(request(url)).rejects.toThrow();
   });
 
   it('trusts a server when its CA is configured', async () => {
-    setGlobalProxy({}, kibanaCa);
+    await setGlobalProxy({}, kibanaCa);
     await expectOk(url);
   });
 
@@ -183,12 +183,12 @@ describe('setGlobalProxy certificate authorities', () => {
 
     it('rejects Kibana TLS when only proxy.ca is set', async () => {
       // --proxy-ca is the proxy hop; it must not be treated as Kibana trust.
-      setGlobalProxy({ uri: proxyUri, ca: kibanaCa });
+      await setGlobalProxy({ uri: proxyUri, ca: kibanaCa });
       await expect(request(url)).rejects.toThrow();
     });
 
     it('trusts Kibana TLS when certificateAuthorities is set', async () => {
-      setGlobalProxy({ uri: proxyUri }, kibanaCa);
+      await setGlobalProxy({ uri: proxyUri }, kibanaCa);
       await expectOk(url);
     });
   });
@@ -212,17 +212,17 @@ describe('setGlobalProxy certificate authorities', () => {
     });
 
     it('rejects when only proxy.ca is configured', async () => {
-      setGlobalProxy({ uri: proxyUri, ca: proxyTls.cert });
+      await setGlobalProxy({ uri: proxyUri, ca: proxyTls.cert });
       await expect(request(url)).rejects.toThrow();
     });
 
     it('rejects when only certificateAuthorities is configured', async () => {
-      setGlobalProxy({ uri: proxyUri }, kibanaCa);
+      await setGlobalProxy({ uri: proxyUri }, kibanaCa);
       await expect(request(url)).rejects.toThrow();
     });
 
     it('succeeds when proxy.ca and certificateAuthorities cover both hops', async () => {
-      setGlobalProxy({ uri: proxyUri, ca: proxyTls.cert }, kibanaCa);
+      await setGlobalProxy({ uri: proxyUri, ca: proxyTls.cert }, kibanaCa);
       await expectOk(url);
     });
   });

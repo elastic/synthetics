@@ -41,8 +41,6 @@ import {
 } from './common_types';
 import { buildCABundle } from './core/certs';
 import micromatch from 'micromatch';
-import { ProxyAgent, setGlobalDispatcher } from 'undici';
-import { EnvHttpProxyAgent } from 'undici';
 
 const SEPARATOR = '\n';
 
@@ -420,10 +418,15 @@ export function tagsMatch(tags, pattern) {
   return matchess.length > 0;
 }
 
-export function setGlobalProxy(
+// undici (~22MB RSS) is only needed to configure the proxy dispatcher, which
+// only `push`/`locations` do. Import it lazily so `run` never loads it.
+export async function setGlobalProxy(
   opts: ProxySettings,
   certificateAuthorities?: CertificateAuthorities
 ) {
+  const { ProxyAgent, EnvHttpProxyAgent, setGlobalDispatcher } = await import(
+    'undici'
+  );
   /**
    * Trust the user provided CAs (in addition to the public roots) when talking
    * to the end server e.g. a Kibana instance behind an internal CA. Passing
