@@ -23,6 +23,7 @@
  *
  */
 
+import { IncomingHttpHeaders } from 'http';
 import { join } from 'path';
 import { devices } from 'playwright-core';
 import { Server } from './utils/server';
@@ -417,6 +418,42 @@ journey('inline browser', ({ page, params }) => {
     const output = getStepEnd(cli.output());
     expect(output.payload.pagemetrics).toBeDefined();
     expect(await cli.exitCode).toBe(0);
+  });
+
+  it('propagates the synthetics baggage to --apm-trace-urls', async () => {
+    let received: IncomingHttpHeaders = {};
+    server.route('/apm-echo', (req, res) => {
+      received = req.headers;
+      res.end('ok');
+    });
+    // Heartbeat hands the monitor context to the runner through the env
+    const cli = new CLIMock()
+      .stdin(
+        `step('call the traced app', async () => {
+          await page.goto(params.url, { timeout: 1500 });
+          await page.evaluate(url => fetch(url), params.echo);
+        })`
+      )
+      .args([
+        '--inline',
+        '--params',
+        JSON.stringify({ ...serverParams, echo: `${server.PREFIX}/apm-echo` }),
+        '--apm-trace-urls',
+        '**/apm-echo',
+        '--reporter',
+        'json',
+      ])
+      .run({
+        env: {
+          ...process.env,
+          ELASTIC_SYNTHETICS_TRACE_ID: 'run-1',
+          ELASTIC_SYNTHETICS_MONITOR_ID: 'monitor-1',
+        },
+      });
+    expect(await cli.exitCode).toBe(0);
+    expect(received['baggage']).toBe(
+      'synthetics.trace.id=run-1,synthetics.monitor.id=monitor-1'
+    );
   });
 
   it('show warn for unknown capability flag', async () => {
