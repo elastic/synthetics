@@ -34,6 +34,7 @@ import {
   microSecsToSeconds,
   wrapFnWithLocation,
   isMatch,
+  tagsMatch,
   paramsFromEnv,
 } from '../src/helpers';
 
@@ -132,6 +133,58 @@ it('location info on execution', () => {
   // line no and column no will not match as we are using
   // ts-jest preset to transpile code.
   expect(checkLoc().file).toBe(__filename);
+});
+
+describe('tagsMatch', () => {
+  it('matches positive globs, braces and ranges', () => {
+    expect(tagsMatch(['foo', 'bar'], ['foo*'])).toBe(true);
+    expect(tagsMatch(['foo', 'bar'], '{baz,bar}')).toBe(true);
+    expect(tagsMatch(['a2'], ['a{1..3}'])).toBe(true);
+    expect(tagsMatch(['a9'], ['a{1..3}'])).toBe(false);
+    expect(tagsMatch(['foo'], ['bar'])).toBe(false);
+  });
+
+  it('matches any of multiple positive patterns', () => {
+    expect(tagsMatch(['bar'], ['foo', 'bar'])).toBe(true);
+    expect(tagsMatch(['baz'], ['foo', 'bar'])).toBe(false);
+  });
+
+  it('handles negation', () => {
+    expect(tagsMatch(['foo'], ['!foo'])).toBe(false);
+    expect(tagsMatch(['bar'], ['!foo'])).toBe(true);
+    expect(tagsMatch(['foo', 'bar'], '!foo')).toBe(true);
+    expect(tagsMatch(['foo'], '!(foo)')).toBe(false);
+  });
+
+  it('applies several negations across the whole list', () => {
+    // every tag is excluded by one of the negations
+    expect(tagsMatch(['foo', 'bar'], ['!foo', '!bar'])).toBe(false);
+    expect(tagsMatch(['foo', 'bar', 'baz'], ['!foo', '!bar'])).toBe(true);
+    // negation wins over a positive match
+    expect(tagsMatch(['foo'], ['foo*', '!foo'])).toBe(false);
+    expect(tagsMatch(['foo', 'foobar'], ['foo*', '!foo'])).toBe(true);
+  });
+
+  it('matches dotfiles-like and spaced tags', () => {
+    expect(tagsMatch(['.x'], ['.x'])).toBe(true);
+    expect(tagsMatch(['x y'], ['x y'])).toBe(true);
+  });
+
+  it('treats missing tags as a wildcard tag', () => {
+    expect(tagsMatch(undefined, ['*'])).toBe(true);
+    expect(tagsMatch([], ['*'])).toBe(false);
+  });
+
+  it('does not throw on empty patterns', () => {
+    expect(tagsMatch(['foo'], [''])).toBe(false);
+    expect(isMatch(['foo'], 'foo', undefined, '')).toBe(true);
+  });
+
+  it('does not crash on deeply nested braces', () => {
+    const pattern = '{'.repeat(4000) + 'a,b' + '}'.repeat(4000);
+    expect(() => tagsMatch(['a'], [pattern])).not.toThrow();
+    expect(() => isMatch([], 'a', undefined, pattern)).not.toThrow();
+  });
 });
 
 it('match tags and names', () => {
