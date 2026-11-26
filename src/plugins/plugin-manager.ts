@@ -23,8 +23,15 @@
  *
  */
 
-import { PluginOutput, Driver, APIDriver, NetworkInfo } from '../common_types';
 import {
+  PluginOutput,
+  Driver,
+  APIDriver,
+  NetworkInfo,
+  ApmOptions,
+} from '../common_types';
+import {
+  Apm,
   BrowserConsole,
   NetworkManager,
   PerformanceManager,
@@ -34,7 +41,12 @@ import {
 import { Step } from '../dsl';
 import { APINetworkManager } from './api-network';
 
-type PluginType = 'network' | 'trace' | 'performance' | 'browserconsole';
+type PluginType =
+  | 'network'
+  | 'trace'
+  | 'performance'
+  | 'browserconsole'
+  | 'apm';
 
 // Shared shape for `NetworkManager` and `APINetworkManager` so the manager
 // stays agnostic to the driver type.
@@ -50,8 +62,11 @@ type Plugin =
   | Tracing
   | PerformanceManager
   | BrowserConsole
-  | APINetworkManager;
-type PluginOptions = TraceOptions;
+  | APINetworkManager
+  | Apm;
+type PluginOptions = TraceOptions & {
+  apm?: ApmOptions;
+};
 
 function isBrowserDriver(driver: Driver | APIDriver): driver is Driver {
   return 'context' in driver;
@@ -72,6 +87,7 @@ export class PluginManager {
     'trace',
     'performance',
     'browserconsole',
+    'apm',
   ];
   constructor(private driver: Driver | APIDriver) {}
 
@@ -91,6 +107,9 @@ export class PluginManager {
           break;
         case 'browserconsole':
           instance = new BrowserConsole(this.driver);
+          break;
+        case 'apm':
+          instance = new Apm(this.driver, options.apm);
           break;
       }
     } else {
