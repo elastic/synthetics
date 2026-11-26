@@ -40,7 +40,7 @@ import {
   CertificateAuthorities,
 } from './common_types';
 import { buildCABundle } from './core/certs';
-import micromatch from 'micromatch';
+import picomatch from 'picomatch';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import { EnvHttpProxyAgent } from 'undici';
 
@@ -408,16 +408,52 @@ export function isMatch(
     return tagsMatch(tags, tagsPattern);
   }
   if (matchPattern) {
-    return (
-      micromatch.isMatch(name, matchPattern) || tagsMatch(tags, matchPattern)
-    );
+    return picomatchSafe(name, matchPattern) || tagsMatch(tags, matchPattern);
   }
   return true;
 }
 
-export function tagsMatch(tags, pattern) {
-  const matchess = micromatch(tags || ['*'], pattern);
-  return matchess.length > 0;
+// An empty pattern is rejected by picomatch, treat it as "no match"
+function picomatchSafe(value: string, pattern: string) {
+  return pattern !== '' && picomatch.isMatch(value, pattern);
+}
+
+/**
+ * Matches the tags against one or many glob patterns, following the same
+ * semantics `micromatch` used to provide: patterns are evaluated in order,
+ * a negated pattern (`!foo`, `!(foo)`) omits the tags it excludes and a later
+ * positive match can bring a tag back. When every pattern is negated, all the
+ * tags that are not omitted are kept.
+ */
+export function tagsMatch(tags: Array<string> | undefined, pattern) {
+  const patterns: Array<string> = [].concat(pattern).filter(p => p !== '');
+  if (patterns.length === 0) {
+    return false;
+  }
+  const list = tags || ['*'];
+  const keep = new Set<string>();
+  const omit = new Set<string>();
+  let negatives = 0;
+
+  for (const p of patterns) {
+    const matcher = picomatch(p, {}, true);
+    const negated = matcher.state.negated || matcher.state.negatedExtglob;
+    if (negated) negatives++;
+    for (const tag of list) {
+      const { isMatch: matched } = matcher(tag, true);
+      if (negated ? matched : !matched) {
+        continue;
+      }
+      if (negated) {
+        omit.add(tag);
+      } else {
+        omit.delete(tag);
+        keep.add(tag);
+      }
+    }
+  }
+  const candidates = negatives === patterns.length ? list : [...keep];
+  return candidates.some(tag => !omit.has(tag));
 }
 
 export function setGlobalProxy(
