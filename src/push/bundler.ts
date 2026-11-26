@@ -28,14 +28,19 @@ import { unlink, readFile } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import * as esbuild from 'esbuild';
 import archiver from 'archiver';
-import { commonOptions } from '../core/transform';
+import { commonOptions, validateLoaders } from '../core/transform';
 import { SyntheticsBundlePlugin } from './plugin';
+import type { BundlerConfig } from '../common_types';
 
 function relativeToCwd(entry: string) {
   return path.relative(process.cwd(), entry);
 }
 
 export class Bundler {
+  constructor(private config: BundlerConfig = {}) {
+    validateLoaders(config.loader);
+  }
+
   async bundle(absPath: string) {
     const options: esbuild.BuildOptions = {
       ...commonOptions(),
@@ -46,6 +51,7 @@ export class Bundler {
         minifyWhitespace: true,
         sourcemap: 'inline',
         external: ['@elastic/synthetics'],
+        ...(this.config.loader ? { loader: this.config.loader } : {}),
         plugins: [SyntheticsBundlePlugin()],
       },
     };

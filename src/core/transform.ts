@@ -69,9 +69,12 @@ const LOADERS: Record<string, Loader> = {
   '.cjs': 'js',
 };
 
+// User-defined loaders from `bundler.loader`, applied on top of LOADERS
+const customLoaders: Record<string, Loader> = {};
+
 const getLoader = (filename: string) => {
   const ext = path.extname(filename);
-  return LOADERS[ext] || 'default';
+  return customLoaders[ext] || LOADERS[ext] || 'default';
 };
 
 export function commonOptions(): CommonOptions {
@@ -153,5 +156,46 @@ export function installTransform() {
 
   return () => {
     revertPirates();
+  };
+}
+
+const INLINE_LOADERS = ['text', 'json', 'base64', 'dataurl', 'binary', 'empty'];
+
+/**
+ * Only loaders that inline content are supported, as the bundle is a single
+ * file and extra assets emitted by `file`, `copy` or `css` would be dropped.
+ */
+export function validateLoaders(loaders: Record<string, string> = {}) {
+  for (const [ext, loader] of Object.entries(loaders)) {
+    if (!ext.startsWith('.') || !INLINE_LOADERS.includes(loader)) {
+      throw new Error(
+        `Invalid bundler.loader entry "${ext}": "${loader}". Extensions must start with "." and loaders must be one of ${INLINE_LOADERS.join(
+          ', '
+        )}`
+      );
+    }
+  }
+}
+
+/**
+ * Register the loaders configured via `bundler.loader` so journeys importing
+ * those file types can be required locally the same way they are bundled.
+ */
+export function installLoaders(loaders: Record<string, Loader> = {}) {
+  validateLoaders(loaders);
+  Object.assign(customLoaders, loaders);
+  const exts = Object.keys(loaders).filter(ext => !(ext in LOADERS));
+  const revertPirates = exts.length
+    ? addHook(
+        (source: string, filename: string) => transform(source, filename).code,
+        { exts }
+      )
+    : () => {};
+
+  return () => {
+    revertPirates();
+    for (const ext of Object.keys(loaders)) {
+      delete customLoaders[ext];
+    }
   };
 }
